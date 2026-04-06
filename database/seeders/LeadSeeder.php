@@ -28,6 +28,8 @@ class LeadSeeder extends Seeder
         $femaleNames = ['Siti', 'Ratna', 'Ani', 'Dewi', 'Endang', 'Sri', 'Lina', 'Maya', 'Rika', 'Wati'];
         $lastNames = ['Santoso', 'Prabowo', 'Saputra', 'Kusuma', 'Gunawan', 'Wijaya', 'Sutanto', 'Hidayat', 'Purnomo'];
 
+        $enrollmentPhase = $phases->where('code', 'enrollment')->first();
+
         for ($i = 1; $i <= 100; $i++) {
             $isMale = rand(0, 1);
             $firstName = $isMale ? $maleNames[array_rand($maleNames)] : $femaleNames[array_rand($femaleNames)];
@@ -36,6 +38,17 @@ class LeadSeeder extends Seeder
             
             $province = $provinces->random();
             $city = City::where('province_id', $province->id)->inRandomOrder()->first();
+
+            $phase = $phases->random();
+            $createdAt = now()->subDays(rand(0, 45));
+            $enrolledAt = null;
+
+            if ($phase->code === 'enrollment') {
+                $enrolledAt = (clone $createdAt)->addDays(rand(1, 15));
+                if ($enrolledAt->isFuture()) {
+                    $enrolledAt = now();
+                }
+            }
 
             Lead::create([
                 'id' => Str::uuid(),
@@ -47,11 +60,12 @@ class LeadSeeder extends Seeder
                 'owner_id' => $owner->id,
                 'lead_source_id' => $sources->random()->id,
                 'lead_type_id' => $types->random()->id,
-                'lead_phase_id' => $phases->random()->id,
+                'lead_phase_id' => $phase->id,
                 'province' => $province->name,
                 'city' => $city?->name ?? 'Unknown',
                 'is_online' => (bool)rand(0, 1),
-                'created_at' => now()->subDays(rand(0, 30)),
+                'enrolled_at' => $enrolledAt,
+                'created_at' => $createdAt,
             ]);
         }
     }

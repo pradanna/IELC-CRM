@@ -22,6 +22,7 @@ class StoreLeadRequest extends FormRequest
             'is_online' => ['boolean'],
             'province'  => ['nullable', 'string'],
             'city'      => ['nullable', 'string'],
+            'birth_date' => ['nullable', 'date'],
             
             // Guardians
             'guardians'           => ['nullable', 'array', 'max:5'],

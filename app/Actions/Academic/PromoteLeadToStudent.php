@@ -21,9 +21,10 @@ class PromoteLeadToStudent
             'status' => 'active',
         ]);
 
-        // Update Lead Phase to Enrollment
+        // Update Lead Phase to Enrollment and set timestamp
         $lead->update([
-            'lead_phase_id' => '019d639a-9de8-72c5-a576-8f2b3224024a'
+            'lead_phase_id' => '019d639a-9de8-72c5-a576-8f2b3224024a',
+            'enrolled_at' => now(),
         ]);
 
         activity()

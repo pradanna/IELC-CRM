@@ -31,12 +31,30 @@ class FetchCrmDashboardData
 
             $phaseLookup = LeadPhase::all()->groupBy('code');
             $phases = LeadPhase::orderBy('created_at')->get();
-            $phaseStats = $phases->map(fn($p) => [
-                'name' => $p->name,
-                'code' => $p->code,
-                'status' => $p->status,
-                'count' => (clone $query)->where('lead_phase_id', $p->id)->count(),
-            ]);
+            $phaseStats = $phases->map(function($p) use ($query, $startDate, $endDate, $branchId) {
+                // Special case: Enrollment phase should be counted by enrolled_at timestamp
+                // to match the Trend Chart and provide an "event-based" monthly report.
+                if ($p->code === 'enrollment') {
+                    $eQuery = Lead::where('lead_phase_id', $p->id)
+                        ->whereBetween('enrolled_at', [$startDate, $endDate]);
+                    if ($branchId) $eQuery->where('branch_id', $branchId);
+                    
+                    return [
+                        'name' => $p->name,
+                        'code' => $p->code,
+                        'status' => $p->status,
+                        'count' => $eQuery->count(),
+                    ];
+                }
+
+                // Standard phases count leads created in this period
+                return [
+                    'name' => $p->name,
+                    'code' => $p->code,
+                    'status' => $p->status,
+                    'count' => (clone $query)->where('lead_phase_id', $p->id)->count(),
+                ];
+            });
 
             $stats = [
                 'total' => (clone $query)->count(),
@@ -94,15 +112,15 @@ class FetchCrmDashboardData
             $enrollmentTrend = [];
             $daysInMonth = $startDate->daysInMonth;
             
-            // "Achieved" is based on Student creation (since Lead promotes to Student upon payment)
-            $studentQuery = \App\Models\Student::whereBetween('created_at', [$startDate, $endDate]);
+            // "Achieved" is based on Lead's enrolled_at timestamp
+            $achievedQuery = Lead::whereNotNull('enrolled_at')
+                ->whereBetween('enrolled_at', [$startDate, $endDate]);
+
             if ($branchId) {
-                $studentQuery->whereHas('lead', function($q) use ($branchId) {
-                    $q->where('branch_id', $branchId);
-                });
+                $achievedQuery->where('branch_id', $branchId);
             }
 
-            $dailyCounts = $studentQuery->select(DB::raw('DAY(created_at) as day'), DB::raw('count(*) as count'))
+            $dailyCounts = $achievedQuery->select(DB::raw('DAY(enrolled_at) as day'), DB::raw('count(*) as count'))
                 ->groupBy('day')
                 ->pluck('count', 'day')
                 ->toArray();

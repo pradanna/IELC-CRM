@@ -30,6 +30,7 @@ class Lead extends Model
         'city',
         'follow_up_count',
         'last_activity_at',
+        'enrolled_at',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -47,6 +48,7 @@ class Lead extends Model
             'is_online' => 'boolean',
             'follow_up_count' => 'integer',
             'last_activity_at' => 'datetime',
+            'enrolled_at' => 'datetime',
             'birth_date' => 'date',
         ];
     }

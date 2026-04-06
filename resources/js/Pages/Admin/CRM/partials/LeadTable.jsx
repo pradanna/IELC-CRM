@@ -95,15 +95,23 @@ export default function LeadTable({ leads, onView, onEdit, onDelete, canDelete =
                                         </div>
                                     </td>
                                     <td className="px-6 py-6">
-                                        {(() => {
-                                            const style = getPhaseStyle(lead.lead_phase?.code);
-                                            return (
-                                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-[0.15em] ${style.bg} ${style.color} ${style.border}`}>
-                                                    <style.icon size={10} className={style.color} />
-                                                    {lead.lead_phase?.name}
+                                        <div className="flex flex-col gap-2">
+                                            {(() => {
+                                                const style = getPhaseStyle(lead.lead_phase?.code);
+                                                return (
+                                                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-[0.15em] w-fit ${style.bg} ${style.color} ${style.border}`}>
+                                                        <style.icon size={10} className={style.color} />
+                                                        {lead.lead_phase?.name}
+                                                    </div>
+                                                );
+                                            })()}
+                                            {lead.lead_phase?.code === 'enrollment' && lead.formatted_enrolled_at && (
+                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                                                    <Calendar size={10} />
+                                                    {lead.formatted_enrolled_at}
                                                 </div>
-                                            );
-                                        })()}
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">
                                         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>

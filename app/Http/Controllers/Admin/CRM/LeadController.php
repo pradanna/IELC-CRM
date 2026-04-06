@@ -34,12 +34,23 @@ class LeadController extends Controller
             $query->where('lead_phase_id', $request->lead_phase_id);
         }
 
-        if ($request->filled('month')) {
-            $query->whereMonth('created_at', $request->month);
-        }
+        // Special handling for monthly filtering:
+        // By default, we filter by created_at.
+        // However, if specifically looking at the Enrollment phase, we use enrolled_at.
+        $targetMonth = $request->input('month');
+        $targetYear  = $request->input('year');
+        $enrollmentPhase = \App\Models\LeadPhase::where('code', 'enrollment')->first();
 
-        if ($request->filled('year')) {
-            $query->whereYear('created_at', $request->year);
+        if ($targetMonth && $targetYear) {
+            $query->where(function($q) use ($targetMonth, $targetYear, $request, $enrollmentPhase) {
+                if ($request->lead_phase_id == $enrollmentPhase?->id) {
+                    $q->whereMonth('enrolled_at', $targetMonth)
+                      ->whereYear('enrolled_at', $targetYear);
+                } else {
+                    $q->whereMonth('created_at', $targetMonth)
+                      ->whereYear('created_at', $targetYear);
+                }
+            });
         }
 
         if ($request->filled('search')) {
@@ -275,8 +286,17 @@ class LeadController extends Controller
             $leadsQuery->where('branch_id', $request->branch_id);
         }
 
-        $leadsQuery->whereMonth('created_at', $month);
-        $leadsQuery->whereYear('created_at', $year);
+        // Unified Filter:
+        // Include leads CREATED in this month OR leads ENROLLED in this month (regardless of creation)
+        $leadsQuery->where(function($q) use ($month, $year) {
+            $q->where(function($sub) use ($month, $year) {
+                $sub->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year);
+            })->orWhere(function($sub) use ($month, $year) {
+                $sub->whereMonth('enrolled_at', $month)
+                    ->whereYear('enrolled_at', $year);
+            });
+        });
 
         if ($request->filled('search')) {
             $leadsQuery->where(function($q) use ($request) {
@@ -289,11 +309,24 @@ class LeadController extends Controller
         $leads = $leadsQuery->latest()->get();
 
         // Group leads by phase for the Kanban Board
-        $kanbanData = $phases->map(function($phase) use ($leads) {
+        $kanbanData = $phases->map(function($phase) use ($leads, $month, $year) {
+            $columnLeads = $leads->where('lead_phase_id', $phase->id);
+
+            // Special logic for Enrollment column:
+            // Only show leads that actually ENROLLED in this specific period.
+            // This ensures consistency with Dashboard KPIs and Trend Charts.
+            if ($phase->code === 'enrollment') {
+                $columnLeads = $columnLeads->filter(function($l) use ($month, $year) {
+                    return $l->enrolled_at && 
+                           $l->enrolled_at->month == $month && 
+                           $l->enrolled_at->year == $year;
+                });
+            }
+
             return [
                 'id' => $phase->id,
                 'name' => $phase->name,
-                'leads' => LeadResource::collection($leads->where('lead_phase_id', $phase->id)->values()),
+                'leads' => LeadResource::collection($columnLeads->values()),
             ];
         });
 

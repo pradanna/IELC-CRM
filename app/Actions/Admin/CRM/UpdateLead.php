@@ -15,6 +15,7 @@ class UpdateLead
                 'name' => $data['name'],
                 'phone' => $data['phone'],
                 'email' => $data['email'] ?? null,
+                'birth_date' => $data['birth_date'] ?? null,
                 'branch_id' => $data['branch_id'],
                 'lead_source_id' => $data['lead_source_id'] ?? null,
                 'lead_type_id' => $data['lead_type_id'] ?? null,

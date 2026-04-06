@@ -5,6 +5,8 @@ import { X, User, Phone, Mail, Building2, MapPin, Globe, Loader2, Save, Search }
 import { useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
+import DatePicker from '@/Components/form/DatePicker';
+import { Calendar } from 'lucide-react';
 
 export default function CreateEditLeadModal({ 
     isOpen, 
@@ -22,6 +24,7 @@ export default function CreateEditLeadModal({
         name: '',
         phone: '',
         email: '',
+        birth_date: '',
         branch_id: '',
         lead_source_id: '',
         lead_type_id: '',
@@ -116,6 +119,7 @@ export default function CreateEditLeadModal({
                     name: lead.name || '',
                     phone: lead.phone || '',
                     email: lead.email || '',
+                    birth_date: lead.birth_date || '',
                     branch_id: lead.branch_id || '',
                     lead_source_id: lead.lead_source_id || '',
                     lead_type_id: lead.lead_type_id || '',
@@ -278,6 +282,17 @@ export default function CreateEditLeadModal({
                                                                         className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
                                                                         placeholder="user@mail.com"
                                                                     />
+                                                                </div>
+
+                                                                <div>
+                                                                    <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider text-slate-900">Date of Birth</label>
+                                                                    <DatePicker
+                                                                        value={data.birth_date}
+                                                                        onChange={val => setData('birth_date', val)}
+                                                                        placeholder="Pilih Tanggal Lahir"
+                                                                        inputClassName="!py-3.5 !px-4 !rounded-2xl !border-slate-300 !font-bold !text-sm text-slate-800 shadow-sm"
+                                                                    />
+                                                                    {errors.birth_date && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.birth_date}</p>}
                                                                 </div>
                                                             </div>
                                                         </div>
