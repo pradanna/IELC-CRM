@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, useMemo, Fragment } from 'react';
 import { MessageSquare, QrCode, Loader2, FileText, ImageIcon, Video, Headset, Download, Layout, Image as ImageIconLucide, Check, Link as LinkIcon, Search, X } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { EmptyState } from '../components/DrawerUI';
+import { usePage } from '@inertiajs/react';
 import axios from 'axios';
 
 export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets = [] }) {
+    const { waServerUrl } = usePage().props;
     const [waStatus, setWaStatus] = useState('initializing');
     const [qrImage, setQrImage] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -100,7 +102,8 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
             type = 'image';
             const bId = lead?.branch_code?.toLowerCase() || 'solo';
             const ext = mimeToExt[msg.imageMessage.mimetype] || "jpg";
-            localImageUrl = `http://localhost:3000/media/${bId}/${key.id}.${ext}`;
+            const apiBase = waServerUrl || 'http://localhost:3000';
+            localImageUrl = `${apiBase}/media/${bId}/${key.id}.${ext}`;
         } else if (msg.documentMessage) {
             fileName = msg.documentMessage.fileName || 'Dokumen';
             if (!body) body = fileName;
@@ -140,7 +143,8 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
 
         const checkWaStatus = async () => {
             try {
-                const res = await axios.get(`http://localhost:3000/api/wa-status/${branchCode}`);
+                const apiBase = waServerUrl || 'http://localhost:3000';
+                const res = await axios.get(`${apiBase}/api/wa-status/${branchCode}`);
                 const currentStatus = res.data.status;
                 setWaStatus(currentStatus);
                 if (currentStatus === 'waiting_for_scan') {
@@ -176,7 +180,8 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
 
         try {
             const cleanPhone = formatPhone(lead.phone);
-            const url = `http://localhost:3000/api/chat-history/${branchCode}/${cleanPhone}`;
+            const apiBase = waServerUrl || 'http://localhost:3000';
+            const url = `${apiBase}/api/chat-history/${branchCode}/${cleanPhone}`;
             const params = before ? { before } : {};
             
             const res = await axios.get(url, { params });
@@ -242,7 +247,8 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
         setIsSending(true);
         try {
             const cleanPhone = formatPhone(lead.phone);
-            const response = await axios.post("http://localhost:3000/api/send-message", {
+            const apiBase = waServerUrl || 'http://localhost:3000';
+            const response = await axios.post(`${apiBase}/api/send-message`, {
                 branch: branchCode,
                 phone: cleanPhone,
                 message: inputText

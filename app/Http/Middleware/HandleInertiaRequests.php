@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
                 'newLeadId' => $request->session()->get('newLeadId'),
             ],
+            'waServerUrl' => config('services.whatsapp.url'),
         ];
     }
 }

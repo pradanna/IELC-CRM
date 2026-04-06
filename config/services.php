@@ -34,5 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'whatsapp' => [
+        'url' => env('WA_SERVER_URL', 'http://localhost:3000'),
+    ],
 
 ];
