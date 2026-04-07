@@ -35,8 +35,11 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
             if (!hasPhases && !hasTypes) {
                 metaMatch = true; // Global
             } else {
-                const phaseMatch = hasPhases && template.lead_phases.some(p => p.id === lead.lead_phase_id);
-                const typeMatch = hasTypes && template.lead_types.some(t => t.id === lead.lead_type_id);
+                const currentPhaseId = lead.lead_phase_id || lead.lead_phase?.id;
+                const currentTypeId = lead.lead_type_id || lead.lead_type?.id;
+
+                const phaseMatch = hasPhases && template.lead_phases.some(p => p.id === currentPhaseId);
+                const typeMatch = hasTypes && template.lead_types.some(t => t.id === currentTypeId);
                 metaMatch = phaseMatch || typeMatch;
             }
 

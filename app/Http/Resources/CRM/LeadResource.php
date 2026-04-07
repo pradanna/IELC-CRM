@@ -23,6 +23,7 @@ class LeadResource extends JsonResource
             'branch_id'      => $this->branch_id,
             'lead_source_id' => $this->lead_source_id,
             'lead_type_id'   => $this->lead_type_id,
+            'lead_phase_id'  => $this->lead_phase_id,
             
             // Relationships
             'branch'         => $this->whenLoaded('branch', fn() => [

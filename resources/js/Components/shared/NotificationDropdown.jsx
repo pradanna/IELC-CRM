@@ -20,7 +20,7 @@ export default function NotificationDropdown({ user }) {
     }, []);
 
     useEffect(() => {
-        fetchNotifications();
+        // fetchNotifications();
         
         if (window.Echo) {
             const channel = window.Echo.private(`App.Models.User.${user.id}`);
