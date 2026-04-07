@@ -153,22 +153,39 @@ export default function AdminLayout({ children }) {
         if (userRole === 'superadmin') return true;
         
         if (userRole === 'frontdesk') {
-            // Frontdesk sees Main and Management
+            return ['Main', 'Management'].includes(group.category);
+        }
+
+        if (userRole === 'finance') {
+            return ['Main', 'Finance', 'System'].includes(group.category);
+        }
+
+        if (userRole === 'marketing') {
             return ['Main', 'Management'].includes(group.category);
         }
 
         return false;
     }).map(group => {
-        if (userRole === 'frontdesk') {
-            return {
-                ...group,
-                items: group.items.filter(item => {
-                    const allowedTexts = ['Dashboard', 'Crm', 'Placement Test', 'Class'];
-                    return allowedTexts.includes(item.text);
-                })
-            };
-        }
-        return group;
+        if (userRole === 'superadmin') return group;
+
+        return {
+            ...group,
+            items: group.items.filter(item => {
+                if (userRole === 'frontdesk') {
+                    const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Class'];
+                    return allowed.includes(item.text);
+                }
+                if (userRole === 'finance') {
+                    const allowed = ['Dashboard', 'Overview', 'Price Master', 'Staff Accounts'];
+                    return allowed.includes(item.text);
+                }
+                if (userRole === 'marketing') {
+                    const allowed = ['Dashboard', 'Crm'];
+                    return allowed.includes(item.text);
+                }
+                return true;
+            })
+        };
     }).filter(group => group.items.length > 0);
 
     return (
