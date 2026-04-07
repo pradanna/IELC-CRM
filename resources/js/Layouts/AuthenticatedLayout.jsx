@@ -10,7 +10,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
-    if (user.role === 'superadmin') {
+    if (['superadmin', 'frontdesk'].includes(user.role)) {
         return <AdminLayout>{children}</AdminLayout>;
     }
 

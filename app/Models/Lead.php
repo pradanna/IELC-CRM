@@ -22,6 +22,7 @@ class Lead extends Model
         'birth_date',
         'branch_id',
         'owner_id',
+        'created_by',
         'lead_source_id',
         'lead_type_id',
         'lead_phase_id',
@@ -65,6 +66,11 @@ class Lead extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function leadType(): BelongsTo

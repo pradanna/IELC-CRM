@@ -55,6 +55,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/dashboard', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'index'])->name('dashboard');
         Route::post('/invoices/generate', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'generate'])->name('invoices.generate');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'pay'])->name('invoices.pay');
+        Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'download'])->name('invoices.download');
         
         Route::resource('price-masters', \App\Http\Controllers\Admin\Finance\PriceMasterController::class);
     });
@@ -62,6 +63,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Add others as placeholders for now
     Route::get('/placement-tests', fn() => Inertia::render('Dashboard'))->name('placement-tests.index');
     // Master Data
+    Route::get('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'index'])->name('master.users.index');
+    Route::post('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'store'])->name('master.users.store');
+    Route::put('/master/users/{user}', [\App\Http\Controllers\Admin\Master\UserController::class, 'update'])->name('master.users.update');
+    Route::delete('/master/users/{user}', [\App\Http\Controllers\Admin\Master\UserController::class, 'destroy'])->name('master.users.destroy');
+
     Route::get('/master', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'index'])->name('master.index');
     Route::post('/master/lead-types', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadType'])->name('master.lead-types.store');
     Route::put('/master/lead-types/{leadType}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadType'])->name('master.lead-types.update');

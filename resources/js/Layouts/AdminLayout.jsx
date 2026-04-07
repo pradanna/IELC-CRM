@@ -132,6 +132,12 @@ const menuItems = [
                 href: "#",
                 name: "settings",
             },
+            {
+                icon: <Users size={20} />,
+                text: "Staff Accounts",
+                href: route("admin.master.users.index"),
+                name: "admin.master.users.*",
+            },
         ],
     },
 ];
@@ -147,24 +153,23 @@ export default function AdminLayout({ children }) {
         if (userRole === 'superadmin') return true;
         
         if (userRole === 'frontdesk') {
-            // Frontdesk sees Main and Management, but not Finance or System
-            return ['Main', 'Management', 'Users'].includes(group.category);
+            // Frontdesk sees Main and Management
+            return ['Main', 'Management'].includes(group.category);
         }
 
         return false;
     }).map(group => {
-        if (userRole === 'frontdesk' && group.category === 'Management') {
+        if (userRole === 'frontdesk') {
             return {
                 ...group,
-                items: group.items.filter(item => 
-                    // Frontdesk doesn't see Master or Academic at this level?
-                    // Actually let's just keep everything in Management for now but exclude Master
-                    !['Master'].includes(item.text)
-                )
+                items: group.items.filter(item => {
+                    const allowedTexts = ['Dashboard', 'Crm', 'Placement Test', 'Class'];
+                    return allowedTexts.includes(item.text);
+                })
             };
         }
         return group;
-    });
+    }).filter(group => group.items.length > 0);
 
     return (
         <div className="flex">
@@ -191,7 +196,7 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     <SidebarContext.Provider value={{ expanded }}>
-                        <ul className="flex-1 px-3">
+                        <ul className="flex-1 px-3 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
                             {filteredMenu.map((group, index) => (
                                 <React.Fragment key={index}>
                                     {group.category && expanded && (

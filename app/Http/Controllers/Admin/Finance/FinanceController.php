@@ -23,7 +23,10 @@ class FinanceController extends Controller
     public function index(): Response
     {
         // Get leads in "Invoice" phase
-        $leadsForInvoicing = Lead::where('lead_phase_id', '019d473d-26bc-7027-8ab0-5bed725bf6d4')
+        $invoicePhase = \App\Models\LeadPhase::where('code', 'invoice')->first();
+        $invoicePhaseId = $invoicePhase?->id ?? 'non-existent-id';
+
+        $leadsForInvoicing = Lead::where('lead_phase_id', $invoicePhaseId)
             ->whereDoesntHave('student') // Just in case, although promotion will change this
             ->with(['leadType', 'branch'])
             ->latest()
@@ -44,7 +47,11 @@ class FinanceController extends Controller
     {
         $invoice = $action->handle($request->validated());
 
-        return redirect()->back()->with('success', "Invoice {$invoice->invoice_number} generated successfully.");
+        return redirect()->back()->with([
+            'success' => "Invoice {$invoice->invoice_number} generated successfully.",
+            'new_invoice_id' => $invoice->id,
+            'download_url' => route('admin.finance.invoices.download', $invoice->id)
+        ]);
     }
 
     /**
@@ -55,5 +62,17 @@ class FinanceController extends Controller
         $action->handle($invoice);
 
         return redirect()->back()->with('success', "Invoice {$invoice->invoice_number} paid. Student promoted and enrolled.");
+    }
+
+    /**
+     * Generate and download the PDF for a specific invoice.
+     */
+    public function download(Invoice $invoice)
+    {
+        $invoice->load(['items', 'lead', 'studyClass.branch']);
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('invoice'));
+        
+        return $pdf->stream("Invoice-{$invoice->invoice_number}.pdf");
     }
 }

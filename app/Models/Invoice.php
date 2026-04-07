@@ -21,6 +21,8 @@ class Invoice extends Model
         'total_amount',
         'session_count',
         'status',
+        'due_date',
+        'paid_at',
         'notes',
     ];
 

@@ -3,15 +3,17 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { 
     Calculator, Receipt, User, 
-    BookOpen, CheckCircle, CreditCard, 
-    History, ArrowUpRight, TrendingUp,
-    CheckCircle2, Clock, XCircle
+    CheckCircle, History,
+    CheckCircle2, Clock, Search, Download
 } from 'lucide-react';
 import PlotAndInvoiceModal from './modals/PlotAndInvoiceModal';
+import DataTable from '@/Components/ui/DataTable';
+import SearchInput from '@/Components/ui/SearchInput';
 
 export default function Index({ leads, classes, priceMasters, recentInvoices }) {
     const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState(null);
+    const [search, setSearch] = useState('');
 
     const openPlotModal = (lead) => {
         setSelectedLead(lead);
@@ -41,6 +43,61 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
         }
     };
 
+    const filteredLeads = leads.filter(lead => 
+        lead.name.toLowerCase().includes(search.toLowerCase()) ||
+        lead.phone?.includes(search) ||
+        lead.branch?.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const leadColumns = [
+        {
+            header: 'Lead Name',
+            accessor: 'name',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-xl text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                        <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="font-black text-slate-900 tracking-tight uppercase">{row.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{row.branch?.name}</p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Lead Type',
+            accessor: 'lead_type.name',
+            render: (row) => (
+                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest border border-emerald-100">
+                    {row.lead_type?.name}
+                </span>
+            )
+        },
+        {
+            header: 'Status',
+            render: () => (
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Awaiting Plotting</span>
+                </div>
+            )
+        },
+        {
+            header: 'Actions',
+            className: 'text-right',
+            render: (row) => (
+                <button 
+                    onClick={() => openPlotModal(row)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-600/10 transition-all active:scale-95"
+                >
+                    <Calculator className="w-3.5 h-3.5" />
+                    <span>Plot & Invoice</span>
+                </button>
+            )
+        }
+    ];
+
     return (
         <AdminLayout>
             <Head title="Finance Dashboard" />
@@ -58,54 +115,44 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* Left Column: Leads for Invoicing */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-red-50 text-red-600 rounded-xl">
-                                <Receipt className="w-5 h-5" />
+                    <div className="lg:col-span-8 space-y-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2.5 bg-red-50 text-red-600 rounded-xl">
+                                    <Receipt className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Leads Awaiting Invoicing ({leads.length})</h2>
                             </div>
-                            <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Leads Awaiting Invoicing ({leads.length})</h2>
+
+                            <SearchInput 
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search leads..."
+                                className="!max-w-xs"
+                            />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {leads.length > 0 ? leads.map((lead) => (
-                                <div key={lead.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-red-500 group-hover:bg-red-50 transition-colors">
-                                                <User className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-slate-900 line-clamp-1 uppercase">{lead.name}</h3>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{lead.lead_type?.name}</span>
-                                                    <span className="w-1 h-1 bg-slate-200 rounded-full" />
-                                                    <span className="text-[10px] font-bold text-slate-400">{lead.branch?.name}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button 
-                                        onClick={() => openPlotModal(lead)}
-                                        className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95"
-                                    >
-                                        <Calculator className="w-3.5 h-3.5" />
-                                        <span>Plot & Generate Invoice</span>
-                                    </button>
-                                </div>
-                            )) : (
-                                <div className="md:col-span-2 py-20 flex flex-col items-center justify-center bg-slate-50 rounded-[40px] border-4 border-dashed border-slate-200 opacity-50">
-                                    <Clock className="w-12 h-12 text-slate-300 mb-4" />
-                                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No leads in Invoice Phase</p>
-                                </div>
-                            )}
+                        <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden p-2">
+                            <DataTable 
+                                data={filteredLeads}
+                                columns={leadColumns}
+                                itemsPerPage={10}
+                                isLoading={false}
+                            />
                         </div>
+
+                        {filteredLeads.length === 0 && search && (
+                            <div className="py-20 flex flex-col items-center justify-center space-y-4 text-center bg-slate-50 rounded-[40px] border-4 border-dashed border-slate-200">
+                                <Search className="w-12 h-12 text-slate-200" />
+                                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No matching leads for "{search}"</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Recent Activity */}
-                    <div className="space-y-8">
+                    <div className="lg:col-span-4 space-y-8">
                         <div className="flex items-center gap-4">
                             <div className="p-2.5 bg-slate-900 text-white rounded-xl">
                                 <History className="w-5 h-5" />
@@ -134,22 +181,33 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
                                         </div>
                                     </div>
 
-                                    {invoice.status === 'pending' && (
-                                        <button 
-                                            onClick={() => handlePayInvoice(invoice.id)}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/10 transition-all active:scale-95"
+                                    <div className="mt-4 flex gap-2">
+                                        <a 
+                                            href={route('admin.finance.invoices.download', invoice.id)}
+                                            target="_blank"
+                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 border border-slate-200/50"
                                         >
-                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                            <span>Mark as Paid & Promote</span>
-                                        </button>
-                                    )}
-                                    
-                                    {invoice.status === 'paid' && (
-                                        <div className="flex items-center gap-3 px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Enrollment Verified</span>
-                                        </div>
-                                    )}
+                                            <Download className="w-3.5 h-3.5" />
+                                            <span>Download PDF</span>
+                                        </a>
+
+                                        {invoice.status === 'pending' && (
+                                            <button 
+                                                onClick={() => handlePayInvoice(invoice.id)}
+                                                className="flex-[2] flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/10 transition-all active:scale-95"
+                                            >
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                <span>Mark Paid</span>
+                                            </button>
+                                        )}
+                                        
+                                        {invoice.status === 'paid' && (
+                                            <div className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                                                <CheckCircle className="w-3 h-3" />
+                                                <span className="text-[8px] font-black uppercase tracking-widest">Enrollment Verified</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )) : (
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic text-center py-10">No recent invoice history</p>

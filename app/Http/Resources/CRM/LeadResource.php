@@ -33,6 +33,10 @@ class LeadResource extends JsonResource
                 'id'         => $this->owner->id,
                 'name'       => $this->owner->name,
             ]),
+            'creator'        => $this->whenLoaded('creator', fn() => [
+                'id'         => $this->creator->id,
+                'name'       => $this->creator->name,
+            ]),
             'lead_source'    => $this->whenLoaded('leadSource', fn() => [
                 'id'         => $this->leadSource->id,
                 'name'       => $this->leadSource->name,

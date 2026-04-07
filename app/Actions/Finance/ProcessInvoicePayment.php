@@ -35,7 +35,7 @@ class ProcessInvoicePayment
             // Enroll in the class cycle
             $studentId = $invoice->student_id;
             if ($studentId && $invoice->study_class_id) {
-                $this->enrollStudent->handle($invoice->study_class, $studentId);
+                $this->enrollStudent->handle($invoice->studyClass, $studentId);
             }
         });
     }

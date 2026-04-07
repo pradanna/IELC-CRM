@@ -7,7 +7,7 @@ export default function Navbar({ user }) {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     return (
-        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200">
+        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200 sticky top-0 z-40">
             {/* Search Bar */}
             <div className="flex-1 max-w-md">
                 <div className="relative">
@@ -62,7 +62,7 @@ export default function Navbar({ user }) {
                             {/* Dropdown Menu */}
                             {profileDropdownOpen && (
                                 <div
-                                    className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 focus:outline-none"
+                                    className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-gray-900/5 focus:outline-none z-50"
                                     role="menu"
                                     aria-orientation="vertical"
                                     aria-labelledby="user-menu-button"

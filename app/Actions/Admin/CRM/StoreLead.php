@@ -43,6 +43,7 @@ class StoreLead
                 'birth_date' => $data['birth_date'] ?? null,
                 'branch_id' => $data['branch_id'],
                 'owner_id' => Auth::id(),
+                'created_by' => Auth::id(),
                 'lead_source_id' => $data['lead_source_id'] ?? null,
                 'lead_type_id' => $data['lead_type_id'] ?? null,
                 'lead_phase_id' => $defaultPhase?->id,

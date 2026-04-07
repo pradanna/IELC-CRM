@@ -19,21 +19,37 @@ class FetchCrmDashboardData
         $year = $filters['year'] ?? $now->year;
         $branchId = $filters['branch_id'] ?? null;
 
-        $cacheKey = "crm_dashboard_data_{$year}_{$month}_" . ($branchId ?? 'all');
+        $userId = Auth::id();
+        $userRole = Auth::user()->roles->first()?->name;
+        
+        // Use a versioned key to mimic tag-based flushing if the store doesn't support tags
+        $version = \Illuminate\Support\Facades\Cache::get('crm_dashboard_version', 1);
+        $cacheKey = "crm_dashboard_v{$version}_{$year}_{$month}_" . ($branchId ?? 'all') . "_user_{$userId}";
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function() use ($now, $month, $year, $branchId) {
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function() use ($now, $month, $year, $branchId, $userRole, $userId) {
             $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
             $endDate = $startDate->copy()->endOfMonth();
+
+            // Helper to apply role-based filtering
+            $applyRoleFilter = function ($query) use ($userRole, $userId) {
+                if ($userRole === 'frontdesk') {
+                    $query->where(function ($q) use ($userId) {
+                        $q->where('created_by', $userId)
+                          ->orWhere('owner_id', $userId);
+                    });
+                }
+                return $query;
+            };
 
             // 1. Stats Summary
             $query = Lead::query()->whereBetween('created_at', [$startDate, $endDate]);
             if ($branchId) $query->where('branch_id', $branchId);
+            // $applyRoleFilter($query); // Remove global filter for KPIs
 
-            $phaseLookup = LeadPhase::all()->groupBy('code');
             $phases = LeadPhase::orderBy('created_at')->get();
-            $phaseStats = $phases->map(function($p) use ($query, $startDate, $endDate, $branchId) {
-                // Special case: Enrollment phase should be counted by enrolled_at timestamp
-                // to match the Trend Chart and provide an "event-based" monthly report.
+            $phaseStats = $phases->map(function($p) use ($startDate, $endDate, $branchId, $applyRoleFilter) {
+                // If the phase is 'enrolled', we still want to see activity within the period
+                // to match the trend chart (How many were enrolled THIS month)
                 if ($p->code === 'enrollment') {
                     $eQuery = Lead::where('lead_phase_id', $p->id)
                         ->whereBetween('enrolled_at', [$startDate, $endDate]);
@@ -47,12 +63,16 @@ class FetchCrmDashboardData
                     ];
                 }
 
-                // Standard phases count leads created in this period
+                // For all other phases, show the CURRENT snapshot of all active leads
+                // to ensure the pipeline breakdown is always accurate
+                $sQuery = Lead::where('lead_phase_id', $p->id);
+                if ($branchId) $sQuery->where('branch_id', $branchId);
+
                 return [
                     'name' => $p->name,
                     'code' => $p->code,
                     'status' => $p->status,
-                    'count' => (clone $query)->where('lead_phase_id', $p->id)->count(),
+                    'count' => $sQuery->count(),
                 ];
             });
 
@@ -64,18 +84,27 @@ class FetchCrmDashboardData
             // 2. Tasks (Manual Tasks + Inactive Lead Reminders)
             $phaseIds = LeadPhase::whereIn('code', ['prospect', 'pre-enrollment'])->pluck('id');
 
-            $manualTasks = Task::with(['lead.leadPhase'])
+            $manualTaskQuery = Task::with(['lead.leadPhase'])
                 ->where('is_completed', false)
-                ->where('due_date', '<=', $now->copy()->addDays(7)->toDateString())
-                ->get();
+                ->where('due_date', '<=', $now->copy()->addDays(7)->toDateString());
+            
+            // Filter tasks by their associated lead ownership
+            if ($userRole === 'frontdesk') {
+                $manualTaskQuery->whereHas('lead', function($q) use ($userId) {
+                    $q->where('created_by', $userId)
+                      ->orWhere('owner_id', $userId);
+                });
+            }
+            $manualTasks = $manualTaskQuery->get();
 
-            $inactiveLeads = Lead::with(['leadPhase'])
+            $inactiveLeadQuery = Lead::with(['leadPhase'])
                 ->whereIn('lead_phase_id', $phaseIds)
                 ->whereBetween('last_activity_at', [
                     $now->copy()->subDays(7)->startOfDay()->toDateTimeString(),
                     $now->copy()->subDays(3)->endOfDay()->toDateTimeString()
-                ])
-                ->get();
+                ]);
+            $applyRoleFilter($inactiveLeadQuery);
+            $inactiveLeads = $inactiveLeadQuery->get();
 
             $tasks = $manualTasks->map(fn($t) => [
                 'id' => $t->id,
@@ -112,13 +141,11 @@ class FetchCrmDashboardData
             $enrollmentTrend = [];
             $daysInMonth = $startDate->daysInMonth;
             
-            // "Achieved" is based on Lead's enrolled_at timestamp
             $achievedQuery = Lead::whereNotNull('enrolled_at')
                 ->whereBetween('enrolled_at', [$startDate, $endDate]);
 
-            if ($branchId) {
-                $achievedQuery->where('branch_id', $branchId);
-            }
+            if ($branchId) $achievedQuery->where('branch_id', $branchId);
+            // $applyRoleFilter($achievedQuery); // Remove global filter for Trend
 
             $dailyCounts = $achievedQuery->select(DB::raw('DAY(enrolled_at) as day'), DB::raw('count(*) as count'))
                 ->groupBy('day')

@@ -25,6 +25,10 @@ class GenerateInvoiceRequest extends FormRequest
             'study_class_id' => 'required|exists:study_classes,id',
             'price_master_id' => 'required|exists:price_masters,id',
             'notes' => 'nullable|string',
+            'items' => 'nullable|array',
+            'items.*.name' => 'required|string|max:255',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.quantity' => 'required|integer|min:1',
         ];
     }
 }

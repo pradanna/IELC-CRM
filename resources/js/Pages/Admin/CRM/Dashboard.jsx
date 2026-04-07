@@ -49,9 +49,13 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
 
     const totalLeadsCard = { title: 'TOTAL LEADS', value: stats.total, icon: 'users', variant: 'primary' };
 
+    const monthName = new Date(filters.year, filters.month - 1).toLocaleString('id-ID', { month: 'long' });
+    const periodLabel = `${monthName} ${filters.year}`;
+
     const phaseCards = stats.phases.map(phase => ({
         value: phase.count,
         phaseCode: phase.code,
+        subtitle: phase.code === 'enrollment' ? periodLabel : null
     }));
 
     return (

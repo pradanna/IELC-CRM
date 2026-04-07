@@ -30,6 +30,7 @@ export default function LeadDetailTab({ lead, loading, getPhaseStyle, phases = [
                     <div className="">
                         <InfoItem label="Target Branch" value={lead?.branch?.name} icon={Building2} />
                         <InfoItem label="Lead Owner" value={lead?.owner?.name} icon={User} />
+                        <InfoItem label="Created By" value={lead?.creator?.name} icon={User} />
                     </div>
                 </div>
             </div>

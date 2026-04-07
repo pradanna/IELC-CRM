@@ -22,14 +22,14 @@ class PromoteLeadToStudent
         ]);
 
         // Update Lead Phase to Enrollment and set timestamp
+        $enrollmentPhase = \App\Models\LeadPhase::where('code', 'enrollment')->first();
         $lead->update([
-            'lead_phase_id' => '019d639a-9de8-72c5-a576-8f2b3224024a',
+            'lead_phase_id' => $enrollmentPhase?->id,
             'enrolled_at' => now(),
         ]);
 
-        activity()
-            ->performedOn($lead)
-            ->log("Promoted lead to Student: {$studentNumber} and moved to Enrollment phase");
+        // Clear dashboard cache
+        \Illuminate\Support\Facades\Cache::increment('crm_dashboard_version');
 
         return $student;
     }

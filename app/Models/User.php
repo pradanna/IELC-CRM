@@ -56,6 +56,11 @@ class User extends Authenticatable
         return $this->hasOne(Finance::class);
     }
 
+    public function teacher(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Teacher::class);
+    }
+
     public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Branch::class);
@@ -69,7 +74,8 @@ class User extends Authenticatable
         return $this->superadmin?->name 
             ?? $this->marketing?->name 
             ?? $this->frontdesk?->name 
-            ?? $this->finance?->name;
+            ?? $this->finance?->name
+            ?? $this->teacher?->name;
     }
 
     /**

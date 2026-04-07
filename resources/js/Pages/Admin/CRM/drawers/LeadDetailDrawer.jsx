@@ -145,7 +145,9 @@ export default function LeadDetailDrawer({
                                                         )}
                                                     </div>
                                                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">
-                                                        {lead?.lead_number || '---'} • {lead?.formatted_at}
+                                                        {lead?.lead_number || '---'} • {lead?.formatted_at} 
+                                                        {lead?.owner?.name && ` • Owner: ${lead.owner.name}`}
+                                                        {lead?.creator?.name && ` • Created: ${lead.creator.name}`}
                                                     </p>
                                                 </div>
                                             </div>

@@ -132,7 +132,7 @@ class LeadController extends Controller
             'last_activity_at' => now(),
         ]);
 
-        $lead->load(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase', 'guardians', 'leadRelationships.relatedLead']);
+        $lead->load(['branch', 'owner', 'creator', 'leadSource', 'leadType', 'leadPhase', 'guardians', 'leadRelationships.relatedLead']);
 
         $this->clearDashboardCache($lead);
 
@@ -347,15 +347,7 @@ class LeadController extends Controller
 
     private function clearDashboardCache(Lead $lead): void
     {
-        $year = $lead->created_at->year;
-        $month = $lead->created_at->month;
-        $branchId = $lead->branch_id;
-        
-        \Illuminate\Support\Facades\Cache::forget("crm_dashboard_data_{$year}_{$month}_{$branchId}");
-        \Illuminate\Support\Facades\Cache::forget("crm_dashboard_data_{$year}_{$month}_all");
-        
-        $now = now();
-        \Illuminate\Support\Facades\Cache::forget("crm_dashboard_data_{$now->year}_{$now->month}_{$branchId}");
-        \Illuminate\Support\Facades\Cache::forget("crm_dashboard_data_{$now->year}_{$now->month}_all");
+        $version = \Illuminate\Support\Facades\Cache::get('crm_dashboard_version', 1);
+        \Illuminate\Support\Facades\Cache::put('crm_dashboard_version', $version + 1, now()->addYear());
     }
 }

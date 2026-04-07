@@ -2,7 +2,7 @@ import React from 'react';
 import * as LucideIcons from 'lucide-react';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 
-export default function StatsCard({ title, value, icon, color, bg, variant = 'standard', phaseCode }) {
+export default function StatsCard({ title, value, icon, color, bg, variant = 'standard', phaseCode, subtitle }) {
     const { getPhaseStyle } = useLeadPhaseStyle();
     
     // Resolve style from phaseCode if provided, otherwise use explicit props
@@ -28,6 +28,11 @@ export default function StatsCard({ title, value, icon, color, bg, variant = 'st
                     <h3 className="text-5xl font-black text-white leading-none tracking-tighter">
                         {value}
                     </h3>
+                    {subtitle && (
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                            {subtitle}
+                        </p>
+                    )}
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-800 text-indigo-400 backdrop-blur-md transition-transform duration-300 group-hover:scale-110 relative z-10 shadow-inner">
                     <Icon size={32} strokeWidth={2.5} />
@@ -45,6 +50,11 @@ export default function StatsCard({ title, value, icon, color, bg, variant = 'st
                 <h3 className="text-3xl font-bold text-gray-900">
                     {value}
                 </h3>
+                {subtitle && (
+                    <p className="text-[9px] font-medium text-gray-400 mt-1 italic uppercase tracking-wider">
+                        {subtitle}
+                    </p>
+                )}
             </div>
             <div className={`p-3 rounded-xl ${finalBg} ${finalColor} transition-transform duration-300 group-hover:scale-110`}>
                 <Icon size={24} strokeWidth={2.5} />
