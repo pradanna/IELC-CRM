@@ -20,6 +20,7 @@ class StudyClass extends Model
     protected $fillable = [
         'branch_id',
         'instructor_id',
+        'price_master_id',
         'name',
         'start_session_date',
         'end_session_date',
@@ -47,6 +48,11 @@ class StudyClass extends Model
     public function instructor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'instructor_id');
+    }
+
+    public function priceMaster(): BelongsTo
+    {
+        return $this->belongsTo(PriceMaster::class);
     }
 
     public function students(): BelongsToMany

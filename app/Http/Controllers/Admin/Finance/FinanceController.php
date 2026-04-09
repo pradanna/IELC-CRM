@@ -50,7 +50,7 @@ class FinanceController extends Controller
         return redirect()->back()->with([
             'success' => "Invoice {$invoice->invoice_number} generated successfully.",
             'new_invoice_id' => $invoice->id,
-            'download_url' => route('admin.finance.invoices.download', $invoice->id)
+            'download_url' => route('public.invoice.download', $invoice->id)
         ]);
     }
 

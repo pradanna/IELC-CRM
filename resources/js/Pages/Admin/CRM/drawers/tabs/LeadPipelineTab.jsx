@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from 'react';
+import React, { Fragment, useState, useEffect } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { 
     ChevronDown, 
@@ -24,11 +24,13 @@ import {
     Calendar,
     Award,
     StickyNote,
-    Save
+    Save,
+    MessageCircle
 } from 'lucide-react';
 import { SectionHeader, InfoItem } from '../components/DrawerUI';
 import LeadPlacementTestTab from './LeadPlacementTestTab';
 import DatePicker from '@/Components/form/DatePicker';
+import useLeadPlotting from './hooks/useLeadPlotting';
 
 const PhaseSection = ({ 
     icon: Icon, 
@@ -201,42 +203,30 @@ export default function LeadPipelineTab({
         follow_up_note: ''
     });
 
-    const [savingPlotting, setSavingPlotting] = useState(false);
-    const [plottingForm, setPlottingForm] = useState({
-        study_class_id: lead?.plotting?.study_class_id || '',
-        join_date: lead?.plotting?.join_date || new Date().toISOString().split('T')[0],
-        notes: lead?.plotting?.notes || '',
-        estimated_cost: lead?.plotting?.estimated_cost || ''
-    });
-
-    const selectedClass = availableClasses.find(c => c.id === plottingForm.study_class_id);
-
-    const calculateRemainingMeetings = (startDate, endDate, scheduleDays, joinDateStr) => {
-        if (!startDate || !endDate || !scheduleDays || !joinDateStr) return 0;
+    const handleSendInvoiceWA = async (invoice) => {
+        const message = `Halo *${lead.nickname || lead.name}*,\n\n` +
+                        `Berikut adalah link invoice pendaftaran Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                        `${invoice.download_url}\n\n` +
+                        `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
         
-        const joinDate = new Date(joinDateStr);
-        const end = new Date(endDate);
-        
-        if (joinDate > end) return 0;
-        
-        let count = 0;
-        let current = new Date(joinDate);
-        while (current <= end) {
-            const dayName = current.toLocaleDateString('en-US', { weekday: 'long' });
-            if (scheduleDays.includes(dayName)) {
-                count++;
+        if (window.confirm(`Kirim invoice ${invoice.invoice_number} via WhatsApp?`)) {
+            try {
+                await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { message });
+                alert('Invoice berhasil dikirim via WhatsApp.');
+            } catch (err) {
+                alert('Gagal mengirim WhatsApp: ' + (err.response?.data?.message || err.message));
             }
-            current.setDate(current.getDate() + 1);
         }
-        return count;
     };
 
-    const remainingMeetings = selectedClass ? calculateRemainingMeetings(
-        selectedClass.start_session_date,
-        selectedClass.end_session_date,
-        selectedClass.schedule_days,
-        plottingForm.join_date
-    ) : 0;
+    const {
+        plottingForm,
+        setPlottingForm,
+        selectedClass,
+        remainingMeetings,
+        savingPlotting,
+        handleSavePlotting
+    } = useLeadPlotting(lead, availableClasses, onRefresh);
 
     const handleSendTemplate = async (template) => {
         if (!window.confirm(`Kirim template "${template.title}" ke ${lead.name}?`)) {
@@ -280,18 +270,6 @@ export default function LeadPipelineTab({
         }
     };
 
-    const handleSavePlotting = async () => {
-        setSavingPlotting(true);
-        try {
-            await axios.post(route('admin.crm.leads.plot-class', lead.id), plottingForm);
-            onRefresh();
-            alert('Progress plotting berhasil disimpan.');
-        } catch (err) {
-            alert('Gagal menyimpan plotting: ' + (err.response?.data?.message || err.message));
-        } finally {
-            setSavingPlotting(false);
-        }
-    };
 
     // Shared props for sections to prevent scroll reset via component re-mounting
     const sectionProps = {
@@ -596,16 +574,26 @@ export default function LeadPipelineTab({
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Biaya (Rp)</label>
-                                        <input 
-                                            type="number"
-                                            value={plottingForm.estimated_cost}
-                                            onChange={e => setPlottingForm({...plottingForm, estimated_cost: e.target.value})}
-                                            className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all shadow-sm"
-                                            placeholder="Contoh: 1500000"
-                                        />
-                                    </div>
+                                    {selectedClass && (
+                                        <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Biaya (Rp)</label>
+                                            <div className="relative">
+                                                <input 
+                                                    type="number"
+                                                    value={plottingForm.estimated_cost}
+                                                    onChange={e => setPlottingForm({...plottingForm, estimated_cost: e.target.value})}
+                                                    className="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all shadow-sm"
+                                                    placeholder="Contoh: 1500000"
+                                                />
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rp</div>
+                                            </div>
+                                            {remainingMeetings < (selectedClass.total_meetings || 12) && (
+                                                <p className="text-[10px] font-bold text-red-500 mt-1.5 ml-1 leading-relaxed italic">
+                                                    * Biaya dihitung pro-rata untuk {remainingMeetings} pertemuan (tidak bayar full).
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-6">
@@ -721,9 +709,18 @@ export default function LeadPipelineTab({
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Rp {new Intl.NumberFormat('id-ID').format(inv.total_amount)}</p>
                                         </div>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${inv.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
-                                        {inv.status}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${inv.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                                            {inv.status}
+                                        </span>
+                                        <button 
+                                            onClick={() => handleSendInvoiceWA(inv)}
+                                            className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                                            title="Kirim via WhatsApp"
+                                        >
+                                            <MessageCircle size={14} />
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         ) : (

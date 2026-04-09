@@ -1,16 +1,26 @@
 import React from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
+import axios from 'axios';
+import CreateEditLeadModal from '../modals/CreateEditLeadModal';
+import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 
-export default function CrmLayout({ children, onNewLead, onSelectLead }) {
+export default function CrmLayout({ children, onSelectLead }) {
     const { url, props } = usePage();
+    const { branches, sources, types, provinces } = props;
     const pendingCount = props.pending_registrations_count || 0;
     
+    const { openDrawer } = useLeadDrawer();
     const [searchQuery, setSearchQuery] = React.useState('');
     const [results, setResults] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showDropdown, setShowDropdown] = React.useState(false);
     const searchRef = React.useRef(null);
+
+    // Lead Modal State
+    const [isLeadModalOpen, setIsLeadModalOpen] = React.useState(false);
+    const [editingLead, setEditingLead] = React.useState(null);
+
 
     const tabs = [
         { name: 'Dashboard', href: route('admin.crm.leads.index'), active: route().current('admin.crm.leads.index') },
@@ -38,16 +48,27 @@ export default function CrmLayout({ children, onNewLead, onSelectLead }) {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Handle click outside to close dropdown
+    // Handle edit event and click outside
     React.useEffect(() => {
+        const handleEdit = (e) => {
+            setEditingLead(e.detail.lead);
+            setIsLeadModalOpen(true);
+        };
+        document.addEventListener('openEditLeadModal', handleEdit);
+
         const handleClickOutside = (event) => {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
                 setShowDropdown(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('openEditLeadModal', handleEdit);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
+
 
     const performSearch = async () => {
         setIsLoading(true);
@@ -124,12 +145,16 @@ export default function CrmLayout({ children, onNewLead, onSelectLead }) {
                             )}
                         </div>
                         <button 
-                            onClick={onNewLead}
+                            onClick={() => {
+                                setEditingLead(null);
+                                setIsLeadModalOpen(true);
+                            }}
                             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-red-600/20 transition-all active:scale-95 shrink-0"
                         >
                             <Plus size={18} />
                             <span className="hidden sm:inline">New Lead</span>
                         </button>
+
                     </div>
                 </div>
 
@@ -158,6 +183,27 @@ export default function CrmLayout({ children, onNewLead, onSelectLead }) {
 
             {/* Main CRM Content */}
             <div>{children}</div>
+
+            {/* Global Lead Modal */}
+            <CreateEditLeadModal 
+                isOpen={isLeadModalOpen} 
+                onClose={() => {
+                    setIsLeadModalOpen(false);
+                    setEditingLead(null);
+                }}
+                onSaveSuccess={(savedLeadId) => {
+                    router.reload({ preserveScroll: true, preserveState: true });
+                    if (savedLeadId) {
+                        openDrawer(savedLeadId, 0);
+                    }
+                }}
+                lead={editingLead}
+                branches={branches}
+                sources={sources}
+                types={types}
+                provinces={provinces}
+            />
         </div>
+
     );
 }

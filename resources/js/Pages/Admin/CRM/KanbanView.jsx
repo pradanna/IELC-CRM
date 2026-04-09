@@ -3,7 +3,6 @@ import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CrmLayout from './partials/CrmLayout';
 import FiltersBar from './partials/FiltersBar';
-import LeadDetailDrawer from './drawers/LeadDetailDrawer';
 import CreateEditLeadModal from './modals/CreateEditLeadModal';
 import { DndContext, DragOverlay, rectIntersection, defaultDropAnimationSideEffects } from '@dnd-kit/core';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -21,12 +20,6 @@ export default function KanbanView({ auth, kanbanData, filters, branches, phases
         setIsLeadModalOpen,
         editingLead,
         setEditingLead,
-        isDetailDrawerOpen,
-        setIsDetailDrawerOpen,
-        selectedLeadId,
-        drawerTabIndex,
-        drawerRefreshTrigger,
-        setDrawerRefreshTrigger,
         sensors,
         openLeadDetail,
         handleDragStart,
@@ -70,12 +63,9 @@ export default function KanbanView({ auth, kanbanData, filters, branches, phases
             
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
                 <CrmLayout 
-                    onNewLead={() => {
-                        setEditingLead(null);
-                        setIsLeadModalOpen(true);
-                    }}
                     onSelectLead={(id) => openLeadDetail(id, 0)}
                 >
+
                     <div className="space-y-10">
                         {/* Filters Section */}
                         <FiltersBar 
@@ -149,41 +139,7 @@ export default function KanbanView({ auth, kanbanData, filters, branches, phases
             </div>
 
             {/* Drawer & Modals */}
-            <CreateEditLeadModal 
-                isOpen={isLeadModalOpen} 
-                onClose={() => {
-                    setIsLeadModalOpen(false);
-                    setEditingLead(null);
-                }}
-                onSaveSuccess={(savedLeadId) => {
-                    // Always increment trigger
-                    setDrawerRefreshTrigger(prev => prev + 1);
-                    
-                    if (!isDetailDrawerOpen && savedLeadId) {
-                        openLeadDetail(savedLeadId, 0);
-                    }
-                }}
-                lead={editingLead}
-                branches={branches}
-                sources={sources}
-                types={types}
-            />
-
-            <LeadDetailDrawer 
-                leadId={selectedLeadId}
-                isOpen={isDetailDrawerOpen}
-                initialTabIndex={drawerTabIndex}
-                refreshTrigger={drawerRefreshTrigger}
-                onClose={() => setIsDetailDrawerOpen(false)}
-                onEditLead={(lead) => {
-                    setEditingLead(lead);
-                    setIsLeadModalOpen(true);
-                }}
-                onOpenWhatsapp={(lead) => openLeadDetail(lead.id, 2)}
-                chatTemplates={chatTemplates}
-                mediaAssets={mediaAssets}
-                phases={phases}
-            />
         </AuthenticatedLayout>
+
     );
 }

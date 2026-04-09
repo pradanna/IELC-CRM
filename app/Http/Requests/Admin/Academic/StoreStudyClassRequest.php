@@ -16,6 +16,7 @@ class StoreStudyClassRequest extends FormRequest
         return [
             'branch_id' => 'required|exists:branches,id',
             'instructor_id' => 'nullable|exists:users,id',
+            'price_master_id' => 'required|exists:price_masters,id',
             'name' => 'required|string|max:255',
             'start_session_date' => 'nullable|date',
             'end_session_date' => 'nullable|date',

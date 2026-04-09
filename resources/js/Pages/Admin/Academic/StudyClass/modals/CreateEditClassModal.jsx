@@ -12,11 +12,12 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { X, GraduationCap, MapPin, Users, Calendar, Hash, Zap } from 'lucide-react';
 
-export default function CreateEditClassModal({ isOpen, onClose, studyClass = null, branches = [], instructors = [] }) {
+export default function CreateEditClassModal({ isOpen, onClose, studyClass = null, branches = [], instructors = [], priceMasters = [] }) {
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
         branch_id: '',
         instructor_id: '',
+        price_master_id: '',
         start_session_date: '',
         end_session_date: '',
         total_meetings: 12,
@@ -44,6 +45,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                 name: studyClass.name || '',
                 branch_id: studyClass.branch_id || '',
                 instructor_id: studyClass.instructor_id || '',
+                price_master_id: studyClass.price_master_id || '',
                 start_session_date: studyClass.start_session_date || '',
                 end_session_date: studyClass.end_session_date || '',
                 total_meetings: studyClass.total_meetings || 12,
@@ -59,6 +61,10 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
 
     const branchOptions = useMemo(() => branches.map(b => ({ value: b.id, label: b.name })), [branches]);
     const instructorOptions = useMemo(() => instructors.map(i => ({ value: i.id, label: i.name })), [instructors]);
+    const priceOptions = useMemo(() => priceMasters.map(pm => ({ 
+        value: pm.id, 
+        label: `${pm.name} (Total: Rp ${new Intl.NumberFormat('id-ID').format(pm.price_per_session)})` 
+    })), [priceMasters]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -135,6 +141,21 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                                 />
                                 <InputError message={errors.instructor_id} />
                             </div>
+                        </div>
+
+                        <div className="space-y-1.5 pt-2">
+                            <InputLabel value="Pricing Structure (Master Harga)" className="text-[10px] font-black uppercase text-slate-400 ml-1" />
+                            <PremiumSearchableSelect
+                                options={priceOptions}
+                                value={data.price_master_id}
+                                onChange={(val) => setData('price_master_id', val)}
+                                placeholder="Pilih Skema Harga..."
+                                icon={Zap}
+                            />
+                            <p className="text-[9px] font-bold text-slate-400 mt-1.5 ml-1 italic tracking-tight italic">
+                                * Digunakan untuk estimasi otomatis biaya pendaftaran di CRM.
+                            </p>
+                            <InputError message={errors.price_master_id} />
                         </div>
                     </div>
 

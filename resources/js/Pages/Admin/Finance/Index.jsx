@@ -4,8 +4,9 @@ import { Head, router } from '@inertiajs/react';
 import { 
     Calculator, Receipt, User, 
     CheckCircle, History,
-    CheckCircle2, Clock, Search, Download
+    CheckCircle2, Clock, Search, Download, MessageCircle
 } from 'lucide-react';
+import axios from 'axios';
 import PlotAndInvoiceModal from './modals/PlotAndInvoiceModal';
 import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
@@ -23,6 +24,32 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
     const handlePayInvoice = (invoiceId) => {
         if (confirm('Mark this invoice as paid? This will automatically promote the lead to current student and enroll them in the class.')) {
             router.post(route('admin.finance.invoices.pay', invoiceId));
+        }
+    };
+    
+    const handleSendInvoiceWA = async (invoice) => {
+        const lead = invoice.lead;
+        if (!lead) {
+            alert('Cannot find lead data for this invoice.');
+            return;
+        }
+
+        const publicUrl = route('public.invoice.download', invoice.id);
+        const message = `Halo *${lead.nickname || lead.name}*,\n\n` +
+                        `Berikut adalah link invoice pendaftaran Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                        `${publicUrl}\n\n` +
+                        `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+        
+        if (window.confirm(`Kirim invoice ${invoice.invoice_number} via WhatsApp?`)) {
+            try {
+                // Use LeadController's endpoint to ensure logging to LeadChatLog
+                await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { 
+                    message: message 
+                });
+                alert('Invoice berhasil dikirim via WhatsApp.');
+            } catch (err) {
+                alert('Gagal mengirim WhatsApp: ' + (err.response?.data?.message || err.message));
+            }
         }
     };
 
@@ -185,11 +212,19 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
                                         <a 
                                             href={route('admin.finance.invoices.download', invoice.id)}
                                             target="_blank"
-                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 border border-slate-200/50"
+                                            className="px-3 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 border border-slate-200/50"
+                                            title="Download PDF"
                                         >
                                             <Download className="w-3.5 h-3.5" />
-                                            <span>Download PDF</span>
                                         </a>
+
+                                        <button 
+                                            onClick={() => handleSendInvoiceWA(invoice)}
+                                            className="px-3 flex items-center justify-center bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95 border border-emerald-100/50"
+                                            title="Send via WhatsApp"
+                                        >
+                                            <MessageCircle className="w-3.5 h-3.5" />
+                                        </button>
 
                                         {invoice.status === 'pending' && (
                                             <button 

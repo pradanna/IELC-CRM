@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 import { arrayMove } from '@dnd-kit/sortable';
 import axios from 'axios';
 import { 
@@ -13,18 +14,14 @@ export default function useKanbanBoard(kanbanData) {
     const [boardData, setBoardData] = useState(kanbanData);
     const [activeLead, setActiveLead] = useState(null);
     
-    // Drawer/Modal States
-    const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
-    const [editingLead, setEditingLead] = useState(null);
-    const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
-    const [selectedLeadId, setSelectedLeadId] = useState(null);
-    const [drawerTabIndex, setDrawerTabIndex] = useState(0);
-    const [drawerRefreshTrigger, setDrawerRefreshTrigger] = useState(0);
+    const { openDrawer } = useLeadDrawer();
+
 
     // Sync state with props
     useEffect(() => {
         setBoardData(kanbanData);
     }, [kanbanData]);
+
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -38,10 +35,7 @@ export default function useKanbanBoard(kanbanData) {
     );
 
     const openLeadDetail = (id, tabIndex = 0) => {
-        setDrawerTabIndex(tabIndex);
-        setSelectedLeadId(id);
-        setIsDetailDrawerOpen(true);
-        setDrawerRefreshTrigger(0);
+        openDrawer(id, tabIndex);
     };
 
     const findContainer = (id) => {
@@ -159,20 +153,11 @@ export default function useKanbanBoard(kanbanData) {
     return {
         boardData,
         activeLead,
-        isLeadModalOpen,
-        setIsLeadModalOpen,
-        editingLead,
-        setEditingLead,
-        isDetailDrawerOpen,
-        setIsDetailDrawerOpen,
-        selectedLeadId,
-        drawerTabIndex,
-        drawerRefreshTrigger,
-        setDrawerRefreshTrigger,
         sensors,
         openLeadDetail,
         handleDragStart,
         handleDragOver,
         handleDragEnd
     };
+
 }

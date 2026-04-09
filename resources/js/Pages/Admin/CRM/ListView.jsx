@@ -4,35 +4,38 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CrmLayout from './partials/CrmLayout';
 import FiltersBar from './partials/FiltersBar';
 import LeadTable from './partials/LeadTable';
-import CreateEditLeadModal from './modals/CreateEditLeadModal';
 import DeleteLeadModal from './modals/DeleteLeadModal';
-import LeadDetailDrawer from './drawers/LeadDetailDrawer';
 import { useState } from 'react';
 import SendWhatsappModal from './modals/SendWhatsappModal';
+import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 import axios from 'axios';
 
 export default function ListView({ leads, filters, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
     const { auth, flash } = usePage().props;
     const isSuperadmin = auth?.user?.role === 'superadmin';
     
-    const [isLeadModalOpen, setIsLeadModalOpen] = React.useState(false);
-    const [editingLead, setEditingLead] = React.useState(null);
-    const [selectedLeadId, setSelectedLeadId] = React.useState(null);
-    const [drawerRefreshTrigger, setDrawerRefreshTrigger] = React.useState(0);
-    const [isDetailDrawerOpen, setIsDetailDrawerOpen] = React.useState(false);
-    const [drawerTabIndex, setDrawerTabIndex] = React.useState(0);
     const [deletingLead, setDeletingLead] = React.useState(null);
+
+    const { openDrawer, isOpen: isDetailDrawerOpen } = useLeadDrawer();
 
     // WhatsApp Modal State
     const [isWhatsappModalOpen, setIsWhatsappModalOpen] = React.useState(false);
     const [whatsappLead, setWhatsappLead] = React.useState(null);
 
+    React.useEffect(() => {
+        const handleWhatsapp = (e) => {
+            setWhatsappLead(e.detail.lead);
+            setIsWhatsappModalOpen(true);
+        };
+        document.addEventListener('openSendWhatsappModal', handleWhatsapp);
+        return () => {
+            document.removeEventListener('openSendWhatsappModal', handleWhatsapp);
+        };
+    }, []);
+
+
     const openLeadDetail = (id, tabIndex = 0) => {
-        setDrawerTabIndex(tabIndex);
-        setSelectedLeadId(id);
-        setIsDetailDrawerOpen(true);
-        // Reset trigger on new select
-        setDrawerRefreshTrigger(0);
+        openDrawer(id, tabIndex);
     };
 
     const openWhatsappModal = (lead) => {
@@ -43,12 +46,12 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
     const openEditModal = async (leadId) => {
         try {
             const response = await axios.get(route('admin.crm.leads.show', leadId));
-            setEditingLead(response.data.lead);
-            setIsLeadModalOpen(true);
+            document.dispatchEvent(new CustomEvent('openEditLeadModal', { detail: { lead: response.data.lead } }));
         } catch (e) {
             console.error('Failed to fetch lead for editing:', e);
         }
     };
+
 
     return (
         <AuthenticatedLayout>
@@ -56,12 +59,9 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
                 <CrmLayout 
-                    onNewLead={() => {
-                        setEditingLead(null);
-                        setIsLeadModalOpen(true);
-                    }}
                     onSelectLead={(id) => openLeadDetail(id, 0)} 
                 >
+
                     <div className="space-y-12">
                         {/* Filters Section (Updated for List View) */}
                         <FiltersBar 
@@ -90,30 +90,7 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
             </div>
 
             {/* Modals & Drawers */}
-            <CreateEditLeadModal 
-                isOpen={isLeadModalOpen} 
-                onClose={() => {
-                    setIsLeadModalOpen(false);
-                    setEditingLead(null);
-                }}
-                onSaveSuccess={(savedLeadId) => {
-                    // Update table state
-                    router.reload({ preserveScroll: true, preserveState: true });
-                    
-                    // Always increment trigger - it ensures anything listening will refresh
-                    setDrawerRefreshTrigger(prev => prev + 1);
-                    
-                    // If it was a new lead, and drawer is not open, open it
-                    if (!isDetailDrawerOpen && savedLeadId) {
-                        openLeadDetail(savedLeadId, 0);
-                    }
-                }}
-                lead={editingLead}
-                branches={branches}
-                sources={sources}
-                types={types}
-                provinces={provinces}
-            />
+
 
             <DeleteLeadModal
                 isOpen={!!deletingLead}
@@ -121,23 +98,7 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
                 lead={deletingLead}
             />
 
-            <LeadDetailDrawer 
-                leadId={selectedLeadId}
-                isOpen={isDetailDrawerOpen}
-                initialTabIndex={drawerTabIndex}
-                refreshTrigger={drawerRefreshTrigger}
-                onClose={() => setIsDetailDrawerOpen(false)}
-                onEditLead={(lead) => {
-                    setEditingLead(lead);
-                    setIsLeadModalOpen(true);
-                }}
-                onOpenWhatsapp={openWhatsappModal}
-                chatTemplates={chatTemplates}
-                mediaAssets={mediaAssets}
-                phases={phases}
-            />
-
-            <SendWhatsappModal
+                    <SendWhatsappModal
                 isOpen={isWhatsappModalOpen}
                 onClose={() => {
                     setIsWhatsappModalOpen(false);

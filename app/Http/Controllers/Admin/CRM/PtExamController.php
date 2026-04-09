@@ -52,9 +52,13 @@ class PtExamController extends Controller
     public function show(PtExam $ptExam): Response
     {
         $ptExam->load([
-            'ptQuestionGroups.questions.options',
+            'ptQuestionGroups' => function ($q) {
+                $q->orderBy('position')->with(['questions' => function ($q2) {
+                    $q2->orderBy('position')->with('options');
+                }]);
+            },
             'questions' => function ($q) {
-                $q->whereNull('pt_question_group_id')->with('options');
+                $q->whereNull('pt_question_group_id')->orderBy('position')->with('options');
             }
         ]);
 

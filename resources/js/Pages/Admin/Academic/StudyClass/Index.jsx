@@ -9,7 +9,7 @@ import PremiumSelect from '@/Components/PremiumSelect';
 import TextInput from '@/Components/TextInput';
 import { useStudyClassIndex } from './hooks/useStudyClassIndex';
 
-export default function Index({ classes, branches, instructors, filters }) {
+export default function Index({ classes, branches, instructors, priceMasters, filters }) {
     const {
         // State
         isModalOpen,
@@ -131,6 +131,7 @@ export default function Index({ classes, branches, instructors, filters }) {
                 studyClass={editingClass}
                 branches={branches}
                 instructors={instructors}
+                priceMasters={priceMasters}
             />
 
             <ClassStudentDrawer 

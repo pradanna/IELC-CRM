@@ -89,7 +89,7 @@ class LeadController extends Controller
         try {
             // Load available classes for this specific branch
             $availableClasses = StudyClass::where('branch_id', $lead->branch_id)
-                ->with('instructor:id,name')
+                ->with(['instructor:id,name', 'priceMaster:id,name,price_per_session'])
                 ->where(function($q) {
                     $q->whereNull('end_session_date')
                       ->orWhere('end_session_date', '>=', now()->startOfDay());
@@ -109,7 +109,9 @@ class LeadController extends Controller
                 ])),
                 'availableExams' => PtExamResource::collection(PtExam::where('is_active', true)->get()),
                 'availableClasses' => $availableClasses,
-                'chatTemplates'  => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->get()
+                'chatTemplates'  => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->get(),
+                'phases'         => \App\Models\LeadPhase::orderBy('created_at', 'asc')->get(),
+                'mediaAssets'    => \App\Models\MediaAsset::latest()->get(),
             ]);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Error in LeadController@show: " . $e->getMessage());
@@ -161,6 +163,41 @@ class LeadController extends Controller
             'message' => 'Lead plotting updated.',
             'lead' => new LeadResource($lead->refresh())
         ]);
+    }
+
+    public function sendMessage(Request $request, Lead $lead): JsonResponse
+    {
+        $request->validate([
+            'message' => 'required|string',
+        ]);
+
+        $message = $request->message;
+        
+        $lead->load('branch');
+        $branchCode = $lead->branch?->code ?: 'solo';
+        $phone = preg_replace('/[^0-9]/', '', $lead->phone);
+
+        $whatsappService = app(\App\Services\WhatsAppService::class);
+        
+        try {
+            $result = $whatsappService->sendMessage($branchCode, $phone, $message);
+
+            if (!($result['success'] ?? false)) {
+                return response()->json(['error' => 'WhatsApp Gateway Error'], 500);
+            }
+
+            // Log it in Database
+            \App\Models\LeadChatLog::create([
+                'lead_id'          => $lead->id,
+                'lead_phase_id'    => $lead->lead_phase_id,
+                'user_id'          => auth()->id(),
+                'message'          => $message,
+            ]);
+
+            return response()->json(['message' => 'Message sent and logged.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to send WhatsApp: ' . $e->getMessage()], 500);
+        }
     }
 
     public function sendTemplate(Request $request, Lead $lead): JsonResponse

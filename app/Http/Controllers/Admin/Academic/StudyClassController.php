@@ -20,7 +20,7 @@ class StudyClassController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = StudyClass::with(['branch', 'instructor', 'students' => function ($q) {
+        $query = StudyClass::with(['branch', 'instructor', 'priceMaster', 'students' => function ($q) {
             $q->with('lead'); // We need student name from Lead
         }])->withCount('students');
 
@@ -36,6 +36,7 @@ class StudyClassController extends Controller
             'classes' => $query->latest()->get(),
             'branches' => Branch::select('id', 'name')->get(),
             'instructors' => User::with(['superadmin', 'marketing', 'frontdesk', 'finance'])->get(), 
+            'priceMasters' => \App\Models\PriceMaster::select('id', 'name', 'price_per_session')->get(),
             'filters' => $request->only(['branch_id', 'search']),
         ]);
     }
