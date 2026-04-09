@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
-import { X, User, Phone, Mail, Building2, MapPin, Globe, Loader2, Save, Search } from 'lucide-react';
+import { X, User, Phone, Mail, Building2, MapPin, Globe, Loader2, Save, Search, Users } from 'lucide-react';
 import { useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
@@ -22,15 +22,21 @@ export default function CreateEditLeadModal({
     const phoneInputRef = React.useRef(null);
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
+        nickname: '',
+        gender: '',
         phone: '',
         email: '',
         birth_date: '',
+        school: '',
+        grade: '',
         branch_id: '',
         lead_source_id: '',
         lead_type_id: '',
         is_online: false,
         province: '',
         city: '',
+        address: '',
+        postal_code: '',
         guardians: [], // Array of { name, phone, role, occupation, is_main_contact }
         relationships: [], // Array of { related_lead_id, related_lead_name, type, is_main_contact }
     });
@@ -117,19 +123,26 @@ export default function CreateEditLeadModal({
 
                 setData({
                     name: lead.name || '',
+                    nickname: lead.nickname || '',
+                    gender: lead.gender || '',
                     phone: lead.phone || '',
                     email: lead.email || '',
                     birth_date: lead.birth_date || '',
+                    school: lead.school || '',
+                    grade: lead.grade || '',
                     branch_id: lead.branch_id || '',
                     lead_source_id: lead.lead_source_id || '',
                     lead_type_id: lead.lead_type_id || '',
                     is_online: lead.is_online || false,
                     province: lead.province || '',
                     city: lead.city || '',
+                    address: lead.address || '',
+                    postal_code: lead.postal_code || '',
                     guardians: initialGuardians,
                     relationships: initialRelationships,
                 });
-            } else if (!data.name && !data.phone) { 
+            } else {
+                // Formatting for New Lead (reset or default values)
                 const now = new Date();
                 const year = String(now.getFullYear()).slice(-2);
                 const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -137,15 +150,31 @@ export default function CreateEditLeadModal({
                 const hours = String(now.getHours()).padStart(2, '0');
                 const minutes = String(now.getMinutes()).padStart(2, '0');
                 
-                setData(d => ({
-                    ...d,
+                setData({
                     name: `lead${year}${month}${day}${hours}${minutes}`,
-                    branch_id: auth.user.branch_id || d.branch_id,
-                }));
+                    nickname: '',
+                    gender: '',
+                    phone: '',
+                    email: '',
+                    birth_date: '',
+                    school: '',
+                    grade: '',
+                    branch_id: auth.user.branch_id || '',
+                    lead_source_id: '',
+                    lead_type_id: '',
+                    is_online: false,
+                    province: '',
+                    city: '',
+                    address: '',
+                    postal_code: '',
+                    guardians: [],
+                    relationships: [],
+                });
 
+                // Smooth Auto-focus for WhatsApp field
                 setTimeout(() => {
                     phoneInputRef.current?.focus();
-                }, 100);
+                }, 400);
             }
         }
     }, [isOpen, lead]);
@@ -173,10 +202,11 @@ export default function CreateEditLeadModal({
         
         const options = {
             onSuccess: (page) => {
+                const savedId = lead?.id || page.props.flash?.newLeadId;
                 reset();
                 onClose();
-                if (onSaveSuccess && page.props.flash?.newLeadId) {
-                    onSaveSuccess(page.props.flash.newLeadId);
+                if (onSaveSuccess) {
+                    onSaveSuccess(savedId);
                 }
             },
         };
@@ -187,6 +217,16 @@ export default function CreateEditLeadModal({
             post(route('admin.crm.leads.store'), options);
         }
     };
+
+    const gradeOptions = [
+        { value: 'PG', label: 'PG' },
+        { value: 'TK', label: 'TK' },
+        { value: 'SD', label: 'SD' },
+        { value: 'SMP', label: 'SMP' },
+        { value: 'SMA', label: 'SMA' },
+        { value: 'KULIAH', label: 'KULIAH' },
+        { value: 'UMUM', label: 'UMUM' }
+    ];
 
     return (
         <Transition.Root show={isOpen} as={Fragment}>
@@ -215,7 +255,7 @@ export default function CreateEditLeadModal({
                             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
-                            <Dialog.Panel className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-7xl border border-slate-200">
+                            <Dialog.Panel className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-4 sm:w-full sm:max-w-[98%] border border-slate-200">
                                 <form onSubmit={handleSubmit} className="flex h-full flex-col">
                                     {/* Minimalist Header */}
                                     <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
@@ -236,147 +276,159 @@ export default function CreateEditLeadModal({
 
                                     {/* Balanced Form Content */}
                                     <div className="max-h-[75vh] overflow-y-auto px-8 py-10 bg-white">
-                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-10">
-                                            {/* Column 1 & 2: Primary Data */}
-                                            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-12 border-r border-slate-100 pr-12">
-                                                {/* Column 1: Personal Details */}
-                                                <div className="space-y-8">
-                                                    <div className="space-y-6">
-                                                        <div className="flex items-center gap-2 text-slate-400">
-                                                            <User size={14} className="text-red-500" />
-                                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Data Personal</h3>
-                                                        </div>
-                                                        
-                                                        <div className="space-y-5">
-                                                            <div>
-                                                                <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Nama Lengkap <span className="text-red-500">*</span></label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={data.name}
-                                                                    onChange={e => setData('name', e.target.value)}
-                                                                    className={`w-full px-4 py-3.5 bg-white border ${errors.name ? 'border-red-500 shadow-sm' : 'border-slate-300'} rounded-2xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
-                                                                    placeholder="Masukkan nama lengkap..."
-                                                                />
-                                                                {errors.name && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.name}</p>}
-                                                            </div>
-
-                                                            <div className="space-y-5">
-                                                                <div>
-                                                                    <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">WhatsApp <span className="text-red-500">*</span></label>
-                                                                    <input
-                                                                        type="tel"
-                                                                        ref={phoneInputRef}
-                                                                        value={data.phone}
-                                                                        onChange={e => setData('phone', e.target.value)}
-                                                                        className={`w-full px-4 py-3.5 bg-white border ${errors.phone ? 'border-red-500' : 'border-slate-300'} rounded-2xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
-                                                                        placeholder="08..."
-                                                                    />
-                                                                    {errors.phone && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.phone}</p>}
-                                                                </div>
-                                                                <div>
-                                                                    <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Email</label>
-                                                                    <input
-                                                                        type="email"
-                                                                        value={data.email}
-                                                                        onChange={e => setData('email', e.target.value)}
-                                                                        className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-2xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
-                                                                        placeholder="user@mail.com"
-                                                                    />
-                                                                </div>
-
-                                                                <div>
-                                                                    <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider text-slate-900">Date of Birth</label>
-                                                                    <DatePicker
-                                                                        value={data.birth_date}
-                                                                        onChange={val => setData('birth_date', val)}
-                                                                        placeholder="Pilih Tanggal Lahir"
-                                                                        inputClassName="!py-3.5 !px-4 !rounded-2xl !border-slate-300 !font-bold !text-sm text-slate-800 shadow-sm"
-                                                                    />
-                                                                    {errors.birth_date && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.birth_date}</p>}
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                                            {/* Column 1: Personal Details */}
+                                            <div className="space-y-10">
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                        <User size={14} className="text-red-500" />
+                                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Data Personal</h3>
                                                     </div>
-
-                                                    <div className="space-y-6">
-                                                        <div className="flex items-center gap-2 text-slate-400">
-                                                            <Building2 size={14} className="text-red-500" />
-                                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Assignment</h3>
+                                                    
+                                                    <div className="space-y-5">
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Nama Lengkap <span className="text-red-500">*</span></label>
+                                                            <input
+                                                                type="text"
+                                                                value={data.name}
+                                                                onChange={e => setData('name', e.target.value)}
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.name ? 'border-red-500 shadow-sm' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
+                                                                placeholder="Nama Lengkap"
+                                                            />
+                                                            {errors.name && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.name}</p>}
                                                         </div>
                                                         <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Target Branch <span className="text-red-500">*</span></label>
-                                                            <PremiumSearchableSelect
-                                                                options={branches.map(b => ({ value: b.id, label: b.name }))}
-                                                                value={data.branch_id}
-                                                                onChange={val => setData('branch_id', val)}
-                                                                placeholder="Pilih Cabang"
-                                                                icon={Building2}
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Nama Panggilan</label>
+                                                            <input
+                                                                type="text"
+                                                                value={data.nickname}
+                                                                onChange={e => setData('nickname', e.target.value)}
+                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                placeholder="Panggilan"
                                                             />
-                                                            {errors.branch_id && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.branch_id}</p>}
+                                                        </div>
+                                                        <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200">
+                                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-4">Jenis Kelamin</p>
+                                                            <div className="flex gap-10">
+                                                                <label className="flex items-center gap-2.5 cursor-pointer group">
+                                                                    <input 
+                                                                        type="radio" 
+                                                                        name="gender" 
+                                                                        checked={data.gender === 'L'} 
+                                                                        onChange={() => setData('gender', 'L')}
+                                                                        className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300" 
+                                                                    />
+                                                                    <span className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors uppercase tracking-tight">Laki-laki</span>
+                                                                </label>
+                                                                <label className="flex items-center gap-2.5 cursor-pointer group">
+                                                                    <input 
+                                                                        type="radio" 
+                                                                        name="gender" 
+                                                                        checked={data.gender === 'P'} 
+                                                                        onChange={() => setData('gender', 'P')}
+                                                                        className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300" 
+                                                                    />
+                                                                    <span className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors uppercase tracking-tight">Perempuan</span>
+                                                                </label>
+                                                            </div>
+                                                            {errors.gender && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.gender}</p>}
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">WhatsApp <span className="text-red-500">*</span></label>
+                                                            <input
+                                                                type="tel"
+                                                                ref={phoneInputRef}
+                                                                value={data.phone}
+                                                                onChange={e => setData('phone', e.target.value)}
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.phone ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
+                                                                placeholder="08..."
+                                                            />
+                                                            {errors.phone && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.phone}</p>}
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Email</label>
+                                                            <input
+                                                                type="email"
+                                                                value={data.email}
+                                                                onChange={e => setData('email', e.target.value)}
+                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                placeholder="user@mail.com"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider text-slate-900">Tanggal Lahir</label>
+                                                            <DatePicker
+                                                                value={data.birth_date}
+                                                                onChange={val => setData('birth_date', val)}
+                                                                placeholder="Pilih Tanggal Lahir"
+                                                                inputClassName="!py-3 !px-5 !rounded-xl !border-slate-300 !font-bold !text-sm text-slate-800 shadow-sm"
+                                                            />
+                                                            {errors.birth_date && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.birth_date}</p>}
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                {/* Column 2: Context & Geography */}
-                                                <div className="space-y-8">
-                                                    <div className="space-y-6">
-                                                        <div className="flex items-center gap-2 text-slate-400">
-                                                            <Globe size={14} className="text-red-500" />
-                                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Context</h3>
+                                            {/* Column 2: Context & Geography */}
+                                            <div className="space-y-10">
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                        <Globe size={14} className="text-red-500" />
+                                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Context & Geography</h3>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Source</label>
+                                                            <PremiumSearchableSelect
+                                                                options={sources.map(s => ({ value: s.id, label: s.name }))}
+                                                                value={data.lead_source_id}
+                                                                onChange={val => setData('lead_source_id', val)}
+                                                                placeholder="Pilih Sumber"
+                                                                className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                            />
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div>
-                                                                <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Source</label>
-                                                                <PremiumSearchableSelect
-                                                                    options={sources.map(s => ({ value: s.id, label: s.name }))}
-                                                                    value={data.lead_source_id}
-                                                                    onChange={val => setData('lead_source_id', val)}
-                                                                    placeholder="Pilih Sumber"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Lead Type</label>
-                                                                <PremiumSearchableSelect
-                                                                    options={types.map(t => ({ value: t.id, label: t.name }))}
-                                                                    value={data.lead_type_id}
-                                                                    onChange={val => setData('lead_type_id', val)}
-                                                                    placeholder="Pilih Tipe"
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="p-5 bg-slate-50/80 rounded-3xl border border-slate-200">
-                                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-4">Inquiry Channel</p>
-                                                            <div className="flex gap-10 mt-1">
-                                                                <label className="flex items-center gap-2.5 cursor-pointer group">
-                                                                    <input 
-                                                                        type="radio" 
-                                                                        name="is_online" 
-                                                                        checked={!data.is_online} 
-                                                                        onChange={() => setData('is_online', false)}
-                                                                        className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300" 
-                                                                    />
-                                                                    <span className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors uppercase tracking-tight">Offline</span>
-                                                                </label>
-                                                                <label className="flex items-center gap-2.5 cursor-pointer group">
-                                                                    <input 
-                                                                        type="radio" 
-                                                                        name="is_online" 
-                                                                        checked={data.is_online} 
-                                                                        onChange={() => setData('is_online', true)}
-                                                                        className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300" 
-                                                                    />
-                                                                    <span className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors uppercase tracking-tight">Online</span>
-                                                                </label>
-                                                            </div>
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Lead Type</label>
+                                                            <PremiumSearchableSelect
+                                                                options={types.map(t => ({ value: t.id, label: t.name }))}
+                                                                value={data.lead_type_id}
+                                                                onChange={val => setData('lead_type_id', val)}
+                                                                placeholder="Pilih Tipe"
+                                                                className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                            />
                                                         </div>
                                                     </div>
 
-                                                    <div className="space-y-6">
-                                                        <div className="flex items-center gap-2 text-slate-400">
-                                                            <MapPin size={14} className="text-red-500" />
-                                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Geography</h3>
+                                                    <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200">
+                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-4">Inquiry Channel</p>
+                                                        <div className="flex gap-10 mt-1">
+                                                            <label className="flex items-center gap-2.5 cursor-pointer group">
+                                                                <input 
+                                                                    type="radio" 
+                                                                    name="is_online" 
+                                                                    checked={!data.is_online} 
+                                                                    onChange={() => setData('is_online', false)}
+                                                                    className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300" 
+                                                                />
+                                                                <span className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors uppercase tracking-tight">Offline</span>
+                                                            </label>
+                                                            <label className="flex items-center gap-2.5 cursor-pointer group">
+                                                                <input 
+                                                                    type="radio" 
+                                                                    name="is_online" 
+                                                                    checked={data.is_online} 
+                                                                    onChange={() => setData('is_online', true)}
+                                                                    className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300" 
+                                                                />
+                                                                <span className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors uppercase tracking-tight">Online</span>
+                                                            </label>
                                                         </div>
+                                                    </div>
+
+                                                    <div className="space-y-5 pt-4 border-t border-slate-100">
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div>
                                                                 <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Provinsi</label>
@@ -384,37 +436,105 @@ export default function CreateEditLeadModal({
                                                                     options={provinces.map(p => ({ value: p.name, label: p.name }))}
                                                                     value={data.province}
                                                                     onChange={val => setData(d => ({ ...d, province: val, city: '' }))}
-                                                                    placeholder="Pilih Provinsi"
+                                                                    placeholder="Provinsi"
+                                                                    className="rounded-xl overflow-hidden shadow-sm h-[46px]"
                                                                 />
                                                             </div>
                                                             <div className="relative">
-                                                                <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Kota / Kabupaten</label>
+                                                                <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Kota</label>
                                                                 <PremiumSearchableSelect
                                                                     options={cities.map(c => ({ value: c.name, label: c.name }))}
                                                                     value={data.city}
                                                                     onChange={val => setData('city', val)}
-                                                                    placeholder={!data.province ? "Pilih Provinsi Dulu" : "Pilih Kota"}
-                                                                    className={!data.province || loadingCities ? "opacity-50" : ""}
+                                                                    placeholder={!data.province ? "---" : "Kota"}
+                                                                    className={!data.province || loadingCities ? "opacity-50 rounded-xl overflow-hidden shadow-sm h-[46px]" : "rounded-xl overflow-hidden shadow-sm h-[46px]"}
                                                                     disabled={!data.province || loadingCities}
                                                                 />
                                                                 {loadingCities && (
-                                                                    <div className="absolute right-12 top-1/2 -translate-y-1/2 mt-3">
-                                                                        <Loader2 className="animate-spin text-red-500" size={16} />
+                                                                    <div className="absolute right-10 top-1/2 -translate-y-1/2 mt-3">
+                                                                        <Loader2 className="animate-spin text-red-500" size={14} />
                                                                     </div>
                                                                 )}
                                                             </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Alamat Lengkap</label>
+                                                            <input
+                                                                type="text"
+                                                                value={data.address}
+                                                                onChange={e => setData('address', e.target.value)}
+                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                placeholder="Nama Jalan / Blok..."
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Kode Pos</label>
+                                                            <input
+                                                                type="text"
+                                                                value={data.postal_code}
+                                                                onChange={e => setData('postal_code', e.target.value)}
+                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                placeholder="57..."
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Column 3: Guardian / Sibling Section */}
-                                            <div className="lg:col-span-4 space-y-10">
+                                            {/* Column 3: Academic & Assignment */}
+                                            <div className="space-y-10">
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                        <Building2 size={14} className="text-red-500" />
+                                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Academic & Assignment</h3>
+                                                    </div>
+                                                    <div className="space-y-5">
+                                                        <div>
+                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Sekolah</label>
+                                                            <input
+                                                                type="text"
+                                                                value={data.school}
+                                                                onChange={e => setData('school', e.target.value)}
+                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                placeholder="Nama Sekolah 'diisi UMUM jika sudah tidak dalam fase sekolah'"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-black text- slate-700 mb-2.5 uppercase tracking-wider">Kelas</label>
+                                                            <PremiumSearchableSelect
+                                                                options={gradeOptions}
+                                                                value={data.grade}
+                                                                onChange={val => setData('grade', val)}
+                                                                placeholder="Pilih Kelas"
+                                                                className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-6 border-t border-slate-100">
+                                                        <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Target Branch <span className="text-red-500">*</span></label>
+                                                        <PremiumSearchableSelect
+                                                            options={branches.map(b => ({ value: b.id, label: b.name }))}
+                                                            value={data.branch_id}
+                                                            onChange={val => setData('branch_id', val)}
+                                                            placeholder="Pilih Cabang"
+                                                            icon={Building2}
+                                                            className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                        />
+                                                        {errors.branch_id && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.branch_id}</p>}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Column 4: Guardians & Connections */}
+                                            <div className="space-y-10">
                                                 {/* Guardians Section */}
                                                 <div className="space-y-6">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2 text-slate-300">
-                                                            <User className="text-red-500" size={14} />
+                                                            <Users className="text-red-500" size={14} />
                                                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">Guardians (Non-Lead)</h3>
                                                         </div>
                                                         <button 
@@ -447,13 +567,9 @@ export default function CreateEditLeadModal({
                                                                                 onChange={val => updateGuardian(index, 'role', val)}
                                                                                 placeholder="Role"
                                                                             />
-                                                                            <div className="flex items-center gap-2 pl-2 hidden">
-                                                                                <input type="checkbox" checked={guardian.is_main_contact} onChange={e => updateGuardian(index, 'is_main_contact', e.target.checked)} className="w-3.5 h-3.5 text-red-600 rounded" />
-                                                                                <span className="text-[9px] font-black text-slate-400 uppercase">Main</span>
-                                                                            </div>
                                                                         </div>
-                                                                        <input type="text" value={guardian.name} onChange={e => updateGuardian(index, 'name', e.target.value)} placeholder="Nama Guardian" className="w-full px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
-                                                                        <input type="tel" value={guardian.phone} onChange={e => updateGuardian(index, 'phone', e.target.value)} placeholder="Phone" className="w-full px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
+                                                                        <input type="text" value={guardian.name} onChange={e => updateGuardian(index, 'name', e.target.value)} placeholder="Nama Guardian" className="w-full px-5 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
+                                                                        <input type="tel" value={guardian.phone} onChange={e => updateGuardian(index, 'phone', e.target.value)} placeholder="Phone" className="w-full px-5 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
                                                                     </div>
                                                                 </div>
                                                             ))
@@ -475,27 +591,28 @@ export default function CreateEditLeadModal({
                                                                 const label = relatableOptions.find(o => o.value === val)?.label;
                                                                 addRelationship(val, label);
                                                             }}
-                                                            placeholder="Search other Leads to link..."
+                                                            placeholder="Search other Leads..."
                                                             icon={Search}
+                                                            className="h-[46px]"
                                                         />
 
                                                         <div className="space-y-3">
                                                             {data.relationships.length === 0 ? (
-                                                                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide py-4 border-2 border-dashed border-slate-100 rounded-2xl">No siblings/parents linked</p>
+                                                                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide py-4 border-2 border-dashed border-slate-100 rounded-2xl">No linked leads</p>
                                                             ) : (
                                                                 data.relationships.map((rel) => (
                                                                     <div key={rel.related_lead_id} className="p-4 bg-red-50/50 border border-red-100 rounded-2xl flex items-center justify-between group">
                                                                         <div className="flex-1">
                                                                             <p className="text-xs font-black text-slate-800">{rel.related_lead_name}</p>
                                                                             <div className="flex items-center gap-4 mt-2">
-                                                                                <select label="Role" value={rel.type} onChange={(e) => updateRelationship(rel.related_lead_id, 'type', e.target.value)} className="bg-transparent border-none p-0 text-[9px] font-black text-red-500 uppercase tracking-widest outline-none cursor-pointer">
+                                                                                <select label="Role" value={rel.type} onChange={(e) => updateRelationship(rel.related_lead_id, 'type', e.target.value)} className="bg-transparent border-none p-0 text-[10px] font-black text-red-500 uppercase tracking-widest outline-none cursor-pointer">
                                                                                     <option value="sibling">Sibling</option>
                                                                                     <option value="parent">Parent</option>
                                                                                     <option value="child">Child</option>
                                                                                 </select>
                                                                                 <label className="flex items-center gap-1.5 cursor-pointer">
                                                                                     <input type="checkbox" checked={rel.is_main_contact} onChange={e => updateRelationship(rel.related_lead_id, 'is_main_contact', e.target.checked)} className="w-3 h-3 text-red-600 rounded" />
-                                                                                    <span className="text-[9px] font-black text-slate-400 uppercase">Main Link</span>
+                                                                                    <span className="text-[10px] font-black text-slate-400 uppercase">Main</span>
                                                                                 </label>
                                                                             </div>
                                                                         </div>

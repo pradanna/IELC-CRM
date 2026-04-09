@@ -26,6 +26,14 @@ class Invoice extends Model
         'notes',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+            'paid_at'  => 'datetime',
+        ];
+    }
+
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);

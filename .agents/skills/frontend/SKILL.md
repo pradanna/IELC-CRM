@@ -101,6 +101,8 @@ NavLink, Navbar, NotificationDropdown, ResponsiveNavLink, Sidebar, Tabs
 
 ## Design Aesthetics
 - **Rich Aesthetics**: Modern, premium look. Harmonious HSL-based palettes.
+- **No AI Icons**: DO NOT use Sparkles, Brain, or other AI-themed icons (e.g. `Sparkles`) for standard UI enrichment unless explicitly requested. Keep it clean and professional.
+- **Compact Typography**: Avoid using overly large font sizes. Use `text-xs` (12px) or `text-sm` (14px) for most content to maintain a sleek, premium feel.
 - **Glassmorphism**: Subtle background blurs and borders for depth.
 - **Micro-animations**: Hover effects, smooth transitions, state changes.
 - **Typography**: Optimized Inter/Roboto Fonts.
@@ -117,9 +119,10 @@ NavLink, Navbar, NotificationDropdown, ResponsiveNavLink, Sidebar, Tabs
 ## Guidelines for AI
 
 ### MANDATORY Workflow:
-1. **Check existing components** before building anything new (`Components/ui/`, `Components/form/`, `Components/shared/`).
-2. **Create custom hook** for page logic — never write `useState`/`useEffect` directly in the page component.
+1. **CHECK `docs/ui-components.md` FIRST**: Before creating ANY new form or UI element, you MUST check the component registry. It contains props, usage examples, and a Quick Decision Guide. Reuse is the priority.
+2. **CHECK `docs/hooks-registry.md` BEFORE creating a new hook**: Verify the hook doesn't already exist. Extend existing hooks instead of duplicating.
 3. **Use `partials/`** for tab content and slide-over panels.
 4. **Use `modals/`** for all modal dialogs.
 5. **Only create new components** in `Components/{type}/` if reusable (2+ usage).
 6. Use `lucide-react` for icons, Headless UI for accessible interactive elements.
+7. **NO AI ICONS**: Do not default to using "AI-like" icons (Sparkles, etc.) for UI accents.

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { X, User, History, MessageSquare, Phone, Mail, MapPin, Building2, Globe, Calendar, Clock, ArrowRight, LinkIcon, Edit2, GraduationCap, CheckCircle } from 'lucide-react';
+import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 import useWhatsapp from '@/Hooks/useWhatsapp';
@@ -9,6 +9,8 @@ import useWhatsapp from '@/Hooks/useWhatsapp';
 import LeadDetailTab from './tabs/LeadDetailTab';
 import LeadActivityTab from './tabs/LeadActivityTab';
 import LeadWhatsappTab from './tabs/LeadWhatsappTab';
+import LeadPipelineTab from './tabs/LeadPipelineTab';
+import LeadPendingUpdatesTab from './tabs/LeadPendingUpdatesTab';
 
 export default function LeadDetailDrawer({ 
     leadId, 
@@ -19,10 +21,14 @@ export default function LeadDetailDrawer({
     chatTemplates = [], 
     mediaAssets = [],
     phases = [],
-    initialTabIndex = 0
+    initialTabIndex = 0,
+    refreshTrigger = 0
 }) {
     const [lead, setLead] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [availableExams, setAvailableExams] = useState([]);
+    const [availableClasses, setAvailableClasses] = useState([]);
+    const [localChatTemplates, setLocalChatTemplates] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(initialTabIndex);
     const { getPhaseStyle } = useLeadPhaseStyle();
     
@@ -37,13 +43,30 @@ export default function LeadDetailDrawer({
         if (isOpen && leadId) {
             fetchLeadDetails();
         }
-    }, [isOpen, leadId]);
+    }, [isOpen, leadId, refreshTrigger]);
 
     const fetchLeadDetails = async () => {
+        // Clear old lead data to force a visual "refresh" state
+        setLead(null);
         setLoading(true);
+        
         try {
-            const response = await axios.get(route('admin.crm.leads.show', leadId));
+            // A tiny delay (300ms) to ensure any server-side database write operations 
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Use both timestamp and explicit no-cache headers for maximum compatibility with Chrome/Brave
+            const response = await axios.get(route('admin.crm.leads.show', leadId) + `?t=${new Date().getTime()}`, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+            
             setLead(response.data.lead);
+            setAvailableExams(response.data.availableExams || []);
+            setAvailableClasses(response.data.availableClasses || []);
+            setLocalChatTemplates(response.data.chatTemplates || []);
         } catch (error) {
             console.error('Error fetching lead details:', error);
         } finally {
@@ -59,7 +82,7 @@ export default function LeadDetailDrawer({
             // Update local state and trigger side effects if needed
             setLead(response.data.lead);
             // Reload the parent page state (List view or Dashboard)
-            router.reload({ preserveScroll: true });
+            router.reload({ preserveScroll: true, preserveState: true });
         } catch (error) {
             console.error('Error updating lead phase:', error);
         }
@@ -70,7 +93,7 @@ export default function LeadDetailDrawer({
             try {
                 await axios.post(route('admin.academic.students.promote', leadId));
                 fetchLeadDetails(); // Refresh local state
-                router.reload({ preserveScroll: true });
+                router.reload({ preserveScroll: true, preserveState: true });
             } catch (error) {
                 console.error('Error promoting lead:', error);
                 alert(error.response?.data?.message || 'Failed to promote lead.');
@@ -79,9 +102,11 @@ export default function LeadDetailDrawer({
     };
 
     const tabs = [
-        { name: 'Detail Lead', icon: User, component: LeadDetailTab },
-        { name: 'History Activity', icon: History, component: LeadActivityTab },
+        { name: 'Lead Profile', icon: User, component: LeadDetailTab },
+        { name: 'Pipeline Progress', icon: GitBranch, component: LeadPipelineTab },
         { name: 'WhatsApp History', icon: MessageSquare, component: LeadWhatsappTab },
+        { name: 'Activity History', icon: History, component: LeadActivityTab },
+        ...(lead?.pending_updates ? [{ name: 'Updates', icon: RefreshCw, component: LeadPendingUpdatesTab, badge: true }] : []),
     ];
 
     return (
@@ -178,6 +203,9 @@ export default function LeadDetailDrawer({
                                                             <>
                                                                 <tab.icon size={14} />
                                                                 <span>{tab.name}</span>
+                                                                {tab.badge && (
+                                                                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse absolute -top-1 -right-2" />
+                                                                )}
                                                                 {selected && (
                                                                     <div className="absolute bottom-[-17px] left-0 right-0 h-1 bg-red-600 rounded-full" />
                                                                 )}
@@ -188,8 +216,8 @@ export default function LeadDetailDrawer({
                                             </Tab.List>
 
                                             {/* Tab Panels */}
-                                            <Tab.Panels className="flex-1 overflow-y-auto p-10 bg-white">
-                                                <Tab.Panel className="outline-none">
+                                            <Tab.Panels scroll-region="true" className="flex-1 overflow-y-auto bg-white">
+                                                <Tab.Panel className="outline-none p-10">
                                                     <LeadDetailTab 
                                                         lead={lead} 
                                                         loading={loading} 
@@ -200,16 +228,39 @@ export default function LeadDetailDrawer({
                                                 </Tab.Panel>
 
                                                 <Tab.Panel className="outline-none">
-                                                    <LeadActivityTab leadId={lead?.id} />
+                                                    <LeadPipelineTab 
+                                                        lead={lead}
+                                                        loading={loading}
+                                                        getPhaseStyle={getPhaseStyle}
+                                                        phases={phases}
+                                                        onUpdatePhase={handleUpdatePhase}
+                                                        availableExams={availableExams}
+                                                        availableClasses={availableClasses}
+                                                        chatTemplates={localChatTemplates}
+                                                        onRefresh={fetchLeadDetails}
+                                                    />
                                                 </Tab.Panel>
 
-                                                <Tab.Panel className="outline-none">
+                                                <Tab.Panel className="outline-none p-10">
                                                     <LeadWhatsappTab 
                                                         lead={lead} 
                                                         chatTemplates={chatTemplates}
                                                         mediaAssets={mediaAssets}
                                                     />
                                                 </Tab.Panel>
+
+                                                <Tab.Panel className="outline-none p-10">
+                                                    <LeadActivityTab leadId={lead?.id} />
+                                                </Tab.Panel>
+
+                                                {lead?.pending_updates && (
+                                                    <Tab.Panel className="outline-none p-10">
+                                                        <LeadPendingUpdatesTab 
+                                                            lead={lead} 
+                                                            onRefresh={fetchLeadDetails} 
+                                                        />
+                                                    </Tab.Panel>
+                                                )}
                                             </Tab.Panels>
                                         </Tab.Group>
 

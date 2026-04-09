@@ -164,6 +164,8 @@ export default function LeadTable({ leads, onView, onEdit, onDelete, canDelete =
                             <Link
                                 key={index}
                                 href={link.url}
+                                preserveState
+                                preserveScroll
                                 className={`h-9 min-w-[2.25rem] px-2 flex items-center justify-center text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${
                                     link.active 
                                     ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20' 

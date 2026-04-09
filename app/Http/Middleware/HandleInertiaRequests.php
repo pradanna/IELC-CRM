@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                 'download_url' => $request->session()->get('download_url'),
             ],
             'waServerUrl' => config('services.whatsapp.url'),
+            'pending_registrations_count' => $request->user() ? \App\Models\LeadRegistration::where('status', 'pending')->count() : 0,
         ];
     }
 }

@@ -22,4 +22,9 @@ class Activity extends SpatieActivity
      * @var string
      */
     protected $keyType = 'string';
+
+    protected $casts = [
+        'properties' => 'collection',
+        'extra_attributes' => 'collection',
+    ];
 }

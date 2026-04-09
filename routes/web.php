@@ -4,10 +4,34 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Webhooks\WhatsappWebhookController;
+use App\Http\Controllers\Admin\CRM\PtExamController;
+use App\Http\Controllers\Admin\CRM\PtQuestionController;
+use App\Http\Controllers\Admin\CRM\PtQuestionGroupController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
+// Webhook WhatsApp (Public)
+Route::post('/webhook/whatsapp/inbound', [WhatsappWebhookController::class, 'handleIncomingMessage'])->name('webhooks.whatsapp.inbound');
+
+// Public Placement Test
+Route::get('/placement-test/{token}', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'show'])->name('public.placement-test.show');
+Route::post('/placement-test/{token}/start', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'start'])->name('public.placement-test.start');
+Route::get('/placement-test/{token}/exam', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'exam'])->name('public.placement-test.exam');
+Route::post('/placement-test/{token}/submit', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'submit'])->name('public.placement-test.submit');
+Route::get('/placement-test/{token}/result', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'result'])->name('public.placement-test.result');
+
+// Public Lead Registration
+Route::get('/join/{branch}', [\App\Http\Controllers\Public\PublicLeadController::class, 'welcome'])->name('public.join.welcome');
+Route::get('/join/{branch}/form', [\App\Http\Controllers\Public\PublicLeadController::class, 'form'])->name('public.join.form');
+Route::get('/join/api/cities', [\App\Http\Controllers\Public\PublicLeadController::class, 'getCities'])->name('public.join.cities');
+Route::post('/join', [\App\Http\Controllers\Public\PublicLeadController::class, 'store'])->name('public.join.store');
+
+// Self-filling for Existing Leads
+Route::get('/fill-data/{token}', [\App\Http\Controllers\Public\PublicLeadController::class, 'fillingForm'])->name('public.join.filling');
+Route::post('/fill-data/{token}', [\App\Http\Controllers\Public\PublicLeadController::class, 'submitFilling'])->name('public.join.filling.submit');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -32,11 +56,30 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/crm/leads/{lead}/activities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'activities'])->name('crm.leads.activities');
     Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'update'])->name('crm.leads.update');
     Route::patch('/crm/leads/{lead}/phase', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'updatePhase'])->name('crm.leads.update-phase');
+    Route::post('/crm/leads/{lead}/plot-class', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'plotClass'])->name('crm.leads.plot-class');
     Route::patch('/crm/leads/{lead}/record-followup', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'recordFollowUp'])->name('crm.leads.record-followup');
     Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
     Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'destroy'])->name('crm.leads.destroy');
+    Route::post('/crm/leads/{lead}/send-template', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'sendTemplate'])->name('crm.leads.send-template');
+    Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
     Route::post('/crm/leads', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'store'])->name('crm.leads.store');
     Route::get('/crm/cities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'getCities'])->name('crm.cities');
+    Route::post('/crm/leads/{lead}/approve-updates', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'approveUpdates'])->name('crm.leads.approve-updates');
+    Route::post('/crm/leads/{lead}/reject-updates', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'rejectUpdates'])->name('crm.leads.reject-updates');
+
+    // Registration Inbox (Admin Approval)
+    Route::get('/crm/registrations', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'index'])->name('crm.registrations.index');
+    Route::post('/crm/registrations/{registration}/approve', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'approve'])->name('crm.registrations.approve');
+    Route::post('/crm/registrations/{registration}/reject', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'reject'])->name('crm.registrations.reject');
+    
+    // Self-filling Updates Approval
+    Route::post('/crm/registrations/{lead}/approve-update', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'approveUpdate'])->name('crm.registrations.approve-update');
+    Route::post('/crm/registrations/{lead}/reject-update', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'rejectUpdate'])->name('crm.registrations.reject-update');
+
+    // Placement Tests
+    Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
+    Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
+    Route::delete('/crm/pt-sessions/{pt_session}', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'destroy'])->name('crm.pt-sessions.destroy');
 
     // Academic Module
     Route::group(['prefix' => 'academic', 'as' => 'academic.'], function () {
@@ -61,7 +104,24 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     // Add others as placeholders for now
-    Route::get('/placement-tests', fn() => Inertia::render('Dashboard'))->name('placement-tests.index');
+    // Placement Tests Management
+    Route::prefix('placement-tests')->name('placement-tests.')->group(function () {
+        Route::get('/', [PtExamController::class, 'index'])->name('index');
+        Route::post('/', [PtExamController::class, 'store'])->name('store');
+        Route::get('/{pt_exam}', [PtExamController::class, 'show'])->name('show');
+        Route::put('/{pt_exam}', [PtExamController::class, 'update'])->name('update');
+        Route::delete('/{pt_exam}', [PtExamController::class, 'destroy'])->name('destroy');
+
+        // Questions within Exam
+        Route::post('/{pt_exam}/questions', [PtQuestionController::class, 'store'])->name('questions.store');
+        Route::post('/{pt_exam}/questions/{pt_question}', [PtQuestionController::class, 'update'])->name('questions.update'); // Using POST for file upload compatibility
+        Route::delete('/{pt_exam}/questions/{pt_question}', [PtQuestionController::class, 'destroy'])->name('questions.destroy');
+
+        // Question Groups within Exam
+        Route::post('/{pt_exam}/question-groups', [PtQuestionGroupController::class, 'store'])->name('question-groups.store');
+        Route::post('/{pt_exam}/question-groups/{pt_question_group}', [PtQuestionGroupController::class, 'update'])->name('question-groups.update'); // Using POST for file upload compatibility
+        Route::delete('/{pt_exam}/question-groups/{pt_question_group}', [PtQuestionGroupController::class, 'destroy'])->name('question-groups.destroy');
+    });
     // Master Data
     Route::get('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'index'])->name('master.users.index');
     Route::post('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'store'])->name('master.users.store');
@@ -91,6 +151,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Media Assets
     Route::post('/master/media-assets', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'store'])->name('master.media-assets.store');
     Route::delete('/master/media-assets/{mediaAsset}', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'destroy'])->name('master.media-assets.destroy');
+    
+    // WhatsApp Proxy
+    Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+        Route::get('/status/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
+        Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');
+        Route::post('/send', [\App\Http\Controllers\Admin\WhatsAppController::class, 'sendMessage'])->name('send');
+    });
+
     Route::get('/study-classes', fn() => Inertia::render('Dashboard'))->name('study-classes.index');
     Route::get('/schedules', fn() => Inertia::render('Dashboard'))->name('schedules.index');
     Route::get('/attendances', fn() => Inertia::render('Dashboard'))->name('attendances.index');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CrmLayout from './partials/CrmLayout';
 import FiltersBar from './partials/FiltersBar';
@@ -7,6 +7,7 @@ import LeadTable from './partials/LeadTable';
 import CreateEditLeadModal from './modals/CreateEditLeadModal';
 import DeleteLeadModal from './modals/DeleteLeadModal';
 import LeadDetailDrawer from './drawers/LeadDetailDrawer';
+import { useState } from 'react';
 import SendWhatsappModal from './modals/SendWhatsappModal';
 import axios from 'axios';
 
@@ -17,6 +18,7 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
     const [isLeadModalOpen, setIsLeadModalOpen] = React.useState(false);
     const [editingLead, setEditingLead] = React.useState(null);
     const [selectedLeadId, setSelectedLeadId] = React.useState(null);
+    const [drawerRefreshTrigger, setDrawerRefreshTrigger] = React.useState(0);
     const [isDetailDrawerOpen, setIsDetailDrawerOpen] = React.useState(false);
     const [drawerTabIndex, setDrawerTabIndex] = React.useState(0);
     const [deletingLead, setDeletingLead] = React.useState(null);
@@ -29,6 +31,8 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
         setDrawerTabIndex(tabIndex);
         setSelectedLeadId(id);
         setIsDetailDrawerOpen(true);
+        // Reset trigger on new select
+        setDrawerRefreshTrigger(0);
     };
 
     const openWhatsappModal = (lead) => {
@@ -92,8 +96,17 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
                     setIsLeadModalOpen(false);
                     setEditingLead(null);
                 }}
-                onSaveSuccess={(newLeadId) => {
-                    if (newLeadId) openLeadDetail(newLeadId, 2);
+                onSaveSuccess={(savedLeadId) => {
+                    // Update table state
+                    router.reload({ preserveScroll: true, preserveState: true });
+                    
+                    // Always increment trigger - it ensures anything listening will refresh
+                    setDrawerRefreshTrigger(prev => prev + 1);
+                    
+                    // If it was a new lead, and drawer is not open, open it
+                    if (!isDetailDrawerOpen && savedLeadId) {
+                        openLeadDetail(savedLeadId, 0);
+                    }
                 }}
                 lead={editingLead}
                 branches={branches}
@@ -112,6 +125,7 @@ export default function ListView({ leads, filters, branches, phases, sources, ty
                 leadId={selectedLeadId}
                 isOpen={isDetailDrawerOpen}
                 initialTabIndex={drawerTabIndex}
+                refreshTrigger={drawerRefreshTrigger}
                 onClose={() => setIsDetailDrawerOpen(false)}
                 onEditLead={(lead) => {
                     setEditingLead(lead);

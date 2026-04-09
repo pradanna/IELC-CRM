@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useForm, router, usePage } from '@inertiajs/react';
-import { Plus, X, Save, Loader2, Link as LinkIcon, File, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, Save, Loader2, Link as LinkIcon, File, Image as ImageIcon, Tag, Users, ShieldCheck } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import MasterTable from '../components/MasterTable';
@@ -13,6 +13,7 @@ export default function ChatTemplatesTab({ items }) {
     const [copyFeedback, setCopyFeedback] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const messageRef = useRef(null);
 
     // Debounce search
     React.useEffect(() => {
@@ -21,6 +22,27 @@ export default function ChatTemplatesTab({ items }) {
         }, 300);
         return () => clearTimeout(handler);
     }, [searchQuery]);
+
+    const handleInsertVariable = (variable) => {
+        const textarea = messageRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = data.message;
+        const before = text.substring(0, start);
+        const after = text.substring(end);
+        
+        const newMessage = before + ` {{${variable}}} ` + after;
+        setData('message', newMessage);
+
+        // Reset focus and cursor after a slight delay (React state update compatible)
+        setTimeout(() => {
+            textarea.focus();
+            const newPos = start + variable.length + 4; // {{ }} + space
+            textarea.setSelectionRange(newPos, newPos);
+        }, 10);
+    };
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         title: '',
@@ -217,17 +239,49 @@ export default function ChatTemplatesTab({ items }) {
 
                                             {/* Message */}
                                             <div className="flex-1 flex flex-col pt-2">
-                                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                                                    Pesan (Format WA) <span className="text-red-500 ml-0.5">*</span>
-                                                </label>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                                        Pesan (Format WA) <span className="text-red-500 ml-0.5">*</span>
+                                                    </label>
+                                                    <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+                                                        <button
+                                                            type="button" onClick={() => handleInsertVariable('name')}
+                                                            className="px-3 py-1 bg-white hover:bg-red-50 text-[9px] font-black text-slate-600 hover:text-red-600 rounded-lg shadow-sm border border-slate-100 transition-all flex items-center gap-1.5"
+                                                        >
+                                                            <Users size={10} /> Full Name
+                                                        </button>
+                                                        <button
+                                                            type="button" onClick={() => handleInsertVariable('nickname')}
+                                                            className="px-3 py-1 bg-white hover:bg-red-50 text-[9px] font-black text-slate-600 hover:text-red-600 rounded-lg shadow-sm border border-slate-100 transition-all flex items-center gap-1.5"
+                                                        >
+                                                            <Tag size={10} /> Nickname
+                                                        </button>
+                                                        <button
+                                                            type="button" onClick={() => handleInsertVariable('lead_number')}
+                                                            className="px-3 py-1 bg-white hover:bg-red-50 text-[9px] font-black text-slate-600 hover:text-red-600 rounded-lg shadow-sm border border-slate-100 transition-all flex items-center gap-1.5"
+                                                        >
+                                                            <LinkIcon size={10} /> Lead ID
+                                                        </button>
+                                                        <button
+                                                            type="button" onClick={() => handleInsertVariable('admin_name')}
+                                                            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-black rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                                                        >
+                                                            <ShieldCheck size={10} /> Admin Name
+                                                        </button>
+                                                    </div>
+                                                </div>
                                                 <textarea
+                                                    ref={messageRef}
                                                     value={data.message}
                                                     onChange={e => setData('message', e.target.value)}
-                                                    placeholder="Halo kak, berikut informasi..."
+                                                    placeholder="Halo kak {{name}}, berikut informasi..."
                                                     required
                                                     rows={10}
-                                                    className="w-full flex-1 min-h-[200px] px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
+                                                    className="w-full flex-1 min-h-[200px] px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none shadow-inner"
                                                 />
+                                                <p className="mt-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">
+                                                    Variabel otomatis diganti saat dikirim. Jika nama kosong, otomatis menjadi "Kak"
+                                                </p>
                                                 {errors.message && <p className="text-xs text-red-500 font-bold mt-1.5">{errors.message}</p>}
                                             </div>
                                         </div>

@@ -19,6 +19,7 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
     const [isDetailDrawerOpen, setIsDetailDrawerOpen] = React.useState(false);
     const [drawerTabIndex, setDrawerTabIndex] = React.useState(0);
     const [selectedLeadId, setSelectedLeadId] = React.useState(null);
+    const [drawerRefreshTrigger, setDrawerRefreshTrigger] = React.useState(0);
     const [isWhatsappModalOpen, setIsWhatsappModalOpen] = React.useState(false);
     const [whatsappLead, setWhatsappLead] = React.useState(null);
     
@@ -28,6 +29,7 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
         setDrawerTabIndex(tabIndex);
         setSelectedLeadId(id);
         setIsDetailDrawerOpen(true);
+        setDrawerRefreshTrigger(0);
     };
 
     const openWhatsappModal = (lead) => {
@@ -129,8 +131,16 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
                     setIsLeadModalOpen(false);
                     setEditingLead(null);
                 }}
-                onSaveSuccess={(newLeadId) => {
-                    if (newLeadId) openLeadDetail(newLeadId, 2);
+                onSaveSuccess={(savedLeadId) => {
+                    // Update dashboard stats
+                    router.reload({ preserveScroll: true });
+                    
+                    // Always increment trigger
+                    setDrawerRefreshTrigger(prev => prev + 1);
+                    
+                    if (!isDetailDrawerOpen && savedLeadId) {
+                        openLeadDetail(savedLeadId, 0);
+                    }
                 }}
                 lead={editingLead}
                 branches={branches}
@@ -143,6 +153,7 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
                 leadId={selectedLeadId}
                 isOpen={isDetailDrawerOpen}
                 initialTabIndex={drawerTabIndex}
+                refreshTrigger={drawerRefreshTrigger}
                 onClose={() => setIsDetailDrawerOpen(false)}
                 onEditLead={(lead) => {
                     setEditingLead(lead);

@@ -36,6 +36,7 @@ return [
     ],
     'whatsapp' => [
         'url' => env('WA_SERVER_URL', 'http://localhost:3000'),
+        'api_key' => env('WA_API_KEY'),
     ],
 
 ];

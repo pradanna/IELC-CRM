@@ -21,29 +21,42 @@ class LeadActivityResource extends JsonResource
 
     public function toArray(Request $request): array
     {
-        $properties = $this->properties->toArray();
-        $attributes = Arr::get($properties, 'attributes', []);
-        $old = Arr::get($properties, 'old', []);
+        // Extremely safe property extraction
+        $rawProps = $this->properties;
+        $properties = [];
+
+        if (is_array($rawProps)) {
+            $properties = $rawProps;
+        } elseif ($rawProps instanceof \Illuminate\Support\Collection) {
+            $properties = $rawProps->toArray();
+        } elseif (is_string($rawProps)) {
+            $properties = json_decode($rawProps, true) ?: [];
+        }
+
+        $attributes = is_array($properties) ? Arr::get($properties, 'attributes', []) : [];
+        $old = is_array($properties) ? Arr::get($properties, 'old', []) : [];
 
         // Fields to ignore (technical/internal)
         $ignore = ['id', 'uuid', 'created_at', 'updated_at', 'deleted_at', 'lead_number'];
 
         $changes = [];
 
-        foreach ($attributes as $key => $newValue) {
-            if (in_array($key, $ignore)) {
-                continue;
-            }
+        if (is_array($attributes)) {
+            foreach ($attributes as $key => $newValue) {
+                if (!is_string($key) || in_array($key, $ignore)) {
+                    continue;
+                }
 
-            $oldValue = Arr::get($old, $key);
+                $oldValue = is_array($old) ? Arr::get($old, $key) : null;
 
-            // Only include if value actually changed
-            if ($newValue !== $oldValue) {
-                $changes[] = [
-                    'field' => str_replace('_', ' ', ucfirst(str_replace('_id', '', $key))),
-                    'old'   => $this->resolveValue($key, $oldValue),
-                    'new'   => $this->resolveValue($key, $newValue),
-                ];
+                // Only include if value actually changed (loose comparison to handle type mismatches)
+                if ($newValue != $oldValue) {
+                    $changes[] = [
+                        'field' => str_replace('_', ' ', ucfirst(str_replace('_id', '', (string)$key))),
+                        'old'   => $this->resolveValue((string)$key, $oldValue),
+                        'new'   => $this->resolveValue((string)$key, $newValue),
+                    ];
+                }
             }
         }
 
@@ -55,8 +68,8 @@ class LeadActivityResource extends JsonResource
             'causer'      => $this->causer ? [
                 'name'    => $this->causer->name,
             ] : null,
-            'created_at'  => $this->created_at->toISOString(),
-            'human_at'    => $this->created_at->diffForHumans(),
+            'created_at'  => $this->created_at ? \Carbon\Carbon::parse($this->created_at)->toISOString() : null,
+            'human_at'    => $this->created_at ? \Carbon\Carbon::parse($this->created_at)->diffForHumans() : 'Unknown time',
         ];
     }
 
@@ -92,6 +105,10 @@ class LeadActivityResource extends JsonResource
 
         if (is_bool($value)) {
             return $value ? 'Yes' : 'No';
+        }
+
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value);
         }
 
         return (string) $value;

@@ -123,6 +123,8 @@ This is CRITICAL. Every query must be optimized:
 - **API Design**: RESTful principles for all endpoints.
 
 ## Guidelines for AI
+- **Sebelum membuat migration baru**: Selalu cek `docs/database-schema.md` untuk memastikan tabel/kolom belum ada. Jangan duplikasi schema yang sudah ada.
+- **Sebelum menulis `authorize()` atau route middleware**: Selalu cek `docs/rbac.md` untuk permission yang benar. Jangan hardcode role name di controller.
 - When asked to "act as BE", always follow the Thin Controller + Action pattern.
 - Every `store`/`update`/`destroy` MUST use an Action class.
 - Every controller method receiving input MUST use a FormRequest.

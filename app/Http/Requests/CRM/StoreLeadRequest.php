@@ -15,14 +15,20 @@ class StoreLeadRequest extends FormRequest
     {
         return [
             'branch_id' => ['required', 'exists:branches,id'],
-            'name'      => ['nullable', 'string', 'max:255'],
-            'phone'     => ['required', 'string', 'max:20'],
-            'email'     => ['nullable', 'email', 'unique:leads,email'],
-            'lead_type' => ['nullable', 'string'], // kids, teens, adult, ielts, toefl, toefl_ibt
-            'is_online' => ['boolean'],
-            'province'  => ['nullable', 'string'],
-            'city'      => ['nullable', 'string'],
+            'name'       => ['nullable', 'string', 'max:255'],
+            'nickname'   => ['nullable', 'string', 'max:255'],
+            'gender'     => ['nullable', 'in:L,P'],
+            'phone'      => ['required', 'string', 'max:20'],
+            'email'      => ['nullable', 'email', 'unique:leads,email'],
+            'lead_type'  => ['nullable', 'string'], // kids, teens, adult, ielts, toefl, toefl_ibt
+            'is_online'  => ['boolean'],
+            'province'   => ['nullable', 'string'],
+            'city'       => ['nullable', 'string'],
+            'address'    => ['nullable', 'string'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
             'birth_date' => ['nullable', 'date'],
+            'school'     => ['nullable', 'string', 'max:255'],
+            'grade'      => ['nullable', 'string', 'in:PG,TK,SD,SMP,SMA,KULIAH,UMUM'],
             
             // Guardians
             'guardians'           => ['nullable', 'array', 'max:5'],

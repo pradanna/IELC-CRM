@@ -3,7 +3,9 @@ import { Link, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 
 export default function CrmLayout({ children, onNewLead, onSelectLead }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const pendingCount = props.pending_registrations_count || 0;
+    
     const [searchQuery, setSearchQuery] = React.useState('');
     const [results, setResults] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -14,6 +16,12 @@ export default function CrmLayout({ children, onNewLead, onSelectLead }) {
         { name: 'Dashboard', href: route('admin.crm.leads.index'), active: route().current('admin.crm.leads.index') },
         { name: 'List View', href: route('admin.crm.leads.list'), active: route().current('admin.crm.leads.list') },
         { name: 'Kanban Board', href: route('admin.crm.leads.kanban'), active: route().current('admin.crm.leads.kanban') },
+        { 
+            name: 'Registration Inbox', 
+            href: route('admin.crm.registrations.index'), 
+            active: route().current('admin.crm.registrations.index'),
+            badge: pendingCount
+        },
     ];
 
     // Debounced Search Logic
@@ -131,13 +139,18 @@ export default function CrmLayout({ children, onNewLead, onSelectLead }) {
                         <Link
                             key={tab.name}
                             href={tab.href}
-                            className={`pb-4 text-sm font-black tracking-tight transition-all relative ${
+                            className={`pb-4 text-sm font-black tracking-tight transition-all relative flex items-center gap-2 ${
                                 tab.active 
                                 ? 'text-red-600 border-b-2 border-red-600' 
                                 : 'text-gray-400 hover:text-gray-600'
                             }`}
                         >
                             {tab.name}
+                            {tab.badge > 0 && (
+                                <span className="flex items-center justify-center min-w-[20px] h-[20px] px-1.5 bg-red-600 text-white text-[10px] font-black rounded-full shadow-lg shadow-red-200 animate-in zoom-in duration-300">
+                                    {tab.badge}
+                                </span>
+                            )}
                         </Link>
                     ))}
                 </div>

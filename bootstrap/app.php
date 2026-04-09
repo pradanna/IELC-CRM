@@ -15,8 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
-$middleware->trustProxies(at: '*');
-        //
+        $middleware->trustProxies(at: '*');
+        
+        // Exempt Webhook WA from CSRF
+        $middleware->validateCsrfTokens(except: [
+            '/webhook/whatsapp/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

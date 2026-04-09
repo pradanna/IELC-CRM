@@ -17,9 +17,13 @@ class Lead extends Model
     protected $fillable = [
         'lead_number',
         'name',
+        'nickname',
+        'gender',
         'phone',
         'email',
         'birth_date',
+        'school',
+        'grade',
         'branch_id',
         'owner_id',
         'created_by',
@@ -29,9 +33,14 @@ class Lead extends Model
         'is_online',
         'province',
         'city',
+        'address',
+        'postal_code',
         'follow_up_count',
         'last_activity_at',
         'enrolled_at',
+        'self_registration_token',
+        'pending_updates',
+        'plotting',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -51,6 +60,8 @@ class Lead extends Model
             'last_activity_at' => 'datetime',
             'enrolled_at' => 'datetime',
             'birth_date' => 'date',
+            'pending_updates' => 'array',
+            'plotting' => 'json',
         ];
     }
 
@@ -135,5 +146,34 @@ class Lead extends Model
             ->whereHas('guardians', function ($query) use ($guardianPhones) {
                 $query->whereIn('phone', $guardianPhones);
             });
+    }
+
+    public function ptSessions(): HasMany
+    {
+        return $this->hasMany(PtSession::class);
+    }
+
+    public function consultations(): HasMany
+    {
+        return $this->hasMany(LeadConsultation::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function chatLogs(): HasMany
+    {
+        return $this->hasMany(LeadChatLog::class);
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($lead) {
+            if (!$lead->self_registration_token) {
+                $lead->self_registration_token = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
     }
 }

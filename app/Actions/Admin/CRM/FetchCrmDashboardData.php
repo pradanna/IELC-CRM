@@ -173,6 +173,7 @@ class FetchCrmDashboardData
                 'stats' => $stats,
                 'tasks' => $tasks,
                 'trend' => $enrollmentTrend,
+                'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
                 'filters' => [
                     'month' => $month,
                     'year' => $year,

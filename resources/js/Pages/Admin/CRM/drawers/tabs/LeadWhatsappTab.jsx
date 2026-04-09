@@ -66,68 +66,30 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
         return results.slice(0, 10);
     }, [mediaAssets, mediaSearch]);
 
-    // 1. WhatsApp Message Parser (Baileys Format)
+    // 1. WhatsApp Message Parser (New SQLite Flat Format)
     const parseWaMessage = (raw) => {
-        const msg = raw.message || {};
-        const key = raw.key || {};
-        const timestamp = raw.messageTimestamp 
-            ? new Date(raw.messageTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        const timestamp = raw.timestamp
+            ? new Date(raw.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : '--:--';
 
-        // 💡 KAMUS PENERJEMAH MIMETYPE KE EKSTENSI
-        const mimeToExt = {
-            "image/jpeg": "jpg",
-            "image/png": "png",
-            "image/webp": "webp",
-            "image/gif": "gif",
-            "application/pdf": "pdf",
-            "application/msword": "doc",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-            "video/mp4": "mp4",
-            "audio/mpeg": "mp3",
-            "audio/ogg": "ogg",
-            "audio/mp4": "m4a",
-        };
-
-        // Teks prioritize: conversation -> text -> caption
-        let body = msg.conversation || 
-                   msg.extendedTextMessage?.text || 
-                   msg.imageMessage?.caption || 
-                   msg.videoMessage?.caption || 
-                   "";
-
+        // Deteksi tipe berdasarkan media_url
         let type = 'text';
-        let localImageUrl = null;
-        let fileName = 'file';
+        let mediaUrl = null;
 
-        // Konstruksi URL lokal sesuai mimetype menggunakan Kamus
-        if (msg.imageMessage) {
+        if (raw.media_url) {
             type = 'image';
-            const bId = lead?.branch_code?.toLowerCase() || 'solo';
-            const ext = mimeToExt[msg.imageMessage.mimetype] || "jpg";
-            const apiBase = waServerUrl || 'http://localhost:3000';
-            localImageUrl = `${apiBase}/media/${bId}/${key.id}.${ext}`;
-        } else if (msg.documentMessage) {
-            fileName = msg.documentMessage.fileName || 'Dokumen';
-            if (!body) body = fileName;
-            type = 'document';
-            // Bisa juga ditambahkan localUrl untuk dokumen jika diperlukan nanti
-        } else if (msg.videoMessage) {
-            type = 'video';
-        } else if (msg.audioMessage) {
-            type = 'audio';
+            mediaUrl = raw.media_url;
         }
 
         return {
-            id: key.id,
-            fromMe: key.fromMe,
-            body,
+            id: raw.id,
+            fromMe: Boolean(raw.fromMe), // SQLite simpan 0/1 integer
+            body: raw.content || '',
             type,
             timestamp,
-            rawTimestamp: raw.messageTimestamp,
-            mediaUrl: localImageUrl || raw.localImageUrl, 
-            localImageUrl: localImageUrl, 
-            fileName: fileName
+            rawTimestamp: raw.timestamp,
+            mediaUrl,
+            localImageUrl: mediaUrl, // Alias untuk kompabilitas render
         };
     };
 
@@ -146,8 +108,8 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
 
         const checkWaStatus = async () => {
             try {
-                const apiBase = waServerUrl || 'http://localhost:3000';
-                const res = await axios.get(`${apiBase}/api/wa-status/${branchCode}`);
+                // Pointing to absolute Laravel route via Ziggy
+                const res = await axios.get(route('admin.whatsapp.status', branchCode));
                 const currentStatus = res.data.status;
                 setWaStatus(currentStatus);
                 if (currentStatus === 'waiting_for_scan') {
@@ -183,8 +145,7 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
 
         try {
             const cleanPhone = formatPhone(lead.phone);
-            const apiBase = waServerUrl || 'http://localhost:3000';
-            const url = `${apiBase}/api/chat-history/${branchCode}/${cleanPhone}`;
+            const url = route('admin.whatsapp.history', [branchCode, cleanPhone]);
             const params = before ? { before } : {};
             
             const res = await axios.get(url, { params });
@@ -204,7 +165,18 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
             }
 
             if (isLoadMore) {
-                setMessages(prev => [...parsed, ...prev]);
+                setMessages(prev => {
+                    const combined = [...parsed, ...prev];
+                    // Deduplicate by ID
+                    const seen = new Set();
+                    return combined.filter(msg => {
+                        if (!msg.id) return true;
+                        if (seen.has(msg.id)) return false;
+                        seen.add(msg.id);
+                        return true;
+                    });
+                });
+                
                 // Jika data yang datang kurang dari biasanya (misal limit 20), berarti sudah habis
                 if (rawMessages.length < 10) setHasMore(false);
                 
@@ -215,7 +187,16 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
                     }
                 }, 0);
             } else {
-                setMessages(parsed);
+                // Deduplicate for initial load too
+                const seen = new Set();
+                const unique = parsed.filter(msg => {
+                    if (!msg.id) return true;
+                    if (seen.has(msg.id)) return false;
+                    seen.add(msg.id);
+                    return true;
+                });
+                
+                setMessages(unique);
                 if (rawMessages.length < 10) setHasMore(false);
                 
                 // Scroll ke paling bawah untuk load pertama kali
@@ -250,8 +231,7 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
         setIsSending(true);
         try {
             const cleanPhone = formatPhone(lead.phone);
-            const apiBase = waServerUrl || 'http://localhost:3000';
-            const response = await axios.post(`${apiBase}/api/send-message`, {
+            const response = await axios.post(route('admin.whatsapp.send'), {
                 branch: branchCode,
                 phone: cleanPhone,
                 message: inputText

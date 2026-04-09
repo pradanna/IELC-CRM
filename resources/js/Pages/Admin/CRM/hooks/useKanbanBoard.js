@@ -19,6 +19,7 @@ export default function useKanbanBoard(kanbanData) {
     const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
     const [selectedLeadId, setSelectedLeadId] = useState(null);
     const [drawerTabIndex, setDrawerTabIndex] = useState(0);
+    const [drawerRefreshTrigger, setDrawerRefreshTrigger] = useState(0);
 
     // Sync state with props
     useEffect(() => {
@@ -40,6 +41,7 @@ export default function useKanbanBoard(kanbanData) {
         setDrawerTabIndex(tabIndex);
         setSelectedLeadId(id);
         setIsDetailDrawerOpen(true);
+        setDrawerRefreshTrigger(0);
     };
 
     const findContainer = (id) => {
@@ -165,6 +167,8 @@ export default function useKanbanBoard(kanbanData) {
         setIsDetailDrawerOpen,
         selectedLeadId,
         drawerTabIndex,
+        drawerRefreshTrigger,
+        setDrawerRefreshTrigger,
         sensors,
         openLeadDetail,
         handleDragStart,

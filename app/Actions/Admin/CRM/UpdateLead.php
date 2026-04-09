@@ -13,15 +13,21 @@ class UpdateLead
             
             $lead->update([
                 'name' => $data['name'],
+                'nickname' => $data['nickname'] ?? null,
+                'gender' => $data['gender'] ?? null,
                 'phone' => $data['phone'],
                 'email' => $data['email'] ?? null,
                 'birth_date' => $data['birth_date'] ?? null,
+                'school' => $data['school'] ?? null,
+                'grade' => $data['grade'] ?? null,
                 'branch_id' => $data['branch_id'],
                 'lead_source_id' => $data['lead_source_id'] ?? null,
                 'lead_type_id' => $data['lead_type_id'] ?? null,
                 'is_online' => $data['is_online'] ?? false,
                 'province' => $data['province'] ?? null,
                 'city' => $data['city'] ?? null,
+                'address' => $data['address'] ?? null,
+                'postal_code' => $data['postal_code'] ?? null,
                 'last_activity_at' => now(),
             ]);
 

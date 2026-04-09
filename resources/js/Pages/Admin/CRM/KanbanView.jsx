@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CrmLayout from './partials/CrmLayout';
 import FiltersBar from './partials/FiltersBar';
@@ -25,6 +25,8 @@ export default function KanbanView({ auth, kanbanData, filters, branches, phases
         setIsDetailDrawerOpen,
         selectedLeadId,
         drawerTabIndex,
+        drawerRefreshTrigger,
+        setDrawerRefreshTrigger,
         sensors,
         openLeadDetail,
         handleDragStart,
@@ -153,8 +155,13 @@ export default function KanbanView({ auth, kanbanData, filters, branches, phases
                     setIsLeadModalOpen(false);
                     setEditingLead(null);
                 }}
-                onSaveSuccess={(newLeadId) => {
-                    if (newLeadId) openLeadDetail(newLeadId, 0);
+                onSaveSuccess={(savedLeadId) => {
+                    // Always increment trigger
+                    setDrawerRefreshTrigger(prev => prev + 1);
+                    
+                    if (!isDetailDrawerOpen && savedLeadId) {
+                        openLeadDetail(savedLeadId, 0);
+                    }
                 }}
                 lead={editingLead}
                 branches={branches}
@@ -166,6 +173,7 @@ export default function KanbanView({ auth, kanbanData, filters, branches, phases
                 leadId={selectedLeadId}
                 isOpen={isDetailDrawerOpen}
                 initialTabIndex={drawerTabIndex}
+                refreshTrigger={drawerRefreshTrigger}
                 onClose={() => setIsDetailDrawerOpen(false)}
                 onEditLead={(lead) => {
                     setEditingLead(lead);

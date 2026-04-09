@@ -13,11 +13,18 @@ class LeadResource extends JsonResource
             'id'             => $this->id,
             'lead_number'    => $this->lead_number,
             'name'           => $this->name,
+            'nickname'       => $this->nickname,
+            'gender'         => $this->gender,
             'email'          => $this->email,
             'phone'          => $this->phone,
+            'birth_date'     => $this->birth_date ? $this->birth_date->format('Y-m-d') : null,
+            'school'         => $this->school,
+            'grade'          => $this->grade,
             'city'           => $this->city,
             'province'       => $this->province,
             'is_online'      => (bool)$this->is_online,
+            'self_registration_token' => $this->self_registration_token,
+            'plotting'       => $this->plotting,
             
             // Raw IDs for edit mode
             'branch_id'      => $this->branch_id,
@@ -66,6 +73,52 @@ class LeadResource extends JsonResource
             'activities'     => $this->whenLoaded('activities', function() {
                 return LeadActivityResource::collection($this->activities);
             }),
+
+            'pt_sessions'    => \App\Http\Resources\Crm\PtExam\PtSessionResource::collection($this->whenLoaded('ptSessions')),
+
+            'consultations'  => $this->whenLoaded('consultations', fn() => 
+                $this->consultations->map(fn($c) => [
+                    'id'                => $c->id,
+                    'consultant_name'   => $c->consultant?->name,
+                    'consultation_date' => $c->consultation_date->format('Y-m-d'),
+                    'formatted_date'    => $c->consultation_date->format('d M Y'),
+                    'notes'             => $c->notes,
+                    'recommended_level' => $c->recommended_level,
+                    'follow_up_note'    => $c->follow_up_note,
+                    'metadata'          => $c->metadata,
+                    'created_at'        => $c->created_at->toISOString(),
+                ])
+            ),
+
+            'invoices'  => $this->whenLoaded('invoices', fn() => 
+                $this->invoices->map(fn($v) => [
+                    'id'             => $v->id,
+                    'invoice_number' => $v->invoice_number,
+                    'total_amount'   => $v->total_amount,
+                    'status'         => $v->status,
+                    'paid_at'        => $v->paid_at ? $v->paid_at->format('d M Y') : null,
+                ])
+            ),
+
+            'student'   => $this->whenLoaded('student', fn() => [
+                'id'            => $this->student->id,
+                'study_classes' => $this->student->studyClasses->map(fn($sc) => [
+                    'id'   => $sc->id,
+                    'name' => $sc->name,
+                ]),
+            ]),
+
+            'chat_logs' => $this->whenLoaded('chatLogs', fn() => 
+                $this->chatLogs->map(fn($log) => [
+                    'id'                => $log->id,
+                    'template_title'    => $log->template?->title ?? 'Custom/External',
+                    'message'           => $log->message,
+                    'sender_name'       => $log->sender?->name,
+                    'lead_phase_id'     => $log->lead_phase_id,
+                    'created_at'        => $log->created_at->toISOString(),
+                    'formatted_date'    => $log->created_at->format('d M Y, H:i'),
+                ])
+            ),
 
             'created_at'     => $this->created_at->toISOString(),
             'formatted_at'   => $this->created_at->format('d M Y'),

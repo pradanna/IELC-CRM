@@ -22,7 +22,7 @@ class CrmDashboardController extends Controller
         return Inertia::render('Admin/CRM/Dashboard', [
             'data' => $dashboardData,
             'branches' => Branch::select('id', 'name')->get(),
-            'phases' => \App\Models\LeadPhase::select('id', 'name')->get(),
+            'phases' => \App\Models\LeadPhase::select('id', 'name', 'code')->get(),
             'sources' => LeadSource::select('id', 'name')->get(),
             'types' => LeadType::select('id', 'name')->get(),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
