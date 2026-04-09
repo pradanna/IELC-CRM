@@ -7,8 +7,8 @@ use App\Models\PtSession;
 use App\Models\PtExam;
 use App\Models\Lead;
 use App\Actions\Crm\PtExam\CreatePtSessionAction;
-use App\Http\Resources\Crm\PtExam\PtSessionResource;
-use App\Http\Resources\Crm\PtExam\PtExamResource;
+use App\Http\Resources\CRM\PtExam\PtSessionResource;
+use App\Http\Resources\CRM\PtExam\PtExamResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
