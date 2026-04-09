@@ -16,7 +16,7 @@ use App\Models\LeadSource;
 use App\Models\LeadType;
 use App\Http\Resources\CRM\LeadResource;
 use App\Http\Resources\CRM\LeadActivityResource;
-use App\Http\Resources\Crm\PtExam\PtExamResource;
+use App\Http\Resources\CRM\PtExam\PtExamResource;
 use App\Models\PtExam;
 use App\Models\LeadConsultation;
 use App\Http\Requests\CRM\StoreConsultationRequest;

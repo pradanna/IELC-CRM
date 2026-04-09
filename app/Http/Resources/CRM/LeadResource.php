@@ -74,7 +74,7 @@ class LeadResource extends JsonResource
                 return LeadActivityResource::collection($this->activities);
             }),
 
-            'pt_sessions'    => \App\Http\Resources\Crm\PtExam\PtSessionResource::collection($this->whenLoaded('ptSessions')),
+            'pt_sessions'    => \App\Http\Resources\CRM\PtExam\PtSessionResource::collection($this->whenLoaded('ptSessions')),
 
             'consultations'  => $this->whenLoaded('consultations', fn() => 
                 $this->consultations->map(fn($c) => [
