@@ -168,4 +168,16 @@ class PublicLeadController extends Controller
 
         return redirect()->back()->with('success', 'Data Anda telah lunas kami terima dan sedang dalam proses verifikasi admin. Terima kasih!');
     }
+
+    /**
+     * Publicly download an invoice via UUID.
+     */
+    public function downloadInvoice($id)
+    {
+        $invoice = \App\Models\Invoice::with(['items', 'lead', 'studyClass.branch'])->findOrFail($id);
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('invoice'));
+        
+        return $pdf->stream("Invoice-{$invoice->invoice_number}.pdf");
+    }
 }

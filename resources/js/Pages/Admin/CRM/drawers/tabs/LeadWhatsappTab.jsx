@@ -137,6 +137,24 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
         }
     }, [waStatus, lead?.id]); // Re-fetch jika ganti lead
 
+    // 4. Real-time Message Listener (Laravel Echo)
+    useEffect(() => {
+        if (!lead?.id) return;
+
+        const channel = window.Echo.channel('whatsapp-messages')
+            .listen('.message.received', (e) => {
+                // Pastikan pesan ini untuk lead yang sedang dibuka
+                if (e.lead && e.lead.id === lead.id) {
+                    console.log('Real-time message received for current lead, refetching...');
+                    fetchHistory(false, null);
+                }
+            });
+
+        return () => {
+            window.Echo.leaveChannel('whatsapp-messages');
+        };
+    }, [lead?.id]);
+
     const fetchHistory = async (isLoadMore = false, before = null) => {
         if (isLoadingHistory || (!hasMore && isLoadMore)) return;
 

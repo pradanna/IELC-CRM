@@ -33,6 +33,9 @@ Route::post('/join', [\App\Http\Controllers\Public\PublicLeadController::class, 
 Route::get('/fill-data/{token}', [\App\Http\Controllers\Public\PublicLeadController::class, 'fillingForm'])->name('public.join.filling');
 Route::post('/fill-data/{token}', [\App\Http\Controllers\Public\PublicLeadController::class, 'submitFilling'])->name('public.join.filling.submit');
 
+// Public Invoice View
+Route::get('/invoice/{id}', [\App\Http\Controllers\Public\PublicLeadController::class, 'downloadInvoice'])->name('public.invoice.download');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -61,6 +64,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
     Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'destroy'])->name('crm.leads.destroy');
     Route::post('/crm/leads/{lead}/send-template', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'sendTemplate'])->name('crm.leads.send-template');
+    Route::post('/crm/leads/{lead}/send-whatsapp', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'sendMessage'])->name('crm.leads.send-whatsapp');
     Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
     Route::post('/crm/leads', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'store'])->name('crm.leads.store');
     Route::get('/crm/cities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'getCities'])->name('crm.cities');

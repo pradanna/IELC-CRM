@@ -20,19 +20,29 @@ class WhatsappWebhookController extends Controller
      */
     public function handleIncomingMessage(Request $request): JsonResponse
     {
+        Log::info("WA Webhook Inbound Call Received", $request->all());
+
         $validated = $request->validate([
             'phone' => 'required|string',
             'message' => 'nullable|string',
             'branch' => 'nullable|string',
         ]);
 
-        $phone = $this->normalizePhone($validated['phone']);
+        $clean = preg_replace('/[^0-9]/', '', $validated['phone']);
+        
+        // Ambil 10 digit terakhir untuk pencarian yang lebih fleksibel
+        $searchSuffix = substr($clean, -10);
 
-        // Cari lead berdasarkan HP (asumsi format di DB konsisten)
-        $lead = Lead::where('phone', 'like', "%$phone%")->first();
+        // Cari lead berdasarkan 10 digit terakhir (asumsi format di DB beragam)
+        $lead = Lead::where('phone', 'like', "%$searchSuffix")->first();
 
         if ($lead) {
-            // Reset follow-up counter karena lead merespons
+            // Broadcast real-time notification (Setiap ada pesan masuk)
+            event(new \App\Events\WhatsappMessageReceived($lead, $validated['message'] ?? 'Media/Other message'));
+            
+            Log::info("WA Webhook: Lead {$lead->id} matched via suffix %$searchSuffix");
+            
+            // Reset follow-up counter jika sedang dalam mode follow-up
             if ($lead->follow_up_count > 0) {
                 $lead->update([
                     'follow_up_count' => 0,
@@ -42,8 +52,6 @@ class WhatsappWebhookController extends Controller
                 activity()
                     ->performedOn($lead)
                     ->log("Follow-up reset otomatis (Lead membalas di WhatsApp)");
-
-                Log::info("WA Webhook: Lead {$lead->id} responded. Counter reset.");
             }
 
             return response()->json(['success' => true, 'message' => 'Lead found and updated.']);
@@ -52,18 +60,9 @@ class WhatsappWebhookController extends Controller
         return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
     }
 
-    private function normalizePhone(string $phone): string
+    private function normalizePhone($phone)
     {
-        // Hilangkan karakter non-digit
-        $clean = preg_replace('/[^0-9]/', '', $phone);
-        
-        // Standarisasi ke format 62 jika mulai dari 0 atau 8
-        if (str_starts_with($clean, '0')) {
-            $clean = '62' . substr($clean, 1);
-        } elseif (str_starts_with($clean, '8')) {
-            $clean = '62' . $clean;
-        }
-
-        return $clean;
+        // Fungsi ini sekarang hanya sebagai pembersih regex saja jika dipakai di tempat lain
+        return preg_replace('/[^0-9]/', '', $phone);
     }
 }

@@ -1,58 +1,70 @@
 import { usePage } from "@inertiajs/react";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 
 export default function Toast() {
     const { flash, errors } = usePage().props;
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState("");
     const [type, setType] = useState("success");
+    const [lastMessage, setLastMessage] = useState("");
+    const timerRef = useRef(null);
 
+    // Watch for flash/errors and show Toast
     useEffect(() => {
-        if (flash?.success) {
-            setMessage(flash.success);
-            setType("success");
-            setVisible(true);
-        } else if (flash?.error) {
-            setMessage(flash.error);
-            setType("error");
-            setVisible(true);
-        } else if (errors && Object.keys(errors).length > 0) {
-            setMessage("Silakan periksa kembali inputan form Anda.");
-            setType("error");
-            setVisible(true);
-        }
+        const currentMessage = flash?.success || flash?.error || (errors && Object.keys(errors).length > 0 ? "Silakan periksa kembali inputan form Anda." : "");
+        const currentType = flash?.success ? "success" : "error";
 
-        if (
-            flash?.success ||
-            flash?.error ||
-            (errors && Object.keys(errors).length > 0)
-        ) {
-            const timer = setTimeout(() => {
+        if (currentMessage && currentMessage !== lastMessage) {
+            setMessage(currentMessage);
+            setType(currentType);
+            setVisible(true);
+            setLastMessage(currentMessage);
+
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => {
                 setVisible(false);
-            }, 3000); // Otomatis hilang setelah 3 detik
-            return () => clearTimeout(timer);
+                setLastMessage(""); // Clear last message so it can be re-shown if same message comes again later
+            }, 3000);
         }
-    }, [flash, errors]);
+    }, [flash, errors, lastMessage]);
+
+    // Clean up on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, []);
 
     if (!visible) return null;
 
-    return (
-        <div className="fixed top-5 right-5 z-[999] flex min-w-[300px] animate-in fade-in slide-in-from-top-4 items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-lg ring-1 ring-gray-900/5 transition-all duration-300">
-            {type === "success" ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-            ) : (
-                <AlertCircle className="h-5 w-5 text-red-500" />
-            )}
-            <p className="flex-1 text-sm font-medium text-gray-900">
-                {message}
-            </p>
+    const content = (
+        <div 
+            className="fixed top-8 right-8 z-[999999] flex min-w-[320px] max-w-md animate-in fade-in slide-in-from-top-8 items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-2xl ring-1 ring-slate-900/5 transition-all duration-500"
+            style={{ pointerEvents: 'auto' }}
+        >
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${type === "success" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
+                {type === "success" ? <CheckCircle className="h-6 w-6" /> : <AlertCircle className="h-6 w-6" />}
+            </div>
+            
+            <div className="flex-1">
+                <p className="text-sm font-bold text-slate-900 leading-snug">
+                    {message}
+                </p>
+            </div>
+
             <button
-                onClick={() => setVisible(false)}
-                className="rounded-md p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                onClick={() => {
+                    setVisible(false);
+                    setLastMessage("");
+                }}
+                className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600 focus:outline-none"
             >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
             </button>
         </div>
     );
+
+    return createPortal(content, document.body);
 }

@@ -26,6 +26,9 @@ class DatabaseSeeder extends Seeder
             MonthlyTargetSeeder::class,
             LeadSeeder::class,
             TaskSeeder::class,
+            ChatTemplateSeeder::class,
         ]);
+
+
     }
 }

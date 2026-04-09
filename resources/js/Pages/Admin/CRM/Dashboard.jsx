@@ -1,35 +1,41 @@
 import React from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import CrmLayout from './partials/CrmLayout';
 import FiltersBar from './partials/FiltersBar';
 import TaskList from './partials/TaskList';
 import EnrollmentTrendChart from './partials/EnrollmentTrendChart';
 import StatsCard from '@/Pages/Admin/Dashboard/partials/StatsCard';
-import CreateEditLeadModal from './modals/CreateEditLeadModal';
-import LeadDetailDrawer from './drawers/LeadDetailDrawer';
 import SendWhatsappModal from './modals/SendWhatsappModal';
+
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
+import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 import axios from 'axios';
+import CrmLayout from './partials/CrmLayout';
 
 export default function Dashboard({ data, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
     const { stats, tasks, trend, filters } = data;
-    const [isLeadModalOpen, setIsLeadModalOpen] = React.useState(false);
-    const [editingLead, setEditingLead] = React.useState(null);
-    const [isDetailDrawerOpen, setIsDetailDrawerOpen] = React.useState(false);
-    const [drawerTabIndex, setDrawerTabIndex] = React.useState(0);
-    const [selectedLeadId, setSelectedLeadId] = React.useState(null);
-    const [drawerRefreshTrigger, setDrawerRefreshTrigger] = React.useState(0);
+    const { openDrawer } = useLeadDrawer();
+
+    
     const [isWhatsappModalOpen, setIsWhatsappModalOpen] = React.useState(false);
     const [whatsappLead, setWhatsappLead] = React.useState(null);
+
+    React.useEffect(() => {
+        const handleWhatsapp = (e) => {
+            setWhatsappLead(e.detail.lead);
+            setIsWhatsappModalOpen(true);
+        };
+        document.addEventListener('openSendWhatsappModal', handleWhatsapp);
+        return () => {
+            document.removeEventListener('openSendWhatsappModal', handleWhatsapp);
+        };
+    }, []);
+
     
     const { getPhaseStyle } = useLeadPhaseStyle();
 
     const openLeadDetail = (id, tabIndex = 0) => {
-        setDrawerTabIndex(tabIndex);
-        setSelectedLeadId(id);
-        setIsDetailDrawerOpen(true);
-        setDrawerRefreshTrigger(0);
+        openDrawer(id, tabIndex);
     };
 
     const openWhatsappModal = (lead) => {
@@ -66,12 +72,9 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
                 <CrmLayout 
-                    onNewLead={() => {
-                        setEditingLead(null);
-                        setIsLeadModalOpen(true);
-                    }}
                     onSelectLead={(id) => openLeadDetail(id, 0)} 
                 >
+
                     <div className="space-y-12">
                         {/* Global Filters Section */}
                         <FiltersBar 
@@ -125,45 +128,7 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
             </div>
 
             {/* Modals & Drawer */}
-            <CreateEditLeadModal 
-                isOpen={isLeadModalOpen} 
-                onClose={() => {
-                    setIsLeadModalOpen(false);
-                    setEditingLead(null);
-                }}
-                onSaveSuccess={(savedLeadId) => {
-                    // Update dashboard stats
-                    router.reload({ preserveScroll: true });
-                    
-                    // Always increment trigger
-                    setDrawerRefreshTrigger(prev => prev + 1);
-                    
-                    if (!isDetailDrawerOpen && savedLeadId) {
-                        openLeadDetail(savedLeadId, 0);
-                    }
-                }}
-                lead={editingLead}
-                branches={branches}
-                sources={sources}
-                types={types}
-                provinces={provinces}
-            />
 
-            <LeadDetailDrawer 
-                leadId={selectedLeadId}
-                isOpen={isDetailDrawerOpen}
-                initialTabIndex={drawerTabIndex}
-                refreshTrigger={drawerRefreshTrigger}
-                onClose={() => setIsDetailDrawerOpen(false)}
-                onEditLead={(lead) => {
-                    setEditingLead(lead);
-                    setIsLeadModalOpen(true);
-                }}
-                onOpenWhatsapp={openWhatsappModal}
-                phases={phases}
-                chatTemplates={chatTemplates}
-                mediaAssets={mediaAssets}
-            />
 
             <SendWhatsappModal
                 isOpen={isWhatsappModalOpen}

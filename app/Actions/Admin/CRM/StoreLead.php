@@ -14,22 +14,10 @@ class StoreLead
     {
         return \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
             $now = Carbon::now();
-            $datePrefix = $now->format('Ymd');
-            
-            // Find the next sequence for the day
-            $lastLead = Lead::whereDate('created_at', $now->toDateString())
-                ->orderBy('created_at', 'desc')
-                ->first();
+            // Generate Unique Lead Number based on datetime (to avoid collision on delete/recreate)
+            $leadNumber = "L-" . $now->format('Ymd-His');
 
-            $sequence = 1;
-            if ($lastLead) {
-                $lastLeadNumber = $lastLead->lead_number;
-                $parts = explode('-', $lastLeadNumber);
-                $lastSequence = (int) end($parts);
-                $sequence = $lastSequence + 1;
-            }
 
-            $leadNumber = "L-{$datePrefix}-" . str_pad($sequence, 4, '0', STR_PAD_LEFT);
             
             // Default Phase: 'lead' (status: new)
             $defaultPhase = LeadPhase::where('code', 'lead')->first();

@@ -6,38 +6,34 @@ import axios from 'axios';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 import useWhatsapp from '@/Hooks/useWhatsapp';
 
+
 import LeadDetailTab from './tabs/LeadDetailTab';
 import LeadActivityTab from './tabs/LeadActivityTab';
 import LeadWhatsappTab from './tabs/LeadWhatsappTab';
 import LeadPipelineTab from './tabs/LeadPipelineTab';
 import LeadPendingUpdatesTab from './tabs/LeadPendingUpdatesTab';
-
+import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 export default function LeadDetailDrawer({ 
-    leadId, 
-    isOpen, 
-    onClose, 
-    onEditLead,
-    onOpenWhatsapp,
-    chatTemplates = [], 
-    mediaAssets = [],
-    phases = [],
-    initialTabIndex = 0,
-    refreshTrigger = 0
+    phases = []
 }) {
+    const { isOpen, closeDrawer, leadId, tabIndex, refreshTrigger } = useLeadDrawer();
+    
     const [lead, setLead] = useState(null);
     const [loading, setLoading] = useState(true);
     const [availableExams, setAvailableExams] = useState([]);
     const [availableClasses, setAvailableClasses] = useState([]);
     const [localChatTemplates, setLocalChatTemplates] = useState([]);
-    const [selectedIndex, setSelectedIndex] = useState(initialTabIndex);
+    const [localPhases, setLocalPhases] = useState(phases);
+    const [localMediaAssets, setLocalMediaAssets] = useState([]);
+    const [selectedIndex, setSelectedIndex] = useState(0);
     const { getPhaseStyle } = useLeadPhaseStyle();
     
     // Sync tab index when drawer opens
     useEffect(() => {
         if (isOpen) {
-            setSelectedIndex(initialTabIndex);
+            setSelectedIndex(tabIndex);
         }
-    }, [isOpen, initialTabIndex]);
+    }, [isOpen, tabIndex]);
 
     useEffect(() => {
         if (isOpen && leadId) {
@@ -66,7 +62,11 @@ export default function LeadDetailDrawer({
             setLead(response.data.lead);
             setAvailableExams(response.data.availableExams || []);
             setAvailableClasses(response.data.availableClasses || []);
-            setLocalChatTemplates(response.data.chatTemplates || []);
+            
+            if (response.data.chatTemplates) setLocalChatTemplates(response.data.chatTemplates);
+            if (response.data.phases) setLocalPhases(response.data.phases);
+            if (response.data.mediaAssets) setLocalMediaAssets(response.data.mediaAssets);
+
         } catch (error) {
             console.error('Error fetching lead details:', error);
         } finally {
@@ -112,6 +112,7 @@ export default function LeadDetailDrawer({
     return (
         <Transition.Root show={isOpen} as={React.Fragment}>
             <Dialog as="div" className="relative z-50" onClose={() => {}}>
+
                 <Transition.Child
                     as={React.Fragment}
                     enter="ease-in-out duration-500"
@@ -151,15 +152,21 @@ export default function LeadDetailDrawer({
                                                         </h2>
                                                         {!loading && lead && (
                                                             <div className="flex items-center gap-1 ml-2">
-                                                                <button 
-                                                                    onClick={() => onEditLead && onEditLead(lead)}
+                                                                 <button 
+                                                                    onClick={() => {
+                                                                        document.dispatchEvent(new CustomEvent('openEditLeadModal', { detail: { lead } }));
+                                                                    }}
+
                                                                     title="Edit Lead Data"
                                                                     className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-all"
                                                                 >
                                                                     <Edit2 size={14} />
                                                                 </button>
-                                                                <button 
-                                                                    onClick={() => onOpenWhatsapp(lead)}
+                                                                 <button 
+                                                                    onClick={() => {
+                                                                        document.dispatchEvent(new CustomEvent('openSendWhatsappModal', { detail: { lead } }));
+                                                                    }}
+
                                                                     title="Open WhatsApp"
                                                                     className="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all"
                                                                 >
@@ -177,7 +184,7 @@ export default function LeadDetailDrawer({
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={onClose}
+                                                onClick={closeDrawer}
                                                 className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all duration-300"
                                             >
                                                 <X size={24} />
@@ -232,7 +239,7 @@ export default function LeadDetailDrawer({
                                                         lead={lead}
                                                         loading={loading}
                                                         getPhaseStyle={getPhaseStyle}
-                                                        phases={phases}
+                                                        phases={localPhases}
                                                         onUpdatePhase={handleUpdatePhase}
                                                         availableExams={availableExams}
                                                         availableClasses={availableClasses}
@@ -244,8 +251,8 @@ export default function LeadDetailDrawer({
                                                 <Tab.Panel className="outline-none p-10">
                                                     <LeadWhatsappTab 
                                                         lead={lead} 
-                                                        chatTemplates={chatTemplates}
-                                                        mediaAssets={mediaAssets}
+                                                        chatTemplates={localChatTemplates}
+                                                        mediaAssets={localMediaAssets}
                                                     />
                                                 </Tab.Panel>
 

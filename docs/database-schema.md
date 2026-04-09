@@ -295,3 +295,75 @@
 | `jobs` / `job_batches` / `failed_jobs` | Laravel queue |
 | `activity_log` | Spatie ActivityLog |
 | `permissions` / `roles` / `model_has_*` | Spatie Permission (RBAC) |
+| `pt_exams` | CRM | Management paket placement test |
+| `pt_question_groups` | CRM | Kelompok soal (Reading/Listening) |
+| `pt_questions` | CRM | Detail soal |
+| `pt_question_options` | CRM | Pilihan jawaban soal |
+| `pt_sessions` | CRM | Sesi pengerjaan test oleh lead |
+| `pt_answers` | CRM | Jawaban yang diberikan lead |
+
+---
+
+## 🟣 Placement Test Module
+
+### `pt_exams`
+| Kolom | Tipe | Nullable | Catatan |
+|-------|------|:--------:|---------|
+| `id` | uuid | ❌ | PK |
+| `title` | string | ❌ | |
+| `slug` | string | ❌ | Unique |
+| `description` | text | ✅ | |
+| `duration_minutes` | unsignedInt | ❌ | Default: 60 |
+| `is_active` | boolean | ❌ | Default: true |
+
+### `pt_question_groups`
+| Kolom | Tipe | Nullable | Catatan |
+|-------|------|:--------:|---------|
+| `id` | uuid | ❌ | PK |
+| `pt_exam_id` | uuid | ❌ | FK → pt_exams |
+| `instruction` | text | ✅ | |
+| `audio_path` | string | ✅ | |
+| `reading_text` | text | ✅ | |
+| `position` | integer | ❌ | Order pengerjaan |
+
+### `pt_questions`
+| Kolom | Tipe | Nullable | Catatan |
+|-------|------|:--------:|---------|
+| `id` | uuid | ❌ | PK |
+| `pt_exam_id` | uuid | ❌ | FK → pt_exams |
+| `pt_question_group_id` | uuid | ✅ | FK → pt_question_groups |
+| `number` | integer | ✅ | Nomor urut soal |
+| `question_text` | text | ❌ | |
+| `audio_path` | string | ✅ | |
+| `points` | integer | ❌ | Default: 1 |
+| `position` | integer | ❌ | Order pengerjaan |
+
+### `pt_question_options`
+| Kolom | Tipe | Nullable | Catatan |
+|-------|------|:--------:|---------|
+| `id` | uuid | ❌ | PK |
+| `pt_question_id` | uuid | ❌ | FK → pt_questions |
+| `option_text` | string | ❌ | |
+| `is_correct` | boolean | ❌ | Default: false |
+| `position` | integer | ❌ | |
+
+### `pt_sessions`
+| Kolom | Tipe | Nullable | Catatan |
+|-------|------|:--------:|---------|
+| `id` | uuid | ❌ | PK |
+| `lead_id` | uuid | ❌ | FK → leads |
+| `pt_exam_id` | uuid | ❌ | FK → pt_exams |
+| `token` | string | ❌ | Unique access token |
+| `status` | enum | ❌ | `pending`, `in_progress`, `completed`, `expired` |
+| `started_at` | timestamp | ✅ | |
+| `finished_at` | timestamp | ✅ | |
+| `total_score` | integer | ✅ | |
+
+### `pt_answers`
+| Kolom | Tipe | Nullable | Catatan |
+|-------|------|:--------:|---------|
+| `id` | uuid | ❌ | PK |
+| `pt_session_id` | uuid | ❌ | FK → pt_sessions |
+| `pt_question_id` | uuid | ❌ | FK → pt_questions |
+| `pt_question_option_id` | uuid | ❌ | FK → pt_question_options |
+| `is_correct` | boolean | ❌ | |

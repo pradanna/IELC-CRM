@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
+import NotificationToast from "@/Components/ui/NotificationToast";
+import useWhatsappNotification from "@/Hooks/useWhatsappNotification";
+import LeadDetailDrawer from "@/Pages/Admin/CRM/drawers/LeadDetailDrawer";
 
 // IELC Logo
 const logoUrl = "/assets/images/local/IELC-Logo.webp";
@@ -146,6 +149,7 @@ const SidebarContext = React.createContext();
 
 export default function AdminLayout({ children }) {
     const [expanded, setExpanded] = React.useState(true);
+    const { notifications, removeNotification } = useWhatsappNotification();
     const { auth } = usePage().props;
     const userRole = auth.user.role;
 
@@ -235,10 +239,19 @@ export default function AdminLayout({ children }) {
                 </nav>
             </aside>
             <main className="flex-1 bg-gray-50">
-                <Navbar user={auth.user} />
+                <Navbar 
+                    user={auth.user} 
+                    waNotifications={notifications}
+                    onWaRemove={removeNotification}
+                />
                 <Toast />
+                <NotificationToast 
+                    notifications={notifications} 
+                    onRemove={removeNotification} 
+                />
                 <div className="p-4">{children}</div>
             </main>
+            <LeadDetailDrawer />
         </div>
     );
 }

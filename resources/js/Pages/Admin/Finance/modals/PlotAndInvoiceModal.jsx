@@ -19,14 +19,32 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
         items: [],
     });
 
-    useEffect(() => {
-        if (show && lead) {
-            setData('lead_id', lead.id);
-        }
-    }, [show, lead]);
-
     const classList = useMemo(() => Array.isArray(classes) ? classes : [], [classes]);
     const priceMasterList = useMemo(() => Array.isArray(priceMasters) ? priceMasters : [], [priceMasters]);
+
+    useEffect(() => {
+        if (show && lead) {
+            const classId = lead.plotting?.study_class_id || '';
+            const existingNotes = lead.plotting?.notes || '';
+            
+            // Derive price_master_id from the class if available
+            let priceId = '';
+            if (classId && classList.length > 0) {
+                const cls = classList.find(c => c.id === classId);
+                if (cls) {
+                    priceId = cls.price_master_id || '';
+                }
+            }
+
+            setData({
+                ...data,
+                lead_id: lead.id,
+                study_class_id: classId,
+                price_master_id: priceId,
+                notes: existingNotes,
+            });
+        }
+    }, [show, lead, classList]);
 
     const selectedClass = useMemo(() => {
         return classList.find(c => c.id === data.study_class_id);
@@ -37,9 +55,15 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
     }, [data.price_master_id, priceMasterList]);
 
     const remainingSessions = useMemo(() => {
+        // Priority 1: Use the remaining meetings saved during Lead Plotting
+        if (lead?.plotting?.remaining_meetings && lead.plotting.study_class_id === data.study_class_id) {
+            return Number(lead.plotting.remaining_meetings);
+        }
+
+        // Priority 2: Standard calculation if plotting data missing or class changed
         if (!selectedClass) return 0;
-        return Math.max(0, (selectedClass.total_meetings || 0) - (selectedClass.session_progress || 0));
-    }, [selectedClass]);
+        return Math.max(0, (selectedClass.total_meetings || 0) - (selectedClass.current_session_number || 0));
+    }, [selectedClass, lead, data.study_class_id]);
 
     const baseClassSubtotal = useMemo(() => {
         if (!selectedPrice || !remainingSessions || !selectedClass?.total_meetings) return 0;
@@ -156,25 +180,70 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
+                                        <div className="space-y-6 pt-4 border-t border-slate-50">
                                             <div className="flex items-center justify-between">
-                                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Biaya Tambahan</h3>
+                                                <div>
+                                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Addons & Extras</h3>
+                                                    <p className="text-[9px] font-bold text-slate-400 italic">Tambahkan biaya lain jika diperlukan</p>
+                                                </div>
                                                 <div className="flex gap-2">
-                                                    <button type="button" onClick={() => addItem('Placement Test', 50000)} className="text-[8px] font-black px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg uppercase tracking-wider hover:bg-blue-100 transition-colors">+ Placement</button>
-                                                    <button type="button" onClick={() => addItem('', 0)} className="text-[8px] font-black px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg uppercase tracking-wider hover:bg-slate-100 transition-colors">+ Manual</button>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => addItem('Placement Test Fee', 50000)} 
+                                                        className="group flex items-center gap-2 text-[9px] font-black px-3.5 py-2 bg-indigo-50 text-indigo-600 rounded-xl uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all active:scale-95"
+                                                    >
+                                                        <Plus size={12} className="group-hover:rotate-90 transition-transform" />
+                                                        Placement
+                                                    </button>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => addItem('', 0)} 
+                                                        className="group flex items-center gap-2 text-[9px] font-black px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl uppercase tracking-wider hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+                                                    >
+                                                        <Plus size={12} className="group-hover:rotate-90 transition-transform" />
+                                                        Custom
+                                                    </button>
                                                 </div>
                                             </div>
-                                            {data.items.length > 0 && (
-                                                <div className="space-y-2">
+
+                                            {data.items.length > 0 ? (
+                                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
                                                     {data.items.map((item, idx) => (
-                                                        <div key={idx} className="flex gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                                                            <input value={item.name} onChange={e => { const n = [...data.items]; n[idx].name = e.target.value; setData('items', n); }} className="flex-1 bg-white border-none rounded-lg text-[10px] font-bold py-1.5 px-3" placeholder="Nama item" />
-                                                            <input type="number" value={item.unit_price} onChange={e => { const n = [...data.items]; n[idx].unit_price = e.target.value; setData('items', n); }} className="w-24 bg-white border-none rounded-lg text-[10px] font-black py-1.5 px-3 text-right" placeholder="Harga" />
-                                                            <button type="button" onClick={() => setData('items', data.items.filter((_, i) => i !== idx))} className="px-2 text-slate-400 hover:text-red-600"><X size={14}/></button>
+                                                        <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-[20px] border border-slate-200 shadow-sm group hover:border-red-200 hover:shadow-md transition-all">
+                                                            <div className="flex-1 flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                                                                    <Tag size={14} />
+                                                                </div>
+                                                                <input 
+                                                                    value={item.name} 
+                                                                    onChange={e => { const n = [...data.items]; n[idx].name = e.target.value; setData('items', n); }} 
+                                                                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 placeholder:text-slate-300 placeholder:italic p-0" 
+                                                                    placeholder="Nama biaya tambahan..." 
+                                                                />
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="relative">
+                                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
+                                                                    <input 
+                                                                        type="number" 
+                                                                        value={item.unit_price} 
+                                                                        onChange={e => { const n = [...data.items]; n[idx].unit_price = e.target.value; setData('items', n); }} 
+                                                                        className="w-28 bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900 text-right p-0 pl-6" 
+                                                                        placeholder="0" 
+                                                                    />
+                                                                </div>
+                                                                <button 
+                                                                    type="button" 
+                                                                    onClick={() => setData('items', data.items.filter((_, i) => i !== idx))} 
+                                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                                                                >
+                                                                    <Trash2 size={14}/>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
 
                                         {selectedClass && selectedPrice && (

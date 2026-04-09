@@ -134,7 +134,7 @@ export default function Exam({
 
                                 {activePage.audio_path && (
                                     <audio controls className="w-full max-w-sm mb-6 h-10">
-                                        <source src={`/${activePage.audio_path}`} type="audio/mpeg" />
+                                        <source src={activePage.audio_path} type="audio/mpeg" />
                                     </audio>
                                 )}
                                 {activePage.reading_text && (
@@ -163,7 +163,7 @@ export default function Exam({
                                         
                                         {q.audio_path && (
                                             <audio controls className="w-full max-w-sm mb-6 h-10">
-                                                <source src={`/${q.audio_path}`} type="audio/mpeg" />
+                                                <source src={q.audio_path} type="audio/mpeg" />
                                             </audio>
                                         )}
 

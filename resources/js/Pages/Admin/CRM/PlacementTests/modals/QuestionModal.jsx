@@ -5,6 +5,7 @@ import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
+import FileInput from '@/Components/form/FileInput';
 import { AlignLeft, CheckCircle2, Music } from 'lucide-react';
 
 export default function QuestionModal({ show, onClose, form, onSubmit, editingQuestion, targetGroupId }) {
@@ -41,11 +42,14 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                         {/* Audio */}
                         <div>
                             <InputLabel value="Audio Resource (Optional)" />
-                            <input
-                                type="file"
+                            <FileInput
                                 accept="audio/*"
-                                onChange={(e) => form.setData('media', e.target.files[0])}
-                                className="mt-1 block w-full text-xs text-slate-500 bg-slate-50 rounded-lg border border-slate-200 p-2 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-red-50 file:text-red-600 hover:file:bg-red-100"
+                                value={form.data.media}
+                                onChange={(file) => form.setData('media', file)}
+                                placeholder="Upload audio file"
+                                icon={Music}
+                                error={form.errors.media}
+                                className="mt-1"
                             />
                         </div>
 

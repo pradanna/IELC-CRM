@@ -18,6 +18,7 @@ class PtQuestionGroup extends Model
         'instruction',
         'audio_path',
         'reading_text',
+        'position',
     ];
 
     public function ptExam(): BelongsTo

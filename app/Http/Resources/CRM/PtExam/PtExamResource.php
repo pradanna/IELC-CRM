@@ -21,6 +21,7 @@ class PtExamResource extends JsonResource
             'description' => $this->description,
             'duration_minutes' => $this->duration_minutes,
             'is_active' => $this->is_active,
+            'questions_count' => $this->questions_count ?? $this->questions()->count(),
             'question_groups' => PtQuestionGroupResource::collection($this->whenLoaded('ptQuestionGroups')),
             'standalone_questions' => PtQuestionResource::collection($this->whenLoaded('questions')),
         ];

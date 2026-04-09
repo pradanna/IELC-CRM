@@ -2,8 +2,9 @@ import { Link } from "@inertiajs/react";
 import { Bell, Search } from "lucide-react";
 import { useState } from "react";
 import NotificationDropdown from "./NotificationDropdown";
+import WhatsappNotificationDropdown from "./WhatsappNotificationDropdown";
 
-export default function Navbar({ user }) {
+export default function Navbar({ user, waNotifications = [], onWaRemove = () => {} }) {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     return (
@@ -31,6 +32,10 @@ export default function Navbar({ user }) {
             <div className="flex items-center space-x-5">
                 {user ? (
                     <>
+                        <WhatsappNotificationDropdown 
+                            notifications={waNotifications} 
+                            onRemove={onWaRemove} 
+                        />
                         <NotificationDropdown user={user} />
 
                         {/* Profile Dropdown */}

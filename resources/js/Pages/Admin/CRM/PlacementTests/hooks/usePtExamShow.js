@@ -6,6 +6,8 @@ export function usePtExamShow(examData) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [mediaModal, setMediaModal] = useState({ show: false, url: null, type: 'audio' });
     const [searchQuery, setSearchQuery] = useState('');
     const [editingQuestion, setEditingQuestion] = useState(null);
     const [editingGroup, setEditingGroup] = useState(null);
@@ -120,21 +122,30 @@ export function usePtExamShow(examData) {
         setIsGroupModalOpen(true);
     };
 
+    const openMediaModal = (url) => {
+        const isVideo = url.toLowerCase().match(/\.(mp4|mpeg|webm)$/);
+        setMediaModal({
+            show: true,
+            url: url,
+            type: isVideo ? 'video' : 'audio'
+        });
+    };
+
     // Table Items (memoized)
     const tableItems = useMemo(() => {
         const items = [];
         const groups = examData.question_groups || [];
-        const standalone = examData.questions || [];
+        const standalone = examData.standalone_questions || [];
 
         const combined = [
             ...groups.map((g) => ({ ...g, _type: 'group' })),
             ...standalone.map((q) => ({ ...q, _type: 'question' })),
-        ].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        ].sort((a, b) => a.position - b.position);
 
         combined.forEach((item) => {
             if (item._type === 'group') {
                 items.push({ ...item, isGroupHeader: true });
-                (item.questions || []).forEach((q) => {
+                (item.questions || []).sort((a, b) => (a.position - b.position) || (a.number - b.number)).forEach((q) => {
                     items.push({ ...q, isGrouped: true });
                 });
             } else {
@@ -151,11 +162,55 @@ export function usePtExamShow(examData) {
             item.instruction?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const previewPages = useMemo(() => {
+        const pages = [];
+        const groups = examData.question_groups || [];
+        const standalone = examData.standalone_questions || [];
+
+        const combined = [
+            ...groups.map(g => ({ ...g, itemType: 'group' })),
+            ...standalone.map(q => ({ ...q, itemType: 'question' }))
+        ].sort((a, b) => a.position - b.position);
+
+        combined.forEach(item => {
+            if (item.itemType === 'group') {
+                pages.push({
+                    type: 'group',
+                    instruction: item.instruction,
+                    reading_text: item.reading_text,
+                    audio_path: item.audio_path,
+                    questions: (item.questions || []).sort((a,b) => (a.position - b.position) || (a.number - b.number)).map(q => ({
+                        id: q.id,
+                        number: q.number,
+                        text: q.question_text,
+                        audio_path: q.audio_path,
+                        options: (q.options || []).map(o => ({ id: o.id, text: o.option_text, is_correct: o.is_correct }))
+                    }))
+                });
+            } else {
+                pages.push({
+                    type: 'question',
+                    questions: [{
+                        id: item.id,
+                        number: item.number,
+                        text: item.question_text,
+                        audio_path: item.audio_path,
+                        options: (item.options || []).map(o => ({ id: o.id, text: o.option_text, is_correct: o.is_correct }))
+                    }]
+                });
+            }
+        });
+        return pages;
+    }, [examData]);
+
     return {
         // Modal states
         isSettingsOpen, setIsSettingsOpen,
         isQuestionModalOpen, setIsQuestionModalOpen,
         isGroupModalOpen, setIsGroupModalOpen,
+        isPreviewOpen, setIsPreviewOpen,
+        mediaModal, setMediaModal,
+        previewPages,
         editingQuestion, editingGroup, targetGroupId,
         // Forms
         settingsForm, questionForm, groupForm,
@@ -163,7 +218,7 @@ export function usePtExamShow(examData) {
         handleSettingsSubmit, handleQuestionSubmit, handleGroupSubmit,
         handleDeleteQuestion, handleDeleteGroup,
         // Modal openers
-        openQuestionModal, openGroupModal,
+        openQuestionModal, openGroupModal, openMediaModal,
         // Table data
         searchQuery, setSearchQuery, filteredItems,
     };

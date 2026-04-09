@@ -96,6 +96,7 @@ class LeadResource extends JsonResource
                     'invoice_number' => $v->invoice_number,
                     'total_amount'   => $v->total_amount,
                     'status'         => $v->status,
+                    'download_url'   => route('public.invoice.download', $v->id),
                     'paid_at'        => $v->paid_at ? $v->paid_at->format('d M Y') : null,
                 ])
             ),

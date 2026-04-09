@@ -73,12 +73,12 @@ class PublicPlacementTestController extends Controller
         // Combine standalone questions & groups
         $items = collect();
         foreach ($exam->questions->whereNull('pt_question_group_id') as $q) {
-            $items->push((object)['type' => 'standalone', 'created_at' => $q->created_at, 'data' => $q]);
+            $items->push((object)['type' => 'standalone', 'position' => $q->position, 'data' => $q]);
         }
         foreach ($exam->ptQuestionGroups as $g) {
-            $items->push((object)['type' => 'group', 'created_at' => $g->created_at, 'data' => $g]);
+            $items->push((object)['type' => 'group', 'position' => $g->position, 'data' => $g]);
         }
-        $items = $items->sortBy('created_at')->values();
+        $items = $items->sortBy('position')->values();
 
         $pages = [];
         $questionNumber = 1;
@@ -93,7 +93,7 @@ class PublicPlacementTestController extends Controller
                         'id' => $q->id,
                         'number' => $questionNumber++,
                         'text' => $q->question_text,
-                        'audio_path' => $q->audio_path,
+                        'audio_path' => $q->audio_path ? \Illuminate\Support\Facades\Storage::url($q->audio_path) : null,
                         'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
                     ]]
                 ];
@@ -105,7 +105,7 @@ class PublicPlacementTestController extends Controller
                         'id' => $q->id,
                         'number' => $questionNumber++,
                         'text' => $q->question_text,
-                        'audio_path' => $q->audio_path,
+                        'audio_path' => $q->audio_path ? \Illuminate\Support\Facades\Storage::url($q->audio_path) : null,
                         'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
                     ];
                 }
@@ -114,7 +114,7 @@ class PublicPlacementTestController extends Controller
                     'type' => 'group',
                     'instruction' => $g->instruction,
                     'reading_text' => $g->reading_text,
-                    'audio_path' => $g->audio_path,
+                    'audio_path' => $g->audio_path ? \Illuminate\Support\Facades\Storage::url($g->audio_path) : null,
                     'questions' => $groupQuestions,
                 ];
             }

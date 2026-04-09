@@ -13,8 +13,12 @@ import {
     FileQuestion,
     Music,
     Search,
+    Play,
+    PlayCircle,
 } from 'lucide-react';
 import DataTable from '@/Components/ui/DataTable';
+import Button from '@/Components/ui/Button';
+import SearchInput from '@/Components/ui/SearchInput';
 import AdminPageLayout from '@/Components/shared/AdminPageLayout';
 import AdminCard from '@/Components/shared/AdminCard';
 
@@ -22,6 +26,8 @@ import { usePtExamShow } from './hooks/usePtExamShow';
 import ExamSettingsModal from './modals/ExamSettingsModal';
 import QuestionModal from './modals/QuestionModal';
 import QuestionGroupModal from './modals/QuestionGroupModal';
+import Modal from '@/Components/ui/Modal';
+import Exam from '@/Pages/Public/PlacementTest/Exam';
 
 export default function Show({ exam }) {
     const examData = exam.data;
@@ -34,8 +40,10 @@ export default function Show({ exam }) {
         settingsForm, questionForm, groupForm,
         handleSettingsSubmit, handleQuestionSubmit, handleGroupSubmit,
         handleDeleteQuestion, handleDeleteGroup,
-        openQuestionModal, openGroupModal,
+        openQuestionModal, openGroupModal, openMediaModal,
         searchQuery, setSearchQuery, filteredItems,
+        mediaModal, setMediaModal,
+        isPreviewOpen, setIsPreviewOpen, previewPages,
     } = usePtExamShow(examData);
 
     const columns = [
@@ -79,10 +87,13 @@ export default function Show({ exam }) {
             accessor: 'audio_path',
             className: 'w-24',
             render: (row) => row.audio_path ? (
-                <div className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 w-fit">
-                    <Music size={12} />
-                    <span className="text-[10px] font-black uppercase tracking-wider">Audio</span>
-                </div>
+                <button
+                    onClick={() => openMediaModal(row.audio_path)}
+                    className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 w-fit hover:bg-blue-600 hover:text-white transition-all group"
+                >
+                    <PlayCircle size={12} className="group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Play</span>
+                </button>
             ) : <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest ml-2">—</span>,
         },
         {
@@ -159,24 +170,37 @@ export default function Show({ exam }) {
                 }
                 actions={
                     <div className="flex items-center gap-2">
-                        <button
+                        <Button
+                            variant="outline"
+                            icon={Settings}
                             onClick={() => setIsSettingsOpen(true)}
-                            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
                         >
-                            <Settings size={16} /> Settings
-                        </button>
-                        <button
+                            Settings
+                        </Button>
+                        <Button
+                            variant="outline"
+                            icon={FileText}
+                            onClick={() => setIsPreviewOpen(true)}
+                            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                        >
+                            Preview
+                        </Button>
+                        <Button
+                            variant="outline"
+                            icon={Layers}
                             onClick={() => openGroupModal()}
-                            className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-xl text-sm font-bold shadow-sm hover:bg-red-50 transition-all flex items-center gap-2"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
                         >
-                            <Layers size={16} /> New Group
-                        </button>
-                        <button
+                            New Group
+                        </Button>
+                        <Button
+                            variant="primary"
+                            icon={Plus}
                             onClick={() => openQuestionModal()}
-                            className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/20 hover:bg-red-700 transition-all flex items-center gap-2"
+                            className="bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/20"
                         >
-                            <Plus size={16} /> New Question
-                        </button>
+                            New Question
+                        </Button>
                     </div>
                 }
             >
@@ -188,14 +212,11 @@ export default function Show({ exam }) {
                                 <h2 className="text-base font-black text-slate-900 tracking-tight">Question List</h2>
                                 <p className="text-xs font-medium text-slate-400 mt-0.5">Manage assessment items and structure</p>
                             </div>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                                <input
-                                    type="text"
+                            <div className="w-full md:w-72">
+                                <SearchInput
                                     placeholder="Search questions..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm font-medium w-full md:w-72 focus:ring-2 focus:ring-red-100 focus:border-red-400 transition-all outline-none"
+                                    onChange={(v) => setSearchQuery(v)}
                                 />
                             </div>
                         </div>
@@ -240,6 +261,79 @@ export default function Show({ exam }) {
                 onSubmit={handleGroupSubmit}
                 editingGroup={editingGroup}
             />
+
+            {/* Media Preview Modal */}
+            <Modal show={mediaModal.show} onClose={() => setMediaModal({ ...mediaModal, show: false })} maxWidth="xl">
+                <div className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-lg font-black text-slate-900 tracking-tight">Media Preview</h2>
+                            <p className="text-xs text-slate-400 capitalize">{mediaModal.type} Resource</p>
+                        </div>
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <Play size={20} />
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                        {mediaModal.type === 'video' ? (
+                            <video 
+                                src={mediaModal.url} 
+                                controls 
+                                className="w-full rounded-lg shadow-sm"
+                                autoPlay
+                            />
+                        ) : (
+                            <div className="py-4">
+                                <audio 
+                                    src={mediaModal.url} 
+                                    controls 
+                                    className="w-full"
+                                    autoPlay
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-8 flex justify-end">
+                        <Button variant="outline" onClick={() => setMediaModal({ ...mediaModal, show: false })}>
+                            Close Preview
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Preview Modal */}
+            <Modal show={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} maxWidth="6xl">
+                <div className="h-[85vh] flex flex-col overflow-hidden rounded-2xl">
+                    <div className="bg-emerald-600 px-6 py-4 flex items-center justify-between text-white shrink-0">
+                        <div className="flex items-center gap-3">
+                            <FileText size={20} />
+                            <div>
+                                <h2 className="text-sm font-black uppercase tracking-widest">Student Preview Mode</h2>
+                                <p className="text-[10px] opacity-80">Testing the experience as seen by candidates</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setIsPreviewOpen(false)}
+                            className="p-1 px-3 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-black transition-all"
+                        >
+                            Exit Preview
+                        </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-hidden">
+                        <Exam 
+                            exam_title={examData.title}
+                            pages={previewPages}
+                            session={{ 
+                                token: 'preview', 
+                                remaining_seconds: examData.duration_minutes * 60 
+                            }}
+                        />
+                    </div>
+                </div>
+            </Modal>
         </AdminLayout>
     );
 }

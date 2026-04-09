@@ -17,7 +17,8 @@ class CreatePtQuestionAction
                 'pt_question_group_id' => $data['pt_question_group_id'] ?? null,
                 'question_text' => $data['question_text'],
                 'points' => $data['points'] ?? 1,
-                'number' => $this->getNextNumber($data['pt_exam_id']),
+                'number' => $this->getNextQuestionNumber($data['pt_exam_id']),
+                'position' => $this->getNextPosition($data['pt_exam_id']),
             ];
 
             if (isset($data['media']) && $data['media']->isValid()) {
@@ -40,8 +41,16 @@ class CreatePtQuestionAction
         });
     }
 
-    private function getNextNumber(string $examId): int
+    private function getNextQuestionNumber(string $examId): int
     {
         return PtQuestion::where('pt_exam_id', $examId)->count() + 1;
+    }
+
+    private function getNextPosition(string $examId): int
+    {
+        $maxGroup = DB::table('pt_question_groups')->where('pt_exam_id', $examId)->max('position') ?? 0;
+        $maxQuestion = DB::table('pt_questions')->where('pt_exam_id', $examId)->whereNull('pt_question_group_id')->max('position') ?? 0;
+        
+        return max($maxGroup, $maxQuestion) + 1;
     }
 }

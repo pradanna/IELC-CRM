@@ -19,6 +19,8 @@ class PtQuestion extends Model
         'question_text',
         'audio_path',
         'points',
+        'number',
+        'position',
     ];
 
     protected $casts = [
