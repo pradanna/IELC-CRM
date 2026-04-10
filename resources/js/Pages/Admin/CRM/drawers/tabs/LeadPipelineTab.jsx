@@ -77,7 +77,7 @@ const PhaseSection = ({
     return (
         <div className={`relative p-8 rounded-[2.5rem] border ${getSectionStyle(codes)} transition-all duration-500`}>
             {active && (
-                <div className="absolute -top-3 right-8 px-4 py-1 bg-red-500 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-red-200">
+                <div className="absolute -top-3 right-8 px-5 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-xl shadow-red-500/40 animate-pulse transition-transform hover:scale-105">
                     Current Stage
                 </div>
             )}
@@ -191,7 +191,7 @@ export default function LeadPipelineTab({
     // Helpers to determine phase focus
     const isStageActive = (codes) => codes.includes(currentPhaseCode);
     const getSectionStyle = (codes) => isStageActive(codes) 
-        ? "border-red-200 bg-white ring-4 ring-red-50" 
+        ? "border-red-200 bg-red-50/30 ring-8 ring-red-50/50 shadow-2xl shadow-red-500/10 pattern-batik" 
         : "border-slate-100 bg-slate-50/50 grayscale-[0.3] opacity-80 hover:opacity-100 transition-all duration-300";
 
     const [sendingTemplateId, setSendingTemplateId] = useState(null);

@@ -67,7 +67,7 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
                 
                 const isProRata = remainingMeetings < (selectedClass.total_meetings || 12);
                 const fullPaymentNote = isProRata 
-                    ? `\n\n*Note:* Karena Anda bergabung di tengah periode, biaya dihitung pro-rata untuk ${remainingMeetings} pertemuan saja (tidak perlu membayar full).`
+                    ? `\n\n*Note:* Karena Anda bergabung di tengah periode, biaya dihitung untuk sisa ${remainingMeetings} pertemuan saja (tidak perlu membayar full).`
                     : "";
 
                 const costFormatted = new Intl.NumberFormat('id-ID').format(plottingForm.estimated_cost);
@@ -80,7 +80,7 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
                                `• *Sisa:* ${remainingMeetings} Pertemuan\n` +
                             //    `• *Estimasi Biaya:* Rp ${costFormatted}` +
                                fullPaymentNote + 
-                               `\n\nSilakan hubungi kami jika ada pertanyaan. Sampai jumpa di kelas! 👋`;
+                               `\n\nMohon konfirmasinya ya! Terima kasih! 👋`;
 
                 await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { message });
             }
