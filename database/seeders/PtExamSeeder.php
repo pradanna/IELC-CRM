@@ -13,14 +13,19 @@ class PtExamSeeder extends Seeder
      */
     public function run(): void
     {
+        // Truncate existing data to avoid duplicates if running multiple times
+        // Note: Use with caution in projects with existing linked data
+        
         $exams = [
             [
                 'title' => 'General English Placement Test',
-                'description' => 'Tes penempatan bahasa Inggris umum yang mencakup tata bahasa (grammar), kosakata (vocabulary), dan pemahaman bacaan (reading comprehension).',
+                'description' => 'Tes penempatan bahasa Inggris umum yang mencakup tata bahasa (grammar), kosakata (vocabulary), pemahaman bacaan (reading), dan pemahaman mendengarkan (listening).',
                 'duration_minutes' => 60,
                 'is_active' => true,
                 'standalone_questions' => [
                     [
+                        'number' => 1,
+                        'position' => 1,
                         'text' => 'She ___ to the market yesterday.',
                         'points' => 1,
                         'options' => [
@@ -31,6 +36,8 @@ class PtExamSeeder extends Seeder
                         ]
                     ],
                     [
+                        'number' => 2,
+                        'position' => 2,
                         'text' => 'I have been living in Jakarta ___ 5 years.',
                         'points' => 1,
                         'options' => [
@@ -41,6 +48,8 @@ class PtExamSeeder extends Seeder
                         ]
                     ],
                     [
+                        'number' => 3,
+                        'position' => 3,
                         'text' => 'If it rains tomorrow, we ___ at home.',
                         'points' => 1,
                         'options' => [
@@ -51,6 +60,8 @@ class PtExamSeeder extends Seeder
                         ]
                     ],
                     [
+                        'number' => 4,
+                        'position' => 4,
                         'text' => 'He is the ___ student in the classroom.',
                         'points' => 1,
                         'options' => [
@@ -61,6 +72,8 @@ class PtExamSeeder extends Seeder
                         ]
                     ],
                     [
+                        'number' => 5,
+                        'position' => 5,
                         'text' => 'I do not have ___ money left in my wallet.',
                         'points' => 1,
                         'options' => [
@@ -73,12 +86,15 @@ class PtExamSeeder extends Seeder
                 ],
                 'groups' => [
                     [
-                        'instruction' => 'Read the following text carefully and answer questions 6 to 10.',
-                        'reading_text' => "The Amazon rainforest is the largest tropical rainforest in the world. It covers over 5.5 million square kilometers and spans across nine countries in South America, with the majority located in Brazil. Often referred to as the 'lungs of the Earth,' it produces about 20% of the world's oxygen. The Amazon is home to incredibly diverse ecosystems, containing millions of species of insects, plants, and animals. However, deforestation remains a significant threat to its survival, primarily driven by agriculture and logging.",
+                        'position' => 6,
+                        'instruction' => 'Part A: Reading Comprehension. Read the text and answer questions 6-10.',
+                        'reading_text' => "The Amazon rainforest is the largest tropical rainforest in the world. Often referred to as the 'lungs of the Earth,' it produces about 20% of the world's oxygen. Deforestation remains a significant threat primarily driven by agriculture and logging.",
                         'questions' => [
                             [
+                                'number' => 6,
+                                'position' => 1,
                                 'text' => 'What is the Amazon rainforest often referred to as?',
-                                'points' => 1,
+                                'points' => 2,
                                 'options' => [
                                     ['text' => 'The heart of South America', 'correct' => false],
                                     ['text' => 'The lungs of the Earth', 'correct' => true],
@@ -87,26 +103,8 @@ class PtExamSeeder extends Seeder
                                 ]
                             ],
                             [
-                                'text' => 'How many countries does the Amazon rainforest span across?',
-                                'points' => 1,
-                                'options' => [
-                                    ['text' => 'Five countries', 'correct' => false],
-                                    ['text' => 'Seven countries', 'correct' => false],
-                                    ['text' => 'Nine countries', 'correct' => true],
-                                    ['text' => 'Eleven countries', 'correct' => false],
-                                ]
-                            ],
-                            [
-                                'text' => 'In which continent is the Amazon rainforest primarily located?',
-                                'points' => 1,
-                                'options' => [
-                                    ['text' => 'North America', 'correct' => false],
-                                    ['text' => 'Africa', 'correct' => false],
-                                    ['text' => 'Asia', 'correct' => false],
-                                    ['text' => 'South America', 'correct' => true],
-                                ]
-                            ],
-                            [
+                                'number' => 7,
+                                'position' => 2,
                                 'text' => 'Approximately how much of the world’s oxygen is produced by the Amazon?',
                                 'points' => 1,
                                 'options' => [
@@ -116,14 +114,35 @@ class PtExamSeeder extends Seeder
                                     ['text' => '50%', 'correct' => false],
                                 ]
                             ],
+                        ]
+                    ],
+                    [
+                        'position' => 7,
+                        'instruction' => 'Part B: Listening Section. Listen to the audio and answer questions 11-12.',
+                        'audio_path' => 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Placeholder audio
+                        'questions' => [
                             [
-                                'text' => 'According to the text, what is the main cause of deforestation in the Amazon?',
+                                'number' => 11,
+                                'position' => 1,
+                                'text' => 'What is the speaker mainly talking about?',
                                 'points' => 1,
                                 'options' => [
+                                    ['text' => 'Music theory', 'correct' => true],
                                     ['text' => 'Climate change', 'correct' => false],
-                                    ['text' => 'Urban development', 'correct' => false],
-                                    ['text' => 'Agriculture and logging', 'correct' => true],
-                                    ['text' => 'Tourism', 'correct' => false],
+                                    ['text' => 'Cooking recipes', 'correct' => false],
+                                    ['text' => 'Travel plans', 'correct' => false],
+                                ]
+                            ],
+                            [
+                                'number' => 12,
+                                'position' => 2,
+                                'text' => 'Where does the conversation take place?',
+                                'points' => 1,
+                                'options' => [
+                                    ['text' => 'At a library', 'correct' => false],
+                                    ['text' => 'At a concert hall', 'correct' => true],
+                                    ['text' => 'At a restaurant', 'correct' => false],
+                                    ['text' => 'At an airport', 'correct' => false],
                                 ]
                             ],
                         ]
@@ -144,6 +163,8 @@ class PtExamSeeder extends Seeder
             if (isset($examData['standalone_questions'])) {
                 foreach ($examData['standalone_questions'] as $qData) {
                     $question = $exam->questions()->create([
+                        'number' => $qData['number'],
+                        'position' => $qData['position'],
                         'question_text' => $qData['text'],
                         'points' => $qData['points'],
                     ]);
@@ -161,12 +182,16 @@ class PtExamSeeder extends Seeder
                 foreach ($examData['groups'] as $gData) {
                     $group = $exam->ptQuestionGroups()->create([
                         'instruction' => $gData['instruction'],
-                        'reading_text' => $gData['reading_text'],
+                        'reading_text' => $gData['reading_text'] ?? null,
+                        'audio_path' => $gData['audio_path'] ?? null,
+                        'position' => $gData['position'],
                     ]);
 
                     foreach ($gData['questions'] as $qData) {
                         $question = $exam->questions()->create([
                             'pt_question_group_id' => $group->id,
+                            'number' => $qData['number'],
+                            'position' => $qData['position'],
                             'question_text' => $qData['text'],
                             'points' => $qData['points'],
                         ]);
