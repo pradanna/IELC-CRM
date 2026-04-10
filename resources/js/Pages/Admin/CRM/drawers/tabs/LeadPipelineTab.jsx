@@ -191,7 +191,7 @@ export default function LeadPipelineTab({
     // Helpers to determine phase focus
     const isStageActive = (codes) => codes.includes(currentPhaseCode);
     const getSectionStyle = (codes) => isStageActive(codes) 
-        ? "border-red-200 bg-red-50/30 ring-8 ring-red-50/50 shadow-2xl shadow-red-500/10 pattern-batik" 
+        ? "border-red-500/30 bg-white ring-1 ring-red-500/10 shadow-[0_20px_50px_rgba(239,68,68,0.15)] scale-[1.02] border-l-8 border-l-red-500" 
         : "border-slate-100 bg-slate-50/50 grayscale-[0.3] opacity-80 hover:opacity-100 transition-all duration-300";
 
     const [sendingTemplateId, setSendingTemplateId] = useState(null);
