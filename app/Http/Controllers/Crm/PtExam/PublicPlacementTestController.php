@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Crm\PtExam;
+namespace App\Http\Controllers\CRM\PtExam;
 
 use App\Http\Controllers\Controller;
 use App\Models\PtSession;
 use App\Models\PtAnswer;
-use App\Actions\Crm\PtExam\SubmitPlacementTestAction;
+use App\Actions\CRM\PtExam\SubmitPlacementTestAction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
