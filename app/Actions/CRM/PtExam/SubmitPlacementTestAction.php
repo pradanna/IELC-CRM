@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Crm\PtExam;
+namespace App\Actions\CRM\PtExam;
 
 use App\Models\PtSession;
 use App\Models\PtAnswer;

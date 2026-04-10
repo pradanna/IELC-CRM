@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PtSession;
 use App\Models\PtExam;
 use App\Models\Lead;
-use App\Actions\Crm\PtExam\CreatePtSessionAction;
+use App\Actions\CRM\PtExam\CreatePtSessionAction;
 use App\Http\Resources\CRM\PtExam\PtSessionResource;
 use App\Http\Resources\CRM\PtExam\PtExamResource;
 use Illuminate\Http\Request;
