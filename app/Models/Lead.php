@@ -41,6 +41,7 @@ class Lead extends Model
         'self_registration_token',
         'pending_updates',
         'plotting',
+        'notes',
     ];
 
     public function getActivitylogOptions(): LogOptions

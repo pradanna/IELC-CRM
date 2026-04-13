@@ -9,6 +9,7 @@ use App\Models\Branch;
 use App\Models\LeadRegistration;
 use App\Models\Province;
 use App\Models\City;
+use App\Models\LeadSource;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 
@@ -31,9 +32,15 @@ class PublicLeadController extends Controller
             'label' => $p->name,
         ]);
         
+        $leadSources = LeadSource::orderBy('name')->get()->map(fn($s) => [
+            'value' => $s->id,
+            'label' => $s->name,
+        ]);
+        
         return Inertia::render('Public/Form', [
             'branch' => $branch,
             'provinces' => $provinces,
+            'leadSources' => $leadSources,
         ]);
     }
 
@@ -80,6 +87,7 @@ class PublicLeadController extends Controller
             'address' => 'nullable|string',
             'postal_code' => 'nullable|string|max:10',
             'guardian_data' => 'nullable|array',
+            'lead_source_id' => 'required|exists:lead_sources,id',
         ]);
 
         LeadRegistration::create([
@@ -98,6 +106,7 @@ class PublicLeadController extends Controller
             'address' => $validated['address'] ?? null,
             'postal_code' => $validated['postal_code'] ?? null,
             'guardian_data' => $validated['guardian_data'] ?? [],
+            'lead_source_id' => $validated['lead_source_id'],
             'status' => 'pending',
         ]);
 
@@ -113,9 +122,15 @@ class PublicLeadController extends Controller
             'label' => $p->name,
         ]);
 
+        $leadSources = LeadSource::orderBy('name')->get()->map(fn($s) => [
+            'value' => $s->id,
+            'label' => $s->name,
+        ]);
+
         return Inertia::render('Public/Form', [
             'branch' => $lead->branch,
             'provinces' => $provinces,
+            'leadSources' => $leadSources,
             'initialData' => [
                 'name' => $lead->name,
                 'nickname' => $lead->nickname,
@@ -130,6 +145,7 @@ class PublicLeadController extends Controller
                 'city' => $lead->city,
                 'address' => $lead->address,
                 'postal_code' => $lead->postal_code,
+                'lead_source_id' => $lead->lead_source_id,
                 // Kita biarkan guardian_data kosong dulu untuk pengisian ulang bersih
                 'guardian_data' => [
                     'father_name' => '',
@@ -160,6 +176,7 @@ class PublicLeadController extends Controller
             'address' => 'nullable|string',
             'postal_code' => 'nullable|string|max:10',
             'guardian_data' => 'nullable|array',
+            'lead_source_id' => 'required|exists:lead_sources,id',
         ]);
 
         $lead->update([

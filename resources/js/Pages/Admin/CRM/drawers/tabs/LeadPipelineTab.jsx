@@ -1,4 +1,5 @@
 import React, { Fragment, useState, useEffect } from 'react';
+import { usePage } from '@inertiajs/react';
 import { Menu, Transition } from '@headlessui/react';
 import { 
     ChevronDown, 
@@ -70,7 +71,7 @@ const PhaseSection = ({
     });
 
     const phaseLogs = (lead?.chat_logs || []).filter(log => {
-        const logPhase = phases.find(p => p.id === log.lead_phase_id);
+        const logPhase = normalizeCollection(phases).find(p => p.id === log.lead_phase_id);
         return codes.includes(logPhase?.code);
     });
 
@@ -185,6 +186,17 @@ export default function LeadPipelineTab({
         );
     }
 
+    /**
+     * Normalizes a collection that might be a raw array or a wrapped resource object.
+     */
+    const normalizeCollection = (collection) => {
+        if (Array.isArray(collection)) return collection;
+        if (collection && Array.isArray(collection.data)) return collection.data;
+        return [];
+    };
+
+    const normalizedPhases = normalizeCollection(phases);
+
     const currentPhaseCode = lead?.lead_phase?.code;
     const style = getPhaseStyle(currentPhaseCode);
 
@@ -194,13 +206,12 @@ export default function LeadPipelineTab({
         ? "border-red-500/30 bg-white ring-1 ring-red-500/10 shadow-[0_20px_50px_rgba(239,68,68,0.15)] scale-[1.02] border-l-8 border-l-red-500" 
         : "border-slate-100 bg-slate-50/50 grayscale-[0.3] opacity-80 hover:opacity-100 transition-all duration-300";
 
+    const { auth } = usePage().props;
+    const user = auth?.user;
     const [sendingTemplateId, setSendingTemplateId] = useState(null);
     const [savingConsultation, setSavingConsultation] = useState(false);
     const [consultationForm, setConsultationForm] = useState({
-        consultation_date: new Date().toISOString().split('T')[0],
-        notes: '',
-        recommended_level: '',
-        follow_up_note: ''
+        consultation_date: new Date().toISOString().split('T')[0]
     });
 
     const handleSendInvoiceWA = async (invoice) => {
@@ -228,6 +239,30 @@ export default function LeadPipelineTab({
         handleSavePlotting
     } = useLeadPlotting(lead, availableClasses, onRefresh);
 
+    const formatPhone = (phone) => {
+        if (!phone) return '';
+        let clean = phone.replace(/[^0-9]/g, '');
+        if (clean.startsWith('0')) return '62' + clean.slice(1);
+        if (clean.startsWith('8')) return '62' + clean;
+        return clean;
+    };
+
+    const parseTemplateMessage = (text) => {
+        if (!text) return '';
+        return text
+            .replace(/{{name}}/g, lead?.name || 'Kak')
+            .replace(/{{nickname}}/g, lead?.nickname || lead?.name || 'Kak')
+            .replace(/{{lead_number}}/g, lead?.lead_number || '')
+            .replace(/{{admin_name}}/g, user?.name || '');
+    };
+
+    const openWaWeb = (msg) => {
+        const parsedMsg = parseTemplateMessage(msg);
+        const cleanPhone = formatPhone(lead.phone);
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(parsedMsg)}`;
+        window.open(url, '_blank');
+    };
+
     const handleSendTemplate = async (template) => {
         if (!window.confirm(`Kirim template "${template.title}" ke ${lead.name}?`)) {
             return;
@@ -235,32 +270,27 @@ export default function LeadPipelineTab({
 
         setSendingTemplateId(template.id);
         try {
-            // Send template with confirmation to avoid accidental clicks
             await axios.post(route('admin.crm.leads.send-template', lead.id), {
                 chat_template_id: template.id
             });
             onRefresh();
         } catch (err) {
-            alert('Gagal mengirim template: ' + (err.response?.data?.error || err.message));
+            console.error('Gagal mengirim template:', err);
+            const errMsg = err.response?.data?.error || err.message || "Unknown error";
+            if (confirm(`Gagal kirim via sistem: ${errMsg}\n\nApakah Anda ingin mencoba kirim via WhatsApp Web?`)) {
+                openWaWeb(template.message);
+            }
         } finally {
             setSendingTemplateId(null);
         }
     };
 
     const handleSaveConsultation = async () => {
-        if (!consultationForm.notes.trim()) {
-            alert('Catatan konsultasi wajib diisi.');
-            return;
-        }
-
         setSavingConsultation(true);
         try {
             await axios.post(route('admin.crm.leads.store-consultation', lead.id), consultationForm);
             setConsultationForm({
-                consultation_date: new Date().toISOString().split('T')[0],
-                notes: '',
-                recommended_level: '',
-                follow_up_note: ''
+                consultation_date: new Date().toISOString().split('T')[0]
             });
             onRefresh();
         } catch (err) {
@@ -277,7 +307,7 @@ export default function LeadPipelineTab({
         getSectionStyle,
         chatTemplates,
         lead,
-        phases,
+        phases: normalizedPhases,
         handleSendTemplate,
         sendingTemplateId
     };
@@ -313,7 +343,7 @@ export default function LeadPipelineTab({
                         >
                             <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right divide-y divide-slate-100 rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-slate-100">
                                 <div className="py-2">
-                                    {phases.map((phase) => {
+                                    {normalizedPhases.map((phase) => {
                                         const isActive = lead?.lead_phase_id === phase.id;
                                         const pStyle = getPhaseStyle(phase.code);
                                         return (
@@ -415,55 +445,20 @@ export default function LeadPipelineTab({
                                     <StickyNote size={10} className="text-red-500" /> Tambahkan Catatan Konsultasi
                                 </h5>
                                 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Konsultasi</label>
                                         <DatePicker 
                                             value={consultationForm.consultation_date}
                                             onChange={val => setConsultationForm({...consultationForm, consultation_date: val})}
                                             inputClassName="!py-2 !h-auto !bg-white !border-slate-200 !rounded-xl !text-xs !font-bold !text-slate-700 !shadow-none !ring-red-500/20"
                                         />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Level Saran</label>
-                                        <div className="relative">
-                                            <input 
-                                                type="text" 
-                                                placeholder=""
-                                                value={consultationForm.recommended_level}
-                                                onChange={e => setConsultationForm({...consultationForm, recommended_level: e.target.value})}
-                                                className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
-                                            />
-                                            <Award size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Isi Konsultasi / Advice</label>
-                                    <textarea 
-                                        rows={3}
-                                        placeholder="Tuliskan detail saran akademik untuk lead ini..."
-                                        value={consultationForm.notes}
-                                        onChange={e => setConsultationForm({...consultationForm, notes: e.target.value})}
-                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all resize-none shadow-sm"
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Rencana Follow-up</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Contoh: Hubungi lagi minggu depan untuk trial"
-                                        value={consultationForm.follow_up_note}
-                                        onChange={e => setConsultationForm({...consultationForm, follow_up_note: e.target.value})}
-                                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
-                                    />
                                 </div>
 
                                 <button 
                                     onClick={handleSaveConsultation}
-                                    disabled={savingConsultation || !consultationForm.notes.trim()}
+                                    disabled={savingConsultation}
                                     className="w-full py-3 bg-slate-900 hover:bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-slate-200 flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     {savingConsultation ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
@@ -492,15 +487,17 @@ export default function LeadPipelineTab({
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="pl-11 space-y-3">
-                                            <p className="text-xs text-slate-600 leading-relaxed font-medium">{c.notes}</p>
-                                            {c.follow_up_note && (
-                                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-2">
-                                                    <Zap size={10} className="text-amber-500 mt-0.5" />
-                                                    <p className="text-[10px] font-bold text-slate-500 italic leading-relaxed">Next: {c.follow_up_note}</p>
-                                                </div>
-                                            )}
-                                        </div>
+                                        {c.notes && (
+                                            <div className="pl-11 space-y-3">
+                                                <p className="text-xs text-slate-600 leading-relaxed font-medium">{c.notes}</p>
+                                                {c.follow_up_note && (
+                                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-2">
+                                                        <Zap size={10} className="text-amber-500 mt-0.5" />
+                                                        <p className="text-[10px] font-bold text-slate-500 italic leading-relaxed">Next: {c.follow_up_note}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             ) : (

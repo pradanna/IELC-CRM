@@ -2,18 +2,24 @@
 
 namespace App\Http\Controllers\CRM\PtExam;
 
-use App\Http\Controllers\Controller;
-use App\Models\PtSession;
-use App\Models\PtAnswer;
 use App\Actions\CRM\PtExam\SubmitPlacementTestAction;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\CRM\PtExam\SubmitPlacementTestRequest;
+use App\Http\Resources\CRM\PtExam\PtExamPublicResource;
+use App\Http\Resources\CRM\PtExam\PtSessionResource;
+use App\Models\PtAnswer;
+use App\Models\PtSession;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class PublicPlacementTestController extends Controller
 {
-    public function show($token)
+    public function show(string $token): Response|RedirectResponse
     {
-        $session = PtSession::with(['lead', 'ptExam'])->where('token', $token)->firstOrFail();
+        $session = PtSession::with(['lead', 'ptExam'])
+            ->where('token', $token)
+            ->firstOrFail();
 
         if ($session->status === 'completed') {
             return redirect()->route('public.placement-test.result', ['token' => $token]);
@@ -34,7 +40,7 @@ class PublicPlacementTestController extends Controller
         ]);
     }
 
-    public function start($token)
+    public function start(string $token): RedirectResponse
     {
         $session = PtSession::where('token', $token)->firstOrFail();
 
@@ -48,7 +54,7 @@ class PublicPlacementTestController extends Controller
         return redirect()->route('public.placement-test.exam', ['token' => $token]);
     }
 
-    public function exam($token)
+    public function exam(string $token): Response|RedirectResponse
     {
         $session = PtSession::with([
             'ptExam.questions.options',
@@ -70,56 +76,6 @@ class PublicPlacementTestController extends Controller
             $remainingSeconds = max(0, $durationSeconds - $elapsed);
         }
 
-        // Combine standalone questions & groups
-        $items = collect();
-        foreach ($exam->questions->whereNull('pt_question_group_id') as $q) {
-            $items->push((object)['type' => 'standalone', 'position' => $q->position, 'data' => $q]);
-        }
-        foreach ($exam->ptQuestionGroups as $g) {
-            $items->push((object)['type' => 'group', 'position' => $g->position, 'data' => $g]);
-        }
-        $items = $items->sortBy('position')->values();
-
-        $pages = [];
-        $questionNumber = 1;
-
-        foreach ($items as $item) {
-            if ($item->type === 'standalone') {
-                $q = $item->data;
-                $pages[] = [
-                    'id' => 'q_' . $q->id,
-                    'type' => 'standalone',
-                    'questions' => [[
-                        'id' => $q->id,
-                        'number' => $questionNumber++,
-                        'text' => $q->question_text,
-                        'audio_path' => $q->audio_path ? \Illuminate\Support\Facades\Storage::url($q->audio_path) : null,
-                        'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
-                    ]]
-                ];
-            } else {
-                $g = $item->data;
-                $groupQuestions = [];
-                foreach ($g->questions as $q) {
-                    $groupQuestions[] = [
-                        'id' => $q->id,
-                        'number' => $questionNumber++,
-                        'text' => $q->question_text,
-                        'audio_path' => $q->audio_path ? \Illuminate\Support\Facades\Storage::url($q->audio_path) : null,
-                        'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
-                    ];
-                }
-                $pages[] = [
-                    'id' => 'g_' . $g->id,
-                    'type' => 'group',
-                    'instruction' => $g->instruction,
-                    'reading_text' => $g->reading_text,
-                    'audio_path' => $g->audio_path ? \Illuminate\Support\Facades\Storage::url($g->audio_path) : null,
-                    'questions' => $groupQuestions,
-                ];
-            }
-        }
-
         return Inertia::render('Public/PlacementTest/Exam', [
             'session' => [
                 'token' => $session->token,
@@ -127,35 +83,37 @@ class PublicPlacementTestController extends Controller
                 'remaining_seconds' => $remainingSeconds,
             ],
             'exam_title' => $exam->title,
-            'pages' => $pages,
+            'pages' => (new PtExamPublicResource($exam))->toArray(request())['pages'],
         ]);
     }
 
-    public function submit(Request $request, $token, SubmitPlacementTestAction $action)
+    public function submit(SubmitPlacementTestRequest $request, string $token, SubmitPlacementTestAction $action): RedirectResponse
     {
         $session = PtSession::where('token', $token)->firstOrFail();
 
         if ($session->status !== 'completed') {
-            $action->execute($session, $request->input('answers', []));
+            $action->handle($session, $request->validated()['answers']);
         }
 
         return redirect()->route('public.placement-test.result', ['token' => $token]);
     }
 
-    public function result($token)
+    public function result(string $token): Response|RedirectResponse
     {
-        $session = PtSession::with(['lead', 'ptExam.questions', 'ptExam.ptQuestionGroups.questions'])->where('token', $token)->firstOrFail();
+        $session = PtSession::with(['lead', 'ptExam.questions', 'ptExam.ptQuestionGroups.questions'])
+            ->where('token', $token)
+            ->firstOrFail();
 
         if ($session->status !== 'completed') {
             return redirect()->route('public.placement-test.show', ['token' => $token]);
         }
 
-        $totalQuestions = $session->ptExam->questions->whereNull('pt_question_group_id')->count();
-        foreach ($session->ptExam->ptQuestionGroups as $group) {
-            $totalQuestions += $group->questions->count();
-        }
+        $examResource = new PtExamPublicResource($session->ptExam);
+        $totalQuestions = $examResource->toArray(request())['total_questions'];
 
-        $correctAnswers = PtAnswer::where('pt_session_id', $session->id)->where('is_correct', true)->count();
+        $correctAnswers = PtAnswer::where('pt_session_id', $session->id)
+            ->where('is_correct', true)
+            ->count();
 
         return Inertia::render('Public/PlacementTest/Result', [
             'session' => [

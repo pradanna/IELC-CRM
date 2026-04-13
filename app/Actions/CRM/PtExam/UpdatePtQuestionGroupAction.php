@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 
 class UpdatePtQuestionGroupAction
 {
-    public function execute(PtQuestionGroup $group, array $data): PtQuestionGroup
+    public function handle(PtQuestionGroup $group, array $data): PtQuestionGroup
     {
         $groupData = [
             'instruction' => $data['instruction'],

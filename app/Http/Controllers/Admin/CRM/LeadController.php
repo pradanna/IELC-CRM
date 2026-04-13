@@ -35,6 +35,11 @@ use App\Models\PtExam;
 use App\Http\Resources\CRM\LeadResource;
 use App\Http\Resources\CRM\LeadActivityResource;
 use App\Http\Resources\CRM\PtExam\PtExamResource;
+use App\Http\Resources\CRM\LeadPhaseResource;
+use App\Http\Resources\CRM\LeadSourceResource;
+use App\Http\Resources\CRM\LeadTypeResource;
+use App\Http\Resources\Master\BranchResource;
+use App\Http\Resources\Academic\StudyClassResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,19 +63,14 @@ class LeadController extends Controller
             $query->where('lead_phase_id', $request->lead_phase_id);
         }
 
-        $targetMonth = $request->input('month');
-        $targetYear  = $request->input('year');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
         $enrollmentPhase = LeadPhase::where('code', 'enrollment')->first();
 
-        if ($targetMonth && $targetYear) {
-            $query->where(function($q) use ($targetMonth, $targetYear, $request, $enrollmentPhase) {
-                if ($request->lead_phase_id == $enrollmentPhase?->id) {
-                    $q->whereMonth('enrolled_at', $targetMonth)
-                      ->whereYear('enrolled_at', $targetYear);
-                } else {
-                    $q->whereMonth('created_at', $targetMonth)
-                      ->whereYear('created_at', $targetYear);
-                }
+        if ($startDate && $endDate) {
+            $query->where(function($q) use ($startDate, $endDate, $request, $enrollmentPhase) {
+                $dateField = ($request->lead_phase_id == $enrollmentPhase?->id) ? 'enrolled_at' : 'created_at';
+                $q->whereBetween($dateField, [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             });
         }
 
@@ -88,11 +88,11 @@ class LeadController extends Controller
 
         return Inertia::render('Admin/CRM/Leads/Index', [
             'leads' => LeadResource::collection($leads),
-            'filters' => $request->only(['branch_id', 'lead_phase_id', 'month', 'year', 'search']),
-            'branches' => Branch::select('id', 'name')->get(),
-            'phases' => LeadPhase::select('id', 'name', 'code')->get(),
-            'sources' => LeadSource::select('id', 'name')->get(),
-            'types' => LeadType::select('id', 'name')->get(),
+            'filters' => $request->only(['branch_id', 'lead_phase_id', 'start_date', 'end_date', 'search']),
+            'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
+            'phases' => LeadPhaseResource::collection(LeadPhase::select('id', 'name', 'code')->get()),
+            'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
             'mediaAssets'   => MediaAsset::latest()->get(),
@@ -202,6 +202,20 @@ class LeadController extends Controller
         ]);
     }
 
+    public function updateNotes(Request $request, Lead $lead): \Illuminate\Http\RedirectResponse
+    {
+        $request->validate([
+            'notes' => 'nullable|string'
+        ]);
+
+        $lead->update([
+            'notes' => $request->notes,
+            'last_activity_at' => now()
+        ]);
+
+        return back()->with('success', 'Notes updated successfully.');
+    }
+
     public function recordFollowUp(RecordLeadFollowUpRequest $request, Lead $lead, RecordLeadFollowUp $action): JsonResponse
     {
         $lead = $action->handle($lead, $request->validated());
@@ -282,24 +296,47 @@ class LeadController extends Controller
         $search = $request->query('q');
         if (!$search || strlen($search) < 2) return response()->json([]);
 
+        // 1. Search Official Leads
         $leads = Lead::query()
             ->with('branch:id,name')
-            ->where(function($q) use ($search) {
+            ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('lead_number', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('lead_number', 'like', "%{$search}%");
             })
             ->latest()
             ->limit(5)
             ->get();
 
-        return response()->json(LeadResource::collection($leads)->map(fn($l) => [
+        // 2. Search Pending Registrations
+        $registrations = \App\Models\LeadRegistration::query()
+            ->with('branch:id,name')
+            ->where('status', 'pending')
+            ->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->limit(3)
+            ->get();
+
+        $results = collect($leads)->map(fn($l) => [
             'id' => $l->id,
+            'type' => 'lead',
             'name' => $l->name,
             'phone' => $l->phone,
             'lead_number' => $l->lead_number,
             'branch_name' => $l->branch?->name,
+        ])->concat(collect($registrations)->map(fn($r) => [
+            'id' => $r->id,
+            'type' => 'registration',
+            'name' => "{$r->name} (Reg)",
+            'phone' => $r->phone,
+            'lead_number' => 'Pending Approval',
+            'branch_name' => $r->branch?->name,
         ]));
+
+        return response()->json($results);
     }
 
     public function kanban(Request $request): Response
@@ -307,22 +344,19 @@ class LeadController extends Controller
         $phases = LeadPhase::orderBy('created_at', 'asc')->get();
         $leadsQuery = Lead::with(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase']);
 
-        $month = $request->input('month', now()->month);
-        $year = $request->input('year', now()->year);
-
         if ($request->filled('branch_id')) {
             $leadsQuery->where('branch_id', $request->branch_id);
         }
 
-        $leadsQuery->where(function($q) use ($month, $year) {
-            $q->where(function($sub) use ($month, $year) {
-                $sub->whereMonth('created_at', $month)
-                    ->whereYear('created_at', $year);
-            })->orWhere(function($sub) use ($month, $year) {
-                $sub->whereMonth('enrolled_at', $month)
-                    ->whereYear('enrolled_at', $year);
+        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+
+        if ($startDate && $endDate) {
+            $leadsQuery->where(function($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                  ->orWhereBetween('enrolled_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             });
-        });
+        }
 
         if ($request->filled('search')) {
             $leadsQuery->where(function($q) use ($request) {
@@ -334,13 +368,13 @@ class LeadController extends Controller
 
         $leads = $leadsQuery->latest()->get();
 
-        $kanbanData = $phases->map(function($phase) use ($leads, $month, $year) {
+        $kanbanData = $phases->map(function($phase) use ($leads, $startDate, $endDate) {
             $columnLeads = $leads->where('lead_phase_id', $phase->id);
-            if ($phase->code === 'enrollment') {
-                $columnLeads = $columnLeads->filter(function($l) use ($month, $year) {
+            if ($phase->code === 'enrollment' && $startDate && $endDate) {
+                $columnLeads = $columnLeads->filter(function($l) use ($startDate, $endDate) {
                     return $l->enrolled_at && 
-                           $l->enrolled_at->month == $month && 
-                           $l->enrolled_at->year == $year;
+                           $l->enrolled_at->format('Y-m-d') >= $startDate && 
+                           $l->enrolled_at->format('Y-m-d') <= $endDate;
                 });
             }
 
@@ -353,14 +387,16 @@ class LeadController extends Controller
 
         return Inertia::render('Admin/CRM/Leads/Kanban', [
             'kanbanData' => $kanbanData,
-            'filters' => array_merge($request->only(['branch_id', 'search']), [
-                'month' => (int)$month,
-                'year' => (int)$year,
-            ]),
-            'branches' => Branch::select('id', 'name')->get(),
-            'phases' => $phases,
-            'sources' => LeadSource::select('id', 'name')->get(),
-            'types' => LeadType::select('id', 'name')->get(),
+            'filters' => [
+                'branch_id' => $request->branch_id,
+                'search' => $request->search,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
+            'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
+            'phases' => LeadPhaseResource::collection($phases),
+            'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
             'mediaAssets'   => MediaAsset::latest()->get(),
             'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),

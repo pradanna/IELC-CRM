@@ -31,7 +31,7 @@ class PtSessionController extends Controller
             'scheduled_at' => 'nullable|date',
         ]);
 
-        $session = $action->execute($data);
+        $session = $action->handle($data);
 
         return back()->with('success', 'Placement test link generated successfully.');
     }
@@ -41,5 +41,18 @@ class PtSessionController extends Controller
         $ptSession->delete();
 
         return back()->with('success', 'Session deleted successfully.');
+    }
+
+    public function getResult(PtSession $ptSession)
+    {
+        $ptSession->load(['answers', 'ptExam.questions.options', 'ptExam.ptQuestionGroups.questions.options']);
+        
+        $answers = $ptSession->answers->pluck('pt_question_option_id', 'pt_question_id');
+        
+        return response()->json([
+            'session' => new PtSessionResource($ptSession),
+            'answers' => $answers,
+            'exam' => new PtExamPublicResource($ptSession->ptExam),
+        ]);
     }
 }

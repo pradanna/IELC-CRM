@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class UpdatePtQuestionAction
 {
-    public function execute(PtQuestion $question, array $data): PtQuestion
+    public function handle(PtQuestion $question, array $data): PtQuestion
     {
         return DB::transaction(function () use ($question, $data) {
             $questionData = [

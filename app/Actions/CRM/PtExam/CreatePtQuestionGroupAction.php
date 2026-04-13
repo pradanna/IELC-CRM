@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CreatePtQuestionGroupAction
 {
-    public function execute(array $data): PtQuestionGroup
+    public function handle(array $data): PtQuestionGroup
     {
         $groupData = [
             'pt_exam_id' => $data['pt_exam_id'],

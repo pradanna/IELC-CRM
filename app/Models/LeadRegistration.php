@@ -26,6 +26,7 @@ class LeadRegistration extends Model
         'address',
         'postal_code',
         'guardian_data',
+        'lead_source_id',
         'status',
         'admin_notes',
     ];
@@ -40,5 +41,10 @@ class LeadRegistration extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function leadSource()
+    {
+        return $this->belongsTo(LeadSource::class);
     }
 }

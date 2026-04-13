@@ -2,6 +2,7 @@ import React from 'react';
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FiltersBar from '../Leads/partials/FiltersBar';
+import DashboardFilters from './partials/DashboardFilters';
 import TaskList from './partials/TaskList';
 import EnrollmentTrendChart from './partials/EnrollmentTrendChart';
 import StatsCard from '@/Pages/Admin/Dashboard/partials/StatsCard';
@@ -22,9 +23,22 @@ export default function Index({ data, branches, phases, sources, types, province
         closeWhatsappModal,
     } = useCrmDashboard();
 
-    const totalLeadsCard = { title: 'TOTAL LEADS', value: stats.total, icon: 'users', variant: 'primary' };
+    /**
+     * Normalizes a collection that might be a raw array or a wrapped resource object.
+     */
+    const normalizeCollection = (collection) => {
+        if (Array.isArray(collection)) return collection;
+        if (collection && Array.isArray(collection.data)) return collection.data;
+        return [];
+    };
+
+    const normalizedBranches = normalizeCollection(branches);
+    const normalizedPhases = normalizeCollection(phases);
+
     const monthName = new Date(filters.year, filters.month - 1).toLocaleString('id-ID', { month: 'long' });
     const periodLabel = `${monthName} ${filters.year}`;
+
+    const totalLeadsCard = { title: 'TOTAL LEADS', value: stats.total, icon: 'users', variant: 'primary' };
 
     const phaseCards = stats.phases.map(phase => ({
         value: phase.count,
@@ -42,10 +56,9 @@ export default function Index({ data, branches, phases, sources, types, province
                 >
                     <div className="space-y-12">
                         {/* Global Filters Section */}
-                        <FiltersBar 
+                        <DashboardFilters 
                             filters={filters} 
-                            branches={branches} 
-                            phases={phases}
+                            branches={normalizedBranches} 
                             targetRoute="admin.crm.leads.index"
                         />
 
@@ -78,7 +91,7 @@ export default function Index({ data, branches, phases, sources, types, province
                             <div className="lg:col-span-5 flex flex-col">
                                 <TaskList 
                                     tasks={tasks} 
-                                    phases={phases}
+                                    phases={normalizedPhases}
                                     getPhaseStyle={getPhaseStyle}
                                     onView={openLeadDetail}
                                     onUpdatePhase={handleUpdatePhase}

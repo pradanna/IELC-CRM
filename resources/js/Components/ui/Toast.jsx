@@ -25,7 +25,6 @@ export default function Toast() {
             if (timerRef.current) clearTimeout(timerRef.current);
             timerRef.current = setTimeout(() => {
                 setVisible(false);
-                setLastMessage(""); // Clear last message so it can be re-shown if same message comes again later
             }, 3000);
         }
     }, [flash, errors, lastMessage]);
@@ -57,7 +56,6 @@ export default function Toast() {
             <button
                 onClick={() => {
                     setVisible(false);
-                    setLastMessage("");
                 }}
                 className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600 focus:outline-none"
             >

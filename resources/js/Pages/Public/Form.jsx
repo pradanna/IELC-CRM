@@ -14,7 +14,7 @@ import { usePublicRegistration } from './hooks/usePublicRegistration';
 import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 
-export default function Form({ branch, provinces, initialData = null, token = null }) {
+export default function Form({ branch, provinces, leadSources = [], initialData = null, token = null }) {
     const { 
         data, setData, errors, processing, wasSuccessful, 
         cities, loadingCities, handleSubmit 
@@ -288,7 +288,62 @@ export default function Form({ branch, provinces, initialData = null, token = nu
                         </div>
                     </div>
 
-                    {/* Section 3: Orang Tua (Optional) */}
+                    {/* Section 3: Lead Source Selection */}
+                    <div className="bg-white rounded-[32px] p-8 md:p-12 border border-slate-100 shadow-2xl shadow-slate-100/50">
+                        <div className="flex items-center gap-3 mb-10">
+                            <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center text-red-600">
+                                <ArrowRight size={16} />
+                            </div>
+                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">Information Source</h2>
+                        </div>
+
+                        <div className="space-y-6">
+                            <InputLabel value="Kira-kira, Anda tahu IELC dari mana? *" className="mb-6 ml-1 !text-sm" />
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {leadSources.map((source) => (
+                                    <label 
+                                        key={source.value}
+                                        className={`relative flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                            data.lead_source_id === source.value
+                                            ? 'border-red-600 bg-red-50/50 ring-4 ring-red-500/5'
+                                            : 'border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        <input 
+                                            type="radio"
+                                            name="lead_source_id"
+                                            value={source.value}
+                                            checked={data.lead_source_id === source.value}
+                                            onChange={() => setData('lead_source_id', source.value)}
+                                            className="sr-only"
+                                        />
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                data.lead_source_id === source.value
+                                                ? 'border-red-600'
+                                                : 'border-slate-300 bg-white'
+                                            }`}>
+                                                {data.lead_source_id === source.value && (
+                                                    <div className="w-2.5 h-2.5 bg-red-600 rounded-full" />
+                                                )}
+                                            </div>
+                                            <span className={`text-[11px] font-black uppercase tracking-wider ${
+                                                data.lead_source_id === source.value
+                                                ? 'text-red-600'
+                                                : 'text-slate-500'
+                                            }`}>
+                                                {source.label}
+                                            </span>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                            <InputError message={errors.lead_source_id} className="mt-4 ml-1" />
+                        </div>
+                    </div>
+
+                    {/* Section 4: Orang Tua (Optional) */}
                     <div className="bg-white rounded-[32px] p-8 md:p-12 border border-slate-100 shadow-2xl shadow-slate-100/50">
                         <div className="flex items-center gap-3 mb-10">
                             <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center text-red-600">

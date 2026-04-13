@@ -19,11 +19,16 @@ class ApproveLeadRegistration
     public function handle(LeadRegistration $registration): void
     {
         DB::transaction(function () use ($registration) {
-            // 1. Get or Create "Self-Registration" Source
-            $source = LeadSource::firstOrCreate(
-                ['name' => 'Self-Registration'],
-                ['id' => Str::uuid()]
-            );
+            // 1. Determine Lead Source
+            $leadSourceId = $registration->lead_source_id;
+
+            if (!$leadSourceId) {
+                $source = LeadSource::firstOrCreate(
+                    ['name' => 'Self-Registration'],
+                    ['id' => Str::uuid()]
+                );
+                $leadSourceId = $source->id;
+            }
 
             // 2. Prepare Data for StoreLead Action
             $guardians = [];
@@ -56,7 +61,7 @@ class ApproveLeadRegistration
                 'school' => $registration->school,
                 'grade' => $registration->grade,
                 'branch_id' => $registration->branch_id,
-                'lead_source_id' => $source->id,
+                'lead_source_id' => $leadSourceId,
                 'province' => $registration->province,
                 'city' => $registration->city,
                 'address' => $registration->address,

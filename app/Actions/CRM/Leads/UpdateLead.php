@@ -30,6 +30,7 @@ class UpdateLead
                 'city' => $data['city'] ?? null,
                 'address' => $data['address'] ?? null,
                 'postal_code' => $data['postal_code'] ?? null,
+                'notes' => $data['notes'] ?? $lead->notes,
                 'last_activity_at' => now(),
             ]);
 

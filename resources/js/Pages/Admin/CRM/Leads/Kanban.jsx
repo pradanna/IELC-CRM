@@ -133,6 +133,3 @@ export default function Kanban({ auth, kanbanData, filters, branches, phases, so
         </AuthenticatedLayout>
     );
 }
-
-    );
-}

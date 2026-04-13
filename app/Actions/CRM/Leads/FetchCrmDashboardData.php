@@ -27,8 +27,8 @@ class FetchCrmDashboardData
         $cacheKey = "crm_dashboard_v{$version}_{$year}_{$month}_" . ($branchId ?? 'all') . "_user_{$userId}";
 
         return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function() use ($now, $month, $year, $branchId, $userRole, $userId) {
-            $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDate = $startDate->copy()->endOfMonth();
+            $startDateObj = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $endDateObj = $startDateObj->copy()->endOfMonth();
 
             // Helper to apply role-based filtering
             $applyRoleFilter = function ($query) use ($userRole, $userId) {
@@ -42,17 +42,17 @@ class FetchCrmDashboardData
             };
 
             // 1. Stats Summary
-            $query = Lead::query()->whereBetween('created_at', [$startDate, $endDate]);
+            $query = Lead::query()->whereBetween('created_at', [$startDateObj, $endDateObj]);
             if ($branchId) $query->where('branch_id', $branchId);
             // $applyRoleFilter($query); // Remove global filter for KPIs
 
             $phases = LeadPhase::orderBy('created_at')->get();
-            $phaseStats = $phases->map(function($p) use ($startDate, $endDate, $branchId, $applyRoleFilter) {
+            $phaseStats = $phases->map(function($p) use ($startDateObj, $endDateObj, $branchId, $applyRoleFilter) {
                 // If the phase is 'enrolled', we still want to see activity within the period
                 // to match the trend chart (How many were enrolled THIS month)
                 if ($p->code === 'enrollment') {
                     $eQuery = Lead::where('lead_phase_id', $p->id)
-                        ->whereBetween('enrolled_at', [$startDate, $endDate]);
+                        ->whereBetween('enrolled_at', [$startDateObj, $endDateObj]);
                     if ($branchId) $eQuery->where('branch_id', $branchId);
                     
                     return [
@@ -139,10 +139,10 @@ class FetchCrmDashboardData
 
             // 3. Enrollment Trend (Line Chart - Cumulative)
             $enrollmentTrend = [];
-            $daysInMonth = $startDate->daysInMonth;
+            $daysInMonth = $startDateObj->daysInMonth;
             
             $achievedQuery = Lead::whereNotNull('enrolled_at')
-                ->whereBetween('enrolled_at', [$startDate, $endDate]);
+                ->whereBetween('enrolled_at', [$startDateObj, $endDateObj]);
 
             if ($branchId) $achievedQuery->where('branch_id', $branchId);
             // $applyRoleFilter($achievedQuery); // Remove global filter for Trend
@@ -163,7 +163,7 @@ class FetchCrmDashboardData
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $cumulative += $dailyCounts[$i] ?? 0;
                 $enrollmentTrend[] = [
-                    'day' => $i,
+                    'label' => $i,
                     'enrolled' => $cumulative,
                     'target' => $monthlyGoal,
                 ];
@@ -175,8 +175,8 @@ class FetchCrmDashboardData
                 'trend' => $enrollmentTrend,
                 'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
                 'filters' => [
-                    'month' => $month,
-                    'year' => $year,
+                    'month' => (int)$month,
+                    'year' => (int)$year,
                     'branch_id' => $branchId,
                 ],
             ];

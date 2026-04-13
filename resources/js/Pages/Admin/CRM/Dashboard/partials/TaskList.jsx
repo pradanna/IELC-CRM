@@ -17,6 +17,17 @@ export default function TaskList({ tasks, phases = [], getPhaseStyle, onView, on
         }
     };
 
+    /**
+     * Normalizes a collection that might be a raw array or a wrapped resource object.
+     */
+    const normalizeCollection = (collection) => {
+        if (Array.isArray(collection)) return collection;
+        if (collection && Array.isArray(collection.data)) return collection.data;
+        return [];
+    };
+
+    const normalizedPhases = normalizeCollection(phases);
+
     return (
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden min-h-[580px]">
             <div className="flex items-center justify-between mb-8">
@@ -99,7 +110,7 @@ export default function TaskList({ tasks, phases = [], getPhaseStyle, onView, on
                                             >
                                                 <Menu.Items className="absolute left-0 mt-2 w-48 origin-top-left divide-y divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-slate-100">
                                                     <div className="py-1">
-                                                        {phases.map((phase) => {
+                                                        {normalizedPhases.map((phase) => {
                                                             const isActive = task.lead_phase_id === phase.id;
                                                             const pStyle = getPhaseStyle(phase.code);
                                                             return (

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class SubmitPlacementTestAction
 {
-    public function execute(PtSession $session, array $submittedAnswers): void
+    public function handle(PtSession $session, array $submittedAnswers): void
     {
         DB::transaction(function () use ($session, $submittedAnswers) {
             $totalScore = 0;

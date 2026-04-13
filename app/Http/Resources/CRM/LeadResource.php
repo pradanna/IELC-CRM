@@ -25,6 +25,7 @@ class LeadResource extends JsonResource
             'is_online'      => (bool)$this->is_online,
             'self_registration_token' => $this->self_registration_token,
             'plotting'       => $this->plotting,
+            'notes'          => $this->notes,
             
             // Raw IDs for edit mode
             'branch_id'      => $this->branch_id,

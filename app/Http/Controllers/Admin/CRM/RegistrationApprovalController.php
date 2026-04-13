@@ -5,28 +5,51 @@ namespace App\Http\Controllers\Admin\CRM;
 use App\Actions\CRM\Leads\ApproveLeadRegistration;
 use App\Actions\CRM\Leads\ApproveLeadUpdate;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CRM\LeadResource;
 use App\Models\Lead;
 use App\Models\LeadRegistration;
+use App\Models\LeadSource;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RegistrationApprovalController extends Controller
 {
-    public function index(): Response
+    public function index(\Illuminate\Http\Request $request): Response
     {
+        $search = $request->query('search');
+
         $registrations = LeadRegistration::where('status', 'pending')
-            ->with(['branch', 'leadSource', 'leadType'])
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($sq) use ($search) {
+                    $sq->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->with(['branch', 'leadSource'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         $updateRequests = Lead::whereNotNull('pending_updates')
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($sq) use ($search) {
+                    $sq->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('lead_number', 'like', "%{$search}%");
+                });
+            })
             ->with(['branch', 'leadSource', 'leadType', 'leadPhase'])
             ->get();
+
+        $leadSources = LeadSource::orderBy('name')->get()->map(fn($s) => [
+            'value' => $s->id,
+            'label' => $s->name,
+        ]);
 
         return Inertia::render('Admin/CRM/Registrations/Inbox', [
             'registrations' => $registrations, // Simple collection for now or create resource
             'update_requests' => LeadResource::collection($updateRequests),
+            'lead_sources' => $leadSources,
             'pending_registrations_count' => $registrations->count() + $updateRequests->count(),
         ]);
     }

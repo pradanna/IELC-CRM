@@ -46,7 +46,7 @@ export default function EnrollmentTrendChart({ trendData }) {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                         <XAxis 
-                            dataKey="day" 
+                            dataKey="label" 
                             axisLine={false} 
                             tickLine={false} 
                             tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 700 }}

@@ -6,7 +6,7 @@ use App\Models\PtExam;
 
 class DeletePtExamAction
 {
-    public function execute(PtExam $ptExam): bool
+    public function handle(PtExam $ptExam): bool
     {
         return $ptExam->delete();
     }

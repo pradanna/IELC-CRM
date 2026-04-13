@@ -9,6 +9,9 @@ use App\Models\Province;
 use App\Models\LeadPhase;
 use App\Actions\CRM\Leads\FetchCrmDashboardData;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CRM\LeadPhaseResource;
+use App\Http\Resources\CRM\LeadSourceResource;
+use App\Http\Resources\CRM\LeadTypeResource;
 use App\Http\Resources\Master\BranchResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,9 +27,9 @@ class CrmDashboardController extends Controller
         return Inertia::render('Admin/CRM/Dashboard/Index', [
             'data' => $dashboardData,
             'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
-            'phases' => LeadPhase::select('id', 'name', 'code')->get(),
-            'sources' => LeadSource::select('id', 'name')->get(),
-            'types' => LeadType::select('id', 'name')->get(),
+            'phases' => LeadPhaseResource::collection(LeadPhase::select('id', 'name', 'code')->get()),
+            'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
         ]);
     }

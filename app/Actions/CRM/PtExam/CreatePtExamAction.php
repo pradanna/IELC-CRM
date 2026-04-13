@@ -6,7 +6,7 @@ use App\Models\PtExam;
 
 class CreatePtExamAction
 {
-    public function execute(array $data): PtExam
+    public function handle(array $data): PtExam
     {
         return PtExam::create($data);
     }

@@ -59,6 +59,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/crm/leads/{lead}/activities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'activities'])->name('crm.leads.activities');
     Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'update'])->name('crm.leads.update');
     Route::patch('/crm/leads/{lead}/phase', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'updatePhase'])->name('crm.leads.update-phase');
+    Route::patch('/crm/leads/{lead}/notes', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'updateNotes'])->name('crm.leads.update-notes');
     Route::post('/crm/leads/{lead}/plot-class', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'plotClass'])->name('crm.leads.plot-class');
     Route::patch('/crm/leads/{lead}/record-followup', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'recordFollowUp'])->name('crm.leads.record-followup');
     Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
@@ -82,6 +83,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Placement Tests
     Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
     Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
+    Route::get('/crm/pt-sessions/{pt_session}/result', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'getResult'])->name('crm.pt-sessions.get-result');
     Route::delete('/crm/pt-sessions/{pt_session}', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'destroy'])->name('crm.pt-sessions.destroy');
 
     // Academic Module

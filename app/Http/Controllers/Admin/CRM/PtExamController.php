@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin\CRM;
 
-use App\Actions\Crm\PtExam\CreatePtExamAction;
-use App\Actions\Crm\PtExam\DeletePtExamAction;
-use App\Actions\Crm\PtExam\UpdatePtExamAction;
+use App\Actions\CRM\PtExam\CreatePtExamAction;
+use App\Actions\CRM\PtExam\DeletePtExamAction;
+use App\Actions\CRM\PtExam\UpdatePtExamAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Crm\PtExam\StorePtExamRequest;
+use App\Http\Requests\CRM\PtExam\StorePtExamRequest;
 use App\Http\Resources\CRM\PtExam\PtExamResource;
 use App\Http\Resources\CRM\PtExam\PtSessionResource;
 use App\Models\PtExam;
@@ -44,7 +44,7 @@ class PtExamController extends Controller
 
     public function store(StorePtExamRequest $request, CreatePtExamAction $action): RedirectResponse
     {
-        $action->execute($request->validated());
+        $action->handle($request->validated());
 
         return redirect()->back()->with('success', 'Placement test package created successfully.');
     }
@@ -69,14 +69,14 @@ class PtExamController extends Controller
 
     public function update(StorePtExamRequest $request, PtExam $ptExam, UpdatePtExamAction $action): RedirectResponse
     {
-        $action->execute($ptExam, $request->validated());
+        $action->handle($ptExam, $request->validated());
 
         return redirect()->back()->with('success', 'Placement test package updated successfully.');
     }
 
     public function destroy(PtExam $ptExam, DeletePtExamAction $action): RedirectResponse
     {
-        $action->execute($ptExam);
+        $action->handle($ptExam);
 
         return redirect()->route('admin.placement-tests.index')->with('success', 'Placement test package deleted successfully.');
     }

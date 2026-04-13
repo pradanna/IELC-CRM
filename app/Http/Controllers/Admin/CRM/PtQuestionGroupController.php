@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin\CRM;
 
-use App\Actions\Crm\PtExam\CreatePtQuestionGroupAction;
-use App\Actions\Crm\PtExam\UpdatePtQuestionGroupAction;
+use App\Actions\CRM\PtExam\CreatePtQuestionGroupAction;
+use App\Actions\CRM\PtExam\UpdatePtQuestionGroupAction;
 use App\Http\Controllers\Controller;
 use App\Models\PtExam;
 use App\Models\PtQuestionGroup;
@@ -22,7 +22,7 @@ class PtQuestionGroupController extends Controller
 
         $validated['pt_exam_id'] = $ptExam->id;
 
-        $action->execute($validated);
+        $action->handle($validated);
 
         return redirect()->back()->with('success', 'Question group created successfully.');
     }
@@ -35,7 +35,7 @@ class PtQuestionGroupController extends Controller
             'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg'],
         ]);
 
-        $action->execute($ptQuestionGroup, $validated);
+        $action->handle($ptQuestionGroup, $validated);
 
         return redirect()->back()->with('success', 'Question group updated successfully.');
     }

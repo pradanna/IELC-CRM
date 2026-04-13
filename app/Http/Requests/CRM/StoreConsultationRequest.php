@@ -24,7 +24,7 @@ class StoreConsultationRequest extends FormRequest
     {
         return [
             'consultation_date' => ['required', 'date'],
-            'notes'             => ['required', 'string'],
+            'notes'             => ['nullable', 'string'],
             'recommended_level' => ['nullable', 'string', 'max:100'],
             'follow_up_note'    => ['nullable', 'string'],
         ];

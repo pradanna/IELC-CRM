@@ -30,6 +30,7 @@ class UpdateLeadRequest extends FormRequest
             'birth_date'     => ['nullable', 'date'],
             'school'         => ['nullable', 'string', 'max:255'],
             'grade'          => ['nullable', 'string', 'in:PG,TK,SD,SMP,SMA,KULIAH,UMUM'],
+            'notes'          => ['nullable', 'string'],
             
             // Guardians
             'guardians'           => ['nullable', 'array', 'max:5'],

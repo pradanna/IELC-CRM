@@ -21,6 +21,21 @@ export default function CreateEditLeadModal({
 }) {
     const { auth } = usePage().props;
     const phoneInputRef = React.useRef(null);
+    
+    /**
+     * Normalizes a collection that might be a raw array or a wrapped resource object.
+     */
+    const normalizeCollection = (collection) => {
+        if (Array.isArray(collection)) return collection;
+        if (collection && Array.isArray(collection.data)) return collection.data;
+        return [];
+    };
+
+    const normalizedSources = normalizeCollection(sources);
+    const normalizedTypes = normalizeCollection(types);
+    const normalizedBranches = normalizeCollection(branches);
+    const normalizedProvinces = normalizeCollection(provinces);
+
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
         nickname: '',
@@ -144,15 +159,9 @@ export default function CreateEditLeadModal({
                 });
             } else {
                 // Formatting for New Lead (reset or default values)
-                const now = new Date();
-                const year = String(now.getFullYear()).slice(-2);
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
                 
                 setData({
-                    name: `lead${year}${month}${day}${hours}${minutes}`,
+                    name: 'lead',
                     nickname: '',
                     gender: '',
                     phone: '',
@@ -380,7 +389,7 @@ export default function CreateEditLeadModal({
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <PremiumFormGroup label="Source" error={errors.lead_source_id}>
                                                             <PremiumSearchableSelect
-                                                                options={sources.map(s => ({ value: s.id, label: s.name }))}
+                                                                options={normalizedSources.map(s => ({ value: s.id, label: s.name }))}
                                                                 value={data.lead_source_id}
                                                                 onChange={val => setData('lead_source_id', val)}
                                                                 placeholder="Pilih Sumber"
@@ -389,7 +398,7 @@ export default function CreateEditLeadModal({
                                                         </PremiumFormGroup>
                                                         <PremiumFormGroup label="Lead Type" error={errors.lead_type_id}>
                                                             <PremiumSearchableSelect
-                                                                options={types.map(t => ({ value: t.id, label: t.name }))}
+                                                                options={normalizedTypes.map(t => ({ value: t.id, label: t.name }))}
                                                                 value={data.lead_type_id}
                                                                 onChange={val => setData('lead_type_id', val)}
                                                                 placeholder="Pilih Tipe"
@@ -432,7 +441,7 @@ export default function CreateEditLeadModal({
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <PremiumFormGroup label="Provinsi" error={errors.province}>
                                                                 <PremiumSearchableSelect
-                                                                    options={provinces.map(p => ({ value: p.name, label: p.name }))}
+                                                                    options={normalizedProvinces.map(p => ({ value: p.name, label: p.name }))}
                                                                     value={data.province}
                                                                     onChange={val => setData(d => ({ ...d, province: val, city: '' }))}
                                                                     placeholder="Provinsi"
@@ -512,7 +521,7 @@ export default function CreateEditLeadModal({
                                                     <div className="pt-6 border-t border-slate-100">
                                                         <PremiumFormGroup label="Target Branch" error={errors.branch_id} required>
                                                             <PremiumSearchableSelect
-                                                                options={branches.map(b => ({ value: b.id, label: b.name }))}
+                                                                options={normalizedBranches.map(b => ({ value: b.id, label: b.name }))}
                                                                 value={data.branch_id}
                                                                 onChange={val => setData('branch_id', val)}
                                                                 placeholder="Pilih Cabang"

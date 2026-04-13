@@ -2,8 +2,8 @@ import React from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import axios from 'axios';
-import CreateEditLeadModal from '../modals/CreateEditLeadModal';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
+import CreateEditLeadModal from '../Leads/modals/CreateEditLeadModal';
 
 export default function CrmLayout({ children, onSelectLead }) {
     const { url, props } = usePage();
@@ -85,11 +85,27 @@ export default function CrmLayout({ children, onSelectLead }) {
         }
     };
 
-    const handleSelect = (leadId) => {
+    const handleSelect = (item) => {
         setSearchQuery('');
         setResults([]);
         setShowDropdown(false);
-        if (onSelectLead) onSelectLead(leadId);
+
+        if (item.type === 'lead') {
+            openDrawer(item.id, 0);
+            if (onSelectLead) onSelectLead(item.id);
+        } else if (item.type === 'registration') {
+            router.visit(route('admin.crm.registrations.index', { preview_reg: item.id }));
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            setShowDropdown(false);
+            router.get(window.location.pathname, { search: searchQuery }, {
+                preserveState: true,
+                preserveScroll: true
+            });
+        }
     };
 
     return (
@@ -110,7 +126,8 @@ export default function CrmLayout({ children, onSelectLead }) {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => searchQuery.length >= 2 && setShowDropdown(true)}
-                                placeholder="Quick search (name/pnone)..." 
+                                placeholder="Search everything... (Enter to filter)" 
+                                onKeyDown={handleKeyDown}
                                 className="pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm shadow-sm focus:ring-4 focus:ring-red-500/5 focus:border-red-500 w-full transition-all"
                             />
 
@@ -121,11 +138,20 @@ export default function CrmLayout({ children, onSelectLead }) {
                                         <div className="py-2">
                                             {results.map((lead) => (
                                                 <button
-                                                    key={lead.id}
-                                                    onClick={() => handleSelect(lead.id)}
-                                                    className="w-full text-left px-5 py-3 hover:bg-slate-50 transition-colors flex flex-col gap-0.5 border-b border-gray-50 last:border-0"
+                                                    key={`${lead.type}-${lead.id}`}
+                                                    onClick={() => handleSelect(lead)}
+                                                    className="w-full text-left px-5 py-3 hover:bg-slate-50 transition-colors flex flex-col gap-0.5 border-b border-gray-50 last:border-0 relative"
                                                 >
-                                                    <span className="text-sm font-black text-gray-900 leading-tight">{lead.name}</span>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-black text-gray-900 leading-tight">{lead.name}</span>
+                                                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                                            lead.type === 'registration' 
+                                                            ? 'bg-amber-50 text-amber-600 border-amber-100' 
+                                                            : 'bg-blue-50 text-blue-600 border-blue-100'
+                                                        }`}>
+                                                            {lead.type}
+                                                        </span>
+                                                    </div>
                                                     <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                                                         <span>{lead.lead_number}</span>
                                                         <span>•</span>
