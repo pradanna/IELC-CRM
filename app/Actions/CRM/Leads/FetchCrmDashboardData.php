@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Admin\CRM;
+namespace App\Actions\CRM\Leads;
 
 use App\Models\Lead;
 use App\Models\LeadPhase;

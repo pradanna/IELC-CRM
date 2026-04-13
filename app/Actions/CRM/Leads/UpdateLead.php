@@ -1,15 +1,17 @@
 <?php
 
-namespace App\Actions\Admin\CRM;
+namespace App\Actions\CRM\Leads;
 
 use App\Models\Lead;
+use App\Models\LeadRelationship;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class UpdateLead
 {
     public function handle(Lead $lead, array $data): Lead
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($lead, $data) {
+        return DB::transaction(function () use ($lead, $data) {
             
             $lead->update([
                 'name' => $data['name'],
@@ -50,8 +52,7 @@ class UpdateLead
             // Remove old bidirectional links first
             $oldRelations = $lead->leadRelationships;
             foreach ($oldRelations as $oldRel) {
-                // Delete the opposite link
-                \App\Models\LeadRelationship::where('lead_id', $oldRel->related_lead_id)
+                LeadRelationship::where('lead_id', $oldRel->related_lead_id)
                     ->where('related_lead_id', $lead->id)
                     ->delete();
             }
@@ -67,7 +68,7 @@ class UpdateLead
                     ]);
 
                     // Bidirectional link
-                    \App\Models\LeadRelationship::create([
+                    LeadRelationship::create([
                         'id' => Str::uuid(),
                         'lead_id' => $relData['related_lead_id'],
                         'related_lead_id' => $lead->id,
@@ -86,7 +87,7 @@ class UpdateLead
         return match($type) {
             'parent' => 'child',
             'child' => 'parent',
-            default => $type, // sibling, guardian, etc
+            default => $type,
         };
     }
 }

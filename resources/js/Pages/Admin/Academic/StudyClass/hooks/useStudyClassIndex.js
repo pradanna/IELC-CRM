@@ -10,7 +10,7 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
 
     const handleSearch = (e) => {
         if (e) e.preventDefault();
-        router.get(route('admin.academics.study-classes.index'), 
+        router.get(route('admin.academic.study-classes.index'), 
             { ...filters, search }, 
             { preserveState: true }
         );
@@ -40,7 +40,7 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
 
     const handleResetCycle = (studyClass) => {
         if (confirm(`Finalize Cycle #${studyClass.current_session_number} for "${studyClass.name}" and start a new one? Current students will be carried over.`)) {
-            router.post(route('admin.academics.study-classes.reset-cycle', studyClass.id), {}, {
+            router.post(route('admin.academic.study-classes.reset-cycle', studyClass.id), {}, {
                 preserveScroll: true,
             });
         }
@@ -48,7 +48,7 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
 
     const handleDelete = (studyClass) => {
         if (confirm(`Are you sure you want to delete class "${studyClass.name}"?`)) {
-            router.delete(route('admin.academics.study-classes.destroy', studyClass.id));
+            router.delete(route('admin.academic.study-classes.destroy', studyClass.id));
         }
     };
 

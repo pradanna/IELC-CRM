@@ -1,62 +1,28 @@
 import React from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import FiltersBar from './partials/FiltersBar';
+import FiltersBar from '../Leads/partials/FiltersBar';
 import TaskList from './partials/TaskList';
 import EnrollmentTrendChart from './partials/EnrollmentTrendChart';
 import StatsCard from '@/Pages/Admin/Dashboard/partials/StatsCard';
-import SendWhatsappModal from './modals/SendWhatsappModal';
-
+import SendWhatsappModal from '../Leads/modals/SendWhatsappModal';
+import CrmLayout from '../partials/CrmLayout';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
-import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
-import axios from 'axios';
-import CrmLayout from './partials/CrmLayout';
+import { useCrmDashboard } from './hooks/useCrmDashboard';
 
-export default function Dashboard({ data, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
+export default function Index({ data, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
     const { stats, tasks, trend, filters } = data;
-    const { openDrawer } = useLeadDrawer();
-
-    
-    const [isWhatsappModalOpen, setIsWhatsappModalOpen] = React.useState(false);
-    const [whatsappLead, setWhatsappLead] = React.useState(null);
-
-    React.useEffect(() => {
-        const handleWhatsapp = (e) => {
-            setWhatsappLead(e.detail.lead);
-            setIsWhatsappModalOpen(true);
-        };
-        document.addEventListener('openSendWhatsappModal', handleWhatsapp);
-        return () => {
-            document.removeEventListener('openSendWhatsappModal', handleWhatsapp);
-        };
-    }, []);
-
-    
     const { getPhaseStyle } = useLeadPhaseStyle();
-
-    const openLeadDetail = (id, tabIndex = 0) => {
-        openDrawer(id, tabIndex);
-    };
-
-    const openWhatsappModal = (lead) => {
-        setWhatsappLead(lead);
-        setIsWhatsappModalOpen(true);
-    };
-
-    const handleUpdatePhase = async (leadId, newPhaseId) => {
-        try {
-            await axios.patch(route('admin.crm.leads.update-phase', leadId), {
-                lead_phase_id: newPhaseId
-            });
-            // Reload to update dashboard stats and counts
-            router.reload({ preserveScroll: true });
-        } catch (error) {
-            console.error('Error updating lead phase:', error);
-        }
-    };
+    
+    const {
+        isWhatsappModalOpen,
+        whatsappLead,
+        openLeadDetail,
+        handleUpdatePhase,
+        closeWhatsappModal,
+    } = useCrmDashboard();
 
     const totalLeadsCard = { title: 'TOTAL LEADS', value: stats.total, icon: 'users', variant: 'primary' };
-
     const monthName = new Date(filters.year, filters.month - 1).toLocaleString('id-ID', { month: 'long' });
     const periodLabel = `${monthName} ${filters.year}`;
 
@@ -74,7 +40,6 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
                 <CrmLayout 
                     onSelectLead={(id) => openLeadDetail(id, 0)} 
                 >
-
                     <div className="space-y-12">
                         {/* Global Filters Section */}
                         <FiltersBar 
@@ -127,15 +92,9 @@ export default function Dashboard({ data, branches, phases, sources, types, prov
                 </CrmLayout>
             </div>
 
-            {/* Modals & Drawer */}
-
-
             <SendWhatsappModal
                 isOpen={isWhatsappModalOpen}
-                onClose={() => {
-                    setIsWhatsappModalOpen(false);
-                    setWhatsappLead(null);
-                }}
+                onClose={closeWhatsappModal}
                 lead={whatsappLead}
                 chatTemplates={chatTemplates}
                 mediaAssets={mediaAssets}

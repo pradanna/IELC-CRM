@@ -5,6 +5,7 @@ import { X, User, Phone, Mail, Building2, MapPin, Globe, Loader2, Save, Search, 
 import { useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
+import PremiumFormGroup from '@/Components/PremiumFormGroup';
 import DatePicker from '@/Components/form/DatePicker';
 import { Calendar } from 'lucide-react';
 
@@ -286,8 +287,7 @@ export default function CreateEditLeadModal({
                                                     </div>
                                                     
                                                     <div className="space-y-5">
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Nama Lengkap <span className="text-red-500">*</span></label>
+                                                        <PremiumFormGroup label="Nama Lengkap" error={errors.name} required>
                                                             <input
                                                                 type="text"
                                                                 value={data.name}
@@ -295,20 +295,23 @@ export default function CreateEditLeadModal({
                                                                 className={`w-full px-5 py-3 bg-white border ${errors.name ? 'border-red-500 shadow-sm' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="Nama Lengkap"
                                                             />
-                                                            {errors.name && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.name}</p>}
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Nama Panggilan</label>
+                                                        </PremiumFormGroup>
+
+                                                        <PremiumFormGroup label="Nama Panggilan" error={errors.nickname}>
                                                             <input
                                                                 type="text"
                                                                 value={data.nickname}
                                                                 onChange={e => setData('nickname', e.target.value)}
-                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.nickname ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="Panggilan"
                                                             />
-                                                        </div>
-                                                        <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200">
-                                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-4">Jenis Kelamin</p>
+                                                        </PremiumFormGroup>
+
+                                                        <div className={`p-5 rounded-xl border transition-all ${errors.gender ? 'bg-red-50/50 border-red-200' : 'bg-slate-50/80 border-slate-200'}`}>
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Jenis Kelamin</p>
+                                                                {errors.gender && <AlertCircle className="w-3 h-3 text-red-500" />}
+                                                            </div>
                                                             <div className="flex gap-10">
                                                                 <label className="flex items-center gap-2.5 cursor-pointer group">
                                                                     <input 
@@ -334,8 +337,7 @@ export default function CreateEditLeadModal({
                                                             {errors.gender && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.gender}</p>}
                                                         </div>
 
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">WhatsApp <span className="text-red-500">*</span></label>
+                                                        <PremiumFormGroup label="WhatsApp" error={errors.phone} required>
                                                             <input
                                                                 type="tel"
                                                                 ref={phoneInputRef}
@@ -344,30 +346,26 @@ export default function CreateEditLeadModal({
                                                                 className={`w-full px-5 py-3 bg-white border ${errors.phone ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="08..."
                                                             />
-                                                            {errors.phone && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.phone}</p>}
-                                                        </div>
+                                                        </PremiumFormGroup>
 
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Email</label>
+                                                        <PremiumFormGroup label="Email" error={errors.email}>
                                                             <input
                                                                 type="email"
                                                                 value={data.email}
                                                                 onChange={e => setData('email', e.target.value)}
-                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.email ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="user@mail.com"
                                                             />
-                                                        </div>
+                                                        </PremiumFormGroup>
 
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider text-slate-900">Tanggal Lahir</label>
+                                                        <PremiumFormGroup label="Tanggal Lahir" error={errors.birth_date}>
                                                             <DatePicker
                                                                 value={data.birth_date}
                                                                 onChange={val => setData('birth_date', val)}
                                                                 placeholder="Pilih Tanggal Lahir"
-                                                                inputClassName="!py-3 !px-5 !rounded-xl !border-slate-300 !font-bold !text-sm text-slate-800 shadow-sm"
+                                                                inputClassName={`!py-3 !px-5 !rounded-xl ${errors.birth_date ? '!border-red-500' : '!border-slate-300'} !font-bold !text-sm text-slate-800 shadow-sm`}
                                                             />
-                                                            {errors.birth_date && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.birth_date}</p>}
-                                                        </div>
+                                                        </PremiumFormGroup>
                                                     </div>
                                                 </div>
                                             </div>
@@ -380,30 +378,31 @@ export default function CreateEditLeadModal({
                                                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Context & Geography</h3>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Source</label>
+                                                        <PremiumFormGroup label="Source" error={errors.lead_source_id}>
                                                             <PremiumSearchableSelect
                                                                 options={sources.map(s => ({ value: s.id, label: s.name }))}
                                                                 value={data.lead_source_id}
                                                                 onChange={val => setData('lead_source_id', val)}
                                                                 placeholder="Pilih Sumber"
-                                                                className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.lead_source_id ? 'border-red-500' : ''}`}
                                                             />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Lead Type</label>
+                                                        </PremiumFormGroup>
+                                                        <PremiumFormGroup label="Lead Type" error={errors.lead_type_id}>
                                                             <PremiumSearchableSelect
                                                                 options={types.map(t => ({ value: t.id, label: t.name }))}
                                                                 value={data.lead_type_id}
                                                                 onChange={val => setData('lead_type_id', val)}
                                                                 placeholder="Pilih Tipe"
-                                                                className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.lead_type_id ? 'border-red-500' : ''}`}
                                                             />
-                                                        </div>
+                                                        </PremiumFormGroup>
                                                     </div>
 
-                                                    <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200">
-                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-4">Inquiry Channel</p>
+                                                    <div className={`p-5 rounded-xl border transition-all ${errors.is_online ? 'bg-red-50/50 border-red-200' : 'bg-slate-50/80 border-slate-200'}`}>
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Inquiry Channel</p>
+                                                            {errors.is_online && <AlertCircle className="w-3 h-3 text-red-500" />}
+                                                        </div>
                                                         <div className="flex gap-10 mt-1">
                                                             <label className="flex items-center gap-2.5 cursor-pointer group">
                                                                 <input 
@@ -426,59 +425,58 @@ export default function CreateEditLeadModal({
                                                                 <span className="text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors uppercase tracking-tight">Online</span>
                                                             </label>
                                                         </div>
+                                                        {errors.is_online && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.is_online}</p>}
                                                     </div>
 
                                                     <div className="space-y-5 pt-4 border-t border-slate-100">
                                                         <div className="grid grid-cols-2 gap-4">
-                                                            <div>
-                                                                <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Provinsi</label>
+                                                            <PremiumFormGroup label="Provinsi" error={errors.province}>
                                                                 <PremiumSearchableSelect
                                                                     options={provinces.map(p => ({ value: p.name, label: p.name }))}
                                                                     value={data.province}
                                                                     onChange={val => setData(d => ({ ...d, province: val, city: '' }))}
                                                                     placeholder="Provinsi"
-                                                                    className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                                    className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.province ? 'border-red-500' : ''}`}
                                                                 />
-                                                            </div>
+                                                            </PremiumFormGroup>
                                                             <div className="relative">
-                                                                <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Kota</label>
-                                                                <PremiumSearchableSelect
-                                                                    options={cities.map(c => ({ value: c.name, label: c.name }))}
-                                                                    value={data.city}
-                                                                    onChange={val => setData('city', val)}
-                                                                    placeholder={!data.province ? "---" : "Kota"}
-                                                                    className={!data.province || loadingCities ? "opacity-50 rounded-xl overflow-hidden shadow-sm h-[46px]" : "rounded-xl overflow-hidden shadow-sm h-[46px]"}
-                                                                    disabled={!data.province || loadingCities}
-                                                                />
-                                                                {loadingCities && (
-                                                                    <div className="absolute right-10 top-1/2 -translate-y-1/2 mt-3">
-                                                                        <Loader2 className="animate-spin text-red-500" size={14} />
-                                                                    </div>
-                                                                )}
+                                                                <PremiumFormGroup label="Kota" error={errors.city}>
+                                                                    <PremiumSearchableSelect
+                                                                        options={cities.map(c => ({ value: c.name, label: c.name }))}
+                                                                        value={data.city}
+                                                                        onChange={val => setData('city', val)}
+                                                                        placeholder={!data.province ? "---" : "Kota"}
+                                                                        className={`${!data.province || loadingCities ? "opacity-50" : ""} rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.city ? 'border-red-500' : ''}`}
+                                                                        disabled={!data.province || loadingCities}
+                                                                    />
+                                                                    {loadingCities && (
+                                                                        <div className="absolute right-10 top-1/2 translate-y-[2px]">
+                                                                            <Loader2 className="animate-spin text-red-500" size={14} />
+                                                                        </div>
+                                                                    )}
+                                                                </PremiumFormGroup>
                                                             </div>
                                                         </div>
 
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Alamat Lengkap</label>
+                                                        <PremiumFormGroup label="Alamat Lengkap" error={errors.address}>
                                                             <input
                                                                 type="text"
                                                                 value={data.address}
                                                                 onChange={e => setData('address', e.target.value)}
-                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.address ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="Nama Jalan / Blok..."
                                                             />
-                                                        </div>
+                                                        </PremiumFormGroup>
 
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Kode Pos</label>
+                                                        <PremiumFormGroup label="Kode Pos" error={errors.postal_code}>
                                                             <input
                                                                 type="text"
                                                                 value={data.postal_code}
                                                                 onChange={e => setData('postal_code', e.target.value)}
-                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.postal_code ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="57..."
                                                             />
-                                                        </div>
+                                                        </PremiumFormGroup>
                                                     </div>
                                                 </div>
                                             </div>
@@ -491,39 +489,37 @@ export default function CreateEditLeadModal({
                                                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Academic & Assignment</h3>
                                                     </div>
                                                     <div className="space-y-5">
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Sekolah</label>
+                                                        <PremiumFormGroup label="Sekolah" error={errors.school}>
                                                             <input
                                                                 type="text"
                                                                 value={data.school}
                                                                 onChange={e => setData('school', e.target.value)}
-                                                                className="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm"
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.school ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="Nama Sekolah 'diisi UMUM jika sudah tidak dalam fase sekolah'"
                                                             />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-xs font-black text- slate-700 mb-2.5 uppercase tracking-wider">Kelas</label>
+                                                        </PremiumFormGroup>
+                                                        <PremiumFormGroup label="Kelas" error={errors.grade}>
                                                             <PremiumSearchableSelect
                                                                 options={gradeOptions}
                                                                 value={data.grade}
                                                                 onChange={val => setData('grade', val)}
                                                                 placeholder="Pilih Kelas"
-                                                                className="rounded-xl overflow-hidden shadow-sm h-[46px]"
+                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.grade ? 'border-red-500' : ''}`}
                                                             />
-                                                        </div>
+                                                        </PremiumFormGroup>
                                                     </div>
 
                                                     <div className="pt-6 border-t border-slate-100">
-                                                        <label className="block text-xs font-black text-slate-700 mb-2.5 uppercase tracking-wider">Target Branch <span className="text-red-500">*</span></label>
-                                                        <PremiumSearchableSelect
-                                                            options={branches.map(b => ({ value: b.id, label: b.name }))}
-                                                            value={data.branch_id}
-                                                            onChange={val => setData('branch_id', val)}
-                                                            placeholder="Pilih Cabang"
-                                                            icon={Building2}
-                                                            className="rounded-xl overflow-hidden shadow-sm h-[46px]"
-                                                        />
-                                                        {errors.branch_id && <p className="mt-2 text-[11px] font-bold text-red-500">{errors.branch_id}</p>}
+                                                        <PremiumFormGroup label="Target Branch" error={errors.branch_id} required>
+                                                            <PremiumSearchableSelect
+                                                                options={branches.map(b => ({ value: b.id, label: b.name }))}
+                                                                value={data.branch_id}
+                                                                onChange={val => setData('branch_id', val)}
+                                                                placeholder="Pilih Cabang"
+                                                                icon={Building2}
+                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.branch_id ? 'border-red-500' : ''}`}
+                                                            />
+                                                        </PremiumFormGroup>
                                                     </div>
                                                 </div>
                                             </div>

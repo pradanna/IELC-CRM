@@ -8,6 +8,7 @@ import DatePicker from '@/Components/form/DatePicker';
 import useClassScheduleCalculation from '../hooks/useClassScheduleCalculation';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import PremiumFormGroup from '@/Components/PremiumFormGroup';
 import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { X, GraduationCap, MapPin, Users, Calendar, Hash, Zap } from 'lucide-react';
@@ -105,58 +106,57 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     {/* Basic Info Section */}
                     <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <InputLabel htmlFor="name" value="Class Identifier" className="text-[10px] font-black uppercase text-slate-400 ml-1" />
+                        <PremiumFormGroup label="Class Identifier" error={errors.name} required>
                             <TextInput
                                 id="name"
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
-                                className="w-full !rounded-xl !py-3 !px-4 border-slate-200 focus:border-red-500 transition-all font-bold text-sm"
+                                className={`w-full !rounded-xl !py-3 !px-4 border-slate-200 focus:border-red-500 transition-all font-bold text-sm ${errors.name ? 'border-red-500' : ''}`}
                                 placeholder="e.g. Paris & Co (Intermediate)"
                             />
-                            <InputError message={errors.name} />
-                        </div>
+                        </PremiumFormGroup>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <InputLabel value="Center Location" className="text-[10px] font-black uppercase text-slate-400 ml-1" />
+                            <PremiumFormGroup label="Center Location" error={errors.branch_id} required>
                                 <PremiumSearchableSelect
                                     options={branchOptions}
                                     value={data.branch_id}
                                     onChange={(val) => setData('branch_id', val)}
                                     placeholder="Select Branch"
                                     icon={MapPin}
+                                    className={errors.branch_id ? 'border-red-500' : ''}
                                 />
-                                <InputError message={errors.branch_id} />
-                            </div>
+                            </PremiumFormGroup>
 
-                            <div className="space-y-1.5">
-                                <InputLabel value="Assigned Instructor" className="text-[10px] font-black uppercase text-slate-400 ml-1" />
+                            <PremiumFormGroup label="Assigned Instructor" error={errors.instructor_id} required>
                                 <PremiumSearchableSelect
                                     options={instructorOptions}
                                     value={data.instructor_id}
                                     onChange={(val) => setData('instructor_id', val)}
                                     placeholder="Assign Teacher"
                                     icon={Users}
+                                    className={errors.instructor_id ? 'border-red-500' : ''}
                                 />
-                                <InputError message={errors.instructor_id} />
-                            </div>
+                            </PremiumFormGroup>
                         </div>
 
-                        <div className="space-y-1.5 pt-2">
-                            <InputLabel value="Pricing Structure (Master Harga)" className="text-[10px] font-black uppercase text-slate-400 ml-1" />
+                        <PremiumFormGroup 
+                            label="Pricing Structure (Master Harga)" 
+                            error={errors.price_master_id} 
+                            required
+                        >
                             <PremiumSearchableSelect
                                 options={priceOptions}
                                 value={data.price_master_id}
                                 onChange={(val) => setData('price_master_id', val)}
                                 placeholder="Pilih Skema Harga..."
                                 icon={Zap}
+                                className={errors.price_master_id ? 'border-red-500' : ''}
                             />
                             <p className="text-[9px] font-bold text-slate-400 mt-1.5 ml-1 italic tracking-tight italic">
                                 * Digunakan untuk estimasi otomatis biaya pendaftaran di CRM.
                             </p>
-                            <InputError message={errors.price_master_id} />
-                        </div>
+                        </PremiumFormGroup>
                     </div>
 
                     {/* Schedule & Metrics Card */}
@@ -169,70 +169,60 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-1.5">
-                                <InputLabel value="Total Sessions" className="text-[10px] font-black text-slate-400" />
+                            <PremiumFormGroup label="Total Sessions" error={errors.total_meetings}>
                                 <div className="relative">
                                     <TextInput
                                         type="number"
                                         value={data.total_meetings}
                                         onChange={(e) => setData('total_meetings', e.target.value)}
-                                        className="w-full !rounded-xl !pl-10 !py-2.5 font-bold text-sm"
+                                        className={`w-full !rounded-xl !pl-10 !py-2.5 font-bold text-sm ${errors.total_meetings ? 'border-red-500' : ''}`}
                                     />
                                     <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 </div>
-                                <InputError message={errors.total_meetings} />
-                            </div>
+                            </PremiumFormGroup>
 
-                            <div className="space-y-1.5">
-                                <InputLabel value="Meetings/Week" className="text-[10px] font-black text-slate-400" />
+                            <PremiumFormGroup label="Meetings/Week" error={errors.meetings_per_week}>
                                 <div className="relative">
                                     <TextInput
                                         type="number"
                                         value={data.meetings_per_week}
                                         onChange={(e) => setData('meetings_per_week', e.target.value)}
-                                        className="w-full !rounded-xl !pl-10 !py-2.5 font-bold text-sm"
+                                        className={`w-full !rounded-xl !pl-10 !py-2.5 font-bold text-sm ${errors.meetings_per_week ? 'border-red-500' : ''}`}
                                     />
                                     <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 </div>
-                                <InputError message={errors.meetings_per_week} />
-                            </div>
+                            </PremiumFormGroup>
 
-                            <div className="space-y-1.5 col-span-1 md:col-span-1">
-                                <InputLabel value="Weekly Days" className="text-[10px] font-black text-slate-400" />
+                            <PremiumFormGroup label="Weekly Days" error={errors.schedule_days}>
                                 <PremiumSearchableMultiSelect
                                     options={dayOptions}
                                     value={data.schedule_days}
                                     onChange={(val) => setData('schedule_days', val)}
                                     placeholder="Click to select days"
-                                    className="w-full"
+                                    className={`w-full ${errors.schedule_days ? 'border-red-500' : ''}`}
                                 />
-                                <InputError message={errors.schedule_days} />
-                            </div>
+                            </PremiumFormGroup>
                         </div>
                     </div>
 
                     {/* Timeline Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <InputLabel value="Launch Date" className="text-[10px] font-black uppercase text-slate-400 ml-1" />
+                        <PremiumFormGroup label="Launch Date" error={errors.start_session_date} required>
                             <DatePicker
                                 value={data.start_session_date}
                                 onChange={(val) => setData('start_session_date', val)}
                                 placeholder="Select launch date"
-                                inputClassName="!rounded-xl !py-2.5 font-bold text-sm"
+                                inputClassName={`!rounded-xl !py-2.5 font-bold text-sm ${errors.start_session_date ? '!border-red-500' : ''}`}
                             />
-                            <InputError message={errors.start_session_date} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <InputLabel value="Target Completion" className="text-[10px] font-black uppercase text-slate-400 ml-1" />
+                        </PremiumFormGroup>
+                        <PremiumFormGroup label="Target Completion" error={errors.end_session_date}>
                             <DatePicker
                                 value={data.end_session_date}
                                 onChange={(val) => setData('end_session_date', val)}
                                 placeholder="Select completion date"
-                                inputClassName="!rounded-xl !py-2.5 font-bold text-sm"
+                                inputClassName={`!rounded-xl !py-2.5 font-bold text-sm ${errors.end_session_date ? '!border-red-500' : ''}`}
                             />
-                            <InputError message={errors.end_session_date} />
-                        </div>
+                        </PremiumFormGroup>
                     </div>
 
                     {/* Footer Actions */}

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import { X, User, Mail, Lock, Shield, Building2, Phone, MapPin, Loader2 } from 'lucide-react';
+import PremiumFormGroup from '@/Components/PremiumFormGroup';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 
@@ -109,24 +110,23 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                     {/* Form Fields */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Name */}
-                                        <div className="md:col-span-2 space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                                            <div className="relative group">
-                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                                <input
-                                                    type="text"
-                                                    value={data.name}
-                                                    onChange={e => setData('name', e.target.value)}
-                                                    className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all ${errors.name ? 'ring-2 ring-red-500' : ''}`}
-                                                    placeholder="e.g. John Doe"
-                                                />
-                                            </div>
-                                            {errors.name && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1 uppercase tracking-wider">{errors.name}</p>}
+                                        <div className="md:col-span-2">
+                                            <PremiumFormGroup label="Full Name" error={errors.name} required>
+                                                <div className="relative group">
+                                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                                    <input
+                                                        type="text"
+                                                        value={data.name}
+                                                        onChange={e => setData('name', e.target.value)}
+                                                        className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all ${errors.name ? 'ring-2 ring-red-500' : ''}`}
+                                                        placeholder="e.g. John Doe"
+                                                    />
+                                                </div>
+                                            </PremiumFormGroup>
                                         </div>
 
                                         {/* Email */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                                        <PremiumFormGroup label="Email Address" error={errors.email} required>
                                             <div className="relative group">
                                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <input
@@ -137,12 +137,10 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                                     placeholder="john@ielc.co.id"
                                                 />
                                             </div>
-                                            {errors.email && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1 uppercase tracking-wider">{errors.email}</p>}
-                                        </div>
+                                        </PremiumFormGroup>
 
                                         {/* Role */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Role</label>
+                                        <PremiumFormGroup label="Assigned Role" error={errors.role} required>
                                             <div className="relative group">
                                                 <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <select
@@ -156,21 +154,21 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                                     ))}
                                                 </select>
                                             </div>
-                                            {errors.role && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1 uppercase tracking-wider">{errors.role}</p>}
-                                        </div>
+                                        </PremiumFormGroup>
 
-                                        {/* Password - only if not editing or if explicitly changing */}
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-end ml-1">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ">
-                                                    {user ? 'New Password (Optional)' : 'Password'}
-                                                </label>
-                                                {!user && (
+                                        {/* Password */}
+                                        <PremiumFormGroup 
+                                            label={user ? 'New Password (Optional)' : 'Password'} 
+                                            error={errors.password}
+                                            required={!user}
+                                        >
+                                            {!user && (
+                                                <div className="mb-2">
                                                     <span className="text-[9px] font-bold text-red-500 uppercase tracking-tight bg-red-50 px-2 py-0.5 rounded-md">
                                                         Default: passwordielc
                                                     </span>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
                                             <div className="relative group">
                                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <input
@@ -180,12 +178,10 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                                     className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all ${errors.password ? 'ring-2 ring-red-500' : ''}`}
                                                 />
                                             </div>
-                                            {errors.password && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1 uppercase tracking-wider">{errors.password}</p>}
-                                        </div>
+                                        </PremiumFormGroup>
 
                                         {/* Confirmation */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Password</label>
+                                        <PremiumFormGroup label="Confirm Password">
                                             <div className="relative group">
                                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <input
@@ -195,11 +191,10 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                                     className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all"
                                                 />
                                             </div>
-                                        </div>
+                                        </PremiumFormGroup>
 
                                         {/* Branch */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Primary Branch</label>
+                                        <PremiumFormGroup label="Primary Branch" error={errors.branch_id} required>
                                             <div className="relative group">
                                                 <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <select
@@ -213,37 +208,36 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                                     ))}
                                                 </select>
                                             </div>
-                                            {errors.branch_id && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1 uppercase tracking-wider">{errors.branch_id}</p>}
-                                        </div>
+                                        </PremiumFormGroup>
 
                                         {/* Phone */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                                        <PremiumFormGroup label="Phone Number" error={errors.phone}>
                                             <div className="relative group">
                                                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <input
                                                     type="text"
                                                     value={data.phone}
                                                     onChange={e => setData('phone', e.target.value)}
-                                                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all"
+                                                    className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all ${errors.phone ? 'ring-2 ring-red-500' : ''}`}
                                                     placeholder="0812..."
                                                 />
                                             </div>
-                                        </div>
+                                        </PremiumFormGroup>
 
                                         {/* Address */}
-                                        <div className="md:col-span-2 space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Residence Address</label>
-                                            <div className="relative group">
-                                                <MapPin className="absolute left-4 top-4 text-slate-400" size={18} />
-                                                <textarea
-                                                    value={data.address}
-                                                    onChange={e => setData('address', e.target.value)}
-                                                    rows={3}
-                                                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all resize-none"
-                                                    placeholder="Alamat lengkap staff..."
-                                                />
-                                            </div>
+                                        <div className="md:col-span-2">
+                                            <PremiumFormGroup label="Residence Address" error={errors.address}>
+                                                <div className="relative group">
+                                                    <MapPin className="absolute left-4 top-4 text-slate-400" size={18} />
+                                                    <textarea
+                                                        value={data.address}
+                                                        onChange={e => setData('address', e.target.value)}
+                                                        rows={3}
+                                                        className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all resize-none ${errors.address ? 'ring-2 ring-red-500' : ''}`}
+                                                        placeholder="Alamat lengkap staff..."
+                                                    />
+                                                </div>
+                                            </PremiumFormGroup>
                                         </div>
                                     </div>
 

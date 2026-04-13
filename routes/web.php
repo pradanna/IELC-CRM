@@ -68,8 +68,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
     Route::post('/crm/leads', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'store'])->name('crm.leads.store');
     Route::get('/crm/cities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'getCities'])->name('crm.cities');
-    Route::post('/crm/leads/{lead}/approve-updates', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'approveUpdates'])->name('crm.leads.approve-updates');
-    Route::post('/crm/leads/{lead}/reject-updates', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'rejectUpdates'])->name('crm.leads.reject-updates');
+    Route::get('/crm/cities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'getCities'])->name('crm.cities');
 
     // Registration Inbox (Admin Approval)
     Route::get('/crm/registrations', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'index'])->name('crm.registrations.index');
