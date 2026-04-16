@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Actions\CRM\PtExam;
+namespace App\Actions\Crm\PtExam;
 
 use App\Models\PtSession;
 use Illuminate\Support\Str;
 
 class CreatePtSessionAction
 {
-    public function execute(array $data): PtSession
+    public function handle(array $data): PtSession
     {
         // Auto-generate unique token for the magic link if not provided
         if (empty($data['token'])) {
@@ -17,3 +17,4 @@ class CreatePtSessionAction
         return PtSession::create($data);
     }
 }
+

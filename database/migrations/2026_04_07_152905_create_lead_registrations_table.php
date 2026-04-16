@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('school')->nullable();
             $table->string('grade')->nullable();
             $table->foreignUuid('branch_id')->constrained();
+            $table->foreignUuid('lead_source_id')->nullable()->constrained('lead_sources')->nullOnDelete();
             
             // Geography
             $table->string('province')->nullable();

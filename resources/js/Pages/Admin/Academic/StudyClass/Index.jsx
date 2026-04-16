@@ -44,7 +44,7 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
                         </h1>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 ml-0.5">
                             <BookOpen className="w-3.5 h-3.5" />
-                            Showing {classes.length} active classes
+                            Showing {classes.data ? classes.data.length : (classes.length || 0)} active classes
                         </p>
                     </div>
 
@@ -81,7 +81,7 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
                             <PremiumSelect 
                                 options={[
                                     { value: '', label: 'All Branches' },
-                                    ...branches.map(b => ({ value: b.id, label: b.name }))
+                                    ...branches.data.map(b => ({ value: b.id, label: b.name }))
                                 ]}
                                 value={filters.branch_id || ''}
                                 onChange={handleFilterBranch}
@@ -93,14 +93,14 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
 
                     <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic shrink-0">
                         <BookOpen className="w-3.5 h-3.5 translate-y-[-1px]" />
-                        <span>{classes.length} Active Tracks</span>
+                        <span>{classes.data ? classes.data.length : (classes.length || 0)} Active Tracks</span>
                     </div>
                 </div>
 
                 {/* Main Grid */}
-                {classes.length > 0 ? (
+                {(classes.data ? classes.data.length : classes.length) > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {classes.map((c) => (
+                        {(classes.data || classes).map((c) => (
                             <ClassCard 
                                 key={c.id} 
                                 studyClass={c} 

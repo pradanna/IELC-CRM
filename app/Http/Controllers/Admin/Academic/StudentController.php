@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin\Academic;
 
 use App\Actions\Academic\EnrollStudent;
 use App\Actions\Academic\PromoteLeadToStudent;
+use App\Actions\Academic\UnenrollStudent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Academic\EnrollStudentRequest;
 use App\Models\Lead;
 use App\Models\Student;
 use App\Models\StudyClass;
+use App\Http\Resources\Academic\StudentResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +31,7 @@ class StudentController extends Controller
         }
 
         return Inertia::render('Admin/Academic/Student/Index', [
-            'students' => $query->latest()->get(),
+            'students' => StudentResource::collection($query->latest()->get()),
             'filters' => $request->only(['search']),
         ]);
     }
@@ -43,7 +45,10 @@ class StudentController extends Controller
         $student = $action->handle($lead);
 
         if ($request->wantsJson()) {
-            return response()->json(['message' => 'Lead promoted successfully', 'student' => $student]);
+            return response()->json([
+                'message' => 'Lead promoted successfully', 
+                'student' => new StudentResource($student->load(['lead.branch', 'studyClasses']))
+            ]);
         }
 
         return redirect()->back()->with('success', "Lead promoted successfully to {$student->student_number}.");
@@ -56,9 +61,9 @@ class StudentController extends Controller
         return redirect()->back()->with('success', 'Student enrolled successfully.');
     }
 
-    public function unenroll(StudyClass $studyClass, Student $student): RedirectResponse
+    public function unenroll(StudyClass $studyClass, Student $student, UnenrollStudent $action): RedirectResponse
     {
-        $studyClass->students()->detach($student->id);
+        $action->handle($studyClass, $student);
 
         return redirect()->back()->with('success', 'Student unenrolled successfully.');
     }
@@ -74,8 +79,10 @@ class StudentController extends Controller
             })->orWhere('student_number', 'like', "%{$request->q}%");
         }
 
+        $students = $query->latest()->limit(10)->get();
+
         return response()->json([
-            'students' => $query->latest()->limit(10)->get(),
+            'students' => StudentResource::collection($students),
         ]);
     }
 }

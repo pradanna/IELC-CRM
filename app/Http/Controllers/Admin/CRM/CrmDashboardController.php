@@ -1,31 +1,37 @@
 <?php
 
-namespace App\Http\Controllers\Admin\CRM;
+namespace App\Http\Controllers\Admin\Crm;
 
 use App\Models\Branch;
 use App\Models\LeadSource;
 use App\Models\LeadType;
 use App\Models\Province;
-use App\Actions\Admin\CRM\FetchCrmDashboardData;
+use App\Models\LeadPhase;
+use App\Actions\Crm\Leads\FetchCrmDashboardData;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Crm\LeadPhaseResource;
+use App\Http\Resources\Crm\LeadSourceResource;
+use App\Http\Resources\Crm\LeadTypeResource;
+use App\Http\Resources\Master\BranchResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CrmDashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, FetchCrmDashboardData $action): Response
     {
         $filters = $request->only(['month', 'year', 'branch_id']);
-        $dashboardData = (new FetchCrmDashboardData)->handle($filters);
+        $dashboardData = $action->handle($filters);
         
-        return Inertia::render('Admin/CRM/Dashboard', [
+        return Inertia::render('Admin/Crm/Dashboard/Index', [
             'data' => $dashboardData,
-            'branches' => Branch::select('id', 'name')->get(),
-            'phases' => \App\Models\LeadPhase::select('id', 'name', 'code')->get(),
-            'sources' => LeadSource::select('id', 'name')->get(),
-            'types' => LeadType::select('id', 'name')->get(),
+            'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
+            'phases' => LeadPhaseResource::collection(LeadPhase::select('id', 'name', 'code')->get()),
+            'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 }
+

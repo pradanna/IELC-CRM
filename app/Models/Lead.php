@@ -38,9 +38,12 @@ class Lead extends Model
         'follow_up_count',
         'last_activity_at',
         'enrolled_at',
+        'reached_prospective_at',
+        'lost_at',
         'self_registration_token',
         'pending_updates',
         'plotting',
+        'notes',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -59,6 +62,8 @@ class Lead extends Model
             'follow_up_count' => 'integer',
             'last_activity_at' => 'datetime',
             'enrolled_at' => 'datetime',
+            'reached_prospective_at' => 'datetime',
+            'lost_at' => 'datetime',
             'birth_date' => 'date',
             'pending_updates' => 'array',
             'plotting' => 'json',

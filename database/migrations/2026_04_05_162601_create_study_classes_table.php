@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('branch_id')->constrained('branches')->cascadeOnDelete();
             $table->foreignUuid('instructor_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('price_master_id')->nullable()->constrained('price_masters')->nullOnDelete();
             $table->string('name');
             $table->date('start_session_date')->nullable();
             $table->date('end_session_date')->nullable();

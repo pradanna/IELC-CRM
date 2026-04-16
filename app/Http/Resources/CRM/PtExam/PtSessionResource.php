@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Resources\CRM\PtExam;
+namespace App\Http\Resources\Crm\PtExam;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\CRM\LeadResource;
+use App\Http\Resources\Crm\LeadResource;
 
 class PtSessionResource extends JsonResource
 {
@@ -29,6 +29,11 @@ class PtSessionResource extends JsonResource
             'finished_at' => $this->finished_at,
             'final_score' => $this->final_score,
             'recommended_level' => $this->recommended_level,
+            'is_graded' => $this->is_graded,
+            'graded_by' => $this->graded_by,
+            'grader_name' => $this->grader?->name,
+            'grading_notes' => $this->grading_notes,
+            'result_file_url' => $this->result_file_path ? \Illuminate\Support\Facades\Storage::url($this->result_file_path) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             // Magic link for the lead
@@ -38,3 +43,4 @@ class PtSessionResource extends JsonResource
         ];
     }
 }
+

@@ -16,6 +16,8 @@ class PtAnswer extends Model
         'pt_session_id',
         'pt_question_id',
         'pt_question_option_id',
+        'answer_text',
+        'file_path',
         'is_correct',
     ];
 

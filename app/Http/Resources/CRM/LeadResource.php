@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\CRM;
+namespace App\Http\Resources\Crm;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,6 +25,7 @@ class LeadResource extends JsonResource
             'is_online'      => (bool)$this->is_online,
             'self_registration_token' => $this->self_registration_token,
             'plotting'       => $this->plotting,
+            'notes'          => $this->notes,
             
             // Raw IDs for edit mode
             'branch_id'      => $this->branch_id,
@@ -74,7 +75,7 @@ class LeadResource extends JsonResource
                 return LeadActivityResource::collection($this->activities);
             }),
 
-            'pt_sessions'    => \App\Http\Resources\CRM\PtExam\PtSessionResource::collection($this->whenLoaded('ptSessions')),
+            'pt_sessions'    => \App\Http\Resources\Crm\PtExam\PtSessionResource::collection($this->whenLoaded('ptSessions')),
 
             'consultations'  => $this->whenLoaded('consultations', fn() => 
                 $this->consultations->map(fn($c) => [
@@ -129,3 +130,4 @@ class LeadResource extends JsonResource
         ];
     }
 }
+

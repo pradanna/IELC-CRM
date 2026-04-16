@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\CRM;
+namespace App\Http\Requests\Crm;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,9 +24,10 @@ class StoreConsultationRequest extends FormRequest
     {
         return [
             'consultation_date' => ['required', 'date'],
-            'notes'             => ['required', 'string'],
+            'notes'             => ['nullable', 'string'],
             'recommended_level' => ['nullable', 'string', 'max:100'],
             'follow_up_note'    => ['nullable', 'string'],
         ];
     }
 }
+

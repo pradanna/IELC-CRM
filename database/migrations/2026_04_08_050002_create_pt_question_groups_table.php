@@ -15,8 +15,11 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('pt_exam_id')->constrained()->cascadeOnDelete();
             $table->string('instruction');
+            $table->string('section_type')->nullable();
             $table->string('audio_path')->nullable();
+            $table->string('file_path')->nullable();
             $table->text('reading_text')->nullable();
+            $table->integer('position')->default(0);
             $table->timestamps();
         });
     }

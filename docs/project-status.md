@@ -22,10 +22,10 @@
 
 | Module     | Backend | Frontend | Overall Status | Catatan |
 |------------|:-------:|:--------:|:--------------:|---------|
-| **CRM**        | 🔄 In Progress | ✅ Done | 🔄 In Progress | Backend Actions masih partial |
-| **Finance**    | 🔄 In Progress | 🏗️ Stub | 🔄 In Progress | Frontend Invoice belum lengkap |
-| **Academic**   | ✅ Done | 🔄 In Progress | 🔄 In Progress | Student page masih minimal |
-| **Master Data**| 🏗️ Stub | ✅ Done | 🏗️ Stub | Backend route/controller belum semua ada |
+| **CRM**        | ✅ Done | ✅ Done | ✅ Done | Backend Actions complete, flow verified |
+| **Finance**    | ✅ Done | 🏗️ Stub | 🔄 In Progress | Backend ready, Frontend Invoice index in progress |
+| **Academic**   | ✅ Done | 🔄 In Progress | 🔄 In Progress | Student page still minimal |
+| **Master Data**| ✅ Done | ✅ Done | ✅ Done | Full CRUD available |
 | **Auth / User**| ✅ Done | ✅ Done | ✅ Done | — |
 
 ---
@@ -46,14 +46,14 @@
 | Migration: tasks | `2026_03_31_160004_create_tasks_table.php` | ✅ Done | — |
 | Migration: chat_templates | `2026_04_02_160316_create_chat_templates_table.php` | ✅ Done | — |
 | Migration: media_assets | `2026_04_02_161303_create_media_assets_table.php` | ✅ Done | — |
-| Action: StoreLead | `app/Actions/CRM/Leads/StoreLead.php` | ✅ Done | — |
-| Action: UpdateLead | — | 📋 Planned | Belum dibuat |
-| Action: DeleteLead | — | 📋 Planned | Belum dibuat |
-| Action: RecordFollowUp | — | 📋 Planned | Logic ada di model/controller? |
-| Action: FetchCrmDashboardData | — | 📋 Planned | Disebutkan di architecture.md |
+| Action: StoreLead | `app/Actions/Crm/Leads/StoreLead.php` | ✅ Done | — |
+| Action: UpdateLead | `app/Actions/Crm/Leads/UpdateLead.php` | ✅ Done | — |
+| Action: DeleteLead | — | 📋 Planned | Still on controller? |
+| Action: RecordFollowUp | `app/Actions/Crm/Leads/RecordLeadFollowUp.php` | ✅ Done | — |
+| Action: FetchCrmDashboardData | `app/Actions/Crm/Leads/FetchCrmDashboardData.php` | ✅ Done | — |
 | Model: Lead | `app/Models/Lead.php` | ✅ Done | — |
-| Resource: LeadResource | — | ❓ Unchecked | Perlu verifikasi |
-| Controller: LeadController | — | ❓ Unchecked | Perlu verifikasi |
+| Resource: LeadResource | `app/Http/Resources/Admin/Crm/LeadResource.php` | ✅ Done | — |
+| Controller: LeadController | `app/Http/Controllers/Admin/Crm/LeadController.php` | ✅ Done | — |
 
 ### Frontend
 
@@ -81,11 +81,11 @@
 | Migration: invoiced_items | `2026_04_06_161432_create_invoiced_items_table.php` | ✅ Done | — |
 | Action: GenerateInvoice | `app/Actions/Finance/GenerateInvoice.php` | ✅ Done | — |
 | Action: ProcessInvoicePayment | `app/Actions/Finance/ProcessInvoicePayment.php` | ✅ Done | — |
-| Model: Invoice | — | ❓ Unchecked | Perlu verifikasi |
-| Model: PriceMaster | — | ❓ Unchecked | Perlu verifikasi |
-| Resource: InvoiceResource | — | ❓ Unchecked | Perlu verifikasi |
-| Controller: InvoiceController | — | ❓ Unchecked | Perlu verifikasi |
-| PDF Generation (dompdf) | — | ❓ Unchecked | Disebutkan di architecture.md |
+| Model: Invoice | `app/Models/Invoice.php` | ✅ Done | — |
+| Model: PriceMaster | `app/Models/PriceMaster.php` | ✅ Done | — |
+| Resource: InvoiceResource | — | 📋 Planned | — |
+| Controller: FinanceController| `app/Http/Controllers/Admin/Finance/FinanceController.php` | ✅ Done | — |
+| PDF Generation (dompdf) | `config/dompdf.php` | ✅ Done | Implemented via barryvdh/laravel-dompdf |
 
 ### Frontend
 

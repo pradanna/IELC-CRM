@@ -1,89 +1,51 @@
 import React, { useState } from 'react';
-import { 
-    Plus, 
-    Link as LinkIcon, 
-    CheckCircle, 
-    Clock, 
-    Trash2, 
-    Copy, 
-    ExternalLink,
-    AlertCircle,
-    Trophy,
-    Calendar,
-    MessageSquare,
-    Loader2,
-    FileText
-} from 'lucide-react';
-import axios from 'axios';
+import { useLeadPlacementTest } from '../hooks/useLeadPlacementTest';
+import Modal from '@/Components/ui/Modal';
+import PrimaryButton from '@/Components/form/PrimaryButton';
+import SecondaryButton from '@/Components/form/SecondaryButton';
+import DangerButton from '@/Components/form/DangerButton';
+import SessionResultDetailModal from '../modals/SessionResultDetailModal';
 import MagicLinkBanner from '../components/MagicLinkBanner';
+import { Calendar, Clock, ExternalLink, FileText, LinkIcon, Loader2, MessageSquare, Trash2, Trophy } from 'lucide-react';
 
 export default function LeadPlacementTestTab({ lead, loading, availableExams = [], onRefresh, isMinimal = false }) {
-    const [generating, setGenerating] = useState(false);
-    const [sendingWa, setSendingWa] = useState(null); // ID of session being sent
-    const [selectedExamId, setSelectedExamId] = useState('');
-    const [copySuccess, setCopySuccess] = useState(null);
+    const {
+        generating,
+        sendingWa,
+        selectedExamId,
+        setSelectedExamId,
+        copySuccess,
+        isDeleting,
+        handleGenerateLink,
+        handleSendWa,
+        handleCopy,
+        handleDelete,
+    } = useLeadPlacementTest({ lead, onRefresh });
 
-    const handleGenerateLink = async () => {
-        if (!selectedExamId) return;
-        
-        setGenerating(true);
-        try {
-            await axios.post(route('admin.crm.pt-sessions.store'), {
-                lead_id: lead.id,
-                pt_exam_id: selectedExamId
-            });
-            setSelectedExamId('');
-            if (onRefresh) onRefresh();
-        } catch (error) {
-            console.error('Error generating placement test link:', error);
-            alert('Failed to generate link. Please try again.');
-        } finally {
-            setGenerating(false);
-        }
-    };
+    const [deleteConfirm, setDeleteConfirm] = useState(null); // Session to delete
+    const [waConfirm, setWaConfirm] = useState(null); // Session to send WA
+    const [viewResult, setViewResult] = useState(null); // Session to view result
 
-    const handleSendWa = async (session) => {
+    const confirmDelete = (session) => setDeleteConfirm(session);
+    const confirmWa = (session) => {
         if (!lead?.phone) {
-            alert('Nomor WhatsApp lead tidak ditemukan.');
+            // Usually we'd use a toast here. For now, let's just use the hook's check or a toast.
             return;
         }
+        setWaConfirm(session);
+    };
 
-        if (!confirm(`Kirim link placement test ke ${lead.name} via WhatsApp?`)) return;
-
-        setSendingWa(session.id);
-        try {
-            const branchCode = (lead?.branch_code || 'solo').toLowerCase();
-            const message = `Halo ${lead.name}, ini adalah link placement test kamu: ${session.magic_link}\n\nHarap dikerjakan sesuai waktu yang ditentukan ya. Semangat!\n\nIELC - International English Language Center`;
-            
-            await axios.post(route('admin.whatsapp.send'), {
-                branch: branchCode,
-                phone: lead.phone,
-                message: message
-            });
-            
-            alert('Link placement test berhasil dikirim via WhatsApp!');
-        } catch (error) {
-            console.error('Error sending WA:', error);
-            alert('Gagal mengirim WhatsApp: ' + (error.response?.data?.error || 'Server error'));
-        } finally {
-            setSendingWa(null);
+    const execDelete = () => {
+        if (deleteConfirm) {
+            handleDelete(deleteConfirm.id);
+            setDeleteConfirm(null);
         }
     };
 
-    const handleCopy = (text, id) => {
-        navigator.clipboard.writeText(text);
-        setCopySuccess(id);
-        setTimeout(() => setCopySuccess(null), 2000);
-    };
-
-    const handleDelete = async (id) => {
-        if (confirm('Are you sure you want to delete this test session?')) {
-            try {
-                await axios.delete(route('admin.crm.pt-sessions.destroy', id));
-                if (onRefresh) onRefresh();
-            } catch (error) {
-                console.error('Error deleting session:', error);
-            }
+    const execSendWa = () => {
+        if (waConfirm) {
+            handleSendWa(waConfirm);
+            setWaConfirm(null);
         }
     };
 
@@ -200,8 +162,17 @@ export default function LeadPlacementTestTab({ lead, loading, availableExams = [
                                     </div>
 
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {session.status === 'completed' && (
+                                            <button 
+                                                onClick={() => setViewResult(session)}
+                                                className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-100"
+                                                title="View Detailed Results"
+                                            >
+                                                <FileText size={16} />
+                                            </button>
+                                        )}
                                         <button 
-                                            onClick={() => handleDelete(session.id)}
+                                            onClick={() => confirmDelete(session)}
                                             className="p-2.5 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                                             title="Delete Session"
                                         >
@@ -259,16 +230,36 @@ export default function LeadPlacementTestTab({ lead, loading, availableExams = [
                 </div>
             </div>
 
-            <div className="bg-amber-50/50 border border-amber-100 rounded-[2rem] p-6 flex items-start gap-4">
-                <AlertCircle size={20} className="text-amber-600 mt-1 shrink-0" />
-                <div className="space-y-1">
-                    <p className="text-xs font-black text-amber-900 uppercase tracking-wider">Placement Test Protocol</p>
-                    <p className="text-[11px] font-medium text-amber-800 leading-relaxed font-bold">
-                        Assessments are non-proctored but time-limited. Once started, the timer cannot be paused. 
-                        Digital delivery via WhatsApp is recommended for highest response rates.
-                    </p>
+            {/* Confirmation Modals */}
+            <Modal show={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Confirm Delete">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-600">Are you sure you want to delete this test session? This action cannot be undone.</p>
+                    <div className="flex justify-end gap-3">
+                        <SecondaryButton onClick={() => setDeleteConfirm(null)}>Cancel</SecondaryButton>
+                        <DangerButton onClick={execDelete} processing={isDeleting === deleteConfirm?.id}>Delete Session</DangerButton>
+                    </div>
                 </div>
-            </div>
+            </Modal>
+
+            <Modal show={!!waConfirm} onClose={() => setWaConfirm(null)} title="Send via WhatsApp">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-600">
+                        Kirim link placement test ke **{lead.name}** via WhatsApp? 
+                        <br/><span className="text-xs text-slate-400 mt-2 block italic">Link: {waConfirm?.magic_link}</span>
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <SecondaryButton onClick={() => setWaConfirm(null)}>Cancel</SecondaryButton>
+                        <PrimaryButton onClick={execSendWa} processing={sendingWa === waConfirm?.id}>Send WhatsApp</PrimaryButton>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Result Detail Modal */}
+            <SessionResultDetailModal 
+                show={!!viewResult} 
+                onClose={() => setViewResult(null)} 
+                session={viewResult} 
+            />
         </div>
     );
 }

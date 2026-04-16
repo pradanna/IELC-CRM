@@ -1,26 +1,50 @@
 <?php
 
-namespace App\Http\Controllers\Admin\CRM;
+namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\Admin\CRM\StoreLead;
-use App\Actions\Admin\CRM\UpdateLead;
+use App\Actions\Crm\Leads\FetchLeadHistory;
+use App\Actions\Crm\Leads\PlotLeadClass;
+use App\Actions\Crm\Leads\RecordLeadFollowUp;
+use App\Actions\Crm\Leads\ResetLeadFollowUp;
+use App\Actions\Crm\Leads\SendLeadWhatsApp;
+use App\Actions\Crm\Leads\SendLeadWhatsAppTemplate;
+use App\Actions\Crm\Leads\StoreLead;
+use App\Actions\Crm\Leads\UpdateLead;
+use App\Actions\Crm\Leads\UpdateLeadPhase;
+use App\Actions\Crm\Leads\StoreLeadConsultation;
 use App\Http\Controllers\Controller;
-use App\Models\City;
+use App\Http\Requests\Crm\PlotLeadClassRequest;
+use App\Http\Requests\Crm\RecordLeadFollowUpRequest;
+use App\Http\Requests\Crm\SendLeadWhatsAppRequest;
+use App\Http\Requests\Crm\SendLeadWhatsAppTemplateRequest;
+use App\Http\Requests\Crm\StoreLeadRequest;
+use App\Http\Requests\Crm\UpdateLeadPhaseRequest;
+use App\Http\Requests\Crm\UpdateLeadRequest;
+use App\Http\Requests\Crm\StoreConsultationRequest;
+use App\Models\Branch;
+use App\Models\ChatTemplate;
+use App\Models\Lead;
+use App\Models\LeadPhase;
+use App\Models\LeadSource;
+use App\Models\LeadType;
+use App\Models\MediaAsset;
 use App\Models\Province;
+use App\Models\City;
+use App\Models\StudyClass;
+use App\Models\PtExam;
+use App\Http\Resources\Crm\LeadResource;
+use App\Http\Resources\Crm\LeadActivityResource;
+use App\Http\Resources\Crm\PtExam\PtExamResource;
+use App\Http\Resources\Crm\LeadPhaseResource;
+use App\Http\Resources\Crm\LeadSourceResource;
+use App\Http\Resources\Crm\LeadTypeResource;
+use App\Http\Resources\Master\BranchResource;
+use App\Http\Resources\Academic\StudyClassResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\Lead;
-use App\Models\Branch;
-use App\Models\LeadSource;
-use App\Models\LeadType;
-use App\Http\Resources\CRM\LeadResource;
-use App\Http\Resources\CRM\LeadActivityResource;
-use App\Http\Resources\CRM\PtExam\PtExamResource;
-use App\Models\PtExam;
-use App\Models\LeadConsultation;
-use App\Http\Requests\CRM\StoreConsultationRequest;
-use App\Models\StudyClass;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,22 +63,14 @@ class LeadController extends Controller
             $query->where('lead_phase_id', $request->lead_phase_id);
         }
 
-        // Special handling for monthly filtering:
-        // By default, we filter by created_at.
-        // However, if specifically looking at the Enrollment phase, we use enrolled_at.
-        $targetMonth = $request->input('month');
-        $targetYear  = $request->input('year');
-        $enrollmentPhase = \App\Models\LeadPhase::where('code', 'enrollment')->first();
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $enrollmentPhase = LeadPhase::where('code', 'enrollment')->first();
 
-        if ($targetMonth && $targetYear) {
-            $query->where(function($q) use ($targetMonth, $targetYear, $request, $enrollmentPhase) {
-                if ($request->lead_phase_id == $enrollmentPhase?->id) {
-                    $q->whereMonth('enrolled_at', $targetMonth)
-                      ->whereYear('enrolled_at', $targetYear);
-                } else {
-                    $q->whereMonth('created_at', $targetMonth)
-                      ->whereYear('created_at', $targetYear);
-                }
+        if ($startDate && $endDate) {
+            $query->where(function($q) use ($startDate, $endDate, $request, $enrollmentPhase) {
+                $dateField = ($request->lead_phase_id == $enrollmentPhase?->id) ? 'enrolled_at' : 'created_at';
+                $q->whereBetween($dateField, [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             });
         }
 
@@ -70,16 +86,16 @@ class LeadController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return Inertia::render('Admin/CRM/ListView', [
+        return Inertia::render('Admin/Crm/Leads/Index', [
             'leads' => LeadResource::collection($leads),
-            'filters' => $request->only(['branch_id', 'lead_phase_id', 'month', 'year', 'search']),
-            'branches' => Branch::select('id', 'name')->get(),
-            'phases' => \App\Models\LeadPhase::select('id', 'name', 'code')->get(),
-            'sources' => LeadSource::select('id', 'name')->get(),
-            'types' => LeadType::select('id', 'name')->get(),
+            'filters' => $request->only(['branch_id', 'lead_phase_id', 'start_date', 'end_date', 'search']),
+            'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
+            'phases' => LeadPhaseResource::collection(LeadPhase::select('id', 'name', 'code')->get()),
+            'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
-            'chatTemplates' => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
-            'mediaAssets'   => \App\Models\MediaAsset::latest()->get(),
+            'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
+            'mediaAssets'   => MediaAsset::latest()->get(),
             'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
         ]);
     }
@@ -107,158 +123,65 @@ class LeadController extends Controller
                     'student.studyClasses',
                     'chatLogs.sender',
                 ])),
-                'availableExams' => PtExamResource::collection(PtExam::where('is_active', true)->get()),
-                'availableClasses' => $availableClasses,
+                'availableExams' => PtExamResource::collection(\App\Models\PtExam::where('is_active', true)->get()),
+                'availableClasses' => StudyClassResource::collection($availableClasses),
                 'chatTemplates'  => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->get(),
-                'phases'         => \App\Models\LeadPhase::orderBy('created_at', 'asc')->get(),
+                'phases'         => LeadPhase::orderBy('created_at', 'asc')->get(),
                 'mediaAssets'    => \App\Models\MediaAsset::latest()->get(),
             ]);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Error in LeadController@show: " . $e->getMessage());
+            \Log::error("Error in LeadController@show: " . $e->getMessage());
             return response()->json(['error' => 'Failed to load lead details: ' . $e->getMessage()], 500);
         }
     }
 
-    public function plotClass(Request $request, Lead $lead): JsonResponse
+    public function activities(Lead $lead, FetchLeadHistory $action): JsonResponse
     {
-        $validated = $request->validate([
-            'study_class_id' => 'required|exists:study_classes,id',
-            'join_date' => 'required|date',
-            'notes' => 'nullable|string',
-            'estimated_cost' => 'nullable|numeric',
-        ]);
-
-        $studyClass = StudyClass::findOrFail($validated['study_class_id']);
-        
-        // Calculate pro-rata meetings (simple estimation based on start date vs join date)
-        // If join date is after start date, count remaining meetings on schedule days.
-        $remaining = 0;
-        if ($studyClass->start_session_date && is_array($studyClass->schedule_days)) {
-            $joinDate = \Carbon\Carbon::parse($validated['join_date']);
-            $endDate = $studyClass->end_session_date;
-            
-            if ($endDate && $joinDate->lessThanOrEqualTo($endDate)) {
-                $period = \Carbon\CarbonPeriod::create($joinDate, $endDate);
-                foreach ($period as $date) {
-                    if (in_array($date->format('l'), $studyClass->schedule_days)) {
-                        $remaining++;
-                    }
-                }
-            }
-        }
-
-        $lead->update([
-            'plotting' => array_merge($validated, [
-                'remaining_meetings' => $remaining,
-                'total_meetings' => $studyClass->total_meetings,
-            ])
-        ]);
-
-        activity()
-            ->performedOn($lead)
-            ->causedBy(auth()->user())
-            ->log("Leads plotted to class: " . $studyClass->name);
+        $paginated = $action->handle($lead);
 
         return response()->json([
-            'message' => 'Lead plotting updated.',
-            'lead' => new LeadResource($lead->refresh())
+            'activities' => $paginated->items(),
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'has_more'     => $paginated->hasMorePages(),
+            ]
         ]);
     }
 
-    public function sendMessage(Request $request, Lead $lead): JsonResponse
+    public function plotClass(PlotLeadClassRequest $request, Lead $lead, PlotLeadClass $action): JsonResponse
     {
-        $request->validate([
-            'message' => 'required|string',
+        $lead = $action->handle($lead, $request->validated());
+
+        return response()->json([
+            'message' => 'Lead plotting updated.',
+            'lead' => new LeadResource($lead->load(['student.studyClasses']))
         ]);
+    }
 
-        $message = $request->message;
-        
-        $lead->load('branch');
-        $branchCode = $lead->branch?->code ?: 'solo';
-        $phone = preg_replace('/[^0-9]/', '', $lead->phone);
-
-        $whatsappService = app(\App\Services\WhatsAppService::class);
-        
+    public function sendMessage(SendLeadWhatsAppRequest $request, Lead $lead, SendLeadWhatsApp $action): JsonResponse
+    {
         try {
-            $result = $whatsappService->sendMessage($branchCode, $phone, $message);
-
-            if (!($result['success'] ?? false)) {
-                return response()->json(['error' => 'WhatsApp Gateway Error'], 500);
-            }
-
-            // Log it in Database
-            \App\Models\LeadChatLog::create([
-                'lead_id'          => $lead->id,
-                'lead_phase_id'    => $lead->lead_phase_id,
-                'user_id'          => auth()->id(),
-                'message'          => $message,
-            ]);
-
+            $action->handle($lead, $request->validated());
             return response()->json(['message' => 'Message sent and logged.']);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to send WhatsApp: ' . $e->getMessage()], 500);
         }
     }
 
-    public function sendTemplate(Request $request, Lead $lead): JsonResponse
+    public function sendTemplate(SendLeadWhatsAppTemplateRequest $request, Lead $lead, SendLeadWhatsAppTemplate $action): JsonResponse
     {
-        $request->validate([
-            'chat_template_id' => 'required|exists:chat_templates,id',
-        ]);
-
-        $template = \App\Models\ChatTemplate::findOrFail($request->chat_template_id);
-        
-        // Render message with variables
-        $message = str_replace(
-            ['{{name}}', '{{nickname}}', '{{lead_number}}', '{{admin_name}}'],
-            [
-                $lead->name ?: 'Kak', 
-                $lead->nickname ?: ($lead->name ?: 'Kak'), 
-                $lead->lead_number, 
-                auth()->user()->name
-            ],
-            $template->message
-        );
-
-        // Ensure branch is loaded for correct branch code
-        $lead->load('branch');
-        $branchCode = $lead->branch?->code ?: 'solo';
-        
-        // Sanitize phone (numbers only)
-        $phone = preg_replace('/[^0-9]/', '', $lead->phone);
-
-        $whatsappService = app(\App\Services\WhatsAppService::class);
-        
         try {
-            $result = $whatsappService->sendMessage($branchCode, $phone, $message);
-
-            if (!($result['success'] ?? false)) {
-                $errorMsg = $result['message'] ?? $result['error'] ?? 'Unknown Gateway Error';
-                \Illuminate\Support\Facades\Log::warning("WA Template Send Failed for Lead {$lead->id}: " . $errorMsg);
-                return response()->json(['error' => 'WhatsApp Gateway Error: ' . $errorMsg], 500);
-            }
-
-            // Log it in Database
-            \App\Models\LeadChatLog::create([
-                'lead_id'          => $lead->id,
-                'chat_template_id' => $template->id,
-                'lead_phase_id'    => $lead->lead_phase_id,
-                'user_id'          => auth()->id(),
-                'message'          => $message,
-            ]);
-
+            $action->handle($lead, $request->validated());
             return response()->json(['message' => 'Template sent effectively.']);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to send WhatsApp Template for Lead {$lead->id}: " . $e->getMessage());
             return response()->json(['error' => 'Failed to send WhatsApp: ' . $e->getMessage()], 500);
         }
     }
 
-    public function store(\App\Http\Requests\CRM\StoreLeadRequest $request): RedirectResponse
+    public function store(StoreLeadRequest $request, StoreLead $action): RedirectResponse
     {
-        $lead = (new StoreLead)->handle($request->validated());
-        
-        $this->clearDashboardCache($lead);
+        $lead = $action->handle($request->validated());
+        $this->clearDashboardCache();
 
         return redirect()->back()->with([
             'success' => 'Lead created successfully.',
@@ -266,85 +189,43 @@ class LeadController extends Controller
         ]);
     }
 
-    public function activities(Lead $lead): JsonResponse
+    public function update(UpdateLeadRequest $request, Lead $lead, UpdateLead $action): RedirectResponse
     {
-        $activities = $lead->activities()->with('causer')->latest()->paginate(10);
-        
-        return response()->json([
-            'activities' => LeadActivityResource::collection($activities),
-            'pagination' => [
-                'current_page' => $activities->currentPage(),
-                'last_page'    => $activities->lastPage(),
-                'has_more'     => $activities->hasMorePages(),
-            ]
-        ]);
-    }
-
-    public function update(\App\Http\Requests\CRM\UpdateLeadRequest $request, Lead $lead): RedirectResponse
-    {
-        (new UpdateLead)->handle($lead, $request->validated());
-
+        $action->handle($lead, $request->validated());
         return redirect()->back()->with('success', 'Lead updated successfully.');
     }
 
-    public function updatePhase(Request $request, Lead $lead): JsonResponse
+    public function updatePhase(UpdateLeadPhaseRequest $request, Lead $lead, UpdateLeadPhase $action): JsonResponse
     {
-        $validated = $request->validate([
-            'lead_phase_id' => ['required', 'exists:lead_phases,id'],
-        ]);
-
-        $lead->update([
-            'lead_phase_id' => $validated['lead_phase_id'],
-            'last_activity_at' => now(),
-        ]);
-
-        $lead->load([
-            'branch', 'owner', 'creator', 'leadSource', 'leadType', 'leadPhase', 
-            'guardians', 'leadRelationships.relatedLead', 
-            'ptSessions.ptExam',
-            'consultations.consultant',
-            'invoices.items',
-            'student.studyClasses',
-            'chatLogs.sender',
-        ]);
-
-        $this->clearDashboardCache($lead);
+        $lead = $action->handle($lead, $request->validated());
+        $this->clearDashboardCache();
 
         return response()->json([
             'message' => 'Lead phase updated successfully.',
-            'lead' => new LeadResource($lead),
+            'lead' => new LeadResource($lead->load([
+                'branch', 'owner', 'leadPhase', 'student.studyClasses', 'chatLogs.sender'
+            ])),
         ]);
     }
 
-    public function recordFollowUp(Request $request, Lead $lead): JsonResponse
+    public function updateNotes(Request $request, Lead $lead): \Illuminate\Http\RedirectResponse
     {
-        $now = now();
-        
-        // Hanya nambah follow_up_count MAKSIMAL 1x per hari
-        if (!$lead->last_activity_at || !$lead->last_activity_at->isToday()) {
-            $lead->increment('follow_up_count');
-        }
+        $request->validate([
+            'notes' => 'nullable|string'
+        ]);
 
-        $lead->update(['last_activity_at' => $now]);
+        $lead->update([
+            'notes' => $request->notes,
+            'last_activity_at' => now()
+        ]);
 
-        $fupText = "Follow-up #" . $lead->follow_up_count;
-        $chatSnippet = $request->input('message') ? ': "' . \Illuminate\Support\Str::limit($request->message, 100) . '"' : '';
-        $message = "[$fupText]$chatSnippet";
+        return back()->with('success', 'Notes updated successfully.');
+    }
 
-        // Automation: 4x Follow-up -> Cold Leads (if not already in a terminal phase)
-        $lostPhase = \App\Models\LeadPhase::where('code', 'cold-leads')->first();
-        if ($lead->follow_up_count >= 4 && $lostPhase && $lead->lead_phase_id !== $lostPhase->id) {
-            $lead->update(['lead_phase_id' => $lostPhase->id]);
-            $message .= " | Otomatis masuk ke Cold Leads.";
-        }
-
-        // Standard Spatie Log for UI visibility
-        activity()
-            ->performedOn($lead)
-            ->causedBy(auth()->user() ?? null)
-            ->log($message);
-
-        $this->clearDashboardCache($lead);
+    public function recordFollowUp(RecordLeadFollowUpRequest $request, Lead $lead, RecordLeadFollowUp $action): JsonResponse
+    {
+        $lead = $action->handle($lead, $request->validated());
+        $this->clearDashboardCache();
 
         return response()->json([
             'message' => 'Follow-up recorded successfully.',
@@ -352,20 +233,10 @@ class LeadController extends Controller
         ]);
     }
 
-    public function resetFollowUp(Lead $lead): JsonResponse
+    public function resetFollowUp(Lead $lead, ResetLeadFollowUp $action): JsonResponse
     {
-        if ($lead->follow_up_count > 0) {
-            $lead->update([
-                'follow_up_count' => 0,
-                'last_activity_at' => now(), // Merespon dianggap aktivitas terbaru
-            ]);
-            
-            activity()
-                ->performedOn($lead)
-                ->log("Follow-up counter reset to 0 (Lead responded)");
-
-            $this->clearDashboardCache($lead);
-        }
+        $lead = $action->handle($lead);
+        $this->clearDashboardCache();
 
         return response()->json([
             'message' => 'Follow-up reset successfully.',
@@ -373,21 +244,9 @@ class LeadController extends Controller
         ]);
     }
 
-    public function storeConsultation(StoreConsultationRequest $request, Lead $lead): JsonResponse
+    public function storeConsultation(\App\Http\Requests\Crm\StoreConsultationRequest $request, Lead $lead, StoreLeadConsultation $action): JsonResponse
     {
-        $consultation = $lead->consultations()->create([
-            'user_id'           => auth()->id(),
-            'consultation_date' => $request->consultation_date,
-            'notes'             => $request->notes,
-            'recommended_level' => $request->recommended_level,
-            'follow_up_note'    => $request->follow_up_note,
-        ]);
-
-        // Record activity log
-        activity()
-            ->performedOn($lead)
-            ->causedBy(auth()->user())
-            ->log("Consultation recorded. Recommended Level: " . ($request->recommended_level ?? 'None'));
+        $consultation = $action->handle($lead, $request->validated());
 
         return response()->json([
             'message' => 'Consultation recorded successfully.',
@@ -399,27 +258,19 @@ class LeadController extends Controller
     public function destroy(Lead $lead): RedirectResponse
     {
         abort_unless(auth()->user()->hasRole('superadmin'), 403, 'Unauthorized action.');
-        
         $lead->delete();
-
+        $this->clearDashboardCache();
         return redirect()->back()->with('success', 'Lead deleted successfully.');
     }
 
     public function getCities(Request $request): JsonResponse
     {
         $provinceName = $request->query('province');
-        
-        if (!$provinceName) {
-            return response()->json([]);
-        }
+        if (!$provinceName) return response()->json([]);
+        $province = \App\Models\Province::where('name', $provinceName)->first();
+        if (!$province) return response()->json([]);
 
-        $province = Province::where('name', $provinceName)->first();
-
-        if (!$province) {
-            return response()->json([]);
-        }
-
-        $cities = City::where('province_id', $province->id)
+        $cities = \App\Models\City::where('province_id', $province->id)
             ->select('id', 'name')
             ->orderBy('name')
             ->get();
@@ -430,7 +281,6 @@ class LeadController extends Controller
     public function getRelatables(Request $request): JsonResponse
     {
         $search = $request->query('search');
-        
         $leads = Lead::query()
             ->when($search, function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -439,70 +289,80 @@ class LeadController extends Controller
             })
             ->latest()
             ->limit(10)
-            ->get()
-            ->map(fn($lead) => [
-                'value' => $lead->id,
-                'label' => "{$lead->name} ({$lead->lead_number})"
-            ]);
+            ->get();
 
-        return response()->json($leads);
+        return response()->json(LeadResource::collection($leads)->map(fn($l) => [
+            'value' => $l->id,
+            'label' => "{$l->name} ({$l->lead_number})"
+        ]));
     }
 
     public function quickSearch(Request $request): JsonResponse
     {
         $search = $request->query('q');
-        
-        if (!$search || strlen($search) < 2) {
-            return response()->json([]);
-        }
+        if (!$search || strlen($search) < 2) return response()->json([]);
 
+        // 1. Search Official Leads
         $leads = Lead::query()
             ->with('branch:id,name')
-            ->where(function($q) use ($search) {
+            ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('lead_number', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('lead_number', 'like', "%{$search}%");
             })
             ->latest()
             ->limit(5)
-            ->get()
-            ->map(fn($lead) => [
-                'id' => $lead->id,
-                'name' => $lead->name,
-                'phone' => $lead->phone,
-                'lead_number' => $lead->lead_number,
-                'branch_name' => $lead->branch?->name,
-            ]);
+            ->get();
 
-        return response()->json($leads);
+        // 2. Search Pending Registrations
+        $registrations = \App\Models\LeadRegistration::query()
+            ->with('branch:id,name')
+            ->where('status', 'pending')
+            ->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->limit(3)
+            ->get();
+
+        $results = collect($leads)->map(fn($l) => [
+            'id' => $l->id,
+            'type' => 'lead',
+            'name' => $l->name,
+            'phone' => $l->phone,
+            'lead_number' => $l->lead_number,
+            'branch_name' => $l->branch?->name,
+        ])->concat(collect($registrations)->map(fn($r) => [
+            'id' => $r->id,
+            'type' => 'registration',
+            'name' => "{$r->name} (Reg)",
+            'phone' => $r->phone,
+            'lead_number' => 'Pending Approval',
+            'branch_name' => $r->branch?->name,
+        ]));
+
+        return response()->json($results);
     }
 
     public function kanban(Request $request): Response
     {
-        $phases = \App\Models\LeadPhase::orderBy('created_at', 'asc')->get();
-        
+        $phases = LeadPhase::orderBy('created_at', 'asc')->get();
         $leadsQuery = Lead::with(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase']);
 
-        // Default to current month and year if not specified
-        $month = $request->input('month', now()->month);
-        $year = $request->input('year', now()->year);
-
-        // Apply same filters as Index/List
         if ($request->filled('branch_id')) {
             $leadsQuery->where('branch_id', $request->branch_id);
         }
 
-        // Unified Filter:
-        // Include leads CREATED in this month OR leads ENROLLED in this month (regardless of creation)
-        $leadsQuery->where(function($q) use ($month, $year) {
-            $q->where(function($sub) use ($month, $year) {
-                $sub->whereMonth('created_at', $month)
-                    ->whereYear('created_at', $year);
-            })->orWhere(function($sub) use ($month, $year) {
-                $sub->whereMonth('enrolled_at', $month)
-                    ->whereYear('enrolled_at', $year);
+        $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+
+        if ($startDate && $endDate) {
+            $leadsQuery->where(function($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                  ->orWhereBetween('enrolled_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             });
-        });
+        }
 
         if ($request->filled('search')) {
             $leadsQuery->where(function($q) use ($request) {
@@ -514,18 +374,13 @@ class LeadController extends Controller
 
         $leads = $leadsQuery->latest()->get();
 
-        // Group leads by phase for the Kanban Board
-        $kanbanData = $phases->map(function($phase) use ($leads, $month, $year) {
+        $kanbanData = $phases->map(function($phase) use ($leads, $startDate, $endDate) {
             $columnLeads = $leads->where('lead_phase_id', $phase->id);
-
-            // Special logic for Enrollment column:
-            // Only show leads that actually ENROLLED in this specific period.
-            // This ensures consistency with Dashboard KPIs and Trend Charts.
-            if ($phase->code === 'enrollment') {
-                $columnLeads = $columnLeads->filter(function($l) use ($month, $year) {
+            if ($phase->code === 'enrollment' && $startDate && $endDate) {
+                $columnLeads = $columnLeads->filter(function($l) use ($startDate, $endDate) {
                     return $l->enrolled_at && 
-                           $l->enrolled_at->month == $month && 
-                           $l->enrolled_at->year == $year;
+                           $l->enrolled_at->format('Y-m-d') >= $startDate && 
+                           $l->enrolled_at->format('Y-m-d') <= $endDate;
                 });
             }
 
@@ -536,58 +391,29 @@ class LeadController extends Controller
             ];
         });
 
-        return Inertia::render('Admin/CRM/KanbanView', [
+        return Inertia::render('Admin/Crm/Leads/Kanban', [
             'kanbanData' => $kanbanData,
-            'filters' => array_merge($request->only(['branch_id', 'search']), [
-                'month' => (int)$month,
-                'year' => (int)$year,
-            ]),
-            'branches' => Branch::select('id', 'name')->get(),
-            'phases' => $phases,
-            'sources' => LeadSource::select('id', 'name')->get(),
-            'types' => LeadType::select('id', 'name')->get(),
-            'chatTemplates' => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
-            'mediaAssets'   => \App\Models\MediaAsset::latest()->get(),
+            'filters' => [
+                'branch_id' => $request->branch_id,
+                'search' => $request->search,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
+            'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
+            'phases' => LeadPhaseResource::collection($phases),
+            'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
+            'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
+            'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
+            'mediaAssets'   => MediaAsset::latest()->get(),
             'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
         ]);
     }
 
-    public function approveUpdates(Lead $lead): JsonResponse
+    private function clearDashboardCache(): void
     {
-        if (!$lead->pending_updates) {
-            return response()->json(['message' => 'No pending updates found.'], 422);
-        }
-
-        $lead->update(array_merge($lead->pending_updates, [
-            'pending_updates' => null,
-            'last_activity_at' => now(),
-        ]));
-
-        $lead->load([
-            'branch', 'owner', 'creator', 'leadSource', 'leadType', 'leadPhase', 
-            'guardians', 'leadRelationships.relatedLead', 'ptSessions.ptExam',
-            'consultations.consultant', 'invoices.items', 'student.studyClasses', 'chatLogs.sender'
-        ]);
-
-        return response()->json([
-            'message' => 'Lead profile updates approved and applied.',
-            'lead' => new \App\Http\Resources\Admin\CRM\LeadResource($lead)
-        ]);
-    }
-
-    public function rejectUpdates(Lead $lead): JsonResponse
-    {
-        $lead->update(['pending_updates' => null]);
-
-        return response()->json([
-            'message' => 'Pending updates rejected and cleared.',
-            'lead' => new \App\Http\Resources\Admin\CRM\LeadResource($lead)
-        ]);
-    }
-
-    private function clearDashboardCache(Lead $lead): void
-    {
-        $version = \Illuminate\Support\Facades\Cache::get('crm_dashboard_version', 1);
-        \Illuminate\Support\Facades\Cache::put('crm_dashboard_version', $version + 1, now()->addYear());
+        $version = Cache::get('crm_dashboard_version', 1);
+        Cache::put('crm_dashboard_version', $version + 1, now()->addYear());
     }
 }
+

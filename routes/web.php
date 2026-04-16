@@ -5,12 +5,12 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Webhooks\WhatsappWebhookController;
-use App\Http\Controllers\Admin\CRM\PtExamController;
-use App\Http\Controllers\Admin\CRM\PtQuestionController;
-use App\Http\Controllers\Admin\CRM\PtQuestionGroupController;
+use App\Http\Controllers\Admin\Crm\PtExamController;
+use App\Http\Controllers\Admin\Crm\PtQuestionController;
+use App\Http\Controllers\Admin\Crm\PtQuestionGroupController;
 
 Route::get('/', function () {
-    return redirect()->route('dashboard');
+    return redirect()->route('admin.crm.leads.index');
 });
 
 // Webhook WhatsApp (Public)
@@ -37,7 +37,7 @@ Route::post('/fill-data/{token}', [\App\Http\Controllers\Public\PublicLeadContro
 Route::get('/invoice/{id}', [\App\Http\Controllers\Public\PublicLeadController::class, 'downloadInvoice'])->name('public.invoice.download');
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return redirect()->route('admin.crm.leads.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -50,40 +50,48 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
     // CRM Leads
-    Route::get('/crm/leads', [\App\Http\Controllers\Admin\CRM\CrmDashboardController::class, 'index'])->name('crm.leads.index');
-    Route::get('/crm/leads/list', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'index'])->name('crm.leads.list');
-    Route::get('/crm/leads/kanban', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'kanban'])->name('crm.leads.kanban');
-    Route::get('/crm/leads/quick-search', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'quickSearch'])->name('crm.leads.quick-search');
-    Route::get('/crm/leads/relatables', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'getRelatables'])->name('crm.leads.relatables');
-    Route::get('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'show'])->name('crm.leads.show');
-    Route::get('/crm/leads/{lead}/activities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'activities'])->name('crm.leads.activities');
-    Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'update'])->name('crm.leads.update');
-    Route::patch('/crm/leads/{lead}/phase', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'updatePhase'])->name('crm.leads.update-phase');
-    Route::post('/crm/leads/{lead}/plot-class', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'plotClass'])->name('crm.leads.plot-class');
-    Route::patch('/crm/leads/{lead}/record-followup', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'recordFollowUp'])->name('crm.leads.record-followup');
-    Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
-    Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'destroy'])->name('crm.leads.destroy');
-    Route::post('/crm/leads/{lead}/send-template', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'sendTemplate'])->name('crm.leads.send-template');
-    Route::post('/crm/leads/{lead}/send-whatsapp', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'sendMessage'])->name('crm.leads.send-whatsapp');
-    Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
-    Route::post('/crm/leads', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'store'])->name('crm.leads.store');
-    Route::get('/crm/cities', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'getCities'])->name('crm.cities');
-    Route::post('/crm/leads/{lead}/approve-updates', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'approveUpdates'])->name('crm.leads.approve-updates');
-    Route::post('/crm/leads/{lead}/reject-updates', [\App\Http\Controllers\Admin\CRM\LeadController::class, 'rejectUpdates'])->name('crm.leads.reject-updates');
+    Route::get('/crm/leads', [\App\Http\Controllers\Admin\Crm\CrmDashboardController::class, 'index'])->name('crm.leads.index');
+    Route::get('/crm/leads/list', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'index'])->name('crm.leads.list');
+    Route::get('/crm/leads/kanban', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'kanban'])->name('crm.leads.kanban');
+    Route::get('/crm/reports', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'index'])->name('crm.reports.index');
+    Route::get('/crm/reports/download', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'download'])->name('crm.reports.download');
+    Route::get('/crm/reports/daily', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'daily'])->name('crm.reports.daily');
+    Route::get('/crm/reports/daily/download', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'downloadDaily'])->name('crm.reports.daily.download');
+    Route::get('/crm/reports/daily/word', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'downloadDailyWord'])->name('crm.reports.daily.word');
+    Route::get('/crm/leads/quick-search', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'quickSearch'])->name('crm.leads.quick-search');
+    Route::get('/crm/leads/relatables', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getRelatables'])->name('crm.leads.relatables');
+    Route::get('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'show'])->name('crm.leads.show');
+    Route::get('/crm/leads/{lead}/activities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'activities'])->name('crm.leads.activities');
+    Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'update'])->name('crm.leads.update');
+    Route::patch('/crm/leads/{lead}/phase', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updatePhase'])->name('crm.leads.update-phase');
+    Route::patch('/crm/leads/{lead}/notes', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updateNotes'])->name('crm.leads.update-notes');
+    Route::post('/crm/leads/{lead}/plot-class', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'plotClass'])->name('crm.leads.plot-class');
+    Route::patch('/crm/leads/{lead}/record-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'recordFollowUp'])->name('crm.leads.record-followup');
+    Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
+    Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'destroy'])->name('crm.leads.destroy');
+    Route::post('/crm/leads/{lead}/send-template', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendTemplate'])->name('crm.leads.send-template');
+    Route::post('/crm/leads/{lead}/send-whatsapp', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendMessage'])->name('crm.leads.send-whatsapp');
+    Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
+    Route::post('/crm/leads', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'store'])->name('crm.leads.store');
+    Route::get('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'index'])->name('crm.settings.index');
+    Route::put('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'update'])->name('crm.settings.update');
+    Route::get('/crm/cities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getCities'])->name('crm.cities');
 
     // Registration Inbox (Admin Approval)
-    Route::get('/crm/registrations', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'index'])->name('crm.registrations.index');
-    Route::post('/crm/registrations/{registration}/approve', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'approve'])->name('crm.registrations.approve');
-    Route::post('/crm/registrations/{registration}/reject', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'reject'])->name('crm.registrations.reject');
+    Route::get('/crm/registrations', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'index'])->name('crm.registrations.index');
+    Route::post('/crm/registrations/{registration}/approve', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'approve'])->name('crm.registrations.approve');
+    Route::post('/crm/registrations/{registration}/reject', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'reject'])->name('crm.registrations.reject');
     
     // Self-filling Updates Approval
-    Route::post('/crm/registrations/{lead}/approve-update', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'approveUpdate'])->name('crm.registrations.approve-update');
-    Route::post('/crm/registrations/{lead}/reject-update', [\App\Http\Controllers\Admin\CRM\RegistrationApprovalController::class, 'rejectUpdate'])->name('crm.registrations.reject-update');
+    Route::post('/crm/registrations/{lead}/approve-update', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'approveUpdate'])->name('crm.registrations.approve-update');
+    Route::post('/crm/registrations/{lead}/reject-update', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'rejectUpdate'])->name('crm.registrations.reject-update');
 
     // Placement Tests
-    Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
-    Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
-    Route::delete('/crm/pt-sessions/{pt_session}', [\App\Http\Controllers\Admin\CRM\PtSessionController::class, 'destroy'])->name('crm.pt-sessions.destroy');
+    Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
+    Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
+    Route::get('/crm/pt-sessions/{pt_session}/result', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'getResult'])->name('crm.pt-sessions.get-result');
+    Route::patch('/crm/pt-sessions/{pt_session}/grade', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'updateGrade'])->name('crm.pt-sessions.update-grade');
+    Route::delete('/crm/pt-sessions/{pt_session}', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'destroy'])->name('crm.pt-sessions.destroy');
 
     // Academic Module
     Route::group(['prefix' => 'academic', 'as' => 'academic.'], function () {
@@ -172,3 +180,4 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 });
 
 require __DIR__.'/auth.php';
+

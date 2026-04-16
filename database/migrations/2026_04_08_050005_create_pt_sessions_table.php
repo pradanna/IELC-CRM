@@ -22,6 +22,10 @@ return new class extends Migration
             $table->timestamp('finished_at')->nullable();
             $table->integer('final_score')->nullable();
             $table->string('recommended_level')->nullable();
+            $table->boolean('is_graded')->default(false);
+            $table->foreignUuid('graded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('grading_notes')->nullable();
+            $table->string('result_file_path')->nullable();
             $table->timestamps();
         });
     }

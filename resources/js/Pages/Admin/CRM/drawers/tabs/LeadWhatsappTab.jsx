@@ -6,7 +6,8 @@ import { usePage } from '@inertiajs/react';
 import axios from 'axios';
 
 export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets = [] }) {
-    const { waServerUrl } = usePage().props;
+    const { waServerUrl, auth } = usePage().props;
+    const user = auth?.user;
     const [waStatus, setWaStatus] = useState('initializing');
     const [qrImage, setQrImage] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -242,40 +243,70 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
         }
     };
 
-    const handleSendMessage = async (e) => {
-        if (e) e.preventDefault();
-        if (!inputText.trim() || isSending) return;
+    const parseTemplateMessage = (text) => {
+        if (!text) return '';
+        return text
+            .replace(/{{name}}/g, lead?.name || 'Kak')
+            .replace(/{{nickname}}/g, lead?.nickname || lead?.name || 'Kak')
+            .replace(/{{lead_number}}/g, lead?.lead_number || '')
+            .replace(/{{admin_name}}/g, user?.name || '');
+    };
+
+    const openWaWeb = (msg) => {
+        const parsedMsg = parseTemplateMessage(msg);
+        const cleanPhone = formatPhone(lead.phone);
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(parsedMsg)}`;
+        window.open(url, '_blank');
+    };
+
+    const executeSendMessage = async (msg) => {
+        if (!msg.trim() || isSending) return false;
 
         setIsSending(true);
+        const parsedMsg = parseTemplateMessage(msg);
         try {
             const cleanPhone = formatPhone(lead.phone);
             const response = await axios.post(route('admin.whatsapp.send'), {
                 branch: branchCode,
                 phone: cleanPhone,
-                message: inputText
+                message: parsedMsg
             });
 
             if (response.data.success) {
-                console.log("Pesan mendarat dengan selamat!");
-                
-                // Record follow-up in CRM Laravel for Task & Automation tracking
+                // Record follow-up
                 try {
                     await axios.patch(route('admin.crm.leads.record-followup', lead.id), {
-                        message: inputText
+                        message: msg
                     });
                 } catch (err) {
                     console.error("Gagal mencatat follow-up di CRM:", err);
                 }
-
-                setInputText(""); // Kosongkan kolom ketik
-                // Panggil ulang API History Chat supaya layar ter-update!
                 fetchHistory(false); 
+                return true;
             }
+            return false;
         } catch (error) {
             console.error("Gagal kirim pesan:", error);
-            alert("Gagal kirim pesan: " + (error.response?.data?.error || "Unknown error"));
+            const errMsg = error.response?.data?.error || error.message || "Unknown error";
+            if (confirm(`Gagal kirim via sistem: ${errMsg}\n\nApakah Anda ingin mencoba kirim via WhatsApp Web?`)) {
+                openWaWeb(msg);
+            }
+            return false;
         } finally {
             setIsSending(false);
+        }
+    };
+
+    const handleSendMessage = async (e) => {
+        if (e) e.preventDefault();
+        const success = await executeSendMessage(inputText);
+        if (success) setInputText("");
+    };
+
+    const handleTemplateClick = async (templateMessage) => {
+        const success = await executeSendMessage(templateMessage);
+        if (!success) {
+            setInputText(templateMessage); // Fill input if failed so they can retry or edit
         }
     };
 
@@ -478,7 +509,7 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
                                                     {({ active }) => (
                                                         <button
                                                             type="button"
-                                                            onClick={() => setInputText(t.message)}
+                                                            onClick={() => handleTemplateClick(t.message)}
                                                             className={`w-full text-left p-3 rounded-xl transition-all ${active ? 'bg-red-50 text-red-600' : 'text-slate-600'}`}
                                                         >
                                                             <p className="text-[10px] font-black uppercase tracking-wider mb-1">{t.title}</p>

@@ -88,9 +88,9 @@ const DataTable = ({
                                             : ""
                                     }`}
                                 >
-                                    {columns.map((col) => (
+                                    {columns.map((col, colIndex) => (
                                         <td
-                                            key={`${col.accessor}-${row.id}`}
+                                            key={`${col.accessor || col.header || colIndex}-${row.id || rowIndex}`}
                                             className={`px-6 py-4 align-top ${col.className || ""}`}
                                         >
                                             {col.render

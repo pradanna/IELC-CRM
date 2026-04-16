@@ -10,43 +10,60 @@ export default function LeadActivityTab({ leadId }) {
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
     const observer = useRef();
+    const isFetchingRef = useRef(false);
 
     useEffect(() => {
         if (leadId) {
             setActivities([]);
             setPage(1);
             setHasMore(true);
+            isFetchingRef.current = false;
             fetchActivities(1, true);
         }
     }, [leadId]);
 
     const fetchActivities = async (pageNumber, isInitial = false) => {
-        if (!leadId) return;
+        if (!leadId || isFetchingRef.current) return;
         
+        isFetchingRef.current = true;
         setLoading(true);
         try {
             const response = await axios.get(route('admin.crm.leads.activities', leadId), {
                 params: { page: pageNumber }
             });
             
-            const newActivities = response.data.activities;
+            const newActivities = response.data.activities || [];
             const pagination = response.data.pagination;
 
-            setActivities(prev => isInitial ? newActivities : [...prev, ...newActivities]);
-            setHasMore(pagination.has_more);
+            setActivities(prev => {
+                if (isInitial) return newActivities;
+                
+                // Deduplicate to prevent key errors
+                const existingIds = new Set(prev.map(a => a.id));
+                const uniqueNew = newActivities.filter(a => !existingIds.has(a.id));
+                return [...prev, ...uniqueNew];
+            });
+
+            if (pagination) {
+                setHasMore(pagination.has_more);
+            } else {
+                setHasMore(false);
+            }
         } catch (error) {
             console.error('Failed to fetch lead activities:', error);
+            setHasMore(false); // Stop trying on error
         } finally {
             setLoading(false);
+            isFetchingRef.current = false;
         }
     };
 
     const lastElementRef = useCallback(node => {
-        if (loading) return;
+        if (loading || !hasMore) return;
         if (observer.current) observer.current.disconnect();
         
         observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasMore) {
+            if (entries[0].isIntersecting && !isFetchingRef.current && hasMore) {
                 setPage(prevPage => {
                     const nextPage = prevPage + 1;
                     fetchActivities(nextPage);
@@ -56,7 +73,7 @@ export default function LeadActivityTab({ leadId }) {
         });
         
         if (node) observer.current.observe(node);
-    }, [loading, hasMore]);
+    }, [loading, hasMore, leadId]);
 
     return (
         <div className="relative pl-8 border-l-2 border-slate-100 space-y-12 ml-4 outline-none pb-10">

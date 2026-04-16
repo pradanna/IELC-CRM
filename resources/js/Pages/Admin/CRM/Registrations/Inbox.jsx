@@ -1,42 +1,80 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CrmLayout from '../partials/CrmLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { 
     CheckCircle2, XCircle, Clock, User, Phone, 
-    Building2, MapPin, Search, Filter, ArrowRight,
-    Sparkles, Inbox as InboxIcon
+    Building2, MapPin, Inbox as InboxIcon
 } from 'lucide-react';
+import { useRegistrationInbox } from './hooks/useRegistrationInbox';
+import RegistrationPreviewModal from './modals/RegistrationPreviewModal';
 
-export default function Inbox({ auth, registrations, update_requests = [] }) {
-    const { post, processing } = useForm();
-    const [activeTab, setActiveTab] = React.useState('new'); // 'new' or 'updates'
-
-    const handleApprove = (id) => {
-        if (confirm('Apakah Anda yakin ingin menyetujui (ACC) pendaftaran ini?')) {
-            post(route('admin.crm.registrations.approve', id));
-        }
+export default function Inbox({ auth, registrations, update_requests = [], lead_sources = [] }) {
+    /**
+     * Normalizes a collection that might be a raw array or a wrapped resource object.
+     */
+    const normalizeCollection = (collection) => {
+        if (Array.isArray(collection)) return collection;
+        if (collection && Array.isArray(collection.data)) return collection.data;
+        return [];
     };
 
-    const handleReject = (id) => {
-        if (confirm('Apakah Anda yakin ingin menolak pendaftaran ini?')) {
-            post(route('admin.crm.registrations.reject', id));
-        }
+    const normalizedRegistrations = normalizeCollection(registrations);
+    const normalizedUpdates = normalizeCollection(update_requests);
+
+    const [previewItem, setPreviewItem] = React.useState(null);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+
+    const {
+        activeTab,
+        setActiveTab,
+        currentItems,
+        processing,
+        handleApprove,
+        handleReject,
+        handleApproveUpdate,
+        handleRejectUpdate
+    } = useRegistrationInbox(normalizedRegistrations, normalizedUpdates);
+
+    const openPreview = (item) => {
+        setPreviewItem(item);
+        setIsModalOpen(true);
     };
 
-    const handleApproveUpdate = (leadId) => {
-        if (confirm('Apakah Anda yakin ingin menyetujui pembaruan profil ini?')) {
-            post(route('admin.crm.registrations.approve-update', leadId));
+    // Auto-open preview from search redirect
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const previewId = params.get('preview_reg');
+        if (previewId) {
+            const reg = normalizedRegistrations.find(r => r.id === previewId);
+            if (reg) {
+                setActiveTab('new');
+                openPreview(reg);
+            }
         }
+    }, [normalizedRegistrations]);
+
+    const closePreview = () => {
+        setPreviewItem(null);
+        setIsModalOpen(false);
     };
 
-    const handleRejectUpdate = (leadId) => {
-        if (confirm('Apakah Anda yakin ingin menolak pembaruan profil ini?')) {
-            post(route('admin.crm.registrations.reject-update', leadId));
+    const onApprove = (id) => {
+        if (activeTab === 'new') {
+            handleApprove(id);
+        } else {
+            handleApproveUpdate(id);
         }
+        // Modal will close on page reload (Inertia default)
     };
 
-    const currentItems = activeTab === 'new' ? registrations : update_requests;
+    const onReject = (id) => {
+        if (activeTab === 'new') {
+            handleReject(id);
+        } else {
+            handleRejectUpdate(id);
+        }
+    };
 
     return (
         <AuthenticatedLayout>
@@ -53,7 +91,7 @@ export default function Inbox({ auth, registrations, update_requests = [] }) {
                             >
                                 <InboxIcon size={16} />
                                 Pendaftaran Baru
-                                {registrations.length > 0 && <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[9px]">{registrations.length}</span>}
+                                {normalizedRegistrations.length > 0 && <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[9px]">{normalizedRegistrations.length}</span>}
                             </button>
                             <button 
                                 onClick={() => setActiveTab('updates')}
@@ -61,7 +99,7 @@ export default function Inbox({ auth, registrations, update_requests = [] }) {
                             >
                                 <InboxIcon size={16} />
                                 Pembaruan Profil
-                                {update_requests.length > 0 && <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[9px]">{update_requests.length}</span>}
+                                {normalizedUpdates.length > 0 && <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[9px]">{normalizedUpdates.length}</span>}
                             </button>
                         </div>
 
@@ -149,20 +187,11 @@ export default function Inbox({ auth, registrations, update_requests = [] }) {
                                             {/* Action Area */}
                                             <div className="flex items-center gap-3 shrink-0 pt-6 lg:pt-0 border-t lg:border-t-0 border-slate-50">
                                                 <button
-                                                    onClick={() => activeTab === 'new' ? handleReject(reg.id) : handleRejectUpdate(reg.id)}
-                                                    disabled={processing}
-                                                    className="px-6 py-4 bg-slate-50 text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-100 hover:text-red-600 transition-all flex items-center gap-2"
+                                                    onClick={() => openPreview(reg)}
+                                                    className="px-10 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest hover:bg-red-600 transition-all flex items-center gap-3 shadow-xl shadow-slate-200 hover:shadow-red-200"
                                                 >
-                                                    <XCircle size={16} />
-                                                    Tolak
-                                                </button>
-                                                <button
-                                                    onClick={() => activeTab === 'new' ? handleApprove(reg.id) : handleApproveUpdate(reg.id)}
-                                                    disabled={processing}
-                                                    className={`px-10 py-4 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-3 ${activeTab === 'updates' ? 'bg-amber-600 hover:bg-amber-700 shadow-xl shadow-amber-100' : 'bg-slate-900 hover:bg-red-600 shadow-xl shadow-slate-200 hover:shadow-red-200'}`}
-                                                >
-                                                    <CheckCircle2 size={16} />
-                                                    {activeTab === 'new' ? 'ACC & Terbitkan Lead' : 'ACC & Perbarui Profil'}
+                                                    <InboxIcon size={16} />
+                                                    Lihat Detail
                                                 </button>
                                             </div>
                                         </div>
@@ -173,6 +202,17 @@ export default function Inbox({ auth, registrations, update_requests = [] }) {
                     </div>
                 </CrmLayout>
             </div>
+
+            <RegistrationPreviewModal 
+                isOpen={isModalOpen}
+                onClose={closePreview}
+                item={previewItem}
+                type={activeTab}
+                leadSources={lead_sources}
+                onApprove={onApprove}
+                onReject={onReject}
+                processing={processing}
+            />
         </AuthenticatedLayout>
     );
 }

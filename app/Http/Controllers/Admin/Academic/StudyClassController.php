@@ -11,6 +11,10 @@ use App\Http\Requests\Admin\Academic\UpdateStudyClassRequest;
 use App\Models\Branch;
 use App\Models\StudyClass;
 use App\Models\User;
+use App\Models\PriceMaster;
+use App\Http\Resources\Academic\StudyClassResource;
+use App\Http\Resources\Master\BranchResource;
+use App\Http\Resources\Finance\PriceMasterResource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,9 +24,7 @@ class StudyClassController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = StudyClass::with(['branch', 'instructor', 'priceMaster', 'students' => function ($q) {
-            $q->with('lead'); // We need student name from Lead
-        }])->withCount('students');
+        $query = StudyClass::with(['branch', 'instructor', 'priceMaster', 'students.lead'])->withCount('students');
 
         if ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
@@ -33,10 +35,10 @@ class StudyClassController extends Controller
         }
 
         return Inertia::render('Admin/Academic/StudyClass/Index', [
-            'classes' => $query->latest()->get(),
-            'branches' => Branch::select('id', 'name')->get(),
-            'instructors' => User::with(['superadmin', 'marketing', 'frontdesk', 'finance'])->get(), 
-            'priceMasters' => \App\Models\PriceMaster::select('id', 'name', 'price_per_session')->get(),
+            'classes' => StudyClassResource::collection($query->latest()->get()),
+            'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
+            'instructors' => User::with(['superadmin', 'marketing', 'frontdesk', 'finance'])->get(), // Users can be wrapped in UserResource too
+            'priceMasters' => PriceMasterResource::collection(PriceMaster::select('id', 'name', 'price_per_session')->get()),
             'filters' => $request->only(['branch_id', 'search']),
         ]);
     }

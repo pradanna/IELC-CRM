@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw } from 'lucide-react';
+import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw, StickyNote } from 'lucide-react';
 import axios from 'axios';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 import useWhatsapp from '@/Hooks/useWhatsapp';
@@ -12,6 +12,7 @@ import LeadActivityTab from './tabs/LeadActivityTab';
 import LeadWhatsappTab from './tabs/LeadWhatsappTab';
 import LeadPipelineTab from './tabs/LeadPipelineTab';
 import LeadPendingUpdatesTab from './tabs/LeadPendingUpdatesTab';
+import LeadNotesTab from './tabs/LeadNotesTab';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 export default function LeadDetailDrawer({ 
     phases = []
@@ -105,6 +106,7 @@ export default function LeadDetailDrawer({
         { name: 'Lead Profile', icon: User, component: LeadDetailTab },
         { name: 'Pipeline Progress', icon: GitBranch, component: LeadPipelineTab },
         { name: 'WhatsApp History', icon: MessageSquare, component: LeadWhatsappTab },
+        { name: 'Notes', icon: StickyNote, component: LeadNotesTab },
         { name: 'Activity History', icon: History, component: LeadActivityTab },
         ...(lead?.pending_updates ? [{ name: 'Updates', icon: RefreshCw, component: LeadPendingUpdatesTab, badge: true }] : []),
     ];
@@ -137,7 +139,7 @@ export default function LeadDetailDrawer({
                                 leaveFrom="translate-x-0"
                                 leaveTo="translate-x-full"
                             >
-                                <Dialog.Panel className="pointer-events-auto w-screen max-w-4xl">
+                                <Dialog.Panel className="pointer-events-auto w-screen max-w-5xl">
                                     <div className="flex h-full flex-col bg-white shadow-2xl border-l border-slate-100 overflow-hidden">
                                         {/* Header */}
                                         <div className="px-8 py-8 border-b border-slate-50 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-10">
@@ -253,6 +255,13 @@ export default function LeadDetailDrawer({
                                                         lead={lead} 
                                                         chatTemplates={localChatTemplates}
                                                         mediaAssets={localMediaAssets}
+                                                    />
+                                                </Tab.Panel>
+                                                
+                                                <Tab.Panel className="outline-none p-10">
+                                                    <LeadNotesTab 
+                                                        lead={lead} 
+                                                        onRefresh={fetchLeadDetails}
                                                     />
                                                 </Tab.Panel>
 

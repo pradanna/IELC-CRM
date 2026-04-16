@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('invoiced_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('invoice_id')->constrained('invoices')->cascadeOnDelete();
-            $table->foreignUuid('price_master_id')->constrained('price_masters')->cascadeOnDelete();
+            $table->foreignUuid('price_master_id')->nullable()->constrained('price_masters')->nullOnDelete();
             $table->string('name');
             $table->unsignedInteger('quantity');
             $table->unsignedBigInteger('unit_price');

@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignUuid('pt_session_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('pt_question_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('pt_question_option_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->text('answer_text')->nullable();
+            $table->string('file_path')->nullable();
             $table->boolean('is_correct')->default(false);
             $table->timestamps();
         });

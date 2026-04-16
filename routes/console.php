@@ -8,4 +8,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 use Illuminate\Support\Facades\Schedule;
-Schedule::command('app:check-lead-inactivity')->daily();
+Schedule::command('crm:cleanup-inactive-leads')->daily();

@@ -15,9 +15,11 @@ class StorePtExamRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'in:General,IELTS'],
             'description' => ['nullable', 'string'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
             'is_active' => ['boolean'],
         ];
     }
 }
+
