@@ -41,7 +41,7 @@ export default function CreateEditLeadModal({
     const normalizedProvinces = provinces;
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
-        name: '',
+        name: 'lead',
         nickname: '',
         gender: '',
         phone: '',
@@ -165,7 +165,7 @@ export default function CreateEditLeadModal({
                 // Formatting for New Lead (reset or default values)
                 
                 setData({
-                    name: '',
+                    name: 'lead',
                     nickname: '',
                     gender: '',
                     phone: '',
