@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
 use App\Models\Lead;
 use App\Models\LeadConsultation;
@@ -24,7 +24,16 @@ class StoreLeadConsultation
                 ->causedBy(auth()->user())
                 ->log("Consultation recorded. Recommended Level: " . ($data['recommended_level'] ?? 'None'));
 
+            \App\Models\LeadActivity::create([
+                'lead_id' => $lead->id,
+                'user_id' => auth()->id(),
+                'type' => 'consultation',
+                'description' => "Consultation: " . ($data['notes'] ?? 'No notes provided'),
+                'created_at' => now()
+            ]);
+
             return $consultation;
         });
     }
 }
+

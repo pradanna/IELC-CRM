@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
 use App\Models\Lead;
 use App\Models\LeadRelationship;
@@ -92,3 +92,4 @@ class UpdateLead
         };
     }
 }
+

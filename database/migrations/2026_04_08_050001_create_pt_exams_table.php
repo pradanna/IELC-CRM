@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('title');
             $table->string('slug')->unique();
+            $table->string('category')->default('General');
             $table->text('description')->nullable();
             $table->integer('duration_minutes')->default(60);
             $table->boolean('is_active')->default(true);

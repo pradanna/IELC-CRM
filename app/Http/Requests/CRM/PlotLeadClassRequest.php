@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\CRM;
+namespace App\Http\Requests\Crm;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -21,3 +21,4 @@ class PlotLeadClassRequest extends FormRequest
         ];
     }
 }
+

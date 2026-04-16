@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\Admin\CRM;
+namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\CRM\PtExam\CreatePtExamAction;
-use App\Actions\CRM\PtExam\DeletePtExamAction;
-use App\Actions\CRM\PtExam\UpdatePtExamAction;
+use App\Actions\Crm\PtExam\CreatePtExamAction;
+use App\Actions\Crm\PtExam\DeletePtExamAction;
+use App\Actions\Crm\PtExam\UpdatePtExamAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CRM\PtExam\StorePtExamRequest;
-use App\Http\Resources\CRM\PtExam\PtExamResource;
-use App\Http\Resources\CRM\PtExam\PtSessionResource;
+use App\Http\Requests\Crm\PtExam\StorePtExamRequest;
+use App\Http\Resources\Crm\PtExam\PtExamResource;
+use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Models\PtExam;
 use App\Models\PtSession;
 use Illuminate\Http\RedirectResponse;
@@ -35,7 +35,7 @@ class PtExamController extends Controller
             ->orderBy('title')
             ->get();
 
-        return Inertia::render('Admin/CRM/PlacementTests/Index', [
+        return Inertia::render('Admin/Crm/PlacementTests/Index', [
             'stats' => $stats,
             'sessions' => PtSessionResource::collection($sessions),
             'exams' => PtExamResource::collection($exams),
@@ -62,7 +62,7 @@ class PtExamController extends Controller
             }
         ]);
 
-        return Inertia::render('Admin/CRM/PlacementTests/Show', [
+        return Inertia::render('Admin/Crm/PlacementTests/Show', [
             'exam' => new PtExamResource($ptExam),
         ]);
     }
@@ -81,3 +81,4 @@ class PtExamController extends Controller
         return redirect()->route('admin.placement-tests.index')->with('success', 'Placement test package deleted successfully.');
     }
 }
+

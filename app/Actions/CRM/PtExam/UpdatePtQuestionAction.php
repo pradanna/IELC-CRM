@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\PtExam;
+namespace App\Actions\Crm\PtExam;
 
 use App\Models\PtQuestion;
 use App\Models\PtQuestionOption;
@@ -13,6 +13,7 @@ class UpdatePtQuestionAction
     {
         return DB::transaction(function () use ($question, $data) {
             $questionData = [
+                'type' => $data['type'] ?? $question->type,
                 'question_text' => $data['question_text'],
                 'points' => $data['points'] ?? 1,
             ];
@@ -26,7 +27,7 @@ class UpdatePtQuestionAction
 
             $question->update($questionData);
 
-            if (isset($data['options']) && is_array($data['options'])) {
+            if ($questionData['type'] === 'mcq' && isset($data['options']) && is_array($data['options'])) {
                 // Simplest is to delete and recreate for this specific structure
                 $question->options()->delete();
                 foreach ($data['options'] as $index => $optionText) {
@@ -36,9 +37,12 @@ class UpdatePtQuestionAction
                         'is_correct' => ($data['correct_answer'] == $index),
                     ]);
                 }
+            } elseif ($questionData['type'] !== 'mcq') {
+                $question->options()->delete();
             }
 
             return $question;
         });
     }
 }
+

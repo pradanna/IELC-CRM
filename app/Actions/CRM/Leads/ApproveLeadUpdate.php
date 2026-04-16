@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
 use App\Models\Lead;
 use Illuminate\Support\Facades\DB;
@@ -36,3 +36,4 @@ class ApproveLeadUpdate
         });
     }
 }
+

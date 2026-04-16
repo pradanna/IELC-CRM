@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
 use App\Models\ChatTemplate;
 use App\Models\Lead;
@@ -56,3 +56,4 @@ class SendLeadWhatsAppTemplate
         });
     }
 }
+

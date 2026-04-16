@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Http\Controllers\Admin\CRM;
+namespace App\Http\Controllers\Admin\Crm;
 
 use App\Models\Branch;
 use App\Models\LeadSource;
 use App\Models\LeadType;
 use App\Models\Province;
 use App\Models\LeadPhase;
-use App\Actions\CRM\Leads\FetchCrmDashboardData;
+use App\Actions\Crm\Leads\FetchCrmDashboardData;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\CRM\LeadPhaseResource;
-use App\Http\Resources\CRM\LeadSourceResource;
-use App\Http\Resources\CRM\LeadTypeResource;
+use App\Http\Resources\Crm\LeadPhaseResource;
+use App\Http\Resources\Crm\LeadSourceResource;
+use App\Http\Resources\Crm\LeadTypeResource;
 use App\Http\Resources\Master\BranchResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,7 +24,7 @@ class CrmDashboardController extends Controller
         $filters = $request->only(['month', 'year', 'branch_id']);
         $dashboardData = $action->handle($filters);
         
-        return Inertia::render('Admin/CRM/Dashboard/Index', [
+        return Inertia::render('Admin/Crm/Dashboard/Index', [
             'data' => $dashboardData,
             'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
             'phases' => LeadPhaseResource::collection(LeadPhase::select('id', 'name', 'code')->get()),
@@ -34,3 +34,4 @@ class CrmDashboardController extends Controller
         ]);
     }
 }
+

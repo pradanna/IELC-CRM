@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\CRM;
+namespace App\Http\Requests\Crm;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,3 +30,4 @@ class StoreConsultationRequest extends FormRequest
         ];
     }
 }
+

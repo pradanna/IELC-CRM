@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Academic;
 
-use App\Http\Resources\CRM\LeadResource;
+use App\Http\Resources\Crm\LeadResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,3 +23,4 @@ class StudentResource extends JsonResource
         ];
     }
 }
+

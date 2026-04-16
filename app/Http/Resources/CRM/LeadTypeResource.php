@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\CRM;
+namespace App\Http\Resources\Crm;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -15,3 +15,4 @@ class LeadTypeResource extends JsonResource
         ];
     }
 }
+

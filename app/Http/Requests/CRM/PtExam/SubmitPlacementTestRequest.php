@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\CRM\PtExam;
+namespace App\Http\Requests\Crm\PtExam;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -14,8 +14,10 @@ class SubmitPlacementTestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'answers' => ['required', 'array'],
-            'answers.*' => ['required', 'integer'], // Key is question ID, Value is option ID
+            'answers' => ['nullable', 'array'],
+            'answers.*' => ['nullable'], // Option UUID, essay text, or file object
+            'summary_file' => ['nullable', 'file', 'mimes:pdf,doc,docx,zip,jpeg,png'],
         ];
     }
 }
+

@@ -11,7 +11,7 @@ import useLeadKanban from './hooks/useLeadKanban';
 import KanbanColumn from './partials/KanbanColumn';
 import KanbanCard from './partials/KanbanCard';
 
-export default function Kanban({ auth, kanbanData, filters, branches, phases, sources, types, chatTemplates, mediaAssets }) {
+export default function Kanban({ auth, kanbanData, filters, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
     const {
         boardData,
         activeLead,
@@ -59,6 +59,11 @@ export default function Kanban({ auth, kanbanData, filters, branches, phases, so
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
                 <CrmLayout 
                     onSelectLead={(id) => openLeadDetail(id, 0)}
+                    branches={branches}
+                    phases={phases}
+                    sources={sources}
+                    types={types}
+                    provinces={provinces}
                 >
                     <div className="space-y-10">
                         {/* Filters Section */}

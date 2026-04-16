@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/form/SecondaryButton';
 import DangerButton from '@/Components/form/DangerButton';
 import SessionResultDetailModal from '../modals/SessionResultDetailModal';
 import MagicLinkBanner from '../components/MagicLinkBanner';
+import { Calendar, Clock, ExternalLink, FileText, LinkIcon, Loader2, MessageSquare, Trash2, Trophy } from 'lucide-react';
 
 export default function LeadPlacementTestTab({ lead, loading, availableExams = [], onRefresh, isMinimal = false }) {
     const {

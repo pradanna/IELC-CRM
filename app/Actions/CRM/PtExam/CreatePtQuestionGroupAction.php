@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\PtExam;
+namespace App\Actions\Crm\PtExam;
 
 use App\Models\PtQuestionGroup;
 use Illuminate\Support\Facades\Storage;
@@ -12,12 +12,17 @@ class CreatePtQuestionGroupAction
         $groupData = [
             'pt_exam_id' => $data['pt_exam_id'],
             'instruction' => $data['instruction'],
+            'section_type' => $data['section_type'] ?? null,
             'reading_text' => $data['reading_text'] ?? null,
             'position' => $this->getNextPosition($data['pt_exam_id']),
         ];
 
         if (isset($data['media']) && $data['media']->isValid()) {
             $groupData['audio_path'] = $data['media']->store('pt_exams/audio', 'public');
+        }
+
+        if (isset($data['reading_file']) && $data['reading_file']->isValid()) {
+            $groupData['file_path'] = $data['reading_file']->store('pt_exams/resources', 'public');
         }
 
         return PtQuestionGroup::create($groupData);
@@ -31,3 +36,4 @@ class CreatePtQuestionGroupAction
         return max($maxGroup, $maxQuestion) + 1;
     }
 }
+

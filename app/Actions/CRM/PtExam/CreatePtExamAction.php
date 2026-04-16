@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\PtExam;
+namespace App\Actions\Crm\PtExam;
 
 use App\Models\PtExam;
 
@@ -11,3 +11,4 @@ class CreatePtExamAction
         return PtExam::create($data);
     }
 }
+

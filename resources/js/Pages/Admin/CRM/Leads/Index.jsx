@@ -29,6 +29,11 @@ export default function Index({ leads, filters, branches, phases, sources, types
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
                 <CrmLayout 
                     onSelectLead={(id) => openLeadDetail(id, 0)} 
+                    branches={branches}
+                    phases={phases}
+                    sources={sources}
+                    types={types}
+                    provinces={provinces}
                 >
                     <div className="space-y-12">
                         {/* Filters Section */}

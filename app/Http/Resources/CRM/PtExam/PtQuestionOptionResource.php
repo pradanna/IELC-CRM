@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\CRM\PtExam;
+namespace App\Http\Resources\Crm\PtExam;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -22,3 +22,4 @@ class PtQuestionOptionResource extends JsonResource
         ];
     }
 }
+

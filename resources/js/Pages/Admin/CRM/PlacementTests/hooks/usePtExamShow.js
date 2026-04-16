@@ -16,6 +16,7 @@ export function usePtExamShow(examData) {
     // Forms
     const settingsForm = useForm({
         title: examData.title,
+        category: examData.category || 'General',
         description: examData.description,
         duration_minutes: examData.duration_minutes,
         is_active: examData.is_active,
@@ -23,6 +24,7 @@ export function usePtExamShow(examData) {
 
     const questionForm = useForm({
         pt_question_group_id: null,
+        type: 'mcq',
         question_text: '',
         points: 1,
         options: ['', '', '', ''],
@@ -32,8 +34,10 @@ export function usePtExamShow(examData) {
 
     const groupForm = useForm({
         instruction: '',
+        section_type: null,
         reading_text: '',
         media: null,
+        reading_file: null,
     });
 
     // Submit Handlers
@@ -93,16 +97,24 @@ export function usePtExamShow(examData) {
             setEditingQuestion(q);
             questionForm.setData({
                 pt_question_group_id: q.pt_question_group_id,
+                type: q.type || 'mcq',
                 question_text: q.question_text,
                 points: q.points,
-                options: q.options.map((o) => o.text),
-                correct_answer: q.options.findIndex((o) => o.is_correct),
+                options: (q.options || []).map((o) => o.text),
+                correct_answer: (q.options || []).findIndex((o) => o.is_correct),
                 media: null,
             });
         } else {
             setEditingQuestion(null);
-            questionForm.reset();
-            questionForm.setData('pt_question_group_id', group?.id || null);
+            questionForm.setData({
+                pt_question_group_id: group?.id || null,
+                type: examData.category === 'IELTS' ? 'text' : 'mcq',
+                question_text: '',
+                points: 1,
+                options: ['', '', '', ''],
+                correct_answer: 0,
+                media: null,
+            });
         }
         setIsQuestionModalOpen(true);
     };
@@ -112,8 +124,10 @@ export function usePtExamShow(examData) {
             setEditingGroup(g);
             groupForm.setData({
                 instruction: g.instruction,
+                section_type: g.section_type || null,
                 reading_text: g.reading_text,
                 media: null,
+                reading_file: null,
             });
         } else {
             setEditingGroup(null);
@@ -177,6 +191,7 @@ export function usePtExamShow(examData) {
                 pages.push({
                     type: 'group',
                     instruction: item.instruction,
+                    section_type: item.section_type || null,
                     reading_text: item.reading_text,
                     audio_path: item.audio_path,
                     questions: (item.questions || []).sort((a,b) => (a.position - b.position) || (a.number - b.number)).map(q => ({

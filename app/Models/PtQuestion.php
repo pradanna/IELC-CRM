@@ -16,6 +16,7 @@ class PtQuestion extends Model
     protected $fillable = [
         'pt_exam_id',
         'pt_question_group_id',
+        'type',
         'question_text',
         'audio_path',
         'points',

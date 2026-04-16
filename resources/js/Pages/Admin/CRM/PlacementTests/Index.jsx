@@ -27,6 +27,7 @@ export default function Index({ stats, sessions, exams }) {
     
     const { data, setData, post, processing, reset, errors } = useForm({
         title: '',
+        category: 'General',
         duration_minutes: 60,
         description: '',
         is_active: true
@@ -245,6 +246,20 @@ export default function Index({ stats, sessions, exams }) {
                                         className={`w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-red-100 transition-all ${errors.title ? 'ring-2 ring-red-500' : ''}`}
                                     />
                                     {errors.title && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.title}</p>}
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider ml-1">Package Category</label>
+                                    <select 
+                                        required
+                                        value={data.category}
+                                        onChange={e => setData('category', e.target.value)}
+                                        className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-red-100 transition-all appearance-none"
+                                    >
+                                        <option value="General">General Placement (MCQ-based)</option>
+                                        <option value="IELTS">IELTS Assessment (Task-based)</option>
+                                    </select>
+                                    {errors.category && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.category}</p>}
                                 </div>
 
                                 <div className="space-y-1.5">

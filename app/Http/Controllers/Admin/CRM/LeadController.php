@@ -1,26 +1,26 @@
 <?php
 
-namespace App\Http\Controllers\Admin\CRM;
+namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\CRM\Leads\FetchLeadHistory;
-use App\Actions\CRM\Leads\PlotLeadClass;
-use App\Actions\CRM\Leads\RecordLeadFollowUp;
-use App\Actions\CRM\Leads\ResetLeadFollowUp;
-use App\Actions\CRM\Leads\SendLeadWhatsApp;
-use App\Actions\CRM\Leads\SendLeadWhatsAppTemplate;
-use App\Actions\CRM\Leads\StoreLead;
-use App\Actions\CRM\Leads\UpdateLead;
-use App\Actions\CRM\Leads\UpdateLeadPhase;
-use App\Actions\CRM\Leads\StoreLeadConsultation;
+use App\Actions\Crm\Leads\FetchLeadHistory;
+use App\Actions\Crm\Leads\PlotLeadClass;
+use App\Actions\Crm\Leads\RecordLeadFollowUp;
+use App\Actions\Crm\Leads\ResetLeadFollowUp;
+use App\Actions\Crm\Leads\SendLeadWhatsApp;
+use App\Actions\Crm\Leads\SendLeadWhatsAppTemplate;
+use App\Actions\Crm\Leads\StoreLead;
+use App\Actions\Crm\Leads\UpdateLead;
+use App\Actions\Crm\Leads\UpdateLeadPhase;
+use App\Actions\Crm\Leads\StoreLeadConsultation;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CRM\PlotLeadClassRequest;
-use App\Http\Requests\CRM\RecordLeadFollowUpRequest;
-use App\Http\Requests\CRM\SendLeadWhatsAppRequest;
-use App\Http\Requests\CRM\SendLeadWhatsAppTemplateRequest;
-use App\Http\Requests\CRM\StoreLeadRequest;
-use App\Http\Requests\CRM\UpdateLeadPhaseRequest;
-use App\Http\Requests\CRM\UpdateLeadRequest;
-use App\Http\Requests\CRM\StoreConsultationRequest;
+use App\Http\Requests\Crm\PlotLeadClassRequest;
+use App\Http\Requests\Crm\RecordLeadFollowUpRequest;
+use App\Http\Requests\Crm\SendLeadWhatsAppRequest;
+use App\Http\Requests\Crm\SendLeadWhatsAppTemplateRequest;
+use App\Http\Requests\Crm\StoreLeadRequest;
+use App\Http\Requests\Crm\UpdateLeadPhaseRequest;
+use App\Http\Requests\Crm\UpdateLeadRequest;
+use App\Http\Requests\Crm\StoreConsultationRequest;
 use App\Models\Branch;
 use App\Models\ChatTemplate;
 use App\Models\Lead;
@@ -32,12 +32,12 @@ use App\Models\Province;
 use App\Models\City;
 use App\Models\StudyClass;
 use App\Models\PtExam;
-use App\Http\Resources\CRM\LeadResource;
-use App\Http\Resources\CRM\LeadActivityResource;
-use App\Http\Resources\CRM\PtExam\PtExamResource;
-use App\Http\Resources\CRM\LeadPhaseResource;
-use App\Http\Resources\CRM\LeadSourceResource;
-use App\Http\Resources\CRM\LeadTypeResource;
+use App\Http\Resources\Crm\LeadResource;
+use App\Http\Resources\Crm\LeadActivityResource;
+use App\Http\Resources\Crm\PtExam\PtExamResource;
+use App\Http\Resources\Crm\LeadPhaseResource;
+use App\Http\Resources\Crm\LeadSourceResource;
+use App\Http\Resources\Crm\LeadTypeResource;
 use App\Http\Resources\Master\BranchResource;
 use App\Http\Resources\Academic\StudyClassResource;
 use Illuminate\Http\JsonResponse;
@@ -86,7 +86,7 @@ class LeadController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return Inertia::render('Admin/CRM/Leads/Index', [
+        return Inertia::render('Admin/Crm/Leads/Index', [
             'leads' => LeadResource::collection($leads),
             'filters' => $request->only(['branch_id', 'lead_phase_id', 'start_date', 'end_date', 'search']),
             'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
@@ -137,8 +137,14 @@ class LeadController extends Controller
 
     public function activities(Lead $lead, FetchLeadHistory $action): JsonResponse
     {
+        $paginated = $action->handle($lead);
+
         return response()->json([
-            'activities' => $action->handle($lead)
+            'activities' => $paginated->items(),
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'has_more'     => $paginated->hasMorePages(),
+            ]
         ]);
     }
 
@@ -238,7 +244,7 @@ class LeadController extends Controller
         ]);
     }
 
-    public function storeConsultation(\App\Http\Requests\CRM\StoreConsultationRequest $request, Lead $lead, StoreLeadConsultation $action): JsonResponse
+    public function storeConsultation(\App\Http\Requests\Crm\StoreConsultationRequest $request, Lead $lead, StoreLeadConsultation $action): JsonResponse
     {
         $consultation = $action->handle($lead, $request->validated());
 
@@ -385,7 +391,7 @@ class LeadController extends Controller
             ];
         });
 
-        return Inertia::render('Admin/CRM/Leads/Kanban', [
+        return Inertia::render('Admin/Crm/Leads/Kanban', [
             'kanbanData' => $kanbanData,
             'filters' => [
                 'branch_id' => $request->branch_id,
@@ -397,6 +403,7 @@ class LeadController extends Controller
             'phases' => LeadPhaseResource::collection($phases),
             'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
             'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
+            'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
             'mediaAssets'   => MediaAsset::latest()->get(),
             'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
@@ -409,3 +416,4 @@ class LeadController extends Controller
         Cache::put('crm_dashboard_version', $version + 1, now()->addYear());
     }
 }
+

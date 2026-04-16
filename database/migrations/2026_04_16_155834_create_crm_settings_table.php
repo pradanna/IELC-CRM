@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('lead_registrations', function (Blueprint $table) {
-            $table->foreignUuid('lead_source_id')->nullable()->after('branch_id')->constrained('lead_sources')->nullOnDelete();
+        Schema::create('crm_settings', function (Blueprint $blueprint) {
+            $blueprint->id();
+            $blueprint->string('key')->unique();
+            $blueprint->text('value')->nullable();
+            $blueprint->string('description')->nullable();
+            $blueprint->timestamps();
         });
     }
 
@@ -21,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('lead_registrations', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('lead_source_id');
-        });
+        Schema::dropIfExists('crm_settings');
     }
 };

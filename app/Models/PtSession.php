@@ -23,6 +23,10 @@ class PtSession extends Model
         'finished_at',
         'final_score',
         'recommended_level',
+        'is_graded',
+        'graded_by',
+        'grading_notes',
+        'result_file_path',
     ];
 
     protected $casts = [
@@ -30,6 +34,7 @@ class PtSession extends Model
         'finished_at' => 'datetime',
         'final_score' => 'integer',
         'scheduled_at' => 'datetime',
+        'is_graded' => 'boolean',
     ];
 
     public function lead(): BelongsTo
@@ -45,5 +50,10 @@ class PtSession extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(PtAnswer::class);
+    }
+
+    public function grader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'graded_by');
     }
 }

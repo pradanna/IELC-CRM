@@ -16,6 +16,7 @@ export function usePlacementTest({ session, pages, isReview, userAnswers }) {
 
     const { data, setData, post, processing } = useForm({
         answers: isReview ? userAnswers : initialAnswers,
+        summary_file: null,
     });
 
     // Scroll to top when page changes
@@ -65,8 +66,27 @@ export function usePlacementTest({ session, pages, isReview, userAnswers }) {
         const newAnswers = { ...data.answers, [questionId]: optionId };
         setData("answers", newAnswers);
         if (typeof window !== "undefined") {
+            // Only store text/id based answers, not files in local storage
+            const serializable = Object.fromEntries(
+                Object.entries(newAnswers).filter(([_, v]) => !(v instanceof File))
+            );
+            localStorage.setItem(storageKey, JSON.stringify(serializable));
+        }
+    };
+
+    const handleTextChange = (questionId, text) => {
+        if (isReview) return;
+        const newAnswers = { ...data.answers, [questionId]: text };
+        setData("answers", newAnswers);
+        if (typeof window !== "undefined") {
             localStorage.setItem(storageKey, JSON.stringify(newAnswers));
         }
+    };
+
+    const handleFileSelect = (questionId, file) => {
+        if (isReview) return;
+        setData("answers", { ...data.answers, [questionId]: file });
+        // Files are not stored in localStorage
     };
 
     const handleFinish = () => {
@@ -102,9 +122,13 @@ export function usePlacementTest({ session, pages, isReview, userAnswers }) {
         formatTime,
         questionMap,
         handleOptionSelect,
+        handleTextChange,
+        handleFileSelect,
         confirmFinish,
         getTimerColorClass,
         answers: data.answers,
+        summaryFile: data.summary_file,
+        setData,
         processing,
     };
 }

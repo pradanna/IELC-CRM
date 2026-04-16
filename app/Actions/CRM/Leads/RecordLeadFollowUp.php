@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
 use App\Models\Lead;
 use App\Models\LeadPhase;
@@ -36,6 +36,15 @@ class RecordLeadFollowUp
                 ->performedOn($lead)
                 ->causedBy(auth()->user())
                 ->log($logMessage);
+
+            // Explicitly record to lead_activities for Reporting
+            \App\Models\LeadActivity::create([
+                'lead_id' => $lead->id,
+                'user_id' => auth()->id(),
+                'type' => $data['type'] ?? 'message', // default to message/chat
+                'description' => $data['message'] ?? $logMessage,
+                'created_at' => $now
+            ]);
 
             return $lead->refresh();
         });

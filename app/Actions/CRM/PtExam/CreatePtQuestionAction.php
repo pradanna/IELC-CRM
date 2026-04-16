@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\PtExam;
+namespace App\Actions\Crm\PtExam;
 
 use App\Models\PtQuestion;
 use App\Models\PtQuestionOption;
@@ -15,6 +15,7 @@ class CreatePtQuestionAction
             $questionData = [
                 'pt_exam_id' => $data['pt_exam_id'],
                 'pt_question_group_id' => $data['pt_question_group_id'] ?? null,
+                'type' => $data['type'] ?? 'mcq',
                 'question_text' => $data['question_text'],
                 'points' => $data['points'] ?? 1,
                 'number' => $this->getNextQuestionNumber($data['pt_exam_id']),
@@ -27,7 +28,7 @@ class CreatePtQuestionAction
 
             $question = PtQuestion::create($questionData);
 
-            if (isset($data['options']) && is_array($data['options'])) {
+            if ($questionData['type'] === 'mcq' && isset($data['options']) && is_array($data['options'])) {
                 foreach ($data['options'] as $index => $optionText) {
                     PtQuestionOption::create([
                         'pt_question_id' => $question->id,
@@ -54,3 +55,4 @@ class CreatePtQuestionAction
         return max($maxGroup, $maxQuestion) + 1;
     }
 }
+

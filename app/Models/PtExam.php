@@ -15,6 +15,7 @@ class PtExam extends Model
 
     protected $fillable = [
         'title',
+        'category',
         'description',
         'slug',
         'duration_minutes',

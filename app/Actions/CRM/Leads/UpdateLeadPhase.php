@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
 use App\Models\Lead;
+use App\Models\LeadPhase;
 use Illuminate\Support\Facades\DB;
 
 class UpdateLeadPhase
@@ -19,3 +20,4 @@ class UpdateLeadPhase
         });
     }
 }
+

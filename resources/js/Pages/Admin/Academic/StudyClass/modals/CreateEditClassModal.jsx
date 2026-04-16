@@ -60,12 +60,23 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
         clearErrors();
     }, [studyClass, isOpen]);
 
-    const branchOptions = useMemo(() => branches.map(b => ({ value: b.id, label: b.name })), [branches]);
-    const instructorOptions = useMemo(() => instructors.map(i => ({ value: i.id, label: i.name })), [instructors]);
-    const priceOptions = useMemo(() => priceMasters.map(pm => ({ 
-        value: pm.id, 
-        label: `${pm.name} (Total: Rp ${new Intl.NumberFormat('id-ID').format(pm.price_per_session)})` 
-    })), [priceMasters]);
+    const branchOptions = useMemo(() => {
+        const dataArr = Array.isArray(branches) ? branches : (branches?.data || []);
+        return dataArr.map(b => ({ value: b.id, label: b.name }));
+    }, [branches]);
+
+    const instructorOptions = useMemo(() => {
+        const dataArr = Array.isArray(instructors) ? instructors : (instructors?.data || []);
+        return dataArr.map(i => ({ value: i.id, label: i.name }));
+    }, [instructors]);
+
+    const priceOptions = useMemo(() => {
+        const dataArr = Array.isArray(priceMasters) ? priceMasters : (priceMasters?.data || []);
+        return dataArr.map(pm => ({ 
+            value: pm.id, 
+            label: `${pm.name} (Total: Rp ${new Intl.NumberFormat('id-ID').format(pm.price_per_session)})` 
+        }));
+    }, [priceMasters]);
 
     const handleSubmit = (e) => {
         e.preventDefault();

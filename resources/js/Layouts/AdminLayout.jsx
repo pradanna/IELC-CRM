@@ -22,7 +22,7 @@ import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
 import NotificationToast from "@/Components/ui/NotificationToast";
 import useWhatsappNotification from "@/Hooks/useWhatsappNotification";
-import LeadDetailDrawer from "@/Pages/Admin/CRM/drawers/LeadDetailDrawer";
+import LeadDetailDrawer from "@/Pages/Admin/Crm/drawers/LeadDetailDrawer";
 
 // IELC Logo
 const logoUrl = "/assets/images/local/IELC-Logo.webp";
@@ -64,7 +64,7 @@ const menuItems = [
                 icon: <CircleDollarSign size={20} />,
                 text: "Overview",
                 href: route("admin.finance.dashboard"),
-                name: "admin.finance.*",
+                name: "admin.finance.dashboard",
             },
             {
                 icon: <Tag size={20} />,
@@ -291,3 +291,4 @@ export function SidebarItem({ icon, text, active, alert, href }) {
         </Link>
     );
 }
+

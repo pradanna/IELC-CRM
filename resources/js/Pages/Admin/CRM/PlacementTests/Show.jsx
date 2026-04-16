@@ -58,13 +58,24 @@ export default function Show({ exam }) {
             accessor: 'text',
             render: (row) => {
                 if (row.isGroupHeader) {
+                    const sectionBadge = row.section_type
+                        ? row.section_type === 'reading'
+                            ? <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100">Reading</span>
+                            : row.section_type === 'listening'
+                            ? <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">Listening</span>
+                            : <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-violet-50 text-violet-600 border border-violet-100">Speaking</span>
+                        : null;
+
                     return (
                         <div className="flex items-center gap-3 py-1">
                             <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0 shadow-sm border border-red-100">
                                 <Layers size={16} />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-red-600 uppercase tracking-widest leading-none mb-1">Question Group</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-xs font-black text-red-600 uppercase tracking-widest leading-none">Question Group</p>
+                                    {sectionBadge}
+                                </div>
                                 <p className="text-sm font-bold text-slate-900 leading-snug">{row.instruction}</p>
                             </div>
                         </div>
@@ -86,15 +97,31 @@ export default function Show({ exam }) {
             header: 'Media',
             accessor: 'audio_path',
             className: 'w-24',
-            render: (row) => row.audio_path ? (
-                <button
-                    onClick={() => openMediaModal(row.audio_path)}
-                    className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 w-fit hover:bg-blue-600 hover:text-white transition-all group"
-                >
-                    <PlayCircle size={12} className="group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">Play</span>
-                </button>
-            ) : <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest ml-2">—</span>,
+            render: (row) => {
+                if (!row.audio_path) return <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest ml-2">—</span>;
+                
+                const isMedia = row.audio_path.toLowerCase().match(/\.(mp3|wav|mp4|mpeg|webm)$/);
+                
+                return (
+                    <button
+                        onClick={() => openMediaModal(row.audio_path)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border w-fit transition-all group ${
+                            isMedia 
+                            ? 'text-blue-600 bg-blue-50 border-blue-100 hover:bg-blue-600 hover:text-white' 
+                            : 'text-amber-600 bg-amber-50 border-amber-100 hover:bg-amber-600 hover:text-white'
+                        }`}
+                    >
+                        {isMedia ? (
+                            <PlayCircle size={12} className="group-hover:scale-110 transition-transform" />
+                        ) : (
+                            <FileText size={12} className="group-hover:scale-110 transition-transform" />
+                        )}
+                        <span className="text-[10px] font-black uppercase tracking-wider">
+                            {isMedia ? 'Play' : 'View'}
+                        </span>
+                    </button>
+                );
+            },
         },
         {
             header: 'Pts',
@@ -253,6 +280,7 @@ export default function Show({ exam }) {
                 onSubmit={handleQuestionSubmit}
                 editingQuestion={editingQuestion}
                 targetGroupId={targetGroupId}
+                examCategory={examData.category}
             />
             <QuestionGroupModal
                 show={isGroupModalOpen}
@@ -260,6 +288,7 @@ export default function Show({ exam }) {
                 form={groupForm}
                 onSubmit={handleGroupSubmit}
                 editingGroup={editingGroup}
+                examCategory={examData.category}
             />
 
             {/* Media Preview Modal */}

@@ -19,7 +19,9 @@ return new class extends Migration
             $table->foreignUuid('study_class_id')->nullable()->constrained('study_classes')->nullOnDelete();
             $table->unsignedBigInteger('total_amount');
             $table->unsignedInteger('session_count');
+            $table->date('due_date')->nullable();
             $table->enum('status', ['pending', 'paid', 'cancelled'])->default('pending');
+            $table->timestamp('paid_at')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();

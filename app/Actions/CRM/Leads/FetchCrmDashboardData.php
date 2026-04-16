@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
+use App\Actions\Crm\Leads\FetchExpiringStudents;
 use App\Models\Lead;
 use App\Models\LeadPhase;
 use App\Models\Task;
@@ -97,14 +98,18 @@ class FetchCrmDashboardData
             }
             $manualTasks = $manualTaskQuery->get();
 
-            $inactiveLeadQuery = Lead::with(['leadPhase'])
-                ->whereIn('lead_phase_id', $phaseIds)
+            $fupMax = (int) \App\Models\CrmSetting::get('fup_max_attempts', 7);
+            $fupTrigger = (int) \App\Models\CrmSetting::get('fup_task_trigger_days', 4);
+
+            $silentLeadsQuery = Lead::with(['leadPhase'])
+                ->whereHas('leadPhase', fn($q) => $q->where('status', 'prospective'))
+                ->where('follow_up_count', '<', $fupMax)
                 ->whereBetween('last_activity_at', [
-                    $now->copy()->subDays(7)->startOfDay()->toDateTimeString(),
-                    $now->copy()->subDays(3)->endOfDay()->toDateTimeString()
+                    $now->copy()->subDays(30)->startOfDay()->toDateTimeString(), // Hard cap 30 days
+                    $now->copy()->subDays($fupTrigger)->endOfDay()->toDateTimeString()
                 ]);
-            $applyRoleFilter($inactiveLeadQuery);
-            $inactiveLeads = $inactiveLeadQuery->get();
+            $applyRoleFilter($silentLeadsQuery);
+            $silentLeads = $silentLeadsQuery->get();
 
             $tasks = $manualTasks->map(fn($t) => [
                 'id' => $t->id,
@@ -119,7 +124,7 @@ class FetchCrmDashboardData
                 'fup_count' => $t->lead->follow_up_count ?? 0,
                 'due_date' => $t->due_date->format('Y-m-d'),
                 'urgency' => $t->due_date->isPast() ? 'Overdue' : ($t->due_date->isToday() ? 'Today' : 'Upcoming'),
-            ])->concat($inactiveLeads->map(fn($l) => [
+            ])->concat($silentLeads->map(fn($l) => [
                 'id' => 'fup-' . $l->id,
                 'type' => 'fup_reminder',
                 'lead_id' => $l->id,
@@ -131,7 +136,7 @@ class FetchCrmDashboardData
                 'title' => "Follow-up ke-" . (($l->follow_up_count ?? 0) + 1),
                 'fup_count' => $l->follow_up_count ?? 0,
                 'due_date' => $l->last_activity_at->format('Y-m-d'),
-                'urgency' => $now->diffInDays($l->last_activity_at) >= 5 ? 'Overdue' : 'Pending',
+                'urgency' => $now->diffInDays($l->last_activity_at) >= ($fupTrigger + 2) ? 'Overdue' : 'Pending',
             ]))->sortBy(function($t) {
                 $priority = $t['urgency'] === 'Overdue' ? 0 : 1;
                 return $priority . $t['due_date'];
@@ -172,14 +177,71 @@ class FetchCrmDashboardData
             return [
                 'stats' => $stats,
                 'tasks' => $tasks,
-                'trend' => $enrollmentTrend,
+                'trend' => $enrollmentTrend ?? [],
+                'expiringStudents' => (new FetchExpiringStudents())->execute(14, $branchId),
                 'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
                 'filters' => [
                     'month' => (int)$month,
                     'year' => (int)$year,
                     'branch_id' => $branchId,
                 ],
+                'success_rates' => $this->calculateSuccessRates($startDateObj, $endDateObj, $branchId, $applyRoleFilter),
             ];
         });
     }
+
+    private function calculateSuccessRates($startDate, $endDate, $branchId, $applyRoleFilter): array
+    {
+        $cohortQuery = Lead::whereBetween('created_at', [$startDate, $endDate]);
+        if ($branchId) $cohortQuery->where('branch_id', $branchId);
+        $applyRoleFilter($cohortQuery);
+
+        $totalLeads = (clone $cohortQuery)->count();
+
+        if ($totalLeads === 0) {
+            return [
+                'new_to_prospective' => 0,
+                'new_to_closing' => 0,
+                'new_to_lost' => 0,
+                'prospective_to_closing' => 0,
+                'prospective_to_lost' => 0,
+            ];
+        }
+
+        $leads = (clone $cohortQuery)->get();
+
+        $reachedProspectiveCount = $leads->filter(fn($l) => !is_null($l->reached_prospective_at))->count();
+        $closingCount = $leads->filter(fn($l) => !is_null($l->enrolled_at))->count();
+        $lostCount = $leads->filter(fn($l) => !is_null($l->lost_at))->count();
+        $lostAfterProspectiveCount = $leads->filter(fn($l) => !is_null($l->lost_at) && !is_null($l->reached_prospective_at))->count();
+
+        return [
+            'new_to_prospective' => [
+                'count' => $reachedProspectiveCount,
+                'total' => $totalLeads,
+                'percentage' => round(($reachedProspectiveCount / $totalLeads) * 100, 1)
+            ],
+            'new_to_closing' => [
+                'count' => $closingCount,
+                'total' => $totalLeads,
+                'percentage' => round(($closingCount / $totalLeads) * 100, 1)
+            ],
+            'new_to_lost' => [
+                'count' => $lostCount,
+                'total' => $totalLeads,
+                'percentage' => round(($lostCount / $totalLeads) * 100, 1)
+            ],
+            'prospective_to_closing' => [
+                'count' => $closingCount,
+                'total' => $reachedProspectiveCount,
+                'percentage' => $reachedProspectiveCount > 0 ? round(($closingCount / $reachedProspectiveCount) * 100, 1) : 0
+            ],
+            'prospective_to_lost' => [
+                'count' => $lostAfterProspectiveCount,
+                'total' => $reachedProspectiveCount,
+                'percentage' => $reachedProspectiveCount > 0 ? round(($lostAfterProspectiveCount / $reachedProspectiveCount) * 100, 1) : 0
+            ],
+        ];
+    }
 }
+

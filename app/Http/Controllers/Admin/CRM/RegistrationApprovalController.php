@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin\CRM;
+namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\CRM\Leads\ApproveLeadRegistration;
-use App\Actions\CRM\Leads\ApproveLeadUpdate;
+use App\Actions\Crm\Leads\ApproveLeadRegistration;
+use App\Actions\Crm\Leads\ApproveLeadUpdate;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\CRM\LeadResource;
+use App\Http\Resources\Crm\LeadResource;
 use App\Models\Lead;
 use App\Models\LeadRegistration;
 use App\Models\LeadSource;
@@ -46,7 +46,7 @@ class RegistrationApprovalController extends Controller
             'label' => $s->name,
         ]);
 
-        return Inertia::render('Admin/CRM/Registrations/Inbox', [
+        return Inertia::render('Admin/Crm/Registrations/Inbox', [
             'registrations' => $registrations, // Simple collection for now or create resource
             'update_requests' => LeadResource::collection($updateRequests),
             'lead_sources' => $leadSources,
@@ -86,3 +86,4 @@ class RegistrationApprovalController extends Controller
         return redirect()->back()->with('success', "Pendaftaran {$registration->name} telah ditolak.");
     }
 }
+

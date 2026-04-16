@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\CRM\PtExam;
+namespace App\Http\Resources\Crm\PtExam;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -32,6 +32,7 @@ class PtExamPublicResource extends JsonResource
                     'questions' => [[
                         'id' => $q->id,
                         'number' => $questionNumber++,
+                        'type' => $q->type,
                         'text' => $q->question_text,
                         'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
                         'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
@@ -44,6 +45,7 @@ class PtExamPublicResource extends JsonResource
                     $groupQuestions[] = [
                         'id' => $q->id,
                         'number' => $questionNumber++,
+                        'type' => $q->type,
                         'text' => $q->question_text,
                         'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
                         'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
@@ -53,8 +55,10 @@ class PtExamPublicResource extends JsonResource
                     'id' => 'g_' . $g->id,
                     'type' => 'group',
                     'instruction' => $g->instruction,
+                    'section_type' => $g->section_type,
                     'reading_text' => $g->reading_text,
                     'audio_path' => $g->audio_path ? Storage::url($g->audio_path) : null,
+                    'file_path' => $g->file_path ? Storage::url($g->file_path) : null,
                     'questions' => $groupQuestions,
                 ];
             }
@@ -63,6 +67,7 @@ class PtExamPublicResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'category' => $this->category,
             'description' => $this->description,
             'duration_minutes' => $this->duration_minutes,
             'slug' => $this->slug,
@@ -71,3 +76,4 @@ class PtExamPublicResource extends JsonResource
         ];
     }
 }
+

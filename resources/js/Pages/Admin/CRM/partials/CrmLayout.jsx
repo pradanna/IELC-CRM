@@ -5,10 +5,17 @@ import axios from 'axios';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 import CreateEditLeadModal from '../Leads/modals/CreateEditLeadModal';
 
-export default function CrmLayout({ children, onSelectLead }) {
-    const { url, props } = usePage();
-    const { branches, sources, types, provinces } = props;
-    const pendingCount = props.pending_registrations_count || 0;
+export default function CrmLayout({ children, onSelectLead, ...customProps }) {
+    const { url, props: pageProps } = usePage();
+    
+    // Prioritize custom props (passed manually) over page props
+    const branches = customProps.branches || pageProps.branches;
+    const phases = customProps.phases || pageProps.phases;
+    const sources = customProps.sources || pageProps.sources;
+    const types = customProps.types || pageProps.types;
+    const provinces = customProps.provinces || pageProps.provinces;
+    
+    const pendingCount = pageProps.pending_registrations_count || 0;
     
     const { openDrawer } = useLeadDrawer();
     const [searchQuery, setSearchQuery] = React.useState('');
@@ -26,6 +33,7 @@ export default function CrmLayout({ children, onSelectLead }) {
         { name: 'Dashboard', href: route('admin.crm.leads.index'), active: route().current('admin.crm.leads.index') },
         { name: 'List View', href: route('admin.crm.leads.list'), active: route().current('admin.crm.leads.list') },
         { name: 'Kanban Board', href: route('admin.crm.leads.kanban'), active: route().current('admin.crm.leads.kanban') },
+        { name: 'Reports', href: route('admin.crm.reports.index'), active: route().current('admin.crm.reports.index') },
         { 
             name: 'Registration Inbox', 
             href: route('admin.crm.registrations.index'), 

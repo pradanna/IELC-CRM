@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\CRM\PtExam;
+namespace App\Http\Controllers\Crm\PtExam;
 
-use App\Actions\CRM\PtExam\SubmitPlacementTestAction;
+use App\Actions\Crm\PtExam\SubmitPlacementTestAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CRM\PtExam\SubmitPlacementTestRequest;
-use App\Http\Resources\CRM\PtExam\PtExamPublicResource;
-use App\Http\Resources\CRM\PtExam\PtSessionResource;
+use App\Http\Requests\Crm\PtExam\SubmitPlacementTestRequest;
+use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
+use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Models\PtAnswer;
 use App\Models\PtSession;
 use Illuminate\Http\RedirectResponse;
@@ -83,6 +83,7 @@ class PublicPlacementTestController extends Controller
                 'remaining_seconds' => $remainingSeconds,
             ],
             'exam_title' => $exam->title,
+            'exam_category' => $exam->category,
             'pages' => (new PtExamPublicResource($exam))->toArray(request())['pages'],
         ]);
     }
@@ -92,7 +93,7 @@ class PublicPlacementTestController extends Controller
         $session = PtSession::where('token', $token)->firstOrFail();
 
         if ($session->status !== 'completed') {
-            $action->handle($session, $request->validated()['answers']);
+            $action->handle($session, $request->validated()['answers'] ?? []);
         }
 
         return redirect()->route('public.placement-test.result', ['token' => $token]);
@@ -117,11 +118,13 @@ class PublicPlacementTestController extends Controller
 
         return Inertia::render('Public/PlacementTest/Result', [
             'session' => [
+                'token' => $session->token,
                 'lead_name' => $session->lead->name ?? 'Student',
                 'final_score' => $session->final_score,
             ],
             'exam' => [
                 'title' => $session->ptExam->title,
+                'category' => $session->ptExam->category,
             ],
             'stats' => [
                 'total_questions' => $totalQuestions,
@@ -130,3 +133,4 @@ class PublicPlacementTestController extends Controller
         ]);
     }
 }
+

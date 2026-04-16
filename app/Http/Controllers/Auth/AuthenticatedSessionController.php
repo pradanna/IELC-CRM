@@ -31,7 +31,7 @@ class AuthenticatedSessionController extends Controller
     {
         $action->handle($request);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(route('admin.crm.leads.index', absolute: false));
     }
 
     /**

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\PtExam;
+namespace App\Actions\Crm\PtExam;
 
 use App\Models\PtSession;
 use Illuminate\Support\Str;
@@ -17,3 +17,4 @@ class CreatePtSessionAction
         return PtSession::create($data);
     }
 }
+

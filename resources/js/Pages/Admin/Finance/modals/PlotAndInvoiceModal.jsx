@@ -8,13 +8,15 @@ import SecondaryButton from '@/Components/form/SecondaryButton';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
 import TextArea from '@/Components/ui/TextArea';
-import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X } from 'lucide-react';
+import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw } from 'lucide-react';
+import DatePicker from '@/Components/form/DatePicker';
 
 export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [], priceMasters = [] }) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         lead_id: '',
         study_class_id: '',
         price_master_id: '',
+        join_date: '',
         notes: '',
         items: [],
     });
@@ -26,6 +28,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
         if (show && lead) {
             const classId = lead.plotting?.study_class_id || '';
             const existingNotes = lead.plotting?.notes || '';
+            const joinDate = lead.plotting?.join_date || new Date().toISOString().split('T')[0];
             
             // Derive price_master_id from the class if available
             let priceId = '';
@@ -41,6 +44,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
                 lead_id: lead.id,
                 study_class_id: classId,
                 price_master_id: priceId,
+                join_date: joinDate,
                 notes: existingNotes,
             });
         }
@@ -55,15 +59,36 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
     }, [data.price_master_id, priceMasterList]);
 
     const remainingSessions = useMemo(() => {
-        // Priority 1: Use the remaining meetings saved during Lead Plotting
-        if (lead?.plotting?.remaining_meetings && lead.plotting.study_class_id === data.study_class_id) {
-            return Number(lead.plotting.remaining_meetings);
-        }
+        if (!selectedClass || !data.join_date) return 0;
 
-        // Priority 2: Standard calculation if plotting data missing or class changed
-        if (!selectedClass) return 0;
-        return Math.max(0, (selectedClass.total_meetings || 0) - (selectedClass.current_session_number || 0));
-    }, [selectedClass, lead, data.study_class_id]);
+        // Implementation of calculateRemainingMeetings from useLeadPlotting
+        const calculateRemaining = (startDate, endDate, scheduleDays, joinDateStr) => {
+            if (!startDate || !endDate || !scheduleDays || !joinDateStr) return 0;
+            const joinDate = new Date(joinDateStr);
+            const end = new Date(endDate);
+            if (joinDate > end) return 0;
+            
+            let count = 0;
+            let current = new Date(joinDate);
+            while (current <= end) {
+                const dayName = current.toLocaleDateString('en-US', { weekday: 'long' });
+                if (Array.isArray(scheduleDays) && scheduleDays.includes(dayName)) {
+                    count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return count;
+        };
+
+        const calculated = calculateRemaining(
+            selectedClass.start_session_date,
+            selectedClass.end_session_date,
+            selectedClass.schedule_days,
+            data.join_date
+        );
+
+        return calculated;
+    }, [selectedClass, data.join_date]);
 
     const baseClassSubtotal = useMemo(() => {
         if (!selectedPrice || !remainingSessions || !selectedClass?.total_meetings) return 0;
@@ -157,7 +182,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
                                     <div className="px-8 py-10 space-y-10">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-3">
-                                                <InputLabel value="1. Seleksi Kelas" className="uppercase text-[10px] tracking-widest font-black text-slate-400" />
+                                                <InputLabel value="Seleksi Kelas" className="uppercase text-[10px] tracking-widest font-black text-slate-400" />
                                                 <PremiumSearchableSelect
                                                     options={classOptions}
                                                     value={data.study_class_id}
@@ -168,15 +193,16 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
                                                 <InputError message={errors.study_class_id} />
                                             </div>
                                             <div className="space-y-3">
-                                                <InputLabel value="2. Seleksi Harga" className="uppercase text-[10px] tracking-widest font-black text-slate-400" />
-                                                <PremiumSearchableSelect
-                                                    options={priceOptions}
-                                                    value={data.price_master_id}
-                                                    onChange={(val) => setData('price_master_id', val)}
-                                                    icon={Tag}
-                                                    placeholder="Cari kategori..."
+                                                <InputLabel value="Tanggal Rencana Masuk" className="uppercase text-[10px] tracking-widest font-black text-slate-400" />
+                                                <DatePicker 
+                                                    value={data.join_date}
+                                                    onChange={(val) => setData('join_date', val)}
+                                                    className="w-full"
                                                 />
-                                                <InputError message={errors.price_master_id} />
+                                                <InputError message={errors.join_date} />
+                                                <p className="text-[9px] font-bold text-slate-400 italic flex items-center gap-1.5 ml-1">
+                                                    <RefreshCw size={8} /> Diinisialisasi dari data Pre-Enrollment
+                                                </p>
                                             </div>
                                         </div>
 

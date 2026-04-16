@@ -1,6 +1,9 @@
+import { Loader2 } from 'lucide-react';
+
 export default function DangerButton({
     className = '',
     disabled,
+    processing,
     children,
     ...props
 }) {
@@ -12,8 +15,9 @@ export default function DangerButton({
                     disabled && 'opacity-25'
                 } ` + className
             }
-            disabled={disabled}
+            disabled={disabled || processing}
         >
+            {processing && <Loader2 size={14} className="mr-2 animate-spin" />}
             {children}
         </button>
     );

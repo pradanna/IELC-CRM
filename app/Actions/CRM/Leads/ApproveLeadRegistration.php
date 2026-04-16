@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\CRM\Leads;
+namespace App\Actions\Crm\Leads;
 
 use App\Models\LeadRegistration;
 use App\Models\LeadSource;
@@ -78,3 +78,4 @@ class ApproveLeadRegistration
         });
     }
 }
+

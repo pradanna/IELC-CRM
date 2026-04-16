@@ -650,7 +650,7 @@ export default function LeadPipelineTab({
                             </div>
 
                             <button 
-                                onClick={handleSavePlotting}
+                                onClick={() => handleSavePlotting(openWaWeb)}
                                 disabled={savingPlotting || !plottingForm.study_class_id}
                                 className="w-full mt-8 py-4 bg-slate-900 hover:bg-red-600 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-[0.98]"
                             >

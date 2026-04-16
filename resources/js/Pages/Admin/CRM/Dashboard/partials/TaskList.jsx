@@ -91,54 +91,10 @@ export default function TaskList({ tasks, phases = [], getPhaseStyle, onView, on
                                         </div>
                                     </td>
                                     <td className="py-4">
-                                        <Menu as="div" className="relative inline-block text-left">
-                                            <Menu.Button className="outline-none focus:outline-none flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-wider transition-all hover:shadow-sm bg-white border-slate-200 text-slate-600 hover:border-slate-300">
-                                                <div className={`w-2 h-2 rounded-full ${style.color.replace('text-', 'bg-')}`} />
-                                                <span className="truncate max-w-[60px]">{task.lead_phase_name}</span>
-                                                <ChevronDown size={10} className="opacity-40" />
-                                            </Menu.Button>
-                                            
-                                            {/* ... rest of menu same ... */}
-                                            <Transition
-                                                as={Fragment}
-                                                enter="transition ease-out duration-100"
-                                                enterFrom="transform opacity-0 scale-95"
-                                                enterTo="transform opacity-100 scale-100"
-                                                leave="transition ease-in duration-75"
-                                                leaveFrom="transform opacity-100 scale-100"
-                                                leaveTo="transform opacity-0 scale-95"
-                                            >
-                                                <Menu.Items className="absolute left-0 mt-2 w-48 origin-top-left divide-y divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-slate-100">
-                                                    <div className="py-1">
-                                                        {normalizedPhases.map((phase) => {
-                                                            const isActive = task.lead_phase_id === phase.id;
-                                                            const pStyle = getPhaseStyle(phase.code);
-                                                            return (
-                                                                <Menu.Item key={phase.id}>
-                                                                    {({ active }) => (
-                                                                        <button
-                                                                            onClick={() => onUpdatePhase(task.lead_id, phase.id)}
-                                                                            className={`
-                                                                                ${active ? 'bg-slate-50' : ''} 
-                                                                                group flex w-full items-center justify-between px-4 py-2.5 text-[9px] font-black uppercase tracking-widest transition-colors
-                                                                            `}
-                                                                        >
-                                                                            <div className="flex items-center gap-2">
-                                                                                <div className={`w-1.5 h-1.5 rounded-full ${pStyle.color.replace('text-', 'bg-')}`} />
-                                                                                <span className={isActive ? 'text-slate-900' : 'text-slate-500'}>
-                                                                                    {phase.name}
-                                                                                </span>
-                                                                            </div>
-                                                                            {isActive && <Check size={12} className="text-emerald-500" />}
-                                                                        </button>
-                                                                    )}
-                                                                </Menu.Item>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </Menu.Items>
-                                            </Transition>
-                                        </Menu>
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-wider bg-white border-slate-100 text-slate-500 shadow-sm">
+                                            <div className={`w-2 h-2 rounded-full ${style.color.replace('text-', 'bg-')}`} />
+                                            <span className="truncate max-w-[80px]">{task.lead_phase_name}</span>
+                                        </div>
                                     </td>
                                     <td className="py-4">
                                         <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${

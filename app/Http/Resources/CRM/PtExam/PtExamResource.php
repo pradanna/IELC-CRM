@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\CRM\PtExam;
+namespace App\Http\Resources\Crm\PtExam;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,6 +17,7 @@ class PtExamResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'category' => $this->category,
             'slug' => $this->slug,
             'description' => $this->description,
             'duration_minutes' => $this->duration_minutes,
@@ -27,3 +28,4 @@ class PtExamResource extends JsonResource
         ];
     }
 }
+

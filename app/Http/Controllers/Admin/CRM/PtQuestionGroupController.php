@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Admin\CRM;
+namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\CRM\PtExam\CreatePtQuestionGroupAction;
-use App\Actions\CRM\PtExam\UpdatePtQuestionGroupAction;
+use App\Actions\Crm\PtExam\CreatePtQuestionGroupAction;
+use App\Actions\Crm\PtExam\UpdatePtQuestionGroupAction;
 use App\Http\Controllers\Controller;
 use App\Models\PtExam;
 use App\Models\PtQuestionGroup;
@@ -16,8 +16,10 @@ class PtQuestionGroupController extends Controller
     {
         $validated = $request->validate([
             'instruction' => ['required', 'string'],
+            'section_type' => ['nullable', 'string', 'in:reading,speaking,listening'],
             'reading_text' => ['nullable', 'string'],
-            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg'],
+            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg'],
+            'reading_file' => ['nullable', 'file', 'mimes:pdf,doc,docx'],
         ]);
 
         $validated['pt_exam_id'] = $ptExam->id;
@@ -31,8 +33,10 @@ class PtQuestionGroupController extends Controller
     {
         $validated = $request->validate([
             'instruction' => ['required', 'string'],
+            'section_type' => ['nullable', 'string', 'in:reading,speaking,listening'],
             'reading_text' => ['nullable', 'string'],
-            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg'],
+            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg'],
+            'reading_file' => ['nullable', 'file', 'mimes:pdf,doc,docx'],
         ]);
 
         $action->handle($ptQuestionGroup, $validated);
@@ -47,3 +51,4 @@ class PtQuestionGroupController extends Controller
         return redirect()->back()->with('success', 'Question group deleted successfully.');
     }
 }
+

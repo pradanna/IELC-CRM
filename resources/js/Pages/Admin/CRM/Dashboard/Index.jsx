@@ -10,9 +10,10 @@ import SendWhatsappModal from '../Leads/modals/SendWhatsappModal';
 import CrmLayout from '../partials/CrmLayout';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 import { useCrmDashboard } from './hooks/useCrmDashboard';
+import ExpiringStudentsList from './partials/ExpiringStudentsList';
 
 export default function Index({ data, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
-    const { stats, tasks, trend, filters } = data;
+    const { stats, tasks, trend, filters, expiringStudents = [] } = data;
     const { getPhaseStyle } = useLeadPhaseStyle();
     
     const {
@@ -53,6 +54,11 @@ export default function Index({ data, branches, phases, sources, types, province
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
                 <CrmLayout 
                     onSelectLead={(id) => openLeadDetail(id, 0)} 
+                    branches={normalizedBranches}
+                    phases={normalizedPhases}
+                    sources={normalizeCollection(sources)}
+                    types={normalizeCollection(types)}
+                    provinces={provinces}
                 >
                     <div className="space-y-12">
                         {/* Global Filters Section */}
@@ -86,20 +92,26 @@ export default function Index({ data, branches, phases, sources, types, province
                             </div>
                         </div>
 
-                        {/* Content Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                            <div className="lg:col-span-5 flex flex-col">
-                                <TaskList 
-                                    tasks={tasks} 
-                                    phases={normalizedPhases}
-                                    getPhaseStyle={getPhaseStyle}
-                                    onView={openLeadDetail}
-                                    onUpdatePhase={handleUpdatePhase}
-                                />
-                            </div>
-                            <div className="lg:col-span-7 flex flex-col">
-                                <EnrollmentTrendChart trendData={trend} />
-                            </div>
+
+                        {/* Tasks & Expiry Row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                            <TaskList 
+                                tasks={tasks} 
+                                phases={normalizedPhases}
+                                getPhaseStyle={getPhaseStyle}
+                                onView={openLeadDetail}
+                                onUpdatePhase={handleUpdatePhase}
+                            />
+                            
+                            <ExpiringStudentsList 
+                                students={expiringStudents} 
+                                onView={openLeadDetail}
+                            />
+                        </div>
+
+                        {/* Chart Row - Full Width */}
+                        <div className="pt-4">
+                            <EnrollmentTrendChart trendData={trend} />
                         </div>
                     </div>
                 </CrmLayout>

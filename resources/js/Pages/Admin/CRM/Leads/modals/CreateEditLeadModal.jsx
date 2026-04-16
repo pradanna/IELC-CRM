@@ -13,15 +13,12 @@ export default function CreateEditLeadModal({
     isOpen, 
     onClose,
     onSaveSuccess, 
-    lead = null, // The lead being edited, if any
-    branches = [], 
-    sources = [], 
-    types = [], 
-    provinces = [] 
+    lead = null,
+    ...customProps
 }) {
-    const { auth } = usePage().props;
+    const { props: pageProps } = usePage();
     const phoneInputRef = React.useRef(null);
-    
+
     /**
      * Normalizes a collection that might be a raw array or a wrapped resource object.
      */
@@ -31,10 +28,17 @@ export default function CreateEditLeadModal({
         return [];
     };
 
-    const normalizedSources = normalizeCollection(sources);
-    const normalizedTypes = normalizeCollection(types);
-    const normalizedBranches = normalizeCollection(branches);
-    const normalizedProvinces = normalizeCollection(provinces);
+    // Prioritize props passed manually, then page props
+    const branches = normalizeCollection(customProps.branches || pageProps.branches);
+    const sources = normalizeCollection(customProps.sources || pageProps.sources);
+    const types = normalizeCollection(customProps.types || pageProps.types);
+    const provinces = normalizeCollection(customProps.provinces || pageProps.provinces);
+    const { auth } = pageProps;
+
+    const normalizedSources = sources;
+    const normalizedTypes = types;
+    const normalizedBranches = branches;
+    const normalizedProvinces = provinces;
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
@@ -161,7 +165,7 @@ export default function CreateEditLeadModal({
                 // Formatting for New Lead (reset or default values)
                 
                 setData({
-                    name: 'lead',
+                    name: '',
                     nickname: '',
                     gender: '',
                     phone: '',

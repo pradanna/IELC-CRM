@@ -50,36 +50,47 @@ export default function Result({ session, exam, stats }) {
                             Candidate for <span className="text-slate-900 font-bold">{exam.title}</span>
                         </p>
 
-                        {/* Result Stats Grid */}
-                        <div className="grid grid-cols-2 gap-4 mb-10">
-                            <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-8 rounded-[2rem] shadow-sm group hover:border-slate-200 transition-all duration-300">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-100 text-amber-500 mb-4 mx-auto shadow-sm group-hover:scale-110 transition-transform">
-                                    <Trophy size={18} />
-                                </div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Final Score</p>
-                                <div className="flex items-center justify-center gap-1">
-                                    <span className="text-5xl font-black text-slate-900 leading-none">{session.final_score}</span>
-                                    {session.final_score >= 80 && <Sparkles size={16} className="text-amber-400 self-start animate-bounce" />}
-                                </div>
-                            </div>
+                        {/* Result Stats Grid - Hidden for IELTS */}
+                        {exam.category !== 'IELTS' ? (
+                            <>
+                                <div className="grid grid-cols-2 gap-4 mb-10">
+                                    <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-8 rounded-[2rem] shadow-sm group hover:border-slate-200 transition-all duration-300">
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-100 text-amber-500 mb-4 mx-auto shadow-sm group-hover:scale-110 transition-transform">
+                                            <Trophy size={18} />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Final Score</p>
+                                        <div className="flex items-center justify-center gap-1">
+                                            <span className="text-5xl font-black text-slate-900 leading-none">{session.final_score}</span>
+                                            {session.final_score >= 80 && <Sparkles size={16} className="text-amber-400 self-start animate-bounce" />}
+                                        </div>
+                                    </div>
 
-                            <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-8 rounded-[2rem] shadow-sm group hover:border-slate-200 transition-all duration-300">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-100 text-blue-500 mb-4 mx-auto shadow-sm group-hover:scale-110 transition-transform">
-                                    <Target size={18} />
+                                    <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-8 rounded-[2rem] shadow-sm group hover:border-slate-200 transition-all duration-300">
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-100 text-blue-500 mb-4 mx-auto shadow-sm group-hover:scale-110 transition-transform">
+                                            <Target size={18} />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Accuracy</p>
+                                        <span className="text-5xl font-black text-slate-900 leading-none">{percentage}%</span>
+                                    </div>
                                 </div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Accuracy</p>
-                                <span className="text-5xl font-black text-slate-900 leading-none">{percentage}%</span>
-                            </div>
-                        </div>
 
-                        {/* Detail Stats */}
-                        <div className="flex items-center justify-between px-8 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-10">
-                            <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                <span className="text-xs font-bold text-slate-500">Correct Answers</span>
+                                <div className="flex items-center justify-between px-8 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                        <span className="text-xs font-bold text-slate-500">Correct Answers</span>
+                                    </div>
+                                    <span className="text-sm font-black text-slate-900">{stats.correct_answers} / {stats.total_questions}</span>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="mb-10 p-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] text-center">
+                               
+                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-2">Penilaian Manual Sedang Berjalan</h4>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                    Karena ini adalah tes IELTS, skor Anda akan dihitung secara manual oleh tim akademik kami berdasarkan dokumen yang Anda unggah.
+                                </p>
                             </div>
-                            <span className="text-sm font-black text-slate-900">{stats.correct_answers} / {stats.total_questions}</span>
-                        </div>
+                        )}
 
                         {/* Next Steps Banner */}
                         <div className="bg-slate-900 rounded-[2.5rem] p-8 text-left relative overflow-hidden group">
@@ -106,9 +117,6 @@ export default function Result({ session, exam, stats }) {
 
                     {/* Footer Info */}
                     <div className="bg-slate-50/50 border-t border-slate-100 px-10 py-6 flex items-center justify-between text-slate-400">
-                        <span className="text-[10px] font-bold uppercase tracking-widest">
-                            Token: {session.token.substring(0, 8)}...
-                        </span>
                         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
                             <CheckCircle size={12} className="text-emerald-500" />
                             Verified Assessment

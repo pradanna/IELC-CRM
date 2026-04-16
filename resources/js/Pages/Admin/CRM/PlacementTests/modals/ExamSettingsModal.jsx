@@ -26,6 +26,20 @@ export default function ExamSettingsModal({ show, onClose, form, onSubmit }) {
                         <InputError message={form.errors.title} className="mt-1" />
                     </div>
 
+                    <div>
+                        <InputLabel value="Package Category" />
+                        <select 
+                            className="mt-1 w-full border-slate-200 focus:border-red-500 focus:ring-red-500 rounded-2xl shadow-sm bg-slate-50 border px-4 py-2.5 text-sm font-bold"
+                            value={form.data.category}
+                            onChange={(e) => form.setData('category', e.target.value)}
+                            required
+                        >
+                            <option value="General">General Placement (MCQ-based)</option>
+                            <option value="IELTS">IELTS Assessment (Task-based)</option>
+                        </select>
+                        <InputError message={form.errors.category} className="mt-1" />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <InputLabel value="Duration (Minutes)" />

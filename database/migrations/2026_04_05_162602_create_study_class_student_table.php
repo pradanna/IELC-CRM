@@ -15,7 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid('study_class_id')->constrained('study_classes')->cascadeOnDelete();
             $table->foreignUuid('student_id')->constrained('students')->cascadeOnDelete();
+            $table->unsignedInteger('cycle_number')->default(1);
             $table->timestamps();
+
+            $table->index(['study_class_id', 'student_id', 'cycle_number'], 'idx_study_class_student_cycle');
         });
     }
 

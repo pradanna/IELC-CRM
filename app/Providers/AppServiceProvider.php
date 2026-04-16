@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Lead;
+use App\Observers\LeadObserver;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,5 +27,7 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') !== 'local') {
             URL::forceScheme('https');
         }
+
+        Lead::observe(LeadObserver::class);
     }
 }

@@ -15,9 +15,12 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('pt_exam_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('pt_question_group_id')->nullable()->constrained('pt_question_groups')->nullOnDelete();
+            $table->integer('number')->nullable();
+            $table->string('type')->default('mcq'); // mcq, text, file
             $table->text('question_text');
             $table->string('audio_path')->nullable();
             $table->integer('points')->default(1);
+            $table->integer('position')->default(0);
             $table->timestamps();
         });
     }

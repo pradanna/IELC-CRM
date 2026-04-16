@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\CRM;
+namespace App\Http\Resources\Crm;
 
 use App\Models\Branch;
 use App\Models\LeadPhase;
@@ -114,3 +114,4 @@ class LeadActivityResource extends JsonResource
         return (string) $value;
     }
 }
+
