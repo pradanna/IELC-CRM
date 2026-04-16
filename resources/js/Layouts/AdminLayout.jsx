@@ -132,8 +132,8 @@ const menuItems = [
             {
                 icon: <Settings size={20} />,
                 text: "Settings",
-                href: "#",
-                name: "settings",
+                href: route("admin.crm.settings.index"),
+                name: "admin.crm.settings.*",
             },
             {
                 icon: <Users size={20} />,

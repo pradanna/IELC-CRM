@@ -73,7 +73,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/crm/leads/{lead}/send-whatsapp', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendMessage'])->name('crm.leads.send-whatsapp');
     Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
     Route::post('/crm/leads', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'store'])->name('crm.leads.store');
-    Route::get('/crm/cities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getCities'])->name('crm.cities');
+    Route::get('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'index'])->name('crm.settings.index');
+    Route::put('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'update'])->name('crm.settings.update');
     Route::get('/crm/cities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getCities'])->name('crm.cities');
 
     // Registration Inbox (Admin Approval)
