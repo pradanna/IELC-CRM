@@ -24,10 +24,6 @@ export default function useWhatsappNotification() {
 
                 setNotifications(prev => [...prev, newNotification]);
 
-                // Auto remove after 5 seconds
-                setTimeout(() => {
-                    setNotifications(prev => prev.filter(n => n.id !== newNotification.id));
-                }, 5000);
 
 
                 // Play sound if possible

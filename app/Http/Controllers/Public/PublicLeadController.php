@@ -10,6 +10,9 @@ use App\Models\LeadRegistration;
 use App\Models\Province;
 use App\Models\City;
 use App\Models\LeadSource;
+use App\Models\User;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 
@@ -110,6 +113,21 @@ class PublicLeadController extends Controller
             'status' => 'pending',
         ]);
 
+        // Notify staff
+        $superadmins = User::role('superadmin')->get();
+        $branchFrontdesk = User::role('frontdesk')
+            ->where('branch_id', $validated['branch_id'])
+            ->get();
+
+        $recipients = $superadmins->merge($branchFrontdesk)->unique('id');
+
+        Notification::send($recipients, new SystemNotification(
+            "Pendaftaran Lead Baru",
+            "Ada pendaftaran lead baru: {$validated['name']} melalui form publik.",
+            "info",
+            route('admin.crm.registrations.index')
+        ));
+
         return redirect()->back()->with('success', 'Pendaftaran Anda telah kami terima. Tim kami akan segera menghubungi Anda!');
     }
 
@@ -182,6 +200,22 @@ class PublicLeadController extends Controller
         $lead->update([
             'pending_updates' => $validated
         ]);
+
+        // Notify staff
+        $superadmins = User::role('superadmin')->get();
+        $branchFrontdesk = User::role('frontdesk')
+            ->where('branch_id', $lead->branch_id)
+            ->get();
+        $owner = $lead->owner_id ? User::where('id', $lead->owner_id)->get() : collect();
+
+        $recipients = $superadmins->merge($branchFrontdesk)->merge($owner)->unique('id');
+
+        Notification::send($recipients, new SystemNotification(
+            "Pembaruan Data Mandiri",
+            "Lead {$lead->name} telah melakukan pengisian data mandiri.",
+            "info",
+            route('admin.crm.registrations.index') // Assuming this is where updates are approved
+        ));
 
         return redirect()->back()->with('success', 'Data Anda telah lunas kami terima dan sedang dalam proses verifikasi admin. Terima kasih!');
     }

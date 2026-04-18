@@ -7,21 +7,21 @@ This document serves as a detailed technical specification for the Developer. Fo
 ## 🔴 Priority: Success Rate Reports (CRM Dashboard)
 *Objective: Implement granular tracking of lead transitions based on Phase Status.*
 
-- [ ] **Data Model & Query Logic**
-    - [ ] Status mapping:
+- [x] **Data Model & Query Logic**
+    - [ x] Status mapping:
         - `new`: Code `lead`
         - `prospective`: Codes `prospect`, `consultation`, `placement-test`, `pre-enrollment`, `invoice`
         - `closing`: Code `enrollment`
         - `lost`: Codes `cold-leads`, `dropout-leads`
-- [ ] **Implement Success Rate Calculations**
-    - [ ] **New -> Prospective**: % of Leads created as `new` that progressed to any `prospective` phase.
-    - [ ] **New -> Closing**: % of Leads created as `new` that eventually reached `closing`.
-    - [ ] **New -> Lost**: % of Leads created as `new` that diverted to `lost`.
-    - [ ] **Prospective -> Closing**: % of leads that reached `prospective` and then achieved `closing`.
-    - [ ] **Prospective -> Lost**: % of leads that reached `prospective` and then became `lost`.
-- [ ] **Frontend Widget Update**
-    - [ ] Add a "Success Metrics" tab or section in the CRM Dashboard.
-    - [ ] Display these percentages clearly with comparison to previous periods if data is available.
+- [x] **Implement Success Rate Calculations**
+    - [x] **New -> Prospective**: % of Leads created as `new` that progressed to any `prospective` phase.
+    - [x] **New -> Closing**: % of Leads created as `new` that eventually reached `closing`.
+    - [x] **New -> Lost**: % of Leads created as `new` that diverted to `lost`.
+    - [x] **Prospective -> Closing**: % of leads that reached `prospective` and then achieved `closing`.
+    - [x] **Prospective -> Lost**: % of leads that reached `prospective` and then became `lost`.
+- [x] **Frontend Widget Update**
+    - [x] Add a "Success Metrics" tab or section in the CRM Dashboard.
+    - [x] Display these percentages clearly with comparison to previous periods if data is available.
 
 ---
 
@@ -44,10 +44,10 @@ This document serves as a detailed technical specification for the Developer. Fo
 ---
 
 ## 🟡 Priority: Features & Polish
-- [ ] **Expiring Study Periods Visibility**
-    - [ ] Implement the widget for students whose classes end in <= 14 days.
-- [ ] **Real-time Notifications**
-    - [ ] Connect `LeadRegistered` and `PtSessionCompleted` events to frontend toast notifications.
+- [x] **Expiring Study Periods Visibility**
+    - [x] Implement the widget for students whose classes end in <= 14 days and ensure empty state visibility.
+- [x] **Real-time Notifications**
+    - [x] Connect `LeadRegistered` and `PtSessionCompleted` events to frontend toast notifications and inbox.
 - [ ] **Rejoin Student Concept**
     - [ ] Implementation of "Re-connection" phase for former students.
 

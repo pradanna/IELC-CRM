@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Fragment, useCallback } from 'react';
 import { Bell, Check, X, ExternalLink, Inbox, Info, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
+import { Link } from '@inertiajs/react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -20,7 +21,7 @@ export default function NotificationDropdown({ user }) {
     }, []);
 
     useEffect(() => {
-        // fetchNotifications();
+        fetchNotifications();
         
         if (window.Echo) {
             const channel = window.Echo.private(`App.Models.User.${user.id}`);
@@ -42,6 +43,14 @@ export default function NotificationDropdown({ user }) {
                 
                 setNotifications(prev => [normalizedNotification, ...prev]);
                 setUnreadCount(prev => prev + 1);
+
+                // Trigger global toast
+                window.dispatchEvent(new CustomEvent('show-toast', {
+                    detail: {
+                        message: normalizedNotification.data?.message || "Ada notifikasi baru masuk",
+                        type: normalizedNotification.data?.type || "success"
+                    }
+                }));
             });
 
             // Connection debugging (Useful for dev)
@@ -140,7 +149,7 @@ export default function NotificationDropdown({ user }) {
                             notifications.map((n) => (
                                 <Menu.Item key={n.id}>
                                     {({ active }) => (
-                                        <div className={`px-4 py-3 border-b border-gray-50 flex gap-3 transition-colors ${active ? 'bg-gray-50' : 'bg-white'}`}>
+                                        <div className={`px-4 py-3 border-b border-gray-50 flex gap-3 transition-colors ${active ? 'bg-gray-50' : (n.read_at ? 'bg-white' : 'bg-primary-50/40')}`}>
                                             <div className="shrink-0 mt-0.5">
                                                 <div className={`w-8 h-8 rounded-lg ${n.data?.type === 'error' ? 'bg-red-50' : (n.data?.type === 'success' ? 'bg-green-50' : 'bg-primary-50')} flex items-center justify-center`}>
                                                     {getIcon(n.data?.type)}
@@ -195,9 +204,12 @@ export default function NotificationDropdown({ user }) {
                     </div>
 
                     <div className="p-2.5 bg-gray-50/50 border-t border-gray-100 text-center">
-                         <button className="text-[10px] font-bold uppercase text-gray-400 hover:text-gray-600 tracking-wider transition-colors py-1 px-4">
-                            See recent activity
-                         </button>
+                         <Link 
+                            href={route('admin.notifications.index')}
+                            className="block text-[10px] font-bold uppercase text-gray-400 hover:text-primary-600 tracking-wider transition-colors py-1 px-4"
+                         >
+                            See all notifications
+                         </Link>
                     </div>
                 </Menu.Items>
             </Transition>

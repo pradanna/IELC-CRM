@@ -30,12 +30,36 @@ class ProcessInvoicePayment
                 
                 // Update invoice with new student_id
                 $invoice->update(['student_id' => $student->id]);
+            } else if ($invoice->student_id) {
+                // For rejoin students, ensure their status is set to active
+                $invoice->student->update(['status' => 'active']);
             }
 
             // Enroll in the class cycle
             $studentId = $invoice->student_id;
             if ($studentId && $invoice->study_class_id) {
                 $this->enrollStudent->handle($invoice->studyClass, $studentId);
+            }
+
+            // Send Notifications
+            $entityName = $invoice->lead ? $invoice->lead->name : ($invoice->student ? $invoice->student->lead->name : 'Student');
+            $notification = new \App\Notifications\SystemNotification(
+                "Pembayaran Berhasil: {$invoice->invoice_number}",
+                "Pembayaran untuk {$entityName} telah diterima. Siswa kini berstatus Aktif.",
+                'success',
+                $invoice->lead_id ? "/admin/crm/leads?id={$invoice->lead_id}" : "/admin/finance"
+            );
+
+            // Notify Lead Owner
+            if ($invoice->lead && $invoice->lead->owner) {
+                $invoice->lead->owner->notify($notification);
+            }
+
+            // Notify Superadmins
+            $superadmins = \App\Models\User::role('superadmin')->get();
+            foreach ($superadmins as $admin) {
+                if ($invoice->lead && $invoice->lead->owner_id === $admin->id) continue;
+                $admin->notify($notification);
             }
         });
     }

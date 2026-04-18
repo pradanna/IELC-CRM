@@ -23,6 +23,7 @@ export default function LeadDetailDrawer({
     const [loading, setLoading] = useState(true);
     const [availableExams, setAvailableExams] = useState([]);
     const [availableClasses, setAvailableClasses] = useState([]);
+    const [priceMasters, setPriceMasters] = useState([]);
     const [localChatTemplates, setLocalChatTemplates] = useState([]);
     const [localPhases, setLocalPhases] = useState(phases);
     const [localMediaAssets, setLocalMediaAssets] = useState([]);
@@ -63,6 +64,7 @@ export default function LeadDetailDrawer({
             setLead(response.data.lead);
             setAvailableExams(response.data.availableExams || []);
             setAvailableClasses(response.data.availableClasses || []);
+            setPriceMasters(response.data.priceMasters || []);
             
             if (response.data.chatTemplates) setLocalChatTemplates(response.data.chatTemplates);
             if (response.data.phases) setLocalPhases(response.data.phases);
@@ -70,6 +72,10 @@ export default function LeadDetailDrawer({
 
         } catch (error) {
             console.error('Error fetching lead details:', error);
+            if (error.response?.status === 404) {
+                alert('Lead not found. It may have been deleted.');
+                closeDrawer();
+            }
         } finally {
             setLoading(false);
         }
@@ -246,6 +252,7 @@ export default function LeadDetailDrawer({
                                                         availableExams={availableExams}
                                                         availableClasses={availableClasses}
                                                         chatTemplates={localChatTemplates}
+                                                        priceMasters={priceMasters}
                                                         onRefresh={fetchLeadDetails}
                                                     />
                                                 </Tab.Panel>

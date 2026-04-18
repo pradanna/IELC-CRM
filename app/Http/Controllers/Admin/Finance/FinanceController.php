@@ -34,7 +34,14 @@ class FinanceController extends Controller
 
         return Inertia::render('Admin/Finance/Index', [
             'leads' => $leadsForInvoicing,
-            'classes' => StudyClass::with(['branch', 'instructor'])->get(),
+            'rejoinStudents' => \App\Models\Student::where('status', 'stop')
+                ->orWhereHas('studyClasses', function($q) {
+                    $q->whereBetween('end_session_date', [now()->toDateString(), now()->addDays(14)->toDateString()]);
+                })
+                ->with(['lead.branch', 'studyClasses' => fn($q) => $q->latest()->take(1)])
+                ->latest()
+                ->get(),
+            'classes' => StudyClass::with(['branch', 'instructor', 'priceMaster'])->get(),
             'priceMasters' => PriceMaster::all(),
             'recentInvoices' => Invoice::with(['lead', 'student', 'studyClass'])->latest()->limit(10)->get(),
         ]);
@@ -62,6 +69,39 @@ class FinanceController extends Controller
         $action->handle($invoice);
 
         return redirect()->back()->with('success', "Invoice {$invoice->invoice_number} paid. Student promoted and enrolled.");
+    }
+
+    /**
+     * Display a dedicated list of all invoices with search and filter capabilities.
+     */
+    public function invoices(Request $request): Response
+    {
+        $query = Invoice::with(['lead', 'student.lead', 'studyClass.branch'])->latest();
+
+        // 1. Search by Invoice Number or Name
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                  ->orWhereHas('lead', fn($l) => $l->where('name', 'like', "%{$search}%"))
+                  ->orWhereHas('student.lead', fn($l) => $l->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        // 2. Filter by Date Range
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        }
+
+        // 3. Filter by Status
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        return Inertia::render('Admin/Finance/Invoices/Index', [
+            'invoices' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only(['search', 'start_date', 'end_date', 'status']),
+        ]);
     }
 
     /**

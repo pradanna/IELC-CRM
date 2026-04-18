@@ -119,8 +119,8 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
     return (
         <div className="space-y-12">
             {/* Header Area (Minimalist) */}
-            <div className="relative">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="relative z-50">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-black text-gray-900 tracking-tighter">CRM Workspace</h1>
                         <p className="text-sm font-medium text-gray-400">Manage incoming leads and track conversions.</p>
@@ -141,7 +141,7 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
 
                             {/* Results Dropdown */}
                             {showDropdown && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
                                     {results.length > 0 ? (
                                         <div className="py-2">
                                             {results.map((lead) => (

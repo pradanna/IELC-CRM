@@ -8,32 +8,62 @@ import SecondaryButton from '@/Components/form/SecondaryButton';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
 import TextArea from '@/Components/ui/TextArea';
-import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw } from 'lucide-react';
+import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle } from 'lucide-react';
 import DatePicker from '@/Components/form/DatePicker';
 
-export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [], priceMasters = [] }) {
+export default function PlotAndInvoiceModal({ show, onClose, lead, student, classes = [], priceMasters = [] }) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         lead_id: '',
+        student_id: '',
         study_class_id: '',
         price_master_id: '',
         join_date: '',
         notes: '',
         items: [],
+        billing_mode: 'prorata', // 'prorata' or 'full'
     });
 
     const classList = useMemo(() => Array.isArray(classes) ? classes : [], [classes]);
     const priceMasterList = useMemo(() => Array.isArray(priceMasters) ? priceMasters : [], [priceMasters]);
 
     useEffect(() => {
-        if (show && lead) {
-            const classId = lead.plotting?.study_class_id || '';
-            const existingNotes = lead.plotting?.notes || '';
-            const joinDate = lead.plotting?.join_date || new Date().toISOString().split('T')[0];
+        if (show && (lead || student)) {
+            const currentLead = lead || student?.lead;
+            const classId = student?.study_classes?.[0]?.id || currentLead?.plotting?.study_class_id || '';
+            const existingNotes = currentLead?.plotting?.notes || '';
             
+            let joinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+            let billingMode = 'prorata';
+
+            // Special logic for Rejoin Students (Renewal)
+            if (student) {
+                billingMode = 'full'; // Default to full cycle for renewals
+                const currentClass = student.study_classes?.[0] || classList.find(c => c.id === classId);
+                
+                if (currentClass?.end_session_date && Array.isArray(currentClass.schedule_days)) {
+                    const findNextMeeting = (endDateStr, scheduleDays) => {
+                        const date = new Date(endDateStr);
+                        // Loop up to 7 days to find the next matching day
+                        for (let i = 1; i <= 7; i++) {
+                            const next = new Date(date);
+                            next.setDate(date.getDate() + i);
+                            const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                            if (scheduleDays.includes(dayName)) {
+                                return next.toISOString().split('T')[0];
+                            }
+                        }
+                        return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+                    };
+
+                    joinDate = findNextMeeting(currentClass.end_session_date, currentClass.schedule_days);
+                }
+            }
+
             // Derive price_master_id from the class if available
             let priceId = '';
-            if (classId && classList.length > 0) {
-                const cls = classList.find(c => c.id === classId);
+            const targetClassId = classId;
+            if (targetClassId && classList.length > 0) {
+                const cls = classList.find(c => c.id === targetClassId);
                 if (cls) {
                     priceId = cls.price_master_id || '';
                 }
@@ -41,14 +71,57 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
 
             setData({
                 ...data,
-                lead_id: lead.id,
+                lead_id: currentLead?.id || '',
+                student_id: student?.id || '',
                 study_class_id: classId,
                 price_master_id: priceId,
                 join_date: joinDate,
                 notes: existingNotes,
+                billing_mode: billingMode,
             });
         }
-    }, [show, lead, classList]);
+    }, [show, lead, student, classList]);
+
+    // Sync price_master_id when study_class_id changes manually
+    useEffect(() => {
+        if (data.study_class_id && classList.length > 0) {
+            const cls = classList.find(c => c.id === data.study_class_id);
+            if (cls && cls.price_master_id) {
+                setData('price_master_id', cls.price_master_id);
+            }
+        }
+    }, [data.study_class_id]);
+
+    // Sync join_date when billing_mode changes
+    useEffect(() => {
+        if (!show) return;
+
+        if (data.billing_mode === 'prorata') {
+            const currentLead = lead || student?.lead;
+            const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+            
+            // Only reset if the current joinDate is in the future relative to original or today
+            setData('join_date', originalJoinDate);
+        } else if (data.billing_mode === 'full' && (student || lead)) {
+            const targetClass = selectedClass || (student?.study_classes?.[0]);
+            if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
+                const findNextMeeting = (endDateStr, scheduleDays) => {
+                    const date = new Date(endDateStr);
+                    for (let i = 1; i <= 7; i++) {
+                        const next = new Date(date);
+                        next.setDate(date.getDate() + i);
+                        const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                        if (scheduleDays.includes(dayName)) {
+                            return next.toISOString().split('T')[0];
+                        }
+                    }
+                    return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+                };
+                const nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
+                setData('join_date', nextDate);
+            }
+        }
+    }, [data.billing_mode]);
 
     const selectedClass = useMemo(() => {
         return classList.find(c => c.id === data.study_class_id);
@@ -91,10 +164,26 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
     }, [selectedClass, data.join_date]);
 
     const baseClassSubtotal = useMemo(() => {
-        if (!selectedPrice || !remainingSessions || !selectedClass?.total_meetings) return 0;
+        if (!selectedPrice || !selectedClass?.total_meetings) return 0;
+        
+        if (data.billing_mode === 'full') {
+            return selectedPrice.price_per_session || 0;
+        }
+
+        if (!remainingSessions) return 0;
+        
         const rate = (selectedPrice.price_per_session || 0) / (selectedClass.total_meetings || 1);
         return Math.round(remainingSessions * rate);
-    }, [selectedPrice, remainingSessions, selectedClass]);
+    }, [selectedPrice, remainingSessions, selectedClass, data.billing_mode]);
+
+    const isExpired = useMemo(() => {
+        if (!selectedClass?.end_session_date) return false;
+        return new Date(selectedClass.end_session_date) < new Date().setHours(0,0,0,0);
+    }, [selectedClass]);
+
+    const hasNoPrice = useMemo(() => {
+        return selectedClass && !selectedClass.price_master_id;
+    }, [selectedClass]);
 
     const itemsTotal = useMemo(() => {
         return (data.items || []).reduce((sum, item) => sum + (Number(item.unit_price || 0) * Number(item.quantity || 1)), 0);
@@ -171,7 +260,9 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
                                                 <Dialog.Title className="text-xl font-black text-slate-900 tracking-tight uppercase">
                                                     Issue <span className="text-red-600">Invoice</span>
                                                 </Dialog.Title>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Plotting lead: {lead?.name}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">
+                                                    {student ? 'Rejoin Student' : 'Plotting lead'}: {student ? student.lead?.name : lead?.name}
+                                                </p>
                                             </div>
                                         </div>
                                         <button type="button" onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
@@ -191,6 +282,25 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
                                                     placeholder="Cari kelas..."
                                                 />
                                                 <InputError message={errors.study_class_id} />
+                                                
+                                                {/* Warning Messages */}
+                                                {hasNoPrice && (
+                                                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
+                                                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                                        <p className="text-[10px] font-bold text-amber-700 leading-relaxed uppercase tracking-wider">
+                                                            Kelas ini belum memiliki data Master Harga. Silakan hubungi Akademik untuk setting harga kelas.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {isExpired && (
+                                                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
+                                                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                                                        <p className="text-[10px] font-bold text-red-700 leading-relaxed uppercase tracking-wider">
+                                                            Masa berlaku kelas ini sudah berakhir ({selectedClass.end_session_date}). Tidak disarankan untuk invoice baru.
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="space-y-3">
                                                 <InputLabel value="Tanggal Rencana Masuk" className="uppercase text-[10px] tracking-widest font-black text-slate-400" />
@@ -203,6 +313,31 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
                                                 <p className="text-[9px] font-bold text-slate-400 italic flex items-center gap-1.5 ml-1">
                                                     <RefreshCw size={8} /> Diinisialisasi dari data Pre-Enrollment
                                                 </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 pt-4 border-t border-slate-50">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Metode Penagihan</h3>
+                                                    <p className="text-[9px] font-bold text-slate-400 italic">Pilih satu siklus penuh atau hitung sisa pertemuan</p>
+                                                </div>
+                                                <div className="flex bg-slate-100 p-1 rounded-xl">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setData('billing_mode', 'prorata')}
+                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                    >
+                                                        Pro-rata
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setData('billing_mode', 'full')}
+                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                    >
+                                                        Satu Siklus Penuh
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -314,7 +449,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, classes = [],
 
                                     <div className="px-8 py-8 bg-slate-50 flex items-center justify-end gap-3 rounded-b-[32px]">
                                         <SecondaryButton onClick={onClose} className="!rounded-2xl !text-[10px] uppercase tracking-widest font-black px-6 py-3.5">Batal</SecondaryButton>
-                                        <PrimaryButton disabled={processing || !selectedClass || !selectedPrice} className="!bg-red-600 hover:!bg-red-700 !rounded-2xl !text-[10px] uppercase tracking-widest font-black px-10 py-3.5 shadow-xl shadow-red-600/30">
+                                        <PrimaryButton disabled={processing || !selectedClass || !selectedPrice || isExpired || hasNoPrice} className="!bg-red-600 hover:!bg-red-700 !rounded-2xl !text-[10px] uppercase tracking-widest font-black px-10 py-3.5 shadow-xl shadow-red-600/30">
                                             {processing ? <Loader2 className="animate-spin mr-2" size={14} /> : <Save className="mr-2" size={14} />}
                                             Generate Invoice
                                         </PrimaryButton>

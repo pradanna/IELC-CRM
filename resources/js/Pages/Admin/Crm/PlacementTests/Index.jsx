@@ -18,12 +18,32 @@ import {
     Trophy
 } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
+import { useEffect } from 'react';
 
 import AdminPageLayout from '@/Components/shared/AdminPageLayout';
 import AdminCard from '@/Components/shared/AdminCard';
+import SessionResultDetailModal from '../drawers/modals/SessionResultDetailModal';
 
 export default function Index({ stats, sessions, exams }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [selectedSession, setSelectedSession] = useState(null);
+    const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+    
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session');
+        if (sessionId && sessions.data) {
+            const session = sessions.data.find(s => s.id === sessionId);
+            if (session) {
+                handleViewResult(session);
+            }
+        }
+    }, [sessions.data]);
+
+    const handleViewResult = (session) => {
+        setSelectedSession(session);
+        setIsResultModalOpen(true);
+    };
     
     const { data, setData, post, processing, reset, errors } = useForm({
         title: '',
@@ -121,7 +141,11 @@ export default function Index({ stats, sessions, exams }) {
                                     </div>
                                 ) : (
                                     sessions.data.map((session) => (
-                                        <div key={session.id} className="flex items-start gap-4 p-4 rounded-3xl hover:bg-slate-50 transition-colors group">
+                                        <div 
+                                            key={session.id} 
+                                            onClick={() => handleViewResult(session)}
+                                            className="flex items-start gap-4 p-4 rounded-3xl hover:bg-slate-50 transition-colors group cursor-pointer"
+                                        >
                                             <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:shadow-sm transition-all shrink-0 uppercase font-black text-xs">
                                                 {session.lead_name?.charAt(0)}
                                             </div>
@@ -304,6 +328,12 @@ export default function Index({ stats, sessions, exams }) {
                     </Dialog.Panel>
                 </div>
             </Dialog>
+
+            <SessionResultDetailModal
+                show={isResultModalOpen}
+                onClose={() => setIsResultModalOpen(false)}
+                session={selectedSession}
+            />
             
             <style dangerouslySetInnerHTML={{ __html: `
                 .scrollbar-thin::-webkit-scrollbar { width: 4px; }

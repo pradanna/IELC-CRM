@@ -108,6 +108,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Finance Module
     Route::group(['prefix' => 'finance', 'as' => 'finance.'], function () {
         Route::get('/dashboard', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'index'])->name('dashboard');
+        Route::get('/invoices', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'invoices'])->name('invoices.index');
         Route::post('/invoices/generate', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'generate'])->name('invoices.generate');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'pay'])->name('invoices.pay');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'download'])->name('invoices.download');
@@ -170,6 +171,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');
         Route::post('/send', [\App\Http\Controllers\Admin\WhatsAppController::class, 'sendMessage'])->name('send');
     });
+
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     Route::get('/study-classes', fn() => Inertia::render('Dashboard'))->name('study-classes.index');
     Route::get('/schedules', fn() => Inertia::render('Dashboard'))->name('schedules.index');

@@ -4,6 +4,9 @@ namespace App\Actions\Crm\PtExam;
 
 use App\Models\PtAnswer;
 use App\Models\PtSession;
+use App\Models\User;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -82,6 +85,32 @@ class SubmitPlacementTestAction
             $session->final_score = $totalScore;
             $session->is_graded = !$hasManualGrading;
             $session->save();
+
+            // Notify staff
+            $superadmins = User::role('superadmin')->get();
+            $branchFrontdesk = User::role('frontdesk')
+                ->where('branch_id', $session->lead?->branch_id)
+                ->get();
+            $owner = $session->lead?->owner_id ? User::where('id', $session->lead->owner_id)->get() : collect();
+
+            $recipients = $superadmins->merge($branchFrontdesk)->merge($owner)->unique('id');
+
+            \Illuminate\Support\Facades\Log::info("PT Notification Debug:", [
+                'session_id' => $session->id,
+                'lead_branch_id' => $session->lead?->branch_id,
+                'superadmin_count' => $superadmins->count(),
+                'frontdesk_count' => $branchFrontdesk->count(),
+                'owner_count' => $owner->count(),
+                'total_recipients' => $recipients->count(),
+                'recipient_ids' => $recipients->pluck('id')->toArray(),
+            ]);
+
+            Notification::send($recipients, new SystemNotification(
+                "Placement Test Selesai",
+                "Lead {$session->lead?->name} baru saja menyelesaikan placement test {$exam->title}.",
+                "success",
+                route('admin.placement-tests.index', ['session' => $session->id])
+            ));
         });
     }
 }

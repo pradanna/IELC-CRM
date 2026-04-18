@@ -100,9 +100,11 @@ class LeadController extends Controller
         ]);
     }
 
-    public function show(Lead $lead): JsonResponse
+    public function show(string $id): JsonResponse
     {
         try {
+            $lead = Lead::withTrashed()->findOrFail($id);
+
             // Load available classes for this specific branch
             $availableClasses = StudyClass::where('branch_id', $lead->branch_id)
                 ->with(['instructor:id,name', 'priceMaster:id,name,price_per_session'])
@@ -125,10 +127,13 @@ class LeadController extends Controller
                 ])),
                 'availableExams' => PtExamResource::collection(\App\Models\PtExam::where('is_active', true)->get()),
                 'availableClasses' => StudyClassResource::collection($availableClasses),
+                'priceMasters'   => \App\Models\PriceMaster::all(),
                 'chatTemplates'  => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->get(),
                 'phases'         => LeadPhase::orderBy('created_at', 'asc')->get(),
                 'mediaAssets'    => \App\Models\MediaAsset::latest()->get(),
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Lead not found.'], 404);
         } catch (\Exception $e) {
             \Log::error("Error in LeadController@show: " . $e->getMessage());
             return response()->json(['error' => 'Failed to load lead details: ' . $e->getMessage()], 500);

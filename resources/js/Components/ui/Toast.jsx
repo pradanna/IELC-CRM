@@ -17,24 +17,32 @@ export default function Toast() {
         const currentType = flash?.success ? "success" : "error";
 
         if (currentMessage && currentMessage !== lastMessage) {
-            setMessage(currentMessage);
-            setType(currentType);
-            setVisible(true);
+            showToast(currentMessage, currentType);
             setLastMessage(currentMessage);
-
-            if (timerRef.current) clearTimeout(timerRef.current);
-            timerRef.current = setTimeout(() => {
-                setVisible(false);
-            }, 3000);
         }
     }, [flash, errors, lastMessage]);
 
-    // Clean up on unmount
+    // Handle global toast events
     useEffect(() => {
-        return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
+        const handleCustomToast = (e) => {
+            const { message, type } = e.detail;
+            showToast(message, type);
         };
+
+        window.addEventListener('show-toast', handleCustomToast);
+        return () => window.removeEventListener('show-toast', handleCustomToast);
     }, []);
+
+    const showToast = (msg, t = "success") => {
+        setMessage(msg);
+        setType(t);
+        setVisible(true);
+
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+            setVisible(false);
+        }, 3000);
+    };
 
     if (!visible) return null;
 

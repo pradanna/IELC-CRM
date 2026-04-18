@@ -31,6 +31,7 @@ class FetchExpiringStudents
             $upcomingClass = $student->studyClasses->first();
             return [
                 'id' => $student->id,
+                'lead_id' => $student->lead_id,
                 'name' => $student->lead->name ?? 'Student',
                 'class_name' => $upcomingClass->name ?? 'Unknown Class',
                 'expiry_date' => $upcomingClass->end_session_date->format('d M Y'),

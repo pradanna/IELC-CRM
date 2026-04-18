@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import { 
     Calculator, Receipt, User, 
     CheckCircle, History,
-    CheckCircle2, Clock, Search, Download, MessageCircle
+    CheckCircle2, Clock, Search, Download, MessageCircle, ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
 import PlotAndInvoiceModal from './modals/PlotAndInvoiceModal';
 import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 
-export default function Index({ leads, classes, priceMasters, recentInvoices }) {
+export default function Index({ leads, rejoinStudents, classes, priceMasters, recentInvoices }) {
     const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
-    const [selectedLead, setSelectedLead] = useState(null);
+    const [selectedEntity, setSelectedEntity] = useState(null); // Can be lead or student
+    const [entityType, setEntityType] = useState('lead'); // 'lead' or 'student'
     const [search, setSearch] = useState('');
+    const [activeTab, setActiveTab] = useState('new'); // 'new' or 'rejoin'
 
-    const openPlotModal = (lead) => {
-        setSelectedLead(lead);
+    const openPlotModal = (entity, type = 'lead') => {
+        setSelectedEntity(entity);
+        setEntityType(type);
         setIsPlotModalOpen(true);
     };
 
@@ -78,35 +81,43 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
 
     const leadColumns = [
         {
-            header: 'Lead Name',
-            accessor: 'name',
+            header: 'Entity Name',
             render: (row) => (
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-xl text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
                         <User className="w-5 h-5" />
                     </div>
                     <div>
-                        <p className="font-black text-slate-900 tracking-tight uppercase">{row.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{row.branch?.name}</p>
+                        <p className="font-black text-slate-900 tracking-tight uppercase">{activeTab === 'new' ? row.name : row.lead?.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {activeTab === 'new' ? row.branch?.name : row.lead?.branch?.name}
+                        </p>
                     </div>
                 </div>
             )
         },
         {
-            header: 'Lead Type',
-            accessor: 'lead_type.name',
+            header: activeTab === 'new' ? 'Lead Type' : 'Last Class',
             render: (row) => (
-                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest border border-emerald-100">
-                    {row.lead_type?.name}
-                </span>
+                activeTab === 'new' ? (
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest border border-emerald-100">
+                        {row.lead_type?.name}
+                    </span>
+                ) : (
+                    <span className="text-xs font-bold text-slate-600">
+                        {row.study_classes?.[0]?.name || 'No history'}
+                    </span>
+                )
             )
         },
         {
             header: 'Status',
-            render: () => (
+            render: (row) => (
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Awaiting Plotting</span>
+                    <div className={`w-2 h-2 rounded-full ${activeTab === 'new' ? 'bg-amber-400 animate-pulse' : 'bg-red-400'}`} />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {activeTab === 'new' ? 'Awaiting Plotting' : 'Inactive (Rejoin)'}
+                    </span>
                 </div>
             )
         },
@@ -115,7 +126,7 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
             className: 'text-right',
             render: (row) => (
                 <button 
-                    onClick={() => openPlotModal(row)}
+                    onClick={() => openPlotModal(activeTab === 'new' ? row : row, activeTab === 'new' ? 'lead' : 'student')}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-600/10 transition-all active:scale-95"
                 >
                     <Calculator className="w-3.5 h-3.5" />
@@ -124,6 +135,10 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
             )
         }
     ];
+
+    const currentData = activeTab === 'new' ? filteredLeads : rejoinStudents.filter(s => 
+        s.lead?.name.toLowerCase().includes(search.toLowerCase())
+    );
 
     return (
         <AdminLayout>
@@ -144,33 +159,41 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* Left Column: Leads for Invoicing */}
-                    <div className="lg:col-span-8 space-y-8">
+                <div className="lg:col-span-8 space-y-8">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2.5 bg-red-50 text-red-600 rounded-xl">
-                                    <Receipt className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Leads Awaiting Invoicing ({leads.length})</h2>
+                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
+                                <button 
+                                    onClick={() => setActiveTab('new')}
+                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'new' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    New Leads ({leads.length})
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('rejoin')}
+                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'rejoin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    Rejoin Students ({rejoinStudents.length})
+                                </button>
                             </div>
 
                             <SearchInput 
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search leads..."
+                                placeholder="Search..."
                                 className="!max-w-xs"
                             />
                         </div>
 
                         <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden p-2">
                             <DataTable 
-                                data={filteredLeads}
+                                data={currentData}
                                 columns={leadColumns}
                                 itemsPerPage={10}
                                 isLoading={false}
                             />
                         </div>
 
-                        {filteredLeads.length === 0 && search && (
+                        {currentData.length === 0 && search && (
                             <div className="py-20 flex flex-col items-center justify-center space-y-4 text-center bg-slate-50 rounded-[40px] border-4 border-dashed border-slate-200">
                                 <Search className="w-12 h-12 text-slate-200" />
                                 <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No matching leads for "{search}"</p>
@@ -180,11 +203,20 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
 
                     {/* Right Column: Recent Activity */}
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-slate-900 text-white rounded-xl">
-                                <History className="w-5 h-5" />
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="p-2.5 bg-slate-900 text-white rounded-xl">
+                                    <History className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Recent Invoices</h2>
                             </div>
-                            <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Recent Invoices</h2>
+                            <Link 
+                                href={route('admin.finance.invoices.index')}
+                                className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors"
+                            >
+                                <ExternalLink size={12} />
+                                View All History
+                            </Link>
                         </div>
 
                         <div className="space-y-4">
@@ -255,7 +287,8 @@ export default function Index({ leads, classes, priceMasters, recentInvoices }) 
             <PlotAndInvoiceModal 
                 show={isPlotModalOpen}
                 onClose={() => setIsPlotModalOpen(false)}
-                lead={selectedLead}
+                lead={entityType === 'lead' ? selectedEntity : selectedEntity?.lead}
+                student={entityType === 'student' ? selectedEntity : null}
                 classes={classes}
                 priceMasters={priceMasters}
             />

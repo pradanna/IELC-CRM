@@ -18,13 +18,9 @@ use Inertia\Inertia;
 
 class PtSessionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $sessions = PtSession::with(['lead', 'ptExam'])->latest()->paginate(10);
-
-        return Inertia::render('Admin/Crm/PtSessions/Index', [
-            'sessions' => PtSessionResource::collection($sessions)
-        ]);
+        return redirect()->route('admin.placement-tests.index', $request->query());
     }
 
     public function store(Request $request, CreatePtSessionAction $action)

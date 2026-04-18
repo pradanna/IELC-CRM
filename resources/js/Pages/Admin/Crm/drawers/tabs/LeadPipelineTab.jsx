@@ -32,6 +32,7 @@ import { SectionHeader, InfoItem } from '../components/DrawerUI';
 import LeadPlacementTestTab from './LeadPlacementTestTab';
 import DatePicker from '@/Components/form/DatePicker';
 import useLeadPlotting from './hooks/useLeadPlotting';
+import PlotAndInvoiceModal from '../../../Finance/modals/PlotAndInvoiceModal';
 
 const PhaseSection = ({ 
     icon: Icon, 
@@ -176,6 +177,7 @@ export default function LeadPipelineTab({
     availableExams = [],
     availableClasses = [],
     chatTemplates = [],
+    priceMasters = [],
     onRefresh
 }) {
     if (loading) {
@@ -213,6 +215,7 @@ export default function LeadPipelineTab({
     const [consultationForm, setConsultationForm] = useState({
         consultation_date: new Date().toISOString().split('T')[0]
     });
+    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
     const handleSendInvoiceWA = async (invoice) => {
         const message = `Halo *${lead.nickname || lead.name}*,\n\n` +
@@ -761,6 +764,19 @@ export default function LeadPipelineTab({
                                     ))}
                                 </div>
                             )}
+
+                            <div className="pt-4 border-t border-slate-100">
+                                <button 
+                                    onClick={() => setIsInvoiceModalOpen(true)}
+                                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 active:scale-[0.98]"
+                                >
+                                    <CreditCard size={16} />
+                                    Issue Next Invoice (Rejoin)
+                                </button>
+                                <p className="text-[9px] font-bold text-slate-400 mt-3 text-center uppercase tracking-widest italic">
+                                    Gunakan ini untuk perpanjangan level atau periode berikutnya
+                                </p>
+                            </div>
                         </div>
                     ) : (
                         <div className="text-center py-12 px-6 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
@@ -797,6 +813,15 @@ export default function LeadPipelineTab({
                     </div>
                 </PhaseSection>
             </div>
+
+            <PlotAndInvoiceModal 
+                show={isInvoiceModalOpen}
+                onClose={() => setIsInvoiceModalOpen(false)}
+                lead={lead}
+                student={lead?.student}
+                classes={availableClasses}
+                priceMasters={priceMasters}
+            />
         </div>
     );
 }
