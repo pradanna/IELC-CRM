@@ -156,19 +156,16 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                             </div>
                                         </PremiumFormGroup>
 
-                                        {/* Password */}
                                         <PremiumFormGroup 
-                                            label={user ? 'New Password (Optional)' : 'Password'} 
+                                            label={user ? 'New Password (Optional)' : (
+                                                <span className="flex items-center gap-2">
+                                                    Password
+                                                    <span className="lowercase text-[9px] text-red-500/70 font-bold tracking-normal">(Default: passwordielc)</span>
+                                                </span>
+                                            )} 
                                             error={errors.password}
                                             required={!user}
                                         >
-                                            {!user && (
-                                                <div className="mb-2">
-                                                    <span className="text-[9px] font-bold text-red-500 uppercase tracking-tight bg-red-50 px-2 py-0.5 rounded-md">
-                                                        Default: passwordielc
-                                                    </span>
-                                                </div>
-                                            )}
                                             <div className="relative group">
                                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <input
