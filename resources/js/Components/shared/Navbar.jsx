@@ -8,7 +8,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     return (
-        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200 sticky top-0 z-40">
+        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200 sticky top-0 z-[60]">
             {/* Search Bar */}
             <div className="flex-1 max-w-md">
                 <div className="relative">

@@ -119,7 +119,7 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
     return (
         <div className="space-y-12">
             {/* Header Area (Minimalist) */}
-            <div className="relative z-50">
+            <div className="relative z-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-black text-gray-900 tracking-tighter">CRM Workspace</h1>
