@@ -84,7 +84,7 @@ export default function SendWhatsappModal({
 
     return (
         <Transition.Root show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[60]" onClose={onClose}>
+            <Dialog as="div" className="relative z-[100]" onClose={onClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100"

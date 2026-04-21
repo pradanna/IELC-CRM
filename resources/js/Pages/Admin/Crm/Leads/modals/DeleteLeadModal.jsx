@@ -16,7 +16,7 @@ export default function DeleteLeadModal({ isOpen, onClose, lead }) {
 
     return (
         <Transition.Root show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[70]" onClose={onClose}>
+            <Dialog as="div" className="relative z-[100]" onClose={onClose}>
                 {/* Backdrop */}
                 <Transition.Child
                     as={Fragment}
