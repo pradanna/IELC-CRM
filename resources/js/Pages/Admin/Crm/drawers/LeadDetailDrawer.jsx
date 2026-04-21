@@ -119,7 +119,7 @@ export default function LeadDetailDrawer({
 
     return (
         <Transition.Root show={isOpen} as={React.Fragment}>
-            <Dialog as="div" className="relative z-[100]" onClose={() => {}}>
+            <Dialog as="div" className="relative z-[70]" onClose={() => {}}>
 
                 <Transition.Child
                     as={React.Fragment}

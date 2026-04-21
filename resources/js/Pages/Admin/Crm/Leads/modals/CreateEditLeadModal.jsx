@@ -244,7 +244,7 @@ export default function CreateEditLeadModal({
 
     return (
         <Transition.Root show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[60]" onClose={onClose}>
+            <Dialog as="div" className="relative z-[100]" onClose={onClose}>
                 {/* Backdrop */}
                 <Transition.Child
                     as={Fragment}
