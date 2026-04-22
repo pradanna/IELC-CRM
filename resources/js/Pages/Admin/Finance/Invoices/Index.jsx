@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import FinanceLayout from '@/Layouts/FinanceLayout';
 import { 
     Search, 
     Calendar, 
@@ -53,10 +53,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
     };
 
     return (
-        <AuthenticatedLayout
-            user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Invoice History</h2>}
-        >
+        <FinanceLayout>
             <Head title="Invoice History" />
 
             <div className="py-12 bg-slate-50 min-h-screen">
@@ -295,6 +292,6 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </FinanceLayout>
     );
 }

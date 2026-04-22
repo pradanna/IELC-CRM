@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AdminLayout from '@/Layouts/AdminLayout';
+import FinanceLayout from '@/Layouts/FinanceLayout';
 import { Head, router, Link } from '@inertiajs/react';
 import { 
     Calculator, Receipt, User, 
@@ -141,7 +141,7 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
     );
 
     return (
-        <AdminLayout>
+        <FinanceLayout>
             <Head title="Finance Dashboard" />
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -292,6 +292,6 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
                 classes={classes}
                 priceMasters={priceMasters}
             />
-        </AdminLayout>
+        </FinanceLayout>
     );
 }

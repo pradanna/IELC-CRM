@@ -134,6 +134,7 @@ export default function RegistrationPreviewModal({
                                                         <DataField label="Kota" value={displayData.city} />
                                                         <DataField label="Provinsi" value={displayData.province} />
                                                     </div>
+                                                    <DataField label="Kode Pos" value={displayData.postal_code} icon={MapPin} />
                                                 </div>
                                             </div>
                                         </div>

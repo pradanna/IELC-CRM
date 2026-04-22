@@ -10,6 +10,10 @@ use App\Http\Controllers\Admin\Crm\PtQuestionController;
 use App\Http\Controllers\Admin\Crm\PtQuestionGroupController;
 
 Route::get('/', function () {
+    $user = auth()->user();
+    if ($user && $user->hasRole('finance')) {
+        return redirect()->route('admin.finance.dashboard');
+    }
     return redirect()->route('admin.crm.leads.index');
 });
 
@@ -37,6 +41,10 @@ Route::post('/fill-data/{token}', [\App\Http\Controllers\Public\PublicLeadContro
 Route::get('/invoice/{id}', [\App\Http\Controllers\Public\PublicLeadController::class, 'downloadInvoice'])->name('public.invoice.download');
 
 Route::get('/dashboard', function () {
+    $user = auth()->user();
+    if ($user && $user->hasRole('finance')) {
+        return redirect()->route('admin.finance.dashboard');
+    }
     return redirect()->route('admin.crm.leads.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 

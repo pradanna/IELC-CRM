@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AdminLayout from '@/Layouts/AdminLayout';
+import FinanceLayout from '@/Layouts/FinanceLayout';
 import { Head, router } from '@inertiajs/react';
 import { Plus, Edit2, Trash2, Tag, Package, DollarSign } from 'lucide-react';
 import DataTable from '@/Components/ui/DataTable';
@@ -98,7 +98,7 @@ export default function Index({ priceMasters }) {
     ];
 
     return (
-        <AdminLayout>
+        <FinanceLayout>
             <Head title="Price Master" />
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -160,6 +160,6 @@ export default function Index({ priceMasters }) {
                 onClose={closeModal} 
                 priceItem={editingPrice}
             />
-        </AdminLayout>
+        </FinanceLayout>
     );
 }

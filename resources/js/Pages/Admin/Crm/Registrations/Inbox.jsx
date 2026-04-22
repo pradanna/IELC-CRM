@@ -60,19 +60,20 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
     };
 
     const onApprove = (id) => {
+        const options = { onSuccess: () => closePreview() };
         if (activeTab === 'new') {
-            handleApprove(id);
+            handleApprove(id, options);
         } else {
-            handleApproveUpdate(id);
+            handleApproveUpdate(id, options);
         }
-        // Modal will close on page reload (Inertia default)
     };
 
     const onReject = (id) => {
+        const options = { onSuccess: () => closePreview() };
         if (activeTab === 'new') {
-            handleReject(id);
+            handleReject(id, options);
         } else {
-            handleRejectUpdate(id);
+            handleRejectUpdate(id, options);
         }
     };
 
