@@ -178,27 +178,32 @@ export default function RegistrationPreviewModal({
                                             </div>
 
                                             {/* Guardians (Only for New Registration or if available) */}
-                                            {type === 'new' && item.guardian_data && (
-                                                <div>
-                                                    <SectionTitle icon={Users} title="Data Orang Tua / Wali" />
-                                                    <div className="grid grid-cols-1 gap-4">
-                                                        {item.guardian_data.father_name && (
-                                                            <div className="flex flex-col gap-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl">
-                                                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Ayah / Wali</span>
-                                                                <span className="text-sm font-bold text-slate-900">{item.guardian_data.father_name}</span>
-                                                                <span className="text-[10px] font-medium text-slate-400">{item.guardian_data.father_phone}</span>
-                                                            </div>
-                                                        )}
-                                                        {item.guardian_data.mother_name && (
-                                                            <div className="flex flex-col gap-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl">
-                                                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Ibu</span>
-                                                                <span className="text-sm font-bold text-slate-900">{item.guardian_data.mother_name}</span>
-                                                                <span className="text-[10px] font-medium text-slate-400">{item.guardian_data.mother_phone}</span>
-                                                            </div>
-                                                        )}
+                                            {(() => {
+                                                const guardianData = type === 'new' ? item.guardian_data : displayData.guardian_data;
+                                                if (!guardianData || (!guardianData.father_name && !guardianData.mother_name)) return null;
+
+                                                return (
+                                                    <div>
+                                                        <SectionTitle icon={Users} title="Data Orang Tua / Wali" />
+                                                        <div className="grid grid-cols-1 gap-4">
+                                                            {guardianData.father_name && (
+                                                                <div className="flex flex-col gap-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Ayah / Wali</span>
+                                                                    <span className="text-sm font-bold text-slate-900">{guardianData.father_name}</span>
+                                                                    <span className="text-[10px] font-medium text-slate-400">{guardianData.father_phone}</span>
+                                                                </div>
+                                                            )}
+                                                            {guardianData.mother_name && (
+                                                                <div className="flex flex-col gap-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Ibu</span>
+                                                                    <span className="text-sm font-bold text-slate-900">{guardianData.mother_name}</span>
+                                                                    <span className="text-[10px] font-medium text-slate-400">{guardianData.mother_phone}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                );
+                                            })()}
 
                                             {/* Note for Updates */}
                                             {type === 'updates' && (

@@ -33,6 +33,29 @@ class ApproveLeadUpdate
                 'pending_updates' => null,
                 'last_activity_at' => now(),
             ]);
+
+            // Handle Guardians Update
+            if (isset($updates['guardian_data']) && is_array($updates['guardian_data'])) {
+                $gd = $updates['guardian_data'];
+                if (!empty($gd['father_name'])) {
+                    $lead->guardians()->updateOrCreate(
+                        ['role' => 'ayah'],
+                        [
+                            'name' => $gd['father_name'],
+                            'phone' => $gd['father_phone'] ?? '',
+                        ]
+                    );
+                }
+                if (!empty($gd['mother_name'])) {
+                    $lead->guardians()->updateOrCreate(
+                        ['role' => 'ibu'],
+                        [
+                            'name' => $gd['mother_name'],
+                            'phone' => $gd['mother_phone'] ?? '',
+                        ]
+                    );
+                }
+            }
         });
     }
 }
