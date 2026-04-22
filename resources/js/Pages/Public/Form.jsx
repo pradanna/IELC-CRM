@@ -20,6 +20,16 @@ export default function Form({ branch, provinces, leadSources = [], initialData 
         cities, loadingCities, handleSubmit 
     } = usePublicRegistration(branch, initialData, token);
 
+    const gradeOptions = [
+        { value: 'PG', label: 'Playgroup (PG)' },
+        { value: 'TK', label: 'TK' },
+        { value: 'SD', label: 'SD' },
+        { value: 'SMP', label: 'SMP' },
+        { value: 'SMA', label: 'SMA' },
+        { value: 'KULIAH', label: 'Kuliah' },
+        { value: 'UMUM', label: 'Umum' },
+    ];
+
     if (wasSuccessful) {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
@@ -214,30 +224,22 @@ export default function Form({ branch, provinces, leadSources = [], initialData 
                                 </div>
                                 <div className="md:col-span-2">
                                     <InputLabel value="Provinsi" className="mb-3 ml-1" />
-                                    <select 
+                                    <PremiumSearchableSelect 
+                                        options={provinces}
                                         value={data.province}
-                                        onChange={e => setData('province', e.target.value)}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all"
-                                    >
-                                        <option value="">Pilih Provinsi</option>
-                                        {provinces.map(p => (
-                                            <option key={p.value} value={p.value}>{p.label}</option>
-                                        ))}
-                                    </select>
+                                        onChange={val => setData('province', val)}
+                                        placeholder="Pilih Provinsi"
+                                    />
                                 </div>
                                 <div className="md:col-span-2 relative">
                                     <InputLabel value="Kota / Kabupaten" className="mb-3 ml-1" />
-                                    <select 
+                                    <PremiumSearchableSelect 
+                                        options={cities}
                                         value={data.city}
-                                        onChange={e => setData('city', e.target.value)}
+                                        onChange={val => setData('city', val)}
+                                        placeholder={!data.province ? "Pilih Provinsi Dulu" : "Pilih Kota"}
                                         disabled={!data.province || loadingCities}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all disabled:opacity-50"
-                                    >
-                                        <option value="">{!data.province ? "Pilih Provinsi Dulu" : "Pilih Kota"}</option>
-                                        {cities.map(c => (
-                                            <option key={c.value} value={c.value}>{c.label}</option>
-                                        ))}
-                                    </select>
+                                    />
                                     {loadingCities && <div className="absolute right-12 top-[62%]"><Loader2 className="animate-spin text-red-600" size={16} /></div>}
                                 </div>
                                 <div className="md:col-span-1">
@@ -269,20 +271,12 @@ export default function Form({ branch, provinces, leadSources = [], initialData 
                                 </div>
                                 <div>
                                     <InputLabel value="Kelas / Level" className="mb-3 ml-1" />
-                                    <select 
+                                    <PremiumSearchableSelect 
+                                        options={gradeOptions}
                                         value={data.grade}
-                                        onChange={e => setData('grade', e.target.value)}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all"
-                                    >
-                                        <option value="">Pilih Jenjang</option>
-                                        <option value="PG">Playgroup (PG)</option>
-                                        <option value="TK">TK</option>
-                                        <option value="SD">SD</option>
-                                        <option value="SMP">SMP</option>
-                                        <option value="SMA">SMA</option>
-                                        <option value="KULIAH">Kuliah</option>
-                                        <option value="UMUM">Umum</option>
-                                    </select>
+                                        onChange={val => setData('grade', val)}
+                                        placeholder="Pilih Jenjang"
+                                    />
                                 </div>
                             </div>
                         </div>
