@@ -27,7 +27,14 @@ class WhatsAppService
                 'x-api-key' => $this->apiKey,
             ])->get("{$this->url}/api/wa-status/{$branch}");
 
-            return $response->json();
+            $data = $response->json();
+
+            // Fix: Replace localhost:3000 for QR Code
+            if (isset($data['qr_image_url']) && str_contains($data['qr_image_url'], 'localhost:3000')) {
+                $data['qr_image_url'] = str_replace('http://localhost:3000', $this->url, $data['qr_image_url']);
+            }
+
+            return $data;
         } catch (\Exception $e) {
             Log::error("WhatsAppService@getStatus error: " . $e->getMessage());
             return ['success' => false, 'status' => 'disconnected', 'error' => $e->getMessage()];
@@ -45,7 +52,18 @@ class WhatsAppService
                 'x-api-key' => $this->apiKey,
             ])->get("{$this->url}/api/chat-history/{$branch}/{$phone}", $params);
 
-            return $response->json();
+            $data = $response->json();
+
+            // Fix: Replace localhost:3000 with the actual server URL for media
+            if (isset($data['data']) && is_array($data['data'])) {
+                foreach ($data['data'] as &$msg) {
+                    if (isset($msg['media_url']) && str_contains($msg['media_url'], 'localhost:3000')) {
+                        $msg['media_url'] = str_replace('http://localhost:3000', $this->url, $msg['media_url']);
+                    }
+                }
+            }
+
+            return $data;
         } catch (\Exception $e) {
             Log::error("WhatsAppService@getHistory error: " . $e->getMessage());
             return ['success' => false, 'data' => [], 'error' => $e->getMessage()];
