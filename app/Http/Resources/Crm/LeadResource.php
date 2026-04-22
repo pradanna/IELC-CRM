@@ -24,6 +24,8 @@ class LeadResource extends JsonResource
             'province'       => $this->province,
             'is_online'      => (bool)$this->is_online,
             'self_registration_token' => $this->self_registration_token,
+            'pending_updates' => $this->pending_updates,
+            'guardian_data'   => $this->guardian_data,
             'plotting'       => $this->plotting,
             'notes'          => $this->notes,
             
