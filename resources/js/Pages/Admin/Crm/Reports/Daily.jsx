@@ -6,7 +6,7 @@ import { Filter, Calendar, MapPin, MessageSquare, FileText, UserPlus, Printer } 
 
 export default function Daily({ newLeads = [], enrollments = [], activities, ptSessions, registrations, branches, filters }) {
     const { auth } = usePage().props;
-    const isSuperadmin = auth.user.role === 'superadmin' || !!auth.user.superadmin;
+    const isSuperadmin = ['superadmin', 'frontdesk', 'marketing'].includes(auth.user.role) || !!auth.user.superadmin;
     const dailyLabel = isSuperadmin ? "Daily Operational Report" : "My Daily Performance";
 
     const handleFilterChange = (key, value) => {

@@ -27,12 +27,20 @@ class SendLeadWhatsApp
                 throw new Exception('WhatsApp Gateway Error: ' . ($result['message'] ?? 'Unknown error'));
             }
 
-            // Log it in Database
+            // Log it in Database for Chat History
             LeadChatLog::create([
                 'lead_id'          => $lead->id,
                 'lead_phase_id'    => $lead->lead_phase_id,
                 'user_id'          => auth()->id(),
                 'message'          => $message,
+            ]);
+
+            // Record Activity for Daily Performance Reporting
+            \App\Models\LeadActivity::create([
+                'lead_id'     => $lead->id,
+                'user_id'     => auth()->id(),
+                'type'        => 'message',
+                'description' => $message,
             ]);
 
             return $result;

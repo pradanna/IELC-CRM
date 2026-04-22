@@ -47,7 +47,7 @@ export default function DashboardFilters({
     const normalizedBranches = normalizeCollection(branches);
 
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-wrap items-center gap-4 relative z-20">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-wrap items-center gap-4 relative z-10">
             <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
                 <Filter size={14} className="text-red-500" />
                 <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Dashboard Filters</span>

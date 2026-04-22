@@ -3,6 +3,7 @@ import Dropdown from '@/Components/ui/Dropdown';
 import NavLink from '@/Components/shared/NavLink';
 import ResponsiveNavLink from '@/Components/shared/ResponsiveNavLink';
 import AdminLayout from '@/Layouts/AdminLayout';
+import FinanceLayout from '@/Layouts/FinanceLayout';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -10,7 +11,11 @@ export default function AuthenticatedLayout({ header, children }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
-    if (['superadmin', 'frontdesk'].includes(user.role)) {
+    if (user.role === 'finance') {
+        return <FinanceLayout>{children}</FinanceLayout>;
+    }
+
+    if (['superadmin', 'frontdesk', 'marketing'].includes(user.role)) {
         return <AdminLayout>{children}</AdminLayout>;
     }
 

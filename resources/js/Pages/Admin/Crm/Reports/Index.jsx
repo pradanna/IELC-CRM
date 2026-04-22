@@ -7,7 +7,7 @@ import { Filter, Calendar, MapPin } from 'lucide-react';
 
 export default function Index({ leads, filters, branches, sources, phases, monthlyGoal, insights, newLeadsCount, enrolledLeadsCount, successRates }) {
     const { auth } = usePage().props;
-    const isSuperadmin = auth.user.role === 'superadmin' || !!auth.user.superadmin;
+    const isSuperadmin = ['superadmin', 'frontdesk', 'marketing'].includes(auth.user.role) || !!auth.user.superadmin;
     
     const handleFilterChange = (key, value) => {
         router.get(route('admin.crm.reports.index'), {

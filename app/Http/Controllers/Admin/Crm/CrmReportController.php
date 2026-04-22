@@ -26,7 +26,7 @@ class CrmReportController extends Controller
         $year = (int) $request->input('year', $now->year);
         $branchId = $request->input('branch_id');
 
-        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin']);
+        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin', 'frontdesk', 'marketing']);
 
         $data = $this->getReportData($month, $year, $branchId);
 
@@ -150,7 +150,7 @@ class CrmReportController extends Controller
         $start = Carbon::parse($date)->startOfDay();
         $end = Carbon::parse($date)->endOfDay();
         $user = auth()->user();
-        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole('superadmin');
+        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin', 'frontdesk', 'marketing']);
 
         // Security/Scope logic for Superadmin vs Staff
         $targetBranchId = $branchId;
@@ -221,7 +221,7 @@ class CrmReportController extends Controller
         $user = auth()->user();
         
         $validBranchId = ($branchId && $branchId !== 'all' && $branchId !== 'null' && $branchId !== 'undefined') ? $branchId : null;
-        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin']);
+        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin', 'frontdesk', 'marketing']);
 
         // Filter helper for Monthly (Scope by Branch for staff, Global for Superadmin)
         $applyFilters = function ($query) use ($validBranchId, $isSuperadmin, $user) {
