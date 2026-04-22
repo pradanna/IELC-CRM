@@ -22,6 +22,8 @@ class LeadResource extends JsonResource
             'grade'          => $this->grade,
             'city'           => $this->city,
             'province'       => $this->province,
+            'address'        => $this->address,
+            'postal_code'    => $this->postal_code,
             'is_online'      => (bool)$this->is_online,
             'self_registration_token' => $this->self_registration_token,
             'pending_updates' => $this->pending_updates,
