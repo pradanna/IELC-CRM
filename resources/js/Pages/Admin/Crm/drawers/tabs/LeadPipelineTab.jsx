@@ -34,6 +34,15 @@ import DatePicker from '@/Components/form/DatePicker';
 import useLeadPlotting from './hooks/useLeadPlotting';
 import PlotAndInvoiceModal from '../../../Finance/modals/PlotAndInvoiceModal';
 
+/**
+ * Normalizes a collection that might be a raw array or a wrapped resource object.
+ */
+const normalizeCollection = (collection) => {
+    if (Array.isArray(collection)) return collection;
+    if (collection && Array.isArray(collection.data)) return collection.data;
+    return [];
+};
+
 const PhaseSection = ({ 
     icon: Icon, 
     title, 
@@ -188,14 +197,6 @@ export default function LeadPipelineTab({
         );
     }
 
-    /**
-     * Normalizes a collection that might be a raw array or a wrapped resource object.
-     */
-    const normalizeCollection = (collection) => {
-        if (Array.isArray(collection)) return collection;
-        if (collection && Array.isArray(collection.data)) return collection.data;
-        return [];
-    };
 
     const normalizedPhases = normalizeCollection(phases);
 
