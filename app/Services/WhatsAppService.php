@@ -106,4 +106,22 @@ class WhatsAppService
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Logout and delete session data for a specific branch.
+     */
+    public function logout(string $branch)
+    {
+        $branch = strtolower($branch);
+        try {
+            $response = Http::withHeaders([ 
+                'x-api-key' => $this->apiKey,
+            ])->delete("{$this->url}/api/wa-status/{$branch}");
+
+            return $response->json();
+        } catch (\Exception $e) {
+            Log::error("WhatsAppService@logout error: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
 }

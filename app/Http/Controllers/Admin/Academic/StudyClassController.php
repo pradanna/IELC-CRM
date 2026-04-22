@@ -24,7 +24,16 @@ class StudyClassController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = StudyClass::with(['branch', 'instructor', 'priceMaster', 'students.lead'])->withCount('students');
+        $query = StudyClass::with([
+            'branch', 
+            'instructor.superadmin', 
+            'instructor.marketing', 
+            'instructor.frontdesk', 
+            'instructor.finance', 
+            'instructor.teacher',
+            'priceMaster', 
+            'students.lead'
+        ])->withCount('students');
 
         if ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);

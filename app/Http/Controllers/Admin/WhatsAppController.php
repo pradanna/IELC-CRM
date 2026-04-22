@@ -17,6 +17,16 @@ class WhatsAppController extends Controller
     }
 
     /**
+     * Display the WhatsApp Management page.
+     */
+    public function index(): \Inertia\Response
+    {
+        return \Inertia\Inertia::render('Admin/Crm/Whatsapp/Index', [
+            'branches' => \App\Models\Branch::all(['id', 'name', 'code']),
+        ]);
+    }
+
+    /**
      * Proxy status check.
      */
     public function getStatus(string $branch): JsonResponse
@@ -51,6 +61,14 @@ class WhatsAppController extends Controller
             $request->message
         );
 
+        return response()->json($result);
+    }
+    /**
+     * Logout WhatsApp session.
+     */
+    public function logout(string $branch): JsonResponse
+    {
+        $result = $this->whatsapp->logout($branch);
         return response()->json($result);
     }
 }

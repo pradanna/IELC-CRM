@@ -175,9 +175,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     
     // WhatsApp Proxy
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('index');
         Route::get('/status/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
         Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');
         Route::post('/send', [\App\Http\Controllers\Admin\WhatsAppController::class, 'sendMessage'])->name('send');
+        Route::delete('/logout/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'logout'])->middleware('role:superadmin')->name('logout');
     });
 
     // Notifications

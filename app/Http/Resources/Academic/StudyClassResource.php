@@ -21,7 +21,10 @@ class StudyClassResource extends JsonResource
             'start_session_date' => $this->start_session_date ? $this->start_session_date->format('Y-m-d') : null,
             'end_session_date' => $this->end_session_date ? $this->end_session_date->format('Y-m-d') : null,
             'total_meetings' => $this->total_meetings,
-            'cycle_code' => $this->cycle_code,
+            'meetings_per_week' => $this->meetings_per_week,
+            'current_session_number' => $this->current_session_number,
+            'session_progress' => $this->session_progress,
+            'schedule_days' => is_array($this->schedule_days) ? implode(', ', $this->schedule_days) : $this->schedule_days,
             'students_count' => $this->whenCounted('students'),
 
             // Relationships

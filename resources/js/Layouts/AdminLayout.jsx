@@ -136,6 +136,12 @@ const menuItems = [
                 name: "admin.crm.settings.*",
             },
             {
+                icon: <PhoneCall size={20} />,
+                text: "WhatsApp",
+                href: route("admin.whatsapp.index"),
+                name: "admin.whatsapp.*",
+            },
+            {
                 icon: <Users size={20} />,
                 text: "Staff Accounts",
                 href: route("admin.master.users.index"),
@@ -180,7 +186,7 @@ export default function AdminLayout({ children }) {
                     return allowed.includes(item.text);
                 }
                 if (userRole === 'finance') {
-                    const allowed = ['Dashboard', 'Overview', 'Price Master', 'Staff Accounts'];
+                    const allowed = ['Dashboard', 'Overview', 'Price Master', 'Staff Accounts', 'WhatsApp'];
                     return allowed.includes(item.text);
                 }
                 if (userRole === 'marketing') {

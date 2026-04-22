@@ -49,5 +49,14 @@ To build a premium, automated, and efficient CRM and Academic management system 
 
 ---
 
+## 📊 Phase 6: Advanced Student Management & Retention
+*Focus: Ensuring student longevity and proactive operations.*
+
+- [ ] **Expiring Session Alerts**: Real-time tracking of students nearing the end of their sessions.
+- [ ] **Student Status Filtering**: Better visibility into Active, Stop, and Pending students.
+- [ ] **Academic Processing**: Standardized workflow for managing current student data.
+
+---
+
 ## 📊 Long-term Backlog
 
