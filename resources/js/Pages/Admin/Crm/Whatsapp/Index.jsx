@@ -32,6 +32,7 @@ export default function Index({ branches }) {
 function BranchWaCard({ branch }) {
     const [status, setStatus] = useState('loading');
     const [qrImage, setQrImage] = useState(null);
+    const [connectedPhone, setConnectedPhone] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -43,12 +44,15 @@ function BranchWaCard({ branch }) {
             if (res.data.status === 'connected') {
                 setStatus('connected');
                 setQrImage(null);
+                setConnectedPhone(res.data.phone);
             } else if (res.data.status === 'waiting_for_scan') {
                 setStatus('disconnected');
                 setQrImage(res.data.qr_image_url);
+                setConnectedPhone(null);
             } else {
                 setStatus('initializing');
                 setQrImage(null);
+                setConnectedPhone(null);
             }
         } catch (err) {
             console.error(err);
@@ -141,7 +145,12 @@ function BranchWaCard({ branch }) {
                             </div>
                             <div>
                                 <p className="text-sm font-black text-slate-900">Sesi Aktif</p>
-                                <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-widest px-4">WhatsApp Branch {branch.name} siap digunakan.</p>
+                                {connectedPhone && (
+                                    <p className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full mt-2 inline-block">
+                                        +{connectedPhone}
+                                    </p>
+                                )}
+                                <p className="text-[10px] font-medium text-slate-400 mt-2 uppercase tracking-widest px-4">WhatsApp Branch {branch.name} siap digunakan.</p>
                             </div>
                         </div>
                     ) : status === 'initializing' ? (
