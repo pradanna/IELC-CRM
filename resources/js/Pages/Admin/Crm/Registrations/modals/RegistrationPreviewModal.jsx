@@ -20,7 +20,16 @@ export default function RegistrationPreviewModal({
     if (!item) return null;
 
     // For updates, the data is inside item.pending_updates
-    const displayData = type === 'new' ? item : (item.pending_updates || {});
+    let displayData = type === 'new' ? item : (item.pending_updates || {});
+    
+    // Ensure displayData is an object (it might be a JSON string from DB)
+    if (typeof displayData === 'string') {
+        try {
+            displayData = JSON.parse(displayData);
+        } catch (e) {
+            displayData = {};
+        }
+    }
 
     const SectionTitle = ({ icon: Icon, title }) => (
         <div className="flex items-center gap-3 mb-6">
@@ -217,7 +226,7 @@ export default function RegistrationPreviewModal({
                                     <button
                                         onClick={() => onApprove(item.id)}
                                         disabled={processing}
-                                        className={`px-12 py-4 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-3 shadow-xl ${type === 'updates' ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-100' : 'bg-slate-900 hover:bg-red-600 shadow-slate-200 hover:shadow-red-200'} disabled:opacity-50`}
+                                        className={`px-12 py-4 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-3 shadow-xl ${type === 'updates' ? 'bg-slate-900 hover:bg-emerald-600 shadow-slate-100' : 'bg-slate-900 hover:bg-red-600 shadow-slate-200 hover:shadow-red-200'} disabled:opacity-50`}
                                     >
                                         <CheckCircle2 size={18} />
                                         {type === 'new' ? 'ACC & Terbitkan Lead' : 'ACC & Perbarui Profil'}

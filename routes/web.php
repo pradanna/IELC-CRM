@@ -106,7 +106,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     // Finance Module
-    Route::group(['prefix' => 'finance', 'as' => 'finance.'], function () {
+    Route::group(['prefix' => 'finance', 'as' => 'finance.', 'middleware' => ['role:superadmin|finance']], function () {
         Route::get('/dashboard', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'index'])->name('dashboard');
         Route::get('/invoices', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'invoices'])->name('invoices.index');
         Route::post('/invoices/generate', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'generate'])->name('invoices.generate');

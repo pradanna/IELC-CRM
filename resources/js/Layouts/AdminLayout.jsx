@@ -157,7 +157,7 @@ export default function AdminLayout({ children }) {
         if (userRole === 'superadmin') return true;
         
         if (userRole === 'frontdesk') {
-            return ['Main', 'Finance', 'Management'].includes(group.category);
+            return ['Main', 'Management'].includes(group.category);
         }
 
         if (userRole === 'finance') {
@@ -176,7 +176,7 @@ export default function AdminLayout({ children }) {
             ...group,
             items: group.items.filter(item => {
                 if (userRole === 'frontdesk') {
-                    const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Overview', 'Class'];
+                    const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Class'];
                     return allowed.includes(item.text);
                 }
                 if (userRole === 'finance') {
