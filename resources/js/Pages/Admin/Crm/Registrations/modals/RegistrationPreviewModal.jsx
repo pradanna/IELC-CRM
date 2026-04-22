@@ -118,10 +118,14 @@ export default function RegistrationPreviewModal({
                                                     <DataField label="Nama Lengkap" value={displayData.name} icon={User} />
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <DataField label="WhatsApp" value={displayData.phone} icon={Phone} />
-                                                        <DataField label="Gender" value={displayData.gender === 'L' ? 'Laki-laki' : 'Perempuan'} />
+                                                        <DataField label="Gender" value={displayData.gender === 'L' ? 'Laki-laki' : (displayData.gender === 'P' ? 'Perempuan' : '-')} />
                                                     </div>
                                                     <DataField label="Email" value={displayData.email} icon={Mail} />
-                                                    <DataField label="Tgl Lahir" value={displayData.birth_date} icon={Calendar} />
+                                                    <DataField 
+                                                        label="Tgl Lahir" 
+                                                        value={displayData.birth_date ? new Date(displayData.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'} 
+                                                        icon={Calendar} 
+                                                    />
                                                 </div>
                                             </div>
 

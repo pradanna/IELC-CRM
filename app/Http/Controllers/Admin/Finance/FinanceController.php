@@ -101,6 +101,11 @@ class FinanceController extends Controller
         return Inertia::render('Admin/Finance/Invoices/Index', [
             'invoices' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only(['search', 'start_date', 'end_date', 'status']),
+            'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Models\Branch::select('id', 'name')->get()),
+            'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Models\LeadPhase::select('id', 'name', 'code')->get()),
+            'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Models\LeadSource::select('id', 'name')->get()),
+            'types' => \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Models\LeadType::select('id', 'name')->get()),
+            'provinces' => \App\Models\Province::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
