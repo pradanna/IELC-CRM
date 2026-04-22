@@ -14,10 +14,6 @@ return new class extends Migration
         Schema::table('pt_question_groups', function (Blueprint $table) {
             $table->text('instruction')->change();
         });
-        
-        Schema::table('pt_questions', function (Blueprint $table) {
-            $table->text('instruction')->change();
-        });
     }
 
     /**
@@ -26,10 +22,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('pt_question_groups', function (Blueprint $table) {
-            $table->string('instruction')->change();
-        });
-        
-        Schema::table('pt_questions', function (Blueprint $table) {
             $table->string('instruction')->change();
         });
     }
