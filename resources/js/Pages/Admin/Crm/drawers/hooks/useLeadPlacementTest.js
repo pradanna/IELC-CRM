@@ -36,7 +36,7 @@ export function useLeadPlacementTest({ lead, onRefresh }) {
 
         setSendingWa(session.id);
         try {
-            const branchCode = (lead?.branch_code || 'solo').toLowerCase();
+            const branchCode = (lead?.branch?.code || lead?.branch_code || 'solo').toLowerCase();
             const message = `Halo ${lead.name}, ini adalah link placement test kamu: ${session.magic_link}\n\nHarap dikerjakan sesuai waktu yang ditentukan ya. Semangat!\n\nIELC - International English Language Center`;
             
             await axios.post(route('admin.whatsapp.send'), {

@@ -24,7 +24,7 @@ export default function MagicLinkBanner({ lead }) {
 
         setSendingWa(true);
         try {
-            const branchCode = (lead?.branch_code || 'solo').toLowerCase();
+            const branchCode = (lead?.branch?.code || lead?.branch_code || 'solo').toLowerCase();
             const message = `Halo ${lead.name}, harap lengkapi data pribadi kamu melalui link ini ya agar data profil kamu di IELC tetap up-to-date: ${magicLink}\n\nTerima kasih!`;
             
             await axios.post(route('admin.whatsapp.send'), {

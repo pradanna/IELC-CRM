@@ -22,7 +22,7 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
     const [mediaSearch, setMediaSearch] = useState('');
     
     const scrollRef = useRef(null);
-    const branchCode = lead?.branch_code || 'solo';
+    const branchCode = (lead?.branch?.code || lead?.branch_code || 'solo').toLowerCase();
 
     // Filter templates based on lead phase/type (Mirrors Modal Logic)
     const filteredTemplates = useMemo(() => {

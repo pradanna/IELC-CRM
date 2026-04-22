@@ -41,6 +41,7 @@ class LeadResource extends JsonResource
             'branch'         => $this->whenLoaded('branch', fn() => [
                 'id'         => $this->branch->id,
                 'name'       => $this->branch->name,
+                'code'       => $this->branch->code,
             ]),
             'owner'          => $this->whenLoaded('owner', fn() => [
                 'id'         => $this->owner->id,
