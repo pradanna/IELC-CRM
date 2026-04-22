@@ -24,7 +24,7 @@ class StudyClassResource extends JsonResource
             'meetings_per_week' => $this->meetings_per_week,
             'current_session_number' => $this->current_session_number,
             'session_progress' => $this->session_progress,
-            'schedule_days' => is_array($this->schedule_days) ? implode(', ', $this->schedule_days) : $this->schedule_days,
+            'schedule_days' => $this->schedule_days,
             'students_count' => $this->whenCounted('students'),
 
             // Relationships

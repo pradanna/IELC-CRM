@@ -16,7 +16,7 @@ export default function ClassCard({ studyClass, onEdit, onDelete, onIncrement, o
                             </span>
                             {studyClass.schedule_days && (
                                 <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase rounded">
-                                    {studyClass.schedule_days}
+                                    {Array.isArray(studyClass.schedule_days) ? studyClass.schedule_days.join(', ') : studyClass.schedule_days}
                                 </span>
                             )}
                         </div>
