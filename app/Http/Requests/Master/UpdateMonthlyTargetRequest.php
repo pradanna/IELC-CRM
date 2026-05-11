@@ -27,3 +27,5 @@ class UpdateMonthlyTargetRequest extends FormRequest
         ];
     }
 }
+
+

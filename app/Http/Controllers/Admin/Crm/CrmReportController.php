@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin\Crm;
 
 use App\Http\Controllers\Controller;
-use App\Models\Lead;
-use App\Models\Branch;
-use App\Models\LeadSource;
-use App\Models\LeadPhase;
-use App\Models\MonthlyTarget;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\CRM\Domain\Models\MonthlyTarget;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -72,7 +72,7 @@ class CrmReportController extends Controller
         // Handle "All Branches" label robustly
         $branchName = 'All Branches';
         if ($branchId && !in_array($branchId, ['all', 'null', 'undefined', ''])) {
-            $branchName = \App\Models\Branch::find($branchId)?->name ?? 'All Branches';
+            $branchName = \App\Domains\Master\Domain\Models\Branch::find($branchId)?->name ?? 'All Branches';
         }
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.crm-report', compact(
@@ -164,21 +164,21 @@ class CrmReportController extends Controller
         }
 
         // 1. New Leads (Created today)
-        $newLeadsQuery = \App\Models\Lead::with(['branch', 'leadSource'])
+        $newLeadsQuery = \App\Domains\CRM\Domain\Models\Lead::with(['branch', 'leadSource'])
             ->whereBetween('created_at', [$start, $end]);
         if ($targetBranchId) $newLeadsQuery->where('branch_id', $targetBranchId);
         if ($targetOwnerId) $newLeadsQuery->where('owner_id', $targetOwnerId);
         $newLeads = $newLeadsQuery->latest()->get();
 
         // 2. New Enrollments (Enrolled today)
-        $enrollmentsQuery = \App\Models\Lead::with(['branch', 'leadSource'])
+        $enrollmentsQuery = \App\Domains\CRM\Domain\Models\Lead::with(['branch', 'leadSource'])
             ->whereBetween('enrolled_at', [$start, $end]);
         if ($targetBranchId) $enrollmentsQuery->where('branch_id', $targetBranchId);
         if ($targetOwnerId) $enrollmentsQuery->where('owner_id', $targetOwnerId);
         $enrollments = $enrollmentsQuery->latest()->get();
 
         // 3. Activities
-        $activityQuery = \App\Models\LeadActivity::with(['lead.branch', 'user'])
+        $activityQuery = \App\Domains\CRM\Domain\Models\LeadActivity::with(['lead.branch', 'user'])
             ->whereBetween('created_at', [$start, $end]);
         if ($targetOwnerId) {
             $activityQuery->where('user_id', $targetOwnerId);
@@ -188,7 +188,7 @@ class CrmReportController extends Controller
         $activities = $activityQuery->latest()->get();
 
         // 4. Placement Tests
-        $ptQuery = \App\Models\PtSession::with(['lead.branch', 'ptExam'])
+        $ptQuery = \App\Domains\Academic\Domain\Models\PtSession::with(['lead.branch', 'ptExam'])
             ->whereBetween('created_at', [$start, $end]);
         if ($targetOwnerId) {
             $ptQuery->whereHas('lead', fn($q) => $q->where('owner_id', $targetOwnerId));
@@ -198,7 +198,7 @@ class CrmReportController extends Controller
         $ptSessions = $ptQuery->latest()->get();
 
         // 5. New Registrations
-        $regQuery = \App\Models\LeadRegistration::with(['branch'])
+        $regQuery = \App\Domains\CRM\Domain\Models\LeadRegistration::with(['branch'])
             ->whereBetween('created_at', [$start, $end]);
         if ($targetBranchId) {
             $regQuery->where('branch_id', $targetBranchId);
@@ -399,3 +399,5 @@ class CrmReportController extends Controller
         return $insights;
     }
 }
+
+

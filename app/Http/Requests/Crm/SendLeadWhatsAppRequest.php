@@ -19,3 +19,5 @@ class SendLeadWhatsAppRequest extends FormRequest
     }
 }
 
+
+

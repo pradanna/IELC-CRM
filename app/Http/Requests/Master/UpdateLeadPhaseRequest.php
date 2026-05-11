@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Master;
 
-use App\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\LeadPhase;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -44,3 +44,5 @@ class UpdateLeadPhaseRequest extends FormRequest
         $this->merge(['code' => Str::slug($this->name ?? '')]);
     }
 }
+
+

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin\Finance;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Finance\StorePriceMasterRequest;
 use App\Http\Requests\Admin\Finance\UpdatePriceMasterRequest;
-use App\Models\PriceMaster;
+use App\Domains\Finance\Domain\Models\PriceMaster;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -41,3 +41,5 @@ class PriceMasterController extends Controller
         return redirect()->back()->with('success', 'Price master deleted successfully.');
     }
 }
+
+

@@ -11,11 +11,11 @@ use App\Http\Requests\Master\UpdateMonthlyTargetRequest;
 use App\Http\Requests\Master\UpdateLeadPhaseRequest;
 use App\Http\Requests\Master\UpdateLeadSourceRequest;
 use App\Http\Requests\Master\UpdateLeadTypeRequest;
-use App\Models\Branch;
-use App\Models\LeadPhase;
-use App\Models\LeadSource;
-use App\Models\LeadType;
-use App\Models\MonthlyTarget;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\LeadType;
+use App\Domains\CRM\Domain\Models\MonthlyTarget;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,8 +30,8 @@ class MasterDataController extends Controller
             'leadSources'    => LeadSource::orderBy('name')->get(),
             'monthlyTargets' => MonthlyTarget::with('branch')->latest()->get(),
             'branches'       => Branch::select('id', 'name')->get(),
-            'chatTemplates'  => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
-            'mediaAssets'    => \App\Models\MediaAsset::latest()->get(),
+            'chatTemplates'  => \App\Domains\Master\Domain\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
+            'mediaAssets'    => \App\Domains\Master\Domain\Models\MediaAsset::latest()->get(),
         ]);
     }
 
@@ -127,3 +127,5 @@ class MasterDataController extends Controller
         return redirect()->back()->with('success', 'Monthly target berhasil dihapus.');
     }
 }
+
+

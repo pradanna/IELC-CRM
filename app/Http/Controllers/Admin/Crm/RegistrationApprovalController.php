@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\Crm\Leads\ApproveLeadRegistration;
-use App\Actions\Crm\Leads\ApproveLeadUpdate;
+use App\Domains\CRM\Application\Actions\Leads\ApproveLeadRegistration;
+use App\Domains\CRM\Application\Actions\Leads\ApproveLeadUpdate;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Crm\LeadResource;
-use App\Models\Lead;
-use App\Models\LeadRegistration;
-use App\Models\LeadSource;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\CRM\Domain\Models\LeadRegistration;
+use App\Domains\Master\Domain\Models\LeadSource;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -51,11 +51,11 @@ class RegistrationApprovalController extends Controller
             'update_requests' => LeadResource::collection($updateRequests),
             'lead_sources' => $leadSources,
             'pending_registrations_count' => $registrations->count() + $updateRequests->count(),
-            'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Models\Branch::select('id', 'name')->get()),
-            'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Models\LeadPhase::select('id', 'name', 'code')->get()),
-            'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Models\LeadSource::select('id', 'name')->get()),
-            'types' => \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Models\LeadType::select('id', 'name')->get()),
-            'provinces' => \App\Models\Province::select('id', 'name')->orderBy('name')->get(),
+            'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()),
+            'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Domains\Master\Domain\Models\LeadPhase::select('id', 'name', 'code')->get()),
+            'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get()),
+            'types' => \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Domains\Master\Domain\Models\LeadType::select('id', 'name')->get()),
+            'provinces' => \App\Domains\Master\Domain\Models\Province::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
@@ -91,4 +91,6 @@ class RegistrationApprovalController extends Controller
         return redirect()->back()->with('success', "Pendaftaran {$registration->name} telah ditolak.");
     }
 }
+
+
 

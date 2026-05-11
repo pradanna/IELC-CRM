@@ -27,7 +27,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(\App\Http\Requests\Auth\LoginRequest $request, \App\Actions\Auth\HandleLogin $action): RedirectResponse
+    public function store(\App\Http\Requests\Auth\LoginRequest $request, \App\Domains\Shared\Actions\HandleLogin $action): RedirectResponse
     {
         $action->handle($request);
 
@@ -48,3 +48,5 @@ class AuthenticatedSessionController extends Controller
         return redirect('/');
     }
 }
+
+

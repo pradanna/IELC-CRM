@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import FinanceLayout from '@/Layouts/FinanceLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import { Plus, Edit2, Trash2, Tag, Package, DollarSign } from 'lucide-react';
 import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
+import Button from '@/Components/ui/Button';
 import CreateEditPriceMasterModal from './modals/CreateEditPriceMasterModal';
 
 export default function Index({ priceMasters }) {
@@ -78,30 +79,32 @@ export default function Index({ priceMasters }) {
             className: 'text-right',
             render: (row) => (
                 <div className="flex justify-end gap-2">
-                    <button 
+                    <Button 
+                        variant="secondary"
                         onClick={() => openModal(row)} 
-                        className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all hover:scale-110 active:scale-95"
+                        className="p-2.5 rounded-xl hover:scale-110 active:scale-95 bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none border-none"
                         title="Edit Price"
                     >
                         <Edit2 size={16} />
-                    </button>
-                    <button 
+                    </Button>
+                    <Button 
+                        variant="danger"
                         onClick={() => handleDelete(row.id)} 
-                        className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all hover:scale-110 active:scale-95"
+                        className="p-2.5 rounded-xl hover:scale-110 active:scale-95 shadow-none"
                         title="Delete Price"
                     >
                         <Trash2 size={16} />
-                    </button>
+                    </Button>
                 </div>
             )
         }
     ];
 
     return (
-        <FinanceLayout>
+        <AuthenticatedLayout>
             <Head title="Price Master" />
 
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            <div className="max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-1">
@@ -121,25 +124,24 @@ export default function Index({ priceMasters }) {
                             placeholder="Search price tracks..."
                             className="!max-w-md w-full"
                         />
-                        <button 
+                        <Button 
                             onClick={() => openModal()}
-                            className="w-full sm:w-auto group flex items-center justify-center gap-2 bg-slate-900 hover:bg-red-600 text-white px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+                            variant="primary"
+                            icon={Plus}
+                            className="w-full sm:w-auto px-6 py-2.5 bg-red-600 hover:bg-red-700 text-sm font-bold rounded-full shadow-lg shadow-red-600/20"
                         >
-                            <Plus className="w-4 h-4" />
-                            <span>CREATE NEW PRICE</span>
-                        </button>
+                            Create New Price
+                        </Button>
                     </div>
                 </div>
 
                 {/* Table Section */}
-                <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden p-2">
-                    <DataTable 
-                        data={filteredPriceMasters}
-                        columns={columns}
-                        itemsPerPage={10}
-                        isLoading={false}
-                    />
-                </div>
+                <DataTable 
+                    data={filteredPriceMasters}
+                    columns={columns}
+                    itemsPerPage={10}
+                    isLoading={false}
+                />
 
                 {filteredPriceMasters.length === 0 && search && (
                     <div className="py-20 flex flex-col items-center justify-center space-y-6 text-center">
@@ -160,6 +162,6 @@ export default function Index({ priceMasters }) {
                 onClose={closeModal} 
                 priceItem={editingPrice}
             />
-        </FinanceLayout>
+        </AuthenticatedLayout>
     );
 }

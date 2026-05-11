@@ -18,6 +18,7 @@ import {
     Trophy
 } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
+import Button from '@/Components/ui/Button';
 import { useEffect } from 'react';
 
 import AdminPageLayout from '@/Components/shared/AdminPageLayout';
@@ -78,55 +79,57 @@ export default function Index({ stats, sessions, exams }) {
             <AdminPageLayout
                 title="Placement Test"
                 subtitle="Assessment Packages & Monitoring"
+                maxWidth="max-w-none"
                 actions={
-                    <button 
+                    <Button 
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-red-500/20 transition-all active:scale-95 group"
+                        variant="primary"
+                        icon={Plus}
+                        className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-sm font-bold rounded-full shadow-lg shadow-red-600/20"
                     >
-                        <Plus size={18} />
                         Create New Package
-                    </button>
+                    </Button>
                 }
             >
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
                     {[
-                        { label: 'Assigned Today', value: stats.today, icon: Calendar, color: 'bg-amber-500' },
-                        { label: 'Live Now', value: stats.in_progress, icon: PlayCircle, color: 'bg-blue-500', active: true },
-                        { label: 'Completed Today', value: stats.completed_today, icon: CheckCircle2, color: 'bg-emerald-500' }
+                        { label: 'Assigned Today', value: stats.today, icon: Calendar, color: 'text-amber-500 bg-amber-50' },
+                        { label: 'Live Now', value: stats.in_progress, icon: PlayCircle, color: 'text-blue-500 bg-blue-50', active: true },
+                        { label: 'Completed Today', value: stats.completed_today, icon: CheckCircle2, color: 'text-emerald-500 bg-emerald-50' }
                     ].map((stat, i) => (
-                        <AdminCard key={i} className="relative group" padding="p-8">
-                            <div className={`absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-500`}>
-                                <stat.icon size={80} />
+                        <div key={i} className="bg-white border border-slate-100 shadow-sm rounded-2xl p-6 relative group overflow-hidden">
+                            <div className={`absolute -top-4 -right-4 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-500`}>
+                                <stat.icon size={120} />
                             </div>
-                            <div className="relative z-10 flex items-center gap-4">
-                                <div className={`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center text-white shadow-lg shadow-current/10`}>
-                                    <stat.icon size={24} />
+                            <div className="relative z-10 flex items-center gap-6">
+                                <div className={`w-16 h-16 ${stat.color} rounded-2xl flex items-center justify-center shadow-sm`}>
+                                    <stat.icon size={28} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-                                    <p className="text-3xl font-black text-slate-900 leading-none">{stat.value}</p>
+                                    <p className="text-4xl font-black text-slate-900 leading-none tracking-tighter">{stat.value}</p>
                                 </div>
                                 {stat.active && (
                                     <div className="ml-auto">
-                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-wider animate-pulse">
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wider animate-pulse border border-blue-100">
                                             <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
                                             Active
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        </AdminCard>
+                        </div>
                     ))}
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
                     {/* Active Sessions */}
                     <div className="xl:col-span-4 flex flex-col gap-6">
-                        <AdminCard padding="p-8" className="flex-1">
-                            <div className="flex items-center justify-between mb-8">
-                                <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none uppercase text-xs opacity-50">Recent Activity</h2>
-                                <Link className="text-[10px] font-black text-red-600 uppercase tracking-widest hover:translate-x-1 transition-transform inline-flex items-center gap-1 uppercase">
+                        <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-8 flex-1">
+                            <div className="flex items-center justify-between mb-10">
+                                <h2 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase leading-none">Recent Activity</h2>
+                                <Link className="text-[10px] font-black text-red-600 uppercase tracking-widest hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                                     View All <ChevronRight size={14} />
                                 </Link>
                             </div>
@@ -169,56 +172,56 @@ export default function Index({ stats, sessions, exams }) {
                                     ))
                                 )}
                             </div>
-                        </AdminCard>
+                        </div>
                     </div>
 
                     {/* Exam Packages */}
                     <div className="xl:col-span-8 flex flex-col gap-6">
-                        <AdminCard padding="p-8" className="flex-1">
-                            <div className="flex items-center justify-between mb-8">
-                                <h2 className="text-lg font-black text-slate-900 tracking-tight">Examination Packages</h2>
+                        <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-8 flex-1">
+                            <div className="flex items-center justify-between mb-10">
+                                <h2 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase leading-none">Examination Packages</h2>
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                     <input 
                                         type="text" 
                                         placeholder="Search packages..." 
-                                        className="bg-slate-50 border-none rounded-2xl pl-10 pr-4 py-2 text-sm font-bold w-64 focus:ring-2 focus:ring-red-100 transition-all"
+                                        className="bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold w-64 focus:ring-4 focus:ring-red-100 focus:border-red-200 transition-all"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 {exams.data.map((exam) => (
-                                    <div key={exam.id} className="bg-slate-50/50 border border-slate-100 rounded-sm p-6 hover:bg-white hover:border-red-200 hover:shadow-xl hover:shadow-red-500/5 transition-all group relative overflow-hidden">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-600 shadow-sm group-hover:scale-110 transition-transform">
+                                    <div key={exam.id} className="bg-slate-50/30 border border-slate-100 rounded-2xl p-6 hover:bg-white hover:border-red-100 hover:shadow-xl hover:shadow-red-500/5 transition-all group relative overflow-hidden">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 shadow-sm group-hover:text-red-500 transition-colors">
                                                 <FileText size={24} />
                                             </div>
                                             <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Link 
                                                     href={route('admin.placement-tests.show', exam.id)}
-                                                    className="p-2 bg-white text-slate-400 hover:text-red-600 rounded-xl shadow-sm transition-all"
+                                                    className="p-2.5 bg-white text-slate-400 hover:text-red-600 rounded-xl shadow-sm border border-slate-100 transition-all"
                                                 >
                                                     <Edit2 size={14} />
                                                 </Link>
                                             </div>
                                         </div>
 
-                                        <h3 className="text-md font-black text-slate-900 mb-2 truncate group-hover:text-red-600 transition-colors">{exam.title}</h3>
+                                        <h3 className="text-base font-black text-slate-900 mb-2 truncate group-hover:text-red-600 transition-colors tracking-tight">{exam.title}</h3>
                                         
                                         <div className="flex items-center gap-4 mt-auto">
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                                                <Clock size={12} /> {exam.duration_minutes}m
+                                            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                <Clock size={12} className="text-slate-300" /> {exam.duration_minutes}m
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                                                <Users size={12} /> {exam.questions_count} Qs
+                                            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                <Users size={12} className="text-slate-300" /> {exam.questions_count} Qs
                                             </div>
-                                            <div className={`ml-auto w-2 h-2 rounded-full ${exam.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                                            <div className={`ml-auto w-2 h-2 rounded-full ${exam.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
                                         </div>
 
                                         <Link 
                                             href={route('admin.placement-tests.show', exam.id)}
-                                            className="absolute inset-x-0 bottom-0 py-3 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest text-center rounded-b-[2rem] opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all"
+                                            className="absolute inset-x-0 bottom-0 py-3.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.2em] text-center opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all"
                                         >
                                             Enter Builder <ArrowUpRight size={12} className="inline ml-1" />
                                         </Link>
@@ -228,15 +231,15 @@ export default function Index({ stats, sessions, exams }) {
                                 {/* Empty Template */}
                                 <button 
                                     onClick={() => setIsCreateModalOpen(true)}
-                                    className="border-4 border-dashed border-slate-100 rounded-[2rem] p-6 flex flex-col items-center justify-center gap-4 hover:bg-white hover:border-red-200 transition-all group"
+                                    className="border-4 border-dashed border-slate-100 rounded-3xl p-8 flex flex-col items-center justify-center gap-4 hover:bg-white hover:border-red-100 transition-all group"
                                 >
-                                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
-                                        <Plus size={24} />
+                                    <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                                        <Plus size={32} />
                                     </div>
-                                    <p className="text-sm font-black text-slate-400 group-hover:text-red-600">New Package</p>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-red-600">New Package</p>
                                 </button>
                             </div>
-                        </AdminCard>
+                        </div>
                     </div>
                 </div>
             </AdminPageLayout>
@@ -249,7 +252,7 @@ export default function Index({ stats, sessions, exams }) {
             >
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <Dialog.Panel className="mx-auto max-w-lg w-full bg-white rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden">
+                    <Dialog.Panel className="mx-auto max-w-lg w-full bg-white rounded-3xl shadow-2xl p-10 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-12 text-slate-50 opacity-10 pointer-events-none">
                             <Plus size={200} />
                         </div>

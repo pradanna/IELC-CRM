@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Admin\Academic;
 
-use App\Actions\Academic\EnrollStudent;
-use App\Actions\Academic\PromoteLeadToStudent;
-use App\Actions\Academic\UnenrollStudent;
+use App\Domains\Academic\Application\Actions\EnrollStudent;
+use App\Domains\Academic\Application\Actions\PromoteLeadToStudent;
+use App\Domains\Academic\Application\Actions\UnenrollStudent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Academic\EnrollStudentRequest;
-use App\Models\Lead;
-use App\Models\Student;
-use App\Models\StudyClass;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Academic\Domain\Models\Student;
+use App\Domains\Academic\Domain\Models\StudyClass;
 use App\Http\Resources\Academic\StudentResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -86,3 +86,5 @@ class StudentController extends Controller
         ]);
     }
 }
+
+

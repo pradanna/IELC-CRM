@@ -18,3 +18,5 @@ class PriceMasterResource extends JsonResource
         ];
     }
 }
+
+

@@ -27,3 +27,5 @@ class StoreMonthlyTargetRequest extends FormRequest
         ];
     }
 }
+
+

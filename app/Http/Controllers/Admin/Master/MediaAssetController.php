@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin\Master;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\StoreMediaAssetRequest;
-use App\Models\MediaAsset;
+use App\Domains\Master\Domain\Models\MediaAsset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -49,3 +49,5 @@ class MediaAssetController extends Controller
         return redirect()->back()->with('success', 'Media asset berhasil dihapus.');
     }
 }
+
+

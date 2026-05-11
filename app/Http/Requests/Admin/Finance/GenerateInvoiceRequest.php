@@ -32,3 +32,5 @@ class GenerateInvoiceRequest extends FormRequest
         ];
     }
 }
+
+

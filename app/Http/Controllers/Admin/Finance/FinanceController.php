@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Admin\Finance;
 
-use App\Actions\Finance\GenerateInvoice;
-use App\Actions\Finance\ProcessInvoicePayment;
+use App\Domains\Finance\Application\Actions\GenerateInvoice;
+use App\Domains\Finance\Application\Actions\ProcessInvoicePayment;
+use App\Domains\Finance\Application\Services\FinanceDashboardService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Finance\GenerateInvoiceRequest;
-use App\Models\Invoice;
-use App\Models\Lead;
-use App\Models\PriceMaster;
-use App\Models\StudyClass;
+use App\Domains\Finance\Domain\Models\Invoice;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Finance\Domain\Models\PriceMaster;
+use App\Domains\Academic\Domain\Models\StudyClass;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,31 +21,9 @@ class FinanceController extends Controller
     /**
      * Display the Finance Dashboard with leads ready for invoicing.
      */
-    public function index(): Response
+    public function index(FinanceDashboardService $service): Response
     {
-        // Get leads in "Invoice" phase
-        $invoicePhase = \App\Models\LeadPhase::where('code', 'invoice')->first();
-        $invoicePhaseId = $invoicePhase?->id ?? 'non-existent-id';
-
-        $leadsForInvoicing = Lead::where('lead_phase_id', $invoicePhaseId)
-            ->whereDoesntHave('student') // Just in case, although promotion will change this
-            ->with(['leadType', 'branch'])
-            ->latest()
-            ->get();
-
-        return Inertia::render('Admin/Finance/Index', [
-            'leads' => $leadsForInvoicing,
-            'rejoinStudents' => \App\Models\Student::where('status', 'stop')
-                ->orWhereHas('studyClasses', function($q) {
-                    $q->whereBetween('end_session_date', [now()->toDateString(), now()->addDays(14)->toDateString()]);
-                })
-                ->with(['lead.branch', 'studyClasses' => fn($q) => $q->latest()->take(1)])
-                ->latest()
-                ->get(),
-            'classes' => StudyClass::with(['branch', 'instructor', 'priceMaster'])->get(),
-            'priceMasters' => PriceMaster::all(),
-            'recentInvoices' => Invoice::with(['lead', 'student', 'studyClass'])->latest()->limit(10)->get(),
-        ]);
+        return Inertia::render('Admin/Finance/Index', $service->getDashboardData());
     }
 
     /**
@@ -101,11 +80,11 @@ class FinanceController extends Controller
         return Inertia::render('Admin/Finance/Invoices/Index', [
             'invoices' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only(['search', 'start_date', 'end_date', 'status']),
-            'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Models\Branch::select('id', 'name')->get()),
-            'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Models\LeadPhase::select('id', 'name', 'code')->get()),
-            'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Models\LeadSource::select('id', 'name')->get()),
-            'types' => \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Models\LeadType::select('id', 'name')->get()),
-            'provinces' => \App\Models\Province::select('id', 'name')->orderBy('name')->get(),
+            'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()),
+            'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Domains\Master\Domain\Models\LeadPhase::select('id', 'name', 'code')->get()),
+            'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get()),
+            'types' => \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Domains\Master\Domain\Models\LeadType::select('id', 'name')->get()),
+            'provinces' => \App\Domains\Master\Domain\Models\Province::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
@@ -121,3 +100,5 @@ class FinanceController extends Controller
         return $pdf->stream("Invoice-{$invoice->invoice_number}.pdf");
     }
 }
+
+

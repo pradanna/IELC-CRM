@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin\Master;
 
 use App\Http\Controllers\Controller;
-use App\Models\ChatTemplate;
+use App\Domains\Master\Domain\Models\ChatTemplate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -66,3 +66,5 @@ class ChatTemplateController extends Controller
         return redirect()->back()->with('success', 'Template chat berhasil dihapus.');
     }
 }
+
+

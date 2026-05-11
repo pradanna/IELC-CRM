@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Crm\PtExam;
 
-use App\Actions\Crm\PtExam\SubmitPlacementTestAction;
+use App\Domains\CRM\Application\Actions\PtExam\SubmitPlacementTestAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PtExam\SubmitPlacementTestRequest;
 use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
-use App\Models\PtAnswer;
-use App\Models\PtSession;
+use App\Domains\Academic\Domain\Models\PtAnswer;
+use App\Domains\Academic\Domain\Models\PtSession;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -133,4 +133,6 @@ class PublicPlacementTestController extends Controller
         ]);
     }
 }
+
+
 

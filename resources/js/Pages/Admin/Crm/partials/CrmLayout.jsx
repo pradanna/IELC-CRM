@@ -183,7 +183,7 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
                                 setEditingLead(null);
                                 setIsLeadModalOpen(true);
                             }}
-                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-red-600/20 transition-all active:scale-95 shrink-0"
+                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-red-600/20 transition-all active:scale-95 shrink-0"
                         >
                             <Plus size={18} />
                             <span className="hidden sm:inline">New Lead</span>

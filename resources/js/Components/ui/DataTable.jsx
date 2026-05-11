@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Card from "./Card";
 import Button from "./Button";
 import Pagination from "./Pagination";
+import { Table, THead, TBody, TR, TH, TD } from "./Table";
 
 const DataTable = ({
     data = [],
@@ -12,6 +13,7 @@ const DataTable = ({
     onRowClick,
     isLoading = false,
     pagination = null,
+    noPanel = false,
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -36,92 +38,87 @@ const DataTable = ({
     };
 
     return (
-        <div className="p-0 overflow-hidden border border-gray-100 rounded-lg">
+        <div className="p-0 overflow-hidden">
             {/* --- Filter Section Slot --- */}
             {filterSection && (
-                <div className="p-2 bg-white border-b border-gray-200">
+                <div className="p-2 bg-white border-b border-gray-200 mb-4">
                     {filterSection}
                 </div>
             )}
 
             {/* --- Table --- */}
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 text-gray-500 uppercase font-bold text-xs border-b border-gray-200">
-                        <tr>
-                            {columns.map((col) => (
-                                <th
-                                    key={col.header}
-                                    className={`px-6 py-4 ${col.className || ""}`}
-                                >
-                                    {col.header}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {isLoading ? (
-                            <tr>
-                                <td
-                                    colSpan={columns.length}
-                                    className="text-center p-8"
-                                >
-                                    <div className="flex justify-center items-center gap-2 text-gray-500">
-                                        <Loader2
-                                            className="animate-spin"
-                                            size={20}
-                                        />
-                                        <span>Loading data...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        ) : currentData.length > 0 ? (
-                            currentData.map((row, rowIndex) => (
-                                <tr
-                                    key={row.id || rowIndex}
-                                    onClick={() =>
-                                        onRowClick && onRowClick(row)
-                                    }
-                                    className={`transition-colors ${
-                                        onRowClick
-                                            ? "cursor-pointer hover:bg-gray-50"
-                                            : ""
-                                    }`}
-                                >
-                                    {columns.map((col, colIndex) => (
-                                        <td
-                                            key={`${col.accessor || col.header || colIndex}-${row.id || rowIndex}`}
-                                            className={`px-6 py-4 align-top ${col.className || ""}`}
-                                        >
-                                            {col.render
-                                                ? col.render(row)
-                                                : row[col.accessor]}
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td
-                                    colSpan={columns.length}
-                                    className="px-6 py-8 text-center text-gray-500"
-                                >
-                                    Tidak ada data ditemukan.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            <Table noPanel={noPanel}>
+                <THead className={noPanel ? "!bg-transparent border-b-2 border-slate-200" : ""}>
+                    <TR hover={false}>
+                        {columns.map((col) => (
+                            <TH
+                                key={col.header}
+                                className={col.className || ""}
+                            >
+                                {col.header}
+                            </TH>
+                        ))}
+                    </TR>
+                </THead>
+                <TBody>
+                    {isLoading ? (
+                        <TR hover={false}>
+                            <TD
+                                colSpan={columns.length}
+                                className="text-center p-8"
+                            >
+                                <div className="flex justify-center items-center gap-2 text-gray-500">
+                                    <Loader2
+                                        className="animate-spin"
+                                        size={20}
+                                    />
+                                    <span>Loading data...</span>
+                                </div>
+                            </TD>
+                        </TR>
+                    ) : currentData.length > 0 ? (
+                        currentData.map((row, rowIndex) => (
+                            <TR
+                                key={row.id || rowIndex}
+                                onClick={() =>
+                                    onRowClick && onRowClick(row)
+                                }
+                                className={onRowClick ? "cursor-pointer" : ""}
+                                hover={!!onRowClick}
+                            >
+                                {columns.map((col, colIndex) => (
+                                    <TD
+                                        key={`${col.accessor || col.header || colIndex}-${row.id || rowIndex}`}
+                                        className={`align-top ${col.className || ""}`}
+                                    >
+                                        {col.render
+                                            ? col.render(row)
+                                            : row[col.accessor]}
+                                    </TD>
+                                ))}
+                            </TR>
+                        ))
+                    ) : (
+                        <TR hover={false}>
+                            <TD
+                                colSpan={columns.length}
+                                className="px-6 py-8 text-center text-gray-500"
+                            >
+                                Tidak ada data ditemukan.
+                            </TD>
+                        </TR>
+                    )}
+                </TBody>
+            </Table>
 
             {/* --- Pagination Footer --- */}
             {(isServerSide || data.length > itemsPerPage) && (
-                <div className="p-4 flex items-center justify-between text-sm text-gray-600 border-t border-gray-100 bg-white">
+                <div className="p-4 mt-4 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white rounded-3xl border border-slate-100 shadow-sm">
                     <span>
                         Showing{" "}
-                        <span className="font-medium text-gray-900">{startIndex}</span> ke{" "}
-                        <span className="font-medium text-gray-900">{endIndex}</span> dari{" "}
-                        <span className="font-medium text-gray-900">{totalEntries}</span>{" "}
+                        <span className="font-black text-slate-900">{startIndex}</span> ke{" "}
+                        <span className="font-black text-slate-900">{endIndex}</span> dari{" "}
+                        <span className="font-black text-slate-900">{totalEntries}</span>{" "}
                         data
                     </span>
                     
@@ -137,7 +134,7 @@ const DataTable = ({
                             >
                                 <ChevronLeft size={16} />
                             </Button>
-                            <span className="text-sm font-medium">
+                            <span className="text-[10px] font-black text-slate-900">
                                 Page {currentPage} of {totalPages}
                             </span>
                             <Button

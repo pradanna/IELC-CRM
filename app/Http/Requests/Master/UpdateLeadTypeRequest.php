@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Master;
 
-use App\Models\LeadType;
+use App\Domains\Master\Domain\Models\LeadType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -41,3 +41,5 @@ class UpdateLeadTypeRequest extends FormRequest
         $this->merge(['code' => Str::slug($this->name ?? '')]);
     }
 }
+
+

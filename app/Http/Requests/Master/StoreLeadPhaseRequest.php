@@ -33,3 +33,5 @@ class StoreLeadPhaseRequest extends FormRequest
         $this->merge(['code' => Str::slug($this->name ?? '')]);
     }
 }
+
+

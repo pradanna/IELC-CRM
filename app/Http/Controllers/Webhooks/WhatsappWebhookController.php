@@ -7,7 +7,7 @@
 namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
-use App\Models\Lead;
+use App\Domains\CRM\Domain\Models\Lead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -66,3 +66,5 @@ class WhatsappWebhookController extends Controller
         return preg_replace('/[^0-9]/', '', $phone);
     }
 }
+
+

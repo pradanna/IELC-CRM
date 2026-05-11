@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\Crm\Leads\FetchLeadHistory;
-use App\Actions\Crm\Leads\PlotLeadClass;
-use App\Actions\Crm\Leads\RecordLeadFollowUp;
-use App\Actions\Crm\Leads\ResetLeadFollowUp;
-use App\Actions\Crm\Leads\SendLeadWhatsApp;
-use App\Actions\Crm\Leads\SendLeadWhatsAppTemplate;
-use App\Actions\Crm\Leads\StoreLead;
-use App\Actions\Crm\Leads\UpdateLead;
-use App\Actions\Crm\Leads\UpdateLeadPhase;
-use App\Actions\Crm\Leads\StoreLeadConsultation;
+use App\Domains\CRM\Application\Actions\Leads\FetchLeadHistory;
+use App\Domains\CRM\Application\Actions\Leads\PlotLeadClass;
+use App\Domains\CRM\Application\Actions\Leads\RecordLeadFollowUp;
+use App\Domains\CRM\Application\Actions\Leads\ResetLeadFollowUp;
+use App\Domains\CRM\Application\Actions\Leads\SendLeadWhatsApp;
+use App\Domains\CRM\Application\Actions\Leads\SendLeadWhatsAppTemplate;
+use App\Domains\CRM\Application\Actions\Leads\StoreLead;
+use App\Domains\CRM\Application\Actions\Leads\UpdateLead;
+use App\Domains\CRM\Application\Actions\Leads\UpdateLeadPhase;
+use App\Domains\CRM\Application\Actions\Leads\StoreLeadConsultation;
+use App\Domains\CRM\Application\Services\LeadQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PlotLeadClassRequest;
 use App\Http\Requests\Crm\RecordLeadFollowUpRequest;
@@ -21,17 +22,17 @@ use App\Http\Requests\Crm\StoreLeadRequest;
 use App\Http\Requests\Crm\UpdateLeadPhaseRequest;
 use App\Http\Requests\Crm\UpdateLeadRequest;
 use App\Http\Requests\Crm\StoreConsultationRequest;
-use App\Models\Branch;
-use App\Models\ChatTemplate;
-use App\Models\Lead;
-use App\Models\LeadPhase;
-use App\Models\LeadSource;
-use App\Models\LeadType;
-use App\Models\MediaAsset;
-use App\Models\Province;
-use App\Models\City;
-use App\Models\StudyClass;
-use App\Models\PtExam;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Master\Domain\Models\ChatTemplate;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\LeadType;
+use App\Domains\Master\Domain\Models\MediaAsset;
+use App\Domains\Master\Domain\Models\Province;
+use App\Domains\Master\Domain\Models\City;
+use App\Domains\Academic\Domain\Models\StudyClass;
+use App\Domains\Academic\Domain\Models\PtExam;
 use App\Http\Resources\Crm\LeadResource;
 use App\Http\Resources\Crm\LeadActivityResource;
 use App\Http\Resources\Crm\PtExam\PtExamResource;
@@ -50,41 +51,9 @@ use Inertia\Response;
 
 class LeadController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, LeadQueryService $service): Response
     {
-        $query = Lead::with(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase']);
-
-        // Handle Filters
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
-        
-        if ($request->filled('lead_phase_id')) {
-            $query->where('lead_phase_id', $request->lead_phase_id);
-        }
-
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-        $enrollmentPhase = LeadPhase::where('code', 'enrollment')->first();
-
-        if ($startDate && $endDate) {
-            $query->where(function($q) use ($startDate, $endDate, $request, $enrollmentPhase) {
-                $dateField = ($request->lead_phase_id == $enrollmentPhase?->id) ? 'enrolled_at' : 'created_at';
-                $q->whereBetween($dateField, [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
-            });
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('phone', 'like', "%{$request->search}%")
-                  ->orWhere('lead_number', 'like', "%{$request->search}%");
-            });
-        }
-
-        $leads = $query->latest()
-            ->paginate(10)
-            ->withQueryString();
+        $leads = $service->getPaginatedLeads($request);
 
         return Inertia::render('Admin/Crm/Leads/Index', [
             'leads' => LeadResource::collection($leads),
@@ -96,7 +65,7 @@ class LeadController extends Controller
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
             'mediaAssets'   => MediaAsset::latest()->get(),
-            'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
+            'pending_registrations_count' => \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count(),
         ]);
     }
 
@@ -125,12 +94,12 @@ class LeadController extends Controller
                     'student.studyClasses',
                     'chatLogs.sender',
                 ])),
-                'availableExams' => PtExamResource::collection(\App\Models\PtExam::where('is_active', true)->get()),
+                'availableExams' => PtExamResource::collection(\App\Domains\Academic\Domain\Models\PtExam::where('is_active', true)->get()),
                 'availableClasses' => StudyClassResource::collection($availableClasses),
-                'priceMasters'   => \App\Models\PriceMaster::all(),
-                'chatTemplates'  => \App\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->get(),
+                'priceMasters'   => \App\Domains\Finance\Domain\Models\PriceMaster::all(),
+                'chatTemplates'  => \App\Domains\Master\Domain\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->get(),
                 'phases'         => LeadPhase::orderBy('created_at', 'asc')->get(),
-                'mediaAssets'    => \App\Models\MediaAsset::latest()->get(),
+                'mediaAssets'    => \App\Domains\Master\Domain\Models\MediaAsset::latest()->get(),
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['error' => 'Lead not found.'], 404);
@@ -272,10 +241,10 @@ class LeadController extends Controller
     {
         $provinceName = $request->query('province');
         if (!$provinceName) return response()->json([]);
-        $province = \App\Models\Province::where('name', $provinceName)->first();
+        $province = \App\Domains\Master\Domain\Models\Province::where('name', $provinceName)->first();
         if (!$province) return response()->json([]);
 
-        $cities = \App\Models\City::where('province_id', $province->id)
+        $cities = \App\Domains\Master\Domain\Models\City::where('province_id', $province->id)
             ->select('id', 'name')
             ->orderBy('name')
             ->get();
@@ -320,7 +289,7 @@ class LeadController extends Controller
             ->get();
 
         // 2. Search Pending Registrations
-        $registrations = \App\Models\LeadRegistration::query()
+        $registrations = \App\Domains\CRM\Domain\Models\LeadRegistration::query()
             ->with('branch:id,name')
             ->where('status', 'pending')
             ->where(function ($q) use ($search) {
@@ -411,7 +380,7 @@ class LeadController extends Controller
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
             'mediaAssets'   => MediaAsset::latest()->get(),
-            'pending_registrations_count' => \App\Models\LeadRegistration::where('status', 'pending')->count(),
+            'pending_registrations_count' => \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count(),
         ]);
     }
 
@@ -421,4 +390,6 @@ class LeadController extends Controller
         Cache::put('crm_dashboard_version', $version + 1, now()->addYear());
     }
 }
+
+
 

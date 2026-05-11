@@ -2,11 +2,11 @@
 
 namespace App\Http\Resources\Crm;
 
-use App\Models\Branch;
-use App\Models\LeadPhase;
-use App\Models\LeadSource;
-use App\Models\LeadType;
-use App\Models\User;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\LeadType;
+use App\Domains\Shared\Domain\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -114,4 +114,6 @@ class LeadActivityResource extends JsonResource
         return (string) $value;
     }
 }
+
+
 

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Models\Branch;
-use App\Models\LeadSource;
-use App\Models\LeadType;
-use App\Models\Province;
-use App\Models\LeadPhase;
-use App\Actions\Crm\Leads\FetchCrmDashboardData;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\LeadType;
+use App\Domains\Master\Domain\Models\Province;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\CRM\Application\Actions\Leads\FetchCrmDashboardData;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Crm\LeadPhaseResource;
 use App\Http\Resources\Crm\LeadSourceResource;
@@ -34,4 +34,6 @@ class CrmDashboardController extends Controller
         ]);
     }
 }
+
+
 

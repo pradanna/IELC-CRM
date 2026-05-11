@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\Crm\PtExam\CreatePtExamAction;
-use App\Actions\Crm\PtExam\DeletePtExamAction;
-use App\Actions\Crm\PtExam\UpdatePtExamAction;
+use App\Domains\CRM\Application\Actions\PtExam\CreatePtExamAction;
+use App\Domains\CRM\Application\Actions\PtExam\DeletePtExamAction;
+use App\Domains\CRM\Application\Actions\PtExam\UpdatePtExamAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PtExam\StorePtExamRequest;
 use App\Http\Resources\Crm\PtExam\PtExamResource;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
-use App\Models\PtExam;
-use App\Models\PtSession;
+use App\Domains\Academic\Domain\Models\PtExam;
+use App\Domains\Academic\Domain\Models\PtSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -81,4 +81,6 @@ class PtExamController extends Controller
         return redirect()->route('admin.placement-tests.index')->with('success', 'Placement test package deleted successfully.');
     }
 }
+
+
 

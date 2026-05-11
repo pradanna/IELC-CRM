@@ -36,3 +36,5 @@ class UpdateChatTemplateRequest extends FormRequest
         ];
     }
 }
+
+

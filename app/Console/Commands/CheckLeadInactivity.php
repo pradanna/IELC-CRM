@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Lead;
-use App\Models\LeadPhase;
-use App\Models\Task;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\CRM\Domain\Models\Task;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
 

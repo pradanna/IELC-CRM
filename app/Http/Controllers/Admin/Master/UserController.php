@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Admin\Master;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Master\StoreUserRequest;
 use App\Http\Requests\Master\UpdateUserRequest;
-use App\Models\Branch;
-use App\Models\User;
-use App\Models\Superadmin;
-use App\Models\Marketing;
-use App\Models\Frontdesk;
-use App\Models\Finance;
-use App\Models\Teacher;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Shared\Domain\Models\User;
+use App\Domains\Master\Domain\Models\Superadmin;
+use App\Domains\CRM\Domain\Models\Marketing;
+use App\Domains\Master\Domain\Models\Frontdesk;
+use App\Domains\Master\Domain\Models\Finance;
+use App\Domains\Academic\Domain\Models\Teacher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -134,3 +134,5 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'User berhasil dihapus.');
     }
 }
+
+

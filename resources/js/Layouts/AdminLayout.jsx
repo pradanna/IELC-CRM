@@ -17,6 +17,7 @@ import {
     ClipboardCheck,
     GraduationCap,
     Tag,
+    Receipt,
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
@@ -49,22 +50,22 @@ const menuItems = [
                 href: route("admin.placement-tests.index"),
                 name: "admin.placement-tests.*",
             },
-            // {
-            //     icon: <PhoneCall size={20} />,
-            //     text: "Follow Up",
-            //     href: route("crm.follow-up.index"),
-            //     name: "crm.follow-up.index",
-            // },
         ],
     },
     {
         category: "Finance",
         items: [
             {
-                icon: <CircleDollarSign size={20} />,
-                text: "Overview",
+                icon: <LayoutDashboard size={20} />,
+                text: "Dashboard",
                 href: route("admin.finance.dashboard"),
                 name: "admin.finance.dashboard",
+            },
+            {
+                icon: <Receipt size={20} />,
+                text: "Invoices",
+                href: route("admin.finance.invoices.index"),
+                name: "admin.finance.invoices.*",
             },
             {
                 icon: <Tag size={20} />,
@@ -157,7 +158,7 @@ export default function AdminLayout({ children }) {
     const [expanded, setExpanded] = React.useState(true);
     const { notifications, removeNotification } = useWhatsappNotification();
     const { auth } = usePage().props;
-    const userRole = auth.user.role;
+    const userRole = auth.user.role?.toLowerCase(); // Ensure case-insensitivity
 
     const filteredMenu = menuItems.filter(group => {
         if (userRole === 'superadmin') return true;
@@ -186,7 +187,7 @@ export default function AdminLayout({ children }) {
                     return allowed.includes(item.text);
                 }
                 if (userRole === 'finance') {
-                    const allowed = ['Dashboard', 'Overview', 'Price Master', 'Staff Accounts', 'WhatsApp'];
+                    const allowed = ['Dashboard', 'Invoices', 'Price Master', 'Staff Accounts', 'WhatsApp'];
                     return allowed.includes(item.text);
                 }
                 if (userRole === 'marketing') {

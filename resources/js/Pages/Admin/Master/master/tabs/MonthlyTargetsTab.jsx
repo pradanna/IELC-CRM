@@ -86,9 +86,9 @@ export default function MonthlyTargetsTab({ items = [], branches = [] }) {
                 </div>
                 <button
                     onClick={() => openModal()}
-                    className="flex items-center gap-2 bg-slate-900 hover:bg-red-600 text-white px-6 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-full shadow-lg shadow-red-600/20 transition-all active:scale-95"
                 >
-                    <Plus size={14} />
+                    <Plus size={18} />
                     <span>Add New Target</span>
                 </button>
             </div>

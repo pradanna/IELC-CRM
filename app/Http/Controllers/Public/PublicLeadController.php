@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use App\Models\Branch;
-use App\Models\LeadRegistration;
-use App\Models\Province;
-use App\Models\City;
-use App\Models\LeadSource;
-use App\Models\User;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\CRM\Domain\Models\LeadRegistration;
+use App\Domains\Master\Domain\Models\Province;
+use App\Domains\Master\Domain\Models\City;
+use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Shared\Domain\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
@@ -133,7 +133,7 @@ class PublicLeadController extends Controller
 
     public function fillingForm($token)
     {
-        $lead = \App\Models\Lead::where('self_registration_token', $token)->firstOrFail();
+        $lead = \App\Domains\CRM\Domain\Models\Lead::where('self_registration_token', $token)->firstOrFail();
         
         $provinces = Province::orderBy('name')->get()->map(fn($p) => [
             'value' => $p->name,
@@ -178,7 +178,7 @@ class PublicLeadController extends Controller
 
     public function submitFilling(Request $request, $token)
     {
-        $lead = \App\Models\Lead::where('self_registration_token', $token)->firstOrFail();
+        $lead = \App\Domains\CRM\Domain\Models\Lead::where('self_registration_token', $token)->firstOrFail();
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -225,10 +225,12 @@ class PublicLeadController extends Controller
      */
     public function downloadInvoice($id)
     {
-        $invoice = \App\Models\Invoice::with(['items', 'lead', 'studyClass.branch'])->findOrFail($id);
+        $invoice = \App\Domains\Finance\Domain\Models\Invoice::with(['items', 'lead', 'studyClass.branch'])->findOrFail($id);
         
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.invoice', compact('invoice'));
         
         return $pdf->stream("Invoice-{$invoice->invoice_number}.pdf");
     }
 }
+
+

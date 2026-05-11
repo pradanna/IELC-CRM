@@ -27,3 +27,5 @@ class UpdateStudyClassRequest extends FormRequest
         ];
     }
 }
+
+

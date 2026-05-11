@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Lead;
+use App\Domains\CRM\Domain\Models\Lead;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;

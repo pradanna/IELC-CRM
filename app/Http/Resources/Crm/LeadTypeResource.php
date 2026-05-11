@@ -16,3 +16,5 @@ class LeadTypeResource extends JsonResource
     }
 }
 
+
+

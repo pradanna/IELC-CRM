@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\Crm\PtExam\CreatePtQuestionAction;
-use App\Actions\Crm\PtExam\UpdatePtQuestionAction;
+use App\Domains\CRM\Application\Actions\PtExam\CreatePtQuestionAction;
+use App\Domains\CRM\Application\Actions\PtExam\UpdatePtQuestionAction;
 use App\Http\Controllers\Controller;
-use App\Models\PtExam;
-use App\Models\PtQuestion;
+use App\Domains\Academic\Domain\Models\PtExam;
+use App\Domains\Academic\Domain\Models\PtQuestion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -79,4 +79,6 @@ class PtQuestionController extends Controller
         return redirect()->back()->with('success', 'Question deleted successfully.');
     }
 }
+
+
 

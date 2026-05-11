@@ -26,3 +26,5 @@ class StoreStudyClassRequest extends FormRequest
         ];
     }
 }
+
+

@@ -50,10 +50,10 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
 
                     <button 
                         onClick={openCreateModal}
-                        className="group flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-500/10 active:scale-95"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-full shadow-lg shadow-red-600/20 transition-all active:scale-95"
                     >
                         <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-                        <span>LAUNCH NEW CLASS</span>
+                        <span>Launch New Class</span>
                     </button>
                 </div>
 

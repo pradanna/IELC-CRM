@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Lead;
-use App\Models\LeadPhase;
-use App\Models\CrmSetting;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\CRM\Domain\Models\CrmSetting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 

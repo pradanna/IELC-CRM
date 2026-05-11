@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import FinanceLayout from '@/Layouts/FinanceLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { 
     Search, 
     Calendar, 
@@ -13,9 +13,15 @@ import {
     ChevronRight,
     ExternalLink,
     FileText,
-    MessageCircle
+    MessageCircle,
+    RotateCcw
 } from 'lucide-react';
 import Pagination from '@/Components/ui/Pagination';
+import { Table, THead, TBody, TR, TH, TD } from '@/Components/ui/Table';
+import Button from '@/Components/ui/Button';
+import SearchInput from '@/Components/ui/SearchInput';
+import TextInput from '@/Components/TextInput';
+import DatePicker from '@/Components/form/DatePicker';
 
 export default function InvoiceIndex({ auth, invoices, filters }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -23,18 +29,23 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
     const [endDate, setEndDate] = useState(filters.end_date || '');
     const [status, setStatus] = useState(filters.status || '');
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        router.get(route('admin.finance.invoices.index'), {
-            search,
-            start_date: startDate,
-            end_date: endDate,
-            status
-        }, {
-            preserveState: true,
-            replace: true
-        });
-    };
+    // Auto-filter logic
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            router.get(route('admin.finance.invoices.index'), {
+                search,
+                start_date: startDate,
+                end_date: endDate,
+                status
+            }, {
+                preserveState: true,
+                replace: true,
+                preserveScroll: true
+            });
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [search, startDate, endDate, status]);
 
     const handleReset = () => {
         setSearch('');
@@ -53,11 +64,11 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
     };
 
     return (
-        <FinanceLayout>
+        <AuthenticatedLayout>
             <Head title="Invoice History" />
 
             <div className="py-12 bg-slate-50 min-h-screen">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-none mx-auto px-4 sm:px-6 lg:px-8">
                     
                     {/* Header Section */}
                     <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -77,7 +88,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="bg-white px-6 py-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
+                            <div className="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
                                 <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
                                     <FileText size={20} />
                                 </div>
@@ -90,47 +101,46 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                     </div>
 
                     {/* Filters Section */}
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm mb-8">
-                        <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                            <div className="space-y-2">
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                            <div className="md:col-span-4 space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search Customer / INV</label>
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Cari nama atau nomor..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-red-100 transition-all"
-                                    />
-                                </div>
+                                <SearchInput 
+                                    placeholder="Cari nama atau nomor..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="!max-w-none"
+                                />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="md:col-span-4 space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date Range</label>
-                                <div className="flex items-center gap-2">
-                                    <input 
-                                        type="date" 
+                                <div className="grid grid-cols-2 gap-2">
+                                    <DatePicker 
                                         value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-[11px] font-bold text-slate-700 focus:ring-4 focus:ring-red-100 transition-all"
+                                        onChange={setStartDate}
+                                        placeholder="Start Date"
                                     />
-                                    <span className="text-slate-300">-</span>
-                                    <input 
-                                        type="date" 
+                                    <DatePicker 
                                         value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-[11px] font-bold text-slate-700 focus:ring-4 focus:ring-red-100 transition-all"
+                                        onChange={setEndDate}
+                                        placeholder="End Date"
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="md:col-span-3 space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
                                 <select 
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-red-100 transition-all"
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm font-bold text-slate-700 focus:ring-4 focus:ring-red-100 focus:border-red-200 transition-all appearance-none"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                        backgroundPosition: 'right 0.5rem center',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundSize: '1.5em 1.5em',
+                                    }}
                                 >
                                     <option value="">All Status</option>
                                     <option value="pending">Pending</option>
@@ -139,159 +149,113 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                 </select>
                             </div>
 
-                            <div className="flex gap-2">
-                                <button 
-                                    type="submit"
-                                    className="flex-1 py-3.5 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
-                                >
-                                    <Filter size={14} /> Filter
-                                </button>
+                            <div className="md:col-span-1">
                                 <button 
                                     type="button"
                                     onClick={handleReset}
-                                    className="px-4 py-3.5 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                                    className="w-full flex items-center justify-center p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-xl transition-all border border-slate-100"
+                                    title="Reset Filters"
                                 >
-                                    Reset
+                                    <RotateCcw size={18} />
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
 
                     {/* Table Section */}
-                    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden mb-10">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-50/50">
-                                        <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Invoice</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                        <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {invoices.data.length > 0 ? (
-                                        invoices.data.map((invoice) => (
-                                            <tr key={invoice.id} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-8 py-6">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-black text-slate-900 group-hover:text-red-600 transition-colors uppercase tracking-tight">{invoice.invoice_number}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.study_class?.name || 'Manual Items'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
-                                                            {invoice.lead?.name || invoice.student?.lead?.name || 'Unknown'}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.lead?.phone || invoice.student?.lead?.phone || '-'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
-                                                            {new Date(invoice.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold text-slate-400 mt-0.5">At {new Date(invoice.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-black text-slate-900">{formatCurrency(invoice.total_amount)}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.session_count} Sessions</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6">
-                                                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] border ${
-                                                        invoice.status === 'paid' 
-                                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' 
-                                                        : 'bg-amber-50 text-amber-600 border-amber-100'
-                                                    }`}>
-                                                        {invoice.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-8 py-6 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <a 
-                                                            href={route('admin.finance.invoices.download', invoice.id)} 
-                                                            target="_blank"
-                                                            className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-red-600 hover:border-red-100 rounded-xl transition-all shadow-sm"
-                                                            title="Download PDF"
-                                                        >
-                                                            <Download size={16} />
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="6" className="px-8 py-32 text-center">
-                                                <div className="flex flex-col items-center justify-center">
-                                                    <div className="p-6 bg-slate-50 rounded-full mb-4">
-                                                        <FileText size={48} className="text-slate-200" />
-                                                    </div>
-                                                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Tidak ada invoice ditemukan</h3>
-                                                    <p className="text-xs text-slate-300 font-bold mt-2">Coba ubah kata kunci atau filter Anda</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                    <Table>
+                        <THead>
+                            <TR hover={false}>
+                                <TH>Invoice</TH>
+                                <TH>Customer</TH>
+                                <TH>Date</TH>
+                                <TH>Amount</TH>
+                                <TH>Status</TH>
+                                <TH className="text-right">Actions</TH>
+                            </TR>
+                        </THead>
+                        <TBody>
+                            {invoices.data.length > 0 ? (
+                                invoices.data.map((invoice) => (
+                                    <TR key={invoice.id}>
+                                        <TD>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-slate-900 group-hover:text-red-600 transition-colors uppercase tracking-tight">{invoice.invoice_number}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.study_class?.name || 'Manual Items'}</span>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                                                    {invoice.lead?.name || invoice.student?.lead?.name || 'Unknown'}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.lead?.phone || invoice.student?.lead?.phone || '-'}</span>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                                                    {new Date(invoice.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 mt-0.5">At {new Date(invoice.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-slate-900">{formatCurrency(invoice.total_amount)}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.session_count} Sessions</span>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] border ${
+                                                invoice.status === 'paid' 
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' 
+                                                : 'bg-amber-50 text-amber-600 border-amber-100'
+                                            }`}>
+                                                {invoice.status}
+                                            </span>
+                                        </TD>
+                                        <TD className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <a 
+                                                    href={route('admin.finance.invoices.download', invoice.id)} 
+                                                    target="_blank"
+                                                    className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-red-600 hover:border-red-100 rounded-xl transition-all shadow-sm"
+                                                    title="Download PDF"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                            </div>
+                                        </TD>
+                                    </TR>
+                                ))
+                            ) : (
+                                <TR hover={false}>
+                                    <TD colSpan="6" className="py-32 text-center">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <div className="p-6 bg-slate-50 rounded-full mb-4">
+                                                <FileText size={48} className="text-slate-200" />
+                                            </div>
+                                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Tidak ada invoice ditemukan</h3>
+                                            <p className="text-xs text-slate-300 font-bold mt-2">Coba ubah kata kunci atau filter Anda</p>
+                                        </div>
+                                    </TD>
+                                </TR>
+                            )}
+                        </TBody>
+                    </Table>
 
-                        {/* Pagination */}
-                        {invoices.last_page > 1 && (
-                            <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-50 flex items-center justify-between">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    Showing <span className="text-slate-900 font-black">{invoices.from}-{invoices.to}</span> of <span className="text-slate-900 font-black">{invoices.total}</span> Invoices
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    {invoices.links.map((link, i) => {
-                                        if (link.label.includes('Previous')) {
-                                            return (
-                                                <Link 
-                                                    key={i} 
-                                                    href={link.url} 
-                                                    className={`p-2 rounded-xl border transition-all ${link.url ? 'bg-white text-slate-600 border-slate-100 hover:border-red-200 hover:text-red-600' : 'bg-slate-50 text-slate-300 border-transparent opacity-50 cursor-not-allowed'}`}
-                                                >
-                                                    <ChevronLeft size={16} />
-                                                </Link>
-                                            );
-                                        }
-                                        if (link.label.includes('Next')) {
-                                            return (
-                                                <Link 
-                                                    key={i} 
-                                                    href={link.url} 
-                                                    className={`p-2 rounded-xl border transition-all ${link.url ? 'bg-white text-slate-600 border-slate-100 hover:border-red-200 hover:text-red-600' : 'bg-slate-50 text-slate-300 border-transparent opacity-50 cursor-not-allowed'}`}
-                                                >
-                                                    <ChevronRight size={16} />
-                                                </Link>
-                                            );
-                                        }
-                                        if (link.label === '...') {
-                                            return <span key={i} className="px-4 py-2 text-slate-300">...</span>;
-                                        }
-                                        return (
-                                            <Link
-                                                key={i}
-                                                href={link.url}
-                                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${link.active ? 'bg-red-600 text-white shadow-lg shadow-red-500/20 border-transparent' : 'bg-white text-slate-500 border-slate-100 hover:border-red-200 hover:text-red-600'}`}
-                                            >
-                                                {link.label}
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {/* Pagination */}
+                    {invoices.last_page > 1 && (
+                        <div className="mt-8 flex items-center justify-between bg-white px-8 py-6 rounded-3xl border border-slate-100 shadow-sm">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                Showing <span className="text-slate-900 font-black">{invoices.from}-{invoices.to}</span> of <span className="text-slate-900 font-black">{invoices.total}</span> Invoices
+                            </p>
+                            <Pagination links={invoices.links} />
+                        </div>
+                    )}
                 </div>
             </div>
-        </FinanceLayout>
+        </AuthenticatedLayout>
     );
 }

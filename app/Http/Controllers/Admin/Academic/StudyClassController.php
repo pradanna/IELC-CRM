@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Admin\Academic;
 
-use App\Actions\Academic\ResetClassCycle;
-use App\Actions\Academic\StoreStudyClass;
-use App\Actions\Academic\UpdateStudyClass;
+use App\Domains\Academic\Application\Actions\ResetClassCycle;
+use App\Domains\Academic\Application\Actions\StoreStudyClass;
+use App\Domains\Academic\Application\Actions\UpdateStudyClass;
+use App\Domains\Academic\Application\Services\StudyClassQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Academic\StoreStudyClassRequest;
 use App\Http\Requests\Admin\Academic\UpdateStudyClassRequest;
-use App\Models\Branch;
-use App\Models\StudyClass;
-use App\Models\User;
-use App\Models\PriceMaster;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Academic\Domain\Models\StudyClass;
+use App\Domains\Shared\Domain\Models\User;
+use App\Domains\Finance\Domain\Models\PriceMaster;
 use App\Http\Resources\Academic\StudyClassResource;
 use App\Http\Resources\Master\BranchResource;
 use App\Http\Resources\Finance\PriceMasterResource;
@@ -22,32 +23,15 @@ use Inertia\Response;
 
 class StudyClassController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, StudyClassQueryService $service): Response
     {
-        $query = StudyClass::with([
-            'branch', 
-            'instructor.superadmin', 
-            'instructor.marketing', 
-            'instructor.frontdesk', 
-            'instructor.finance', 
-            'instructor.teacher',
-            'priceMaster', 
-            'students.lead'
-        ])->withCount('students');
-
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
-
-        if ($request->filled('search')) {
-            $query->where('name', 'like', "%{$request->search}%");
-        }
+        $data = $service->getIndexData($request);
 
         return Inertia::render('Admin/Academic/StudyClass/Index', [
-            'classes' => StudyClassResource::collection($query->latest()->get()),
-            'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
-            'instructors' => User::with(['superadmin', 'marketing', 'frontdesk', 'finance'])->get(), // Users can be wrapped in UserResource too
-            'priceMasters' => PriceMasterResource::collection(PriceMaster::select('id', 'name', 'price_per_session')->get()),
+            'classes' => StudyClassResource::collection($data['classes_query']->get()),
+            'branches' => BranchResource::collection($data['branches']),
+            'instructors' => $data['instructors'], 
+            'priceMasters' => PriceMasterResource::collection($data['priceMasters']),
             'filters' => $request->only(['branch_id', 'search']),
         ]);
     }
@@ -79,3 +63,5 @@ class StudyClassController extends Controller
         return redirect()->back()->with('success', 'Class deleted successfully.');
     }
 }
+
+

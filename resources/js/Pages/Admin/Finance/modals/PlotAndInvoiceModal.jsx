@@ -2,14 +2,13 @@ import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
 import InputLabel from '@/Components/form/InputLabel';
-import TextInput from '@/Components/form/TextInput';
 import InputError from '@/Components/form/InputError';
-import SecondaryButton from '@/Components/form/SecondaryButton';
-import PrimaryButton from '@/Components/form/PrimaryButton';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
 import TextArea from '@/Components/ui/TextArea';
 import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle } from 'lucide-react';
 import DatePicker from '@/Components/form/DatePicker';
+import Button from '@/Components/ui/Button';
+import TextInput from '@/Components/TextInput';
 
 export default function PlotAndInvoiceModal({ show, onClose, lead, student, classes = [], priceMasters = [] }) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
@@ -265,9 +264,14 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                 </p>
                                             </div>
                                         </div>
-                                        <button type="button" onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            onClick={onClose} 
+                                            className="p-2 text-slate-400 hover:text-slate-900 transition-colors shadow-none"
+                                        >
                                             <X size={20} />
-                                        </button>
+                                        </Button>
                                     </div>
 
                                     <div className="px-8 py-10 space-y-10">
@@ -323,20 +327,22 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                     <p className="text-[9px] font-bold text-slate-400 italic">Pilih satu siklus penuh atau hitung sisa pertemuan</p>
                                                 </div>
                                                 <div className="flex bg-slate-100 p-1 rounded-xl">
-                                                    <button
+                                                    <Button
                                                         type="button"
+                                                        variant="ghost"
                                                         onClick={() => setData('billing_mode', 'prorata')}
-                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                                     >
                                                         Pro-rata
-                                                    </button>
-                                                    <button
+                                                    </Button>
+                                                    <Button
                                                         type="button"
+                                                        variant="ghost"
                                                         onClick={() => setData('billing_mode', 'full')}
-                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                                     >
                                                         Satu Siklus Penuh
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </div>
                                         </div>
@@ -348,22 +354,24 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                     <p className="text-[9px] font-bold text-slate-400 italic">Tambahkan biaya lain jika diperlukan</p>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button 
+                                                    <Button 
                                                         type="button" 
+                                                        variant="secondary"
+                                                        icon={Plus}
                                                         onClick={() => addItem('Placement Test Fee', 50000)} 
-                                                        className="group flex items-center gap-2 text-[9px] font-black px-3.5 py-2 bg-indigo-50 text-indigo-600 rounded-xl uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all active:scale-95"
+                                                        className="group text-[9px] font-black px-3.5 py-2 bg-indigo-50 text-indigo-600 rounded-xl uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all shadow-none"
                                                     >
-                                                        <Plus size={12} className="group-hover:rotate-90 transition-transform" />
                                                         Placement
-                                                    </button>
-                                                    <button 
+                                                    </Button>
+                                                    <Button 
                                                         type="button" 
+                                                        variant="secondary"
+                                                        icon={Plus}
                                                         onClick={() => addItem('', 0)} 
-                                                        className="group flex items-center gap-2 text-[9px] font-black px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl uppercase tracking-wider hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+                                                        className="group text-[9px] font-black px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl uppercase tracking-wider hover:bg-slate-900 hover:text-white transition-all shadow-none"
                                                     >
-                                                        <Plus size={12} className="group-hover:rotate-90 transition-transform" />
                                                         Custom
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </div>
 
@@ -375,7 +383,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                                 <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
                                                                     <Tag size={14} />
                                                                 </div>
-                                                                <input 
+                                                                <TextInput 
                                                                     value={item.name} 
                                                                     onChange={e => { const n = [...data.items]; n[idx].name = e.target.value; setData('items', n); }} 
                                                                     className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 placeholder:text-slate-300 placeholder:italic p-0" 
@@ -385,7 +393,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                             <div className="flex items-center gap-3">
                                                                 <div className="relative">
                                                                     <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
-                                                                    <input 
+                                                                    <TextInput 
                                                                         type="number" 
                                                                         value={item.unit_price} 
                                                                         onChange={e => { const n = [...data.items]; n[idx].unit_price = e.target.value; setData('items', n); }} 
@@ -393,13 +401,14 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                                         placeholder="0" 
                                                                     />
                                                                 </div>
-                                                                <button 
+                                                                <Button 
                                                                     type="button" 
+                                                                    variant="ghost"
                                                                     onClick={() => setData('items', data.items.filter((_, i) => i !== idx))} 
-                                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shadow-none p-0"
                                                                 >
                                                                     <Trash2 size={14}/>
-                                                                </button>
+                                                                </Button>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -448,11 +457,22 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                     </div>
 
                                     <div className="px-8 py-8 bg-slate-50 flex items-center justify-end gap-3 rounded-b-[32px]">
-                                        <SecondaryButton onClick={onClose} className="!rounded-2xl !text-[10px] uppercase tracking-widest font-black px-6 py-3.5">Batal</SecondaryButton>
-                                        <PrimaryButton disabled={processing || !selectedClass || !selectedPrice || isExpired || hasNoPrice} className="!bg-red-600 hover:!bg-red-700 !rounded-2xl !text-[10px] uppercase tracking-widest font-black px-10 py-3.5 shadow-xl shadow-red-600/30">
+                                        <Button 
+                                            variant="secondary" 
+                                            onClick={onClose} 
+                                            className="!rounded-2xl !text-[10px] uppercase tracking-widest font-black px-6 py-3.5"
+                                        >
+                                            Batal
+                                        </Button>
+                                        <Button 
+                                            type="submit"
+                                            variant="primary"
+                                            disabled={processing || !selectedClass || !selectedPrice || isExpired || hasNoPrice} 
+                                            className="!bg-red-600 hover:!bg-red-700 !rounded-2xl !text-[10px] uppercase tracking-widest font-black px-10 py-3.5 shadow-xl shadow-red-600/30"
+                                        >
                                             {processing ? <Loader2 className="animate-spin mr-2" size={14} /> : <Save className="mr-2" size={14} />}
                                             Generate Invoice
-                                        </PrimaryButton>
+                                        </Button>
                                     </div>
                                 </form>
                             </Dialog.Panel>

@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin\Crm;
 
 use App\Http\Controllers\Controller;
-use App\Models\PtSession;
+use App\Domains\Academic\Domain\Models\PtSession;
 use App\Http\Requests\Crm\PtExam\UpdatePtSessionGradeRequest;
-use App\Models\PtExam;
-use App\Models\Lead;
-use App\Actions\Crm\PtExam\CreatePtSessionAction;
-use App\Actions\Crm\PtExam\DeletePtSessionAction;
-use App\Actions\Crm\PtExam\GetPtSessionResultAction;
+use App\Domains\Academic\Domain\Models\PtExam;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\CRM\Application\Actions\PtExam\CreatePtSessionAction;
+use App\Domains\CRM\Application\Actions\PtExam\DeletePtSessionAction;
+use App\Domains\CRM\Application\Actions\PtExam\GetPtSessionResultAction;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Http\Resources\Crm\PtExam\PtExamResource;
 use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
@@ -76,4 +76,6 @@ class PtSessionController extends Controller
         ]);
     }
 }
+
+
 

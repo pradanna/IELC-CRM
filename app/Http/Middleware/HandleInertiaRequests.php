@@ -33,7 +33,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user() ? array_merge($request->user()->load(['superadmin', 'marketing', 'frontdesk', 'finance'])->toArray(), [
-                    'role' => $request->user()->getRoleNames()->first(),
+                    'role' => $request->user()->hasRole('superadmin') ? 'superadmin' : $request->user()->getRoleNames()->first(),
                 ]) : null,
             ],
             'flash' => [
@@ -44,7 +44,9 @@ class HandleInertiaRequests extends Middleware
                 'download_url' => $request->session()->get('download_url'),
             ],
             'waServerUrl' => config('services.whatsapp.url'),
-            'pending_registrations_count' => $request->user() ? \App\Models\LeadRegistration::where('status', 'pending')->count() : 0,
+            'pending_registrations_count' => $request->user() ? \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count() : 0,
         ];
     }
 }
+
+

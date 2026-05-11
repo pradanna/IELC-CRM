@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Actions\Crm\PtExam\CreatePtQuestionGroupAction;
-use App\Actions\Crm\PtExam\UpdatePtQuestionGroupAction;
+use App\Domains\CRM\Application\Actions\PtExam\CreatePtQuestionGroupAction;
+use App\Domains\CRM\Application\Actions\PtExam\UpdatePtQuestionGroupAction;
 use App\Http\Controllers\Controller;
-use App\Models\PtExam;
-use App\Models\PtQuestionGroup;
+use App\Domains\Academic\Domain\Models\PtExam;
+use App\Domains\Academic\Domain\Models\PtQuestionGroup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -51,4 +51,6 @@ class PtQuestionGroupController extends Controller
         return redirect()->back()->with('success', 'Question group deleted successfully.');
     }
 }
+
+
 

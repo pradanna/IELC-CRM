@@ -36,3 +36,5 @@ class StoreChatTemplateRequest extends FormRequest
         ];
     }
 }
+
+

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Actions\Admin\Dashboard\FetchSuperadminDashboardData;
+use App\Domains\Shared\Actions\Dashboard\FetchSuperadminDashboardData;
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,3 +22,5 @@ class DashboardController extends Controller
         ]);
     }
 }
+
+

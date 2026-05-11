@@ -26,3 +26,5 @@ class UpdatePriceMasterRequest extends FormRequest
         ];
     }
 }
+
+

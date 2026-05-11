@@ -35,3 +35,5 @@ class StudyClassResource extends JsonResource
         ];
     }
 }
+
+

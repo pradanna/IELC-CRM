@@ -22,7 +22,7 @@ class WhatsAppController extends Controller
     public function index(): \Inertia\Response
     {
         return \Inertia\Inertia::render('Admin/Crm/Whatsapp/Index', [
-            'branches' => \App\Models\Branch::all(['id', 'name', 'code']),
+            'branches' => \App\Domains\Master\Domain\Models\Branch::all(['id', 'name', 'code']),
         ]);
     }
 
@@ -72,3 +72,5 @@ class WhatsAppController extends Controller
         return response()->json($result);
     }
 }
+
+
