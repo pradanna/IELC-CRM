@@ -5,7 +5,7 @@ import axios from 'axios';
 
 export const useLeadIndex = (leads) => {
     const { auth } = usePage().props;
-    const isSuperadmin = auth?.user?.role === 'superadmin';
+    const isSuperadmin = auth?.user?.role === 'superadmin' || auth?.user?.role === 'super-admin' || !!auth?.user?.superadmin;
     
     const [deletingLead, setDeletingLead] = useState(null);
     const { openDrawer } = useLeadDrawer();

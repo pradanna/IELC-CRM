@@ -11,11 +11,16 @@ export default function AuthenticatedLayout({ header, children }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
-    if (user.role === 'finance') {
+    if (user.role === 'finance' || !!user.finance) {
         return <FinanceLayout>{children}</FinanceLayout>;
     }
 
-    if (['superadmin', 'frontdesk', 'marketing'].includes(user.role)) {
+    if (
+        ['superadmin', 'super-admin', 'frontdesk', 'marketing'].includes(user.role) ||
+        !!user.superadmin ||
+        !!user.frontdesk ||
+        !!user.marketing
+    ) {
         return <AdminLayout>{children}</AdminLayout>;
     }
 

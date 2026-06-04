@@ -159,38 +159,42 @@ export default function AdminLayout({ children }) {
     const { notifications, removeNotification } = useWhatsappNotification();
     const { auth } = usePage().props;
     const userRole = auth.user.role?.toLowerCase(); // Ensure case-insensitivity
+    const isSuperAdmin = userRole === 'superadmin' || userRole === 'super-admin' || !!auth.user.superadmin;
+    const isFrontdesk = userRole === 'frontdesk' || !!auth.user.frontdesk;
+    const isFinance = userRole === 'finance' || !!auth.user.finance;
+    const isMarketing = userRole === 'marketing' || !!auth.user.marketing;
 
     const filteredMenu = menuItems.filter(group => {
-        if (userRole === 'superadmin') return true;
+        if (isSuperAdmin) return true;
         
-        if (userRole === 'frontdesk') {
+        if (isFrontdesk) {
             return ['Main', 'Management', 'Users'].includes(group.category);
         }
 
-        if (userRole === 'finance') {
+        if (isFinance) {
             return ['Main', 'Finance', 'System'].includes(group.category);
         }
 
-        if (userRole === 'marketing') {
+        if (isMarketing) {
             return ['Main', 'Management'].includes(group.category);
         }
 
         return false;
     }).map(group => {
-        if (userRole === 'superadmin') return group;
+        if (isSuperAdmin) return group;
 
         return {
             ...group,
             items: group.items.filter(item => {
-                if (userRole === 'frontdesk') {
+                if (isFrontdesk) {
                     const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Master', 'Class', 'Students'];
                     return allowed.includes(item.text);
                 }
-                if (userRole === 'finance') {
+                if (isFinance) {
                     const allowed = ['Dashboard', 'Invoices', 'Price Master', 'Staff Accounts', 'WhatsApp'];
                     return allowed.includes(item.text);
                 }
-                if (userRole === 'marketing') {
+                if (isMarketing) {
                     const allowed = ['Dashboard', 'Crm'];
                     return allowed.includes(item.text);
                 }

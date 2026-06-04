@@ -25,7 +25,7 @@ export default function useWhatsappNotification() {
                 // --- FILTER LOGIC ---
                 // 1. Jika Superadmin, munculkan semua.
                 // 2. Jika bukan Superadmin, hanya munculkan jika branch_id cocok.
-                const isSuperadmin = user.role === 'superadmin';
+                const isSuperadmin = user.role === 'superadmin' || user.role === 'super-admin' || !!user.superadmin;
                 const isSameBranch = e.lead?.branch_id === user.branch_id;
 
                 if (!isSuperadmin && !isSameBranch) {
