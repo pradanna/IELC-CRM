@@ -93,6 +93,7 @@ class LeadController extends Controller
                     'invoices.items',
                     'student.studyClasses',
                     'chatLogs.sender',
+                    'notes.user',
                 ])),
                 'availableExams' => PtExamResource::collection(\App\Domains\Academic\Domain\Models\PtExam::where('is_active', true)->get()),
                 'availableClasses' => StudyClassResource::collection($availableClasses),
@@ -182,19 +183,17 @@ class LeadController extends Controller
         ]);
     }
 
-    public function updateNotes(Request $request, Lead $lead): \Illuminate\Http\RedirectResponse
+    public function storeNote(Request $request, Lead $lead, \App\Domains\CRM\Application\Actions\Leads\StoreLeadNote $action): \Illuminate\Http\RedirectResponse
     {
         $request->validate([
-            'notes' => 'nullable|string'
+            'content' => 'required|string'
         ]);
 
-        $lead->update([
-            'notes' => $request->notes,
-            'last_activity_at' => now()
-        ]);
+        $action->handle($lead, $request->only('content'));
 
-        return back()->with('success', 'Notes updated successfully.');
+        return back()->with('success', 'Note added successfully.');
     }
+
 
     public function recordFollowUp(RecordLeadFollowUpRequest $request, Lead $lead, RecordLeadFollowUp $action): JsonResponse
     {

@@ -48,11 +48,12 @@ class Lead extends Model
         'last_activity_at',
         'enrolled_at',
         'reached_prospective_at',
+        'first_consultation_at',
+        'first_pt_at',
         'lost_at',
         'self_registration_token',
         'pending_updates',
         'plotting',
-        'notes',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -72,6 +73,8 @@ class Lead extends Model
             'last_activity_at' => 'datetime',
             'enrolled_at' => 'datetime',
             'reached_prospective_at' => 'datetime',
+            'first_consultation_at' => 'datetime',
+            'first_pt_at' => 'datetime',
             'lost_at' => 'datetime',
             'birth_date' => 'date',
             'pending_updates' => 'array',
@@ -164,6 +167,12 @@ class Lead extends Model
     {
         return $this->hasMany(LeadChatLog::class);
     }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(LeadNote::class)->latest();
+    }
+
 
     protected static function booted()
     {

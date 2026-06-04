@@ -58,44 +58,58 @@ export function useLeadsReport({
         const total = newLeadsCount !== undefined ? newLeadsCount : leads.length;
         const reachedProspectiveCount = leads.filter(l => !!l.reached_prospective_at).length;
         const closingCount = enrolledLeadsCount !== undefined ? enrolledLeadsCount : leads.filter(l => !!l.enrolled_at).length;
-        const lostCount = leads.filter(l => !!l.lost_at).length;
-        const lostAfterProspectiveCount = leads.filter(l => !!l.lost_at && !!l.reached_prospective_at).length;
+        
+        // Front-end local calc for consultations and PTs (might be limited by loaded relationships)
+        const consultationCount = leads.filter(l => (l.consultations?.length || 0) > 0).length;
+        const ptCount = leads.filter(l => (l.pt_sessions?.length || 0) > 0).length;
 
         if (total === 0) {
             return {
-                newToProspective: { percentage: 0, count: 0, total: 0 },
-                newToClosing: { percentage: 0, count: 0, total: 0 },
-                newToLost: { percentage: 0, count: 0, total: 0 },
-                prospectiveToClosing: { percentage: 0, count: 0, total: 0 },
-                prospectiveToLost: { percentage: 0, count: 0, total: 0 },
+                new_to_prospective: { percentage: 0, count: 0, total: 0 },
+                prospective_to_consultation: { percentage: 0, count: 0, total: 0 },
+                consultation_to_pt: { percentage: 0, count: 0, total: 0 },
+                pt_to_closing: { percentage: 0, count: 0, total: 0 },
+                new_to_closing: { percentage: 0, count: 0, total: 0 },
+                prospective_to_closing: { percentage: 0, count: 0, total: 0 },
+                consultation_to_closing: { percentage: 0, count: 0, total: 0 },
             };
         }
 
         return {
-            newToProspective: {
+            new_to_prospective: {
                 percentage: ((reachedProspectiveCount / total) * 100).toFixed(1),
                 count: reachedProspectiveCount,
                 total: total
             },
-            newToClosing: {
+            prospective_to_consultation: {
+                percentage: reachedProspectiveCount > 0 ? ((consultationCount / reachedProspectiveCount) * 100).toFixed(1) : 0,
+                count: consultationCount,
+                total: reachedProspectiveCount
+            },
+            consultation_to_pt: {
+                percentage: consultationCount > 0 ? ((ptCount / consultationCount) * 100).toFixed(1) : 0,
+                count: ptCount,
+                total: consultationCount
+            },
+            pt_to_closing: {
+                percentage: ptCount > 0 ? ((closingCount / ptCount) * 100).toFixed(1) : 0,
+                count: closingCount,
+                total: ptCount
+            },
+            new_to_closing: {
                 percentage: ((closingCount / total) * 100).toFixed(1),
                 count: closingCount,
                 total: total
             },
-            newToLost: {
-                percentage: ((lostCount / total) * 100).toFixed(1),
-                count: lostCount,
-                total: total
-            },
-            prospectiveToClosing: {
+            prospective_to_closing: {
                 percentage: reachedProspectiveCount > 0 ? ((closingCount / reachedProspectiveCount) * 100).toFixed(1) : 0,
                 count: closingCount,
                 total: reachedProspectiveCount
             },
-            prospectiveToLost: {
-                percentage: reachedProspectiveCount > 0 ? ((lostAfterProspectiveCount / reachedProspectiveCount) * 100).toFixed(1) : 0,
-                count: lostAfterProspectiveCount,
-                total: reachedProspectiveCount
+            consultation_to_closing: {
+                percentage: consultationCount > 0 ? ((closingCount / consultationCount) * 100).toFixed(1) : 0,
+                count: closingCount,
+                total: consultationCount
             },
         };
     }, [leads, newLeadsCount, enrolledLeadsCount]);

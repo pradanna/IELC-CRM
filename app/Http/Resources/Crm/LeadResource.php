@@ -29,7 +29,18 @@ class LeadResource extends JsonResource
             'pending_updates' => $this->pending_updates,
             'guardian_data'   => $this->guardian_data,
             'plotting'       => $this->plotting,
-            'notes'          => $this->notes,
+            'lead_notes'     => $this->whenLoaded('notes', fn() => 
+                $this->notes->map(fn($n) => [
+                    'id'         => $n->id,
+                    'content'    => $n->content,
+                    'user'       => [
+                        'id'   => $n->user?->id,
+                        'name' => $n->user?->name,
+                    ],
+                    'created_at' => $n->created_at->toISOString(),
+                    'human_at'   => $n->created_at->diffForHumans(),
+                ])
+            ),
             
             // Raw IDs for edit mode
             'branch_id'      => $this->branch_id,

@@ -235,32 +235,42 @@ class CrmReportController extends Controller
             return $query;
         };
 
-        // 1. Leads strictly CREATED in April (Denominator for Marketing)
-        $newLeadsQuery = Lead::query()->whereBetween('created_at', [$startDate, $endDate]);
-        $newLeadsCount = $applyFilters($newLeadsQuery)->count();
+        // 1. Denominator: Leads strictly CREATED in this period (The Cohort)
+        $cohortQuery = Lead::query()->whereBetween('created_at', [$startDate, $endDate]);
+        $cohortQuery = $applyFilters($cohortQuery);
+        $newLeadsCount = $cohortQuery->count();
 
-        // 2. Leads strictly REACHED PROSPECTIVE in April
-        $prospectiveQuery = Lead::query()->whereBetween('reached_prospective_at', [$startDate, $endDate]);
-        $reachedProspectiveCount = $applyFilters($prospectiveQuery)->count();
+        // If no leads were created in this period, we return zeroed stats
+        if ($newLeadsCount === 0) {
+            return [
+                'leads' => collect(),
+                'newLeadsCount' => 0,
+                'enrolledLeadsCount' => 0,
+                'monthlyGoal' => (int) MonthlyTarget::where('month', $month)->where('year', $year)->when($validBranchId, fn($q) => $q->where('branch_id', $validBranchId))->sum('target_enrolled') ?: 0,
+                'success_rates' => [
+                    'new_to_prospective' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                    'prospective_to_consultation' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                    'consultation_to_pt' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                    'pt_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                    'new_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                    'prospective_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                    'consultation_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                ],
+            ];
+        }
 
-        // 3. Leads strictly ENROLLED in April
-        $enrolledQuery = Lead::query()->whereBetween('enrolled_at', [$startDate, $endDate]);
-        $enrolledLeads = $applyFilters($enrolledQuery)->get();
-        $enrolledCount = $enrolledLeads->count();
+        // Fetch the cohort leads
+        $cohortLeads = $cohortQuery->get();
 
-        // 4. Leads strictly LOST in April
-        $lostQuery = Lead::query()->whereBetween('lost_at', [$startDate, $endDate]);
-        $lostCount = $applyFilters($lostQuery)->count();
+        // 2. Calculate milestones for THIS COHORT
+        $reachedProspectiveCount = $cohortLeads->filter(fn($l) => !is_null($l->reached_prospective_at))->count();
+        $consultationCount = $cohortLeads->filter(fn($l) => !is_null($l->first_consultation_at))->count();
+        $ptCount = $cohortLeads->filter(fn($l) => !is_null($l->first_pt_at))->count();
+        $enrolledCount = $cohortLeads->filter(fn($l) => !is_null($l->enrolled_at))->count();
+        $lostCount = $cohortLeads->filter(fn($l) => !is_null($l->lost_at))->count();
 
-        // 5. Lost after reaching prospective in April
-        // Note: For throughput, we count deaths that happened this month regardless of birth
-        $lostAfterProspectiveQuery = Lead::query()
-            ->whereBetween('lost_at', [$startDate, $endDate])
-            ->whereNotNull('reached_prospective_at');
-        $lostAfterProspectiveCount = $applyFilters($lostAfterProspectiveQuery)->count();
-
-        // 6. Final Unified Collection for the Table (Events that happened this month)
-        // We show anyone who HAD an event this month
+        // 3. Final Unified Collection for the Table (Events that happened this month)
+        // Note: For the TABLE display, we keep the original "Flow" logic so staff can see what they did this month
         $unifiedLeads = Lead::with(['leadSource', 'leadPhase', 'branch'])
             ->where(function($q) use ($startDate, $endDate) {
                 $q->whereBetween('created_at', [$startDate, $endDate])
@@ -279,30 +289,40 @@ class CrmReportController extends Controller
             'enrolledLeadsCount' => $enrolledCount,
             'monthlyGoal' => (int) $targetQuery->sum('target_enrolled') ?: 0,
             'success_rates' => [
-                'newToProspective' => [
+                'new_to_prospective' => [
                     'count' => $reachedProspectiveCount,
                     'total' => $newLeadsCount,
-                    'percentage' => $newLeadsCount > 0 ? round(($reachedProspectiveCount / $newLeadsCount) * 100, 1) : 0
+                    'percentage' => round(($reachedProspectiveCount / $newLeadsCount) * 100, 1)
                 ],
-                'newToClosing' => [
+                'prospective_to_consultation' => [
+                    'count' => $consultationCount,
+                    'total' => $reachedProspectiveCount,
+                    'percentage' => $reachedProspectiveCount > 0 ? round(($consultationCount / $reachedProspectiveCount) * 100, 1) : 0
+                ],
+                'consultation_to_pt' => [
+                    'count' => $ptCount,
+                    'total' => $consultationCount,
+                    'percentage' => $consultationCount > 0 ? round(($ptCount / $consultationCount) * 100, 1) : 0
+                ],
+                'pt_to_closing' => [
+                    'count' => $enrolledCount,
+                    'total' => $ptCount,
+                    'percentage' => $ptCount > 0 ? round(($enrolledCount / $ptCount) * 100, 1) : 0
+                ],
+                'new_to_closing' => [
                     'count' => $enrolledCount,
                     'total' => $newLeadsCount,
-                    'percentage' => $newLeadsCount > 0 ? round(($enrolledCount / $newLeadsCount) * 100, 1) : 0
+                    'percentage' => round(($enrolledCount / $newLeadsCount) * 100, 1)
                 ],
-                'newToLost' => [
-                    'count' => $lostCount,
-                    'total' => $newLeadsCount,
-                    'percentage' => $newLeadsCount > 0 ? round(($lostCount / $newLeadsCount) * 100, 1) : 0
-                ],
-                'prospectiveToClosing' => [
+                'prospective_to_closing' => [
                     'count' => $enrolledCount,
                     'total' => $reachedProspectiveCount,
                     'percentage' => $reachedProspectiveCount > 0 ? round(($enrolledCount / $reachedProspectiveCount) * 100, 1) : 0
                 ],
-                'prospectiveToLost' => [
-                    'count' => $lostAfterProspectiveCount,
-                    'total' => $reachedProspectiveCount,
-                    'percentage' => $reachedProspectiveCount > 0 ? round(($lostAfterProspectiveCount / $reachedProspectiveCount) * 100, 1) : 0
+                'consultation_to_closing' => [
+                    'count' => $enrolledCount,
+                    'total' => $consultationCount,
+                    'percentage' => $consultationCount > 0 ? round(($enrolledCount / $consultationCount) * 100, 1) : 0
                 ],
             ],
         ];

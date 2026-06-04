@@ -32,6 +32,11 @@ class StoreLeadConsultation
                 'created_at' => now()
             ]);
 
+            // Update Lead Milestone
+            if (is_null($lead->first_consultation_at)) {
+                $lead->update(['first_consultation_at' => now()]);
+            }
+
             return $consultation;
         });
     }

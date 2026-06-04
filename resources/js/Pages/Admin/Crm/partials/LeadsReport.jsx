@@ -97,68 +97,119 @@ export default function LeadsReport({
             </div>
 
             {/* Detailed Success Rates Grid */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="h-4 w-1 bg-indigo-600 rounded-full" />
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Conversion Performance Metrics</h3>
+            <div className="space-y-8">
+                <div>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="h-4 w-1 bg-red-600 rounded-full" />
+                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Sales Performance (%)</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card className="p-5 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                                    <TrendingUp size={18} />
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.new_to_prospective?.percentage || 0}%</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{successRates.new_to_prospective?.count || 0} / {successRates.new_to_prospective?.total || 0}</span>
+                                 </div>
+                            </div>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Valid Leads / Leads</p>
+                            <p className="text-[9px] text-gray-400 leading-tight">Konversi dari total lead ke prospek</p>
+                        </Card>
+
+                        <Card className="p-5 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                                    <Zap size={18} />
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.prospective_to_consultation?.percentage || 0}%</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{successRates.prospective_to_consultation?.count || 0} / {successRates.prospective_to_consultation?.total || 0}</span>
+                                </div>
+                            </div>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Consultations / Valid Leads</p>
+                            <p className="text-[9px] text-gray-400 leading-tight">Prospek yang lanjut ke konsultasi</p>
+                        </Card>
+
+                        <Card className="p-5 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                                    <Target size={18} />
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.consultation_to_pt?.percentage || 0}%</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{successRates.consultation_to_pt?.count || 0} / {successRates.consultation_to_pt?.total || 0}</span>
+                                </div>
+                            </div>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Placement Tests / Consultations</p>
+                            <p className="text-[9px] text-gray-400 leading-tight">Konsultasi yang lanjut ke PT</p>
+                        </Card>
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <Card className="p-5 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                                <TrendingUp size={18} />
+
+                <div className="border-t border-gray-100 pt-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="h-4 w-1 bg-green-600 rounded-full" />
+                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Enrollment Conversion Metrics</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <Card className="p-5 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-green-50 text-green-600 rounded-xl">
+                                    <CheckCircle size={18} />
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.pt_to_closing?.percentage || 0}%</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{successRates.pt_to_closing?.count || 0} / {successRates.pt_to_closing?.total || 0}</span>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.newToProspective.percentage}%</span>
-                                <span className="text-[10px] font-bold text-gray-400">{successRates.newToProspective.count} / {successRates.newToProspective.total}</span>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Joins / Placement Tests</p>
+                            <p className="text-[9px] text-gray-400 leading-tight">Konversi dari PT ke daftar</p>
+                        </Card>
+
+                        <Card className="p-5 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-slate-50 text-slate-600 rounded-xl">
+                                    <CheckCircle size={18} />
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.new_to_closing?.percentage || 0}%</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{successRates.new_to_closing?.count || 0} / {successRates.new_to_closing?.total || 0}</span>
+                                </div>
                             </div>
-                        </div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">New → Prosp</p>
-                        <p className="text-[9px] text-gray-400 leading-tight">Lolos ke tahap prospek</p>
-                    </Card>
- 
- 
-                    <Card className="p-5 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
-                                <XCircle size={18} />
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Joins from Leads</p>
+                            <p className="text-[9px] text-gray-400 leading-tight">Total konversi dari semua lead</p>
+                        </Card>
+
+                        <Card className="p-5 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-slate-50 text-slate-600 rounded-xl">
+                                    <CheckCircle size={18} />
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.prospective_to_closing?.percentage || 0}%</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{successRates.prospective_to_closing?.count || 0} / {successRates.prospective_to_closing?.total || 0}</span>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.newToLost.percentage}%</span>
-                                <span className="text-[10px] font-bold text-gray-400">{successRates.newToLost.count} / {successRates.newToLost.total}</span>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Join from Valid Leads</p>
+                            <p className="text-[9px] text-gray-400 leading-tight">Konversi dari lead prospek</p>
+                        </Card>
+
+                        <Card className="p-5 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-2 bg-slate-50 text-slate-600 rounded-xl">
+                                    <CheckCircle size={18} />
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.consultation_to_closing?.percentage || 0}%</span>
+                                    <span className="text-[10px] font-bold text-gray-400">{successRates.consultation_to_closing?.count || 0} / {successRates.consultation_to_closing?.total || 0}</span>
+                                </div>
                             </div>
-                        </div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">New → Lost</p>
-                        <p className="text-[9px] text-gray-400 leading-tight">Lead yang terhenti</p>
-                    </Card>
- 
-                    <Card className="p-5 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
-                                <Zap size={18} />
-                            </div>
-                            <div className="text-right">
-                                <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.prospectiveToClosing.percentage}%</span>
-                                <span className="text-[10px] font-bold text-gray-400">{successRates.prospectiveToClosing.count} / {successRates.prospectiveToClosing.total}</span>
-                            </div>
-                        </div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prosp → Enroll</p>
-                        <p className="text-[9px] text-gray-400 leading-tight">Konversi dari prospek</p>
-                    </Card>
- 
-                    <Card className="p-5 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-2 bg-slate-50 text-slate-600 rounded-xl">
-                                <UserMinus size={18} />
-                            </div>
-                            <div className="text-right">
-                                <span className="text-xl font-black text-gray-900 block leading-tight">{successRates.prospectiveToLost.percentage}%</span>
-                                <span className="text-[10px] font-bold text-gray-400">{successRates.prospectiveToLost.count} / {successRates.prospectiveToLost.total}</span>
-                            </div>
-                        </div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Prosp → Lost</p>
-                        <p className="text-[9px] text-gray-400 leading-tight">Gagal setelah prospek</p>
-                    </Card>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Joins from Consultations</p>
+                            <p className="text-[9px] text-gray-400 leading-tight">Konversi dari konsultasi</p>
+                        </Card>
+                    </div>
                 </div>
             </div>
 

@@ -199,20 +199,22 @@ class FetchCrmDashboardData
 
         if ($totalLeads === 0) {
             return [
-                'new_to_prospective' => 0,
-                'new_to_closing' => 0,
-                'new_to_lost' => 0,
-                'prospective_to_closing' => 0,
-                'prospective_to_lost' => 0,
+                'new_to_prospective' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                'prospective_to_consultation' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                'consultation_to_pt' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                'pt_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                'new_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                'prospective_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
+                'consultation_to_closing' => ['count' => 0, 'total' => 0, 'percentage' => 0],
             ];
         }
 
         $leads = (clone $cohortQuery)->get();
 
         $reachedProspectiveCount = $leads->filter(fn($l) => !is_null($l->reached_prospective_at))->count();
+        $consultationCount = $leads->filter(fn($l) => !is_null($l->first_consultation_at))->count();
+        $ptCount = $leads->filter(fn($l) => !is_null($l->first_pt_at))->count();
         $closingCount = $leads->filter(fn($l) => !is_null($l->enrolled_at))->count();
-        $lostCount = $leads->filter(fn($l) => !is_null($l->lost_at))->count();
-        $lostAfterProspectiveCount = $leads->filter(fn($l) => !is_null($l->lost_at) && !is_null($l->reached_prospective_at))->count();
 
         return [
             'new_to_prospective' => [
@@ -220,28 +222,40 @@ class FetchCrmDashboardData
                 'total' => $totalLeads,
                 'percentage' => round(($reachedProspectiveCount / $totalLeads) * 100, 1)
             ],
+            'prospective_to_consultation' => [
+                'count' => $consultationCount,
+                'total' => $reachedProspectiveCount,
+                'percentage' => $reachedProspectiveCount > 0 ? round(($consultationCount / $reachedProspectiveCount) * 100, 1) : 0
+            ],
+            'consultation_to_pt' => [
+                'count' => $ptCount,
+                'total' => $consultationCount,
+                'percentage' => $consultationCount > 0 ? round(($ptCount / $consultationCount) * 100, 1) : 0
+            ],
+            'pt_to_closing' => [
+                'count' => $closingCount,
+                'total' => $ptCount,
+                'percentage' => $ptCount > 0 ? round(($closingCount / $ptCount) * 100, 1) : 0
+            ],
             'new_to_closing' => [
                 'count' => $closingCount,
                 'total' => $totalLeads,
                 'percentage' => round(($closingCount / $totalLeads) * 100, 1)
-            ],
-            'new_to_lost' => [
-                'count' => $lostCount,
-                'total' => $totalLeads,
-                'percentage' => round(($lostCount / $totalLeads) * 100, 1)
             ],
             'prospective_to_closing' => [
                 'count' => $closingCount,
                 'total' => $reachedProspectiveCount,
                 'percentage' => $reachedProspectiveCount > 0 ? round(($closingCount / $reachedProspectiveCount) * 100, 1) : 0
             ],
-            'prospective_to_lost' => [
-                'count' => $lostAfterProspectiveCount,
-                'total' => $reachedProspectiveCount,
-                'percentage' => $reachedProspectiveCount > 0 ? round(($lostAfterProspectiveCount / $reachedProspectiveCount) * 100, 1) : 0
+            'consultation_to_closing' => [
+                'count' => $closingCount,
+                'total' => $consultationCount,
+                'percentage' => $consultationCount > 0 ? round(($closingCount / $consultationCount) * 100, 1) : 0
             ],
         ];
     }
+
+
 }
 
 

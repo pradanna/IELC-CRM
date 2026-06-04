@@ -14,7 +14,15 @@ class CreatePtSessionAction
             $data['token'] = Str::random(40);
         }
 
-        return PtSession::create($data);
+        $session = PtSession::create($data);
+
+        // Update Lead Milestone
+        $lead = \App\Domains\CRM\Domain\Models\Lead::find($data['lead_id']);
+        if ($lead && is_null($lead->first_pt_at)) {
+            $lead->update(['first_pt_at' => now()]);
+        }
+
+        return $session;
     }
 }
 

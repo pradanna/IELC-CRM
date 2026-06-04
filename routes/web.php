@@ -72,7 +72,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/crm/leads/{lead}/activities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'activities'])->name('crm.leads.activities');
     Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'update'])->name('crm.leads.update');
     Route::patch('/crm/leads/{lead}/phase', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updatePhase'])->name('crm.leads.update-phase');
-    Route::patch('/crm/leads/{lead}/notes', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updateNotes'])->name('crm.leads.update-notes');
+    Route::post('/crm/leads/{lead}/notes', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeNote'])->name('crm.leads.store-note');
     Route::post('/crm/leads/{lead}/plot-class', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'plotClass'])->name('crm.leads.plot-class');
     Route::patch('/crm/leads/{lead}/record-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'recordFollowUp'])->name('crm.leads.record-followup');
     Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
