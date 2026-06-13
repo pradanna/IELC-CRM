@@ -46,7 +46,7 @@ class StoreLead
                 'address' => $data['address'] ?? null,
                 'postal_code' => $data['postal_code'] ?? null,
                 'follow_up_count' => 0,
-                'last_activity_at' => now(),
+                'last_activity_at' => null,
             ]);
 
             // Handle Guardians

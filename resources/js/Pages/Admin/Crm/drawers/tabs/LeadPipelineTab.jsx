@@ -26,7 +26,9 @@ import {
     Award,
     StickyNote,
     Save,
-    MessageCircle
+    MessageCircle,
+    ArrowDown,
+    ArrowRight
 } from 'lucide-react';
 import { SectionHeader, InfoItem } from '../components/DrawerUI';
 import LeadPlacementTestTab from './LeadPlacementTestTab';
@@ -43,6 +45,44 @@ const normalizeCollection = (collection) => {
     return [];
 };
 
+const cleanTemplateTitle = (title) => {
+    if (!title) return '';
+    return title.replace(/^\[[^\]]+\]\s*/i, '');
+};
+
+const PIPELINE_TRANSITIONS = {
+    'lead': {
+        nextCode: 'prospect',
+        buttonLabel: 'Lanjutkan ke Prospek',
+        description: 'Tandai calon siswa sebagai prospek potensial setelah kontak awal berhasil dilakukan.'
+    },
+    'prospect': {
+        nextCode: 'consultation',
+        buttonLabel: 'Jadwalkan Konsultasi',
+        description: 'Prospek menunjukkan ketertarikan. Lanjutkan ke tahap Konsultasi Akademik untuk diskusi lebih mendalam.'
+    },
+    'consultation': {
+        nextCode: 'placement-test',
+        buttonLabel: 'Daftarkan Placement Test',
+        description: 'Konsultasi selesai. Lanjutkan untuk menjadwalkan tes penempatan guna mengukur level kemampuan siswa.'
+    },
+    'placement-test': {
+        nextCode: 'pre-enrollment',
+        buttonLabel: 'Lanjutkan ke Pre-Enrollment',
+        description: 'Hasil tes penempatan telah diperoleh. Lanjutkan ke tahap pengisian data dan plotting kelas.'
+    },
+    'pre-enrollment': {
+        nextCode: 'invoice',
+        buttonLabel: 'Terbitkan Invoice',
+        description: 'Plotting kelas dan jadwal siswa selesai. Lanjutkan untuk membuat dan mengirimkan invoice tagihan.'
+    },
+    'invoice': {
+        nextCode: 'enrollment',
+        buttonLabel: 'Selesaikan Proses Enrollment',
+        description: 'Pembayaran tagihan telah diterima. Daftarkan siswa secara resmi untuk memulai kelas perdana.'
+    }
+};
+
 const PhaseSection = ({ 
     icon: Icon, 
     title, 
@@ -55,9 +95,27 @@ const PhaseSection = ({
     lead,
     phases,
     handleSendTemplate,
-    sendingTemplateId
+    sendingTemplateId,
+    onUpdatePhase
 }) => {
     const active = isStageActive(codes);
+    
+    let nextPhaseInfo = null;
+    if (active) {
+        const currentCode = codes.find(c => PIPELINE_TRANSITIONS[c]);
+        const transition = PIPELINE_TRANSITIONS[currentCode];
+        if (transition) {
+            const nextPhaseObj = phases.find(p => p.code === transition.nextCode);
+            if (nextPhaseObj) {
+                nextPhaseInfo = {
+                    id: nextPhaseObj.id,
+                    name: nextPhaseObj.name,
+                    buttonLabel: transition.buttonLabel,
+                    description: transition.description
+                };
+            }
+        }
+    }
     
     const phaseTemplates = chatTemplates.filter(t => {
         // 1. Phase Logic: Match specific phase codes or show global templates in active section only
@@ -86,7 +144,7 @@ const PhaseSection = ({
     });
 
     return (
-        <div className={`relative p-8 rounded-[2.5rem] border ${getSectionStyle(codes)} transition-all duration-500`}>
+        <div id={active ? "current-stage-section" : undefined} className={`relative p-8 rounded-[2.5rem] border ${getSectionStyle(codes)} transition-all duration-500`}>
             {active && (
                 <div className="absolute -top-3 right-8 px-5 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-xl shadow-red-500/40 animate-pulse transition-transform hover:scale-105">
                     Current Stage
@@ -123,12 +181,12 @@ const PhaseSection = ({
                                     key={t.id}
                                     onClick={() => handleSendTemplate(t)}
                                     disabled={sendingTemplateId !== null}
-                                    className={`px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 transition-all shadow-sm active:scale-95 flex items-center gap-2 ${
+                                    className={`px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 transition-all shadow-sm active:scale-95 flex items-center gap-2.5 ${
                                         sendingTemplateId === t.id ? 'border-amber-500 text-amber-600' : 'hover:border-red-500 hover:text-red-600'
-                                    } ${sendingTemplateId !== null && sendingTemplateId !== t.id ? 'opacity-50' : ''}`}
+                                    } ${sendingTemplateId !== null && sendingTemplateId !== t.id ? 'opacity-50' : ''} cursor-pointer`}
                                 >
-                                    {sendingTemplateId === t.id && <Loader2 size={10} className="animate-spin" />}
-                                    {sendingTemplateId === t.id ? 'Sending...' : t.title}
+                                    {sendingTemplateId === t.id && <Loader2 size={12} className="animate-spin" />}
+                                    {sendingTemplateId === t.id ? 'Sending...' : cleanTemplateTitle(t.title)}
                                 </button>
                             ))}
                         </div>
@@ -148,7 +206,7 @@ const PhaseSection = ({
                                             <div className="w-6 h-6 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-red-500 group-hover:bg-red-50 transition-colors">
                                                 <MessageSquare size={12} />
                                             </div>
-                                            <span className="text-[10px] font-black text-slate-700 uppercase tracking-tight">{log.template_title}</span>
+                                            <span className="text-[10px] font-black text-slate-700 uppercase tracking-tight">{cleanTemplateTitle(log.template_title)}</span>
                                         </div>
                                         <span className="text-[9px] font-bold text-slate-400">{log.formatted_date}</span>
                                     </div>
@@ -173,6 +231,24 @@ const PhaseSection = ({
                     </div>
                 )}
             </div>
+
+            {active && nextPhaseInfo && (
+                <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 -mx-8 -mb-8 p-6 rounded-b-[2.5rem]">
+                    <div>
+                        <h6 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tahap Selanjutnya: {nextPhaseInfo.name}</h6>
+                        <p className="text-[11px] text-slate-500 leading-normal font-medium max-w-lg">
+                            {nextPhaseInfo.description}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => onUpdatePhase(nextPhaseInfo.id)}
+                        className="flex items-center gap-2 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+                    >
+                        {nextPhaseInfo.buttonLabel}
+                        <ArrowRight size={12} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
@@ -187,7 +263,9 @@ export default function LeadPipelineTab({
     availableClasses = [],
     chatTemplates = [],
     priceMasters = [],
-    onRefresh
+    onRefresh,
+    leadTypes = [],
+    leadSources = []
 }) {
     if (loading) {
         return (
@@ -199,6 +277,8 @@ export default function LeadPipelineTab({
 
 
     const normalizedPhases = normalizeCollection(phases);
+    const normalizedLeadTypes = normalizeCollection(leadTypes);
+    const normalizedLeadSources = normalizeCollection(leadSources);
 
     const currentPhaseCode = lead?.lead_phase?.code;
     const style = getPhaseStyle(currentPhaseCode);
@@ -217,6 +297,20 @@ export default function LeadPipelineTab({
         consultation_date: new Date().toISOString().split('T')[0]
     });
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+    const [updatingQualification, setUpdatingQualification] = useState(false);
+
+    const handleUpdateQualification = async (updates) => {
+        setUpdatingQualification(true);
+        try {
+            await axios.patch(route('admin.crm.leads.update-qualification', lead.id), updates);
+            onRefresh(true);
+        } catch (err) {
+            console.error('Gagal memperbarui kualifikasi:', err);
+            alert('Gagal memperbarui kualifikasi: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setUpdatingQualification(false);
+        }
+    };
 
     const handleSendInvoiceWA = async (invoice) => {
         const message = `Halo *${lead.nickname || lead.name}*,\n\n` +
@@ -277,7 +371,7 @@ export default function LeadPipelineTab({
             await axios.post(route('admin.crm.leads.send-template', lead.id), {
                 chat_template_id: template.id
             });
-            onRefresh();
+            onRefresh(true);
         } catch (err) {
             console.error('Gagal mengirim template:', err);
             const errMsg = err.response?.data?.error || err.message || "Unknown error";
@@ -296,7 +390,7 @@ export default function LeadPipelineTab({
             setConsultationForm({
                 consultation_date: new Date().toISOString().split('T')[0]
             });
-            onRefresh();
+            onRefresh(true);
         } catch (err) {
             alert('Gagal menyimpan konsultasi: ' + (err.response?.data?.message || err.message));
         } finally {
@@ -313,7 +407,15 @@ export default function LeadPipelineTab({
         lead,
         phases: normalizedPhases,
         handleSendTemplate,
-        sendingTemplateId
+        sendingTemplateId,
+        onUpdatePhase
+    };
+
+    const scrollToCurrentStage = () => {
+        const element = document.getElementById('current-stage-section');
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
     return (
@@ -331,11 +433,20 @@ export default function LeadPipelineTab({
                         </div>
                     </div>
 
-                    <Menu as="div" className="relative">
-                        <Menu.Button className="flex items-center gap-2 pl-6 pr-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-slate-200">
-                            Update Phase
-                            <ChevronDown size={12} className="opacity-60" />
-                        </Menu.Button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={scrollToCurrentStage}
+                            className="flex items-center justify-center w-8 h-8 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-all active:scale-95 shadow-sm"
+                            title="Scroll to Current Stage"
+                        >
+                            <ArrowDown size={14} className="animate-bounce" style={{ animationDuration: '2.5s' }} />
+                        </button>
+
+                        <Menu as="div" className="relative">
+                            <Menu.Button className="flex items-center gap-2 pl-6 pr-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-slate-200">
+                                Update Phase
+                                <ChevronDown size={12} className="opacity-60" />
+                            </Menu.Button>
                         <Transition
                             as={Fragment}
                             enter="transition ease-out duration-100"
@@ -377,6 +488,7 @@ export default function LeadPipelineTab({
                         </Transition>
                     </Menu>
                 </div>
+                </div>
             </div>
 
             <div className="space-y-12 px-10 pb-20">
@@ -389,16 +501,48 @@ export default function LeadPipelineTab({
                     codes={['lead']}
                 >
                     <div className="grid grid-cols-2 gap-y-6 gap-x-8">
-                        <InfoItem 
-                            label="Initial Type" 
-                            value={lead?.lead_type?.name} 
-                            icon={Users} 
-                        />
-                        <InfoItem 
-                            label="Marketing Source" 
-                            value={lead?.lead_source?.name || 'Organic/Direct'} 
-                            icon={Globe} 
-                        />
+                        {/* Editable Initial Type Dropdown */}
+                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-red-100 focus-within:border-red-500 transition-all hover:bg-slate-50/80 relative cursor-pointer group">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none group-hover:text-red-500 transition-colors">Initial Type</label>
+                            <div className="flex items-center gap-3 mt-1.5 relative">
+                                <Users size={16} className="text-slate-300 flex-shrink-0 group-hover:text-red-400 transition-colors" />
+                                <div className="relative flex-1">
+                                    <select
+                                        value={lead?.lead_type_id || ''}
+                                        onChange={(e) => handleUpdateQualification({ lead_type_id: e.target.value || null, is_online: lead.is_online })}
+                                        disabled={updatingQualification}
+                                        className="w-full bg-transparent border-none p-0 text-sm font-black text-slate-800 outline-none cursor-pointer pr-6 focus:ring-0 appearance-none"
+                                    >
+                                        <option value="">Pilih Tipe...</option>
+                                        {normalizedLeadTypes.map(type => (
+                                            <option key={type.id} value={type.id}>{type.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="text-slate-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
+                        </div>
+                        {/* Editable Marketing Source Dropdown */}
+                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-red-100 focus-within:border-red-500 transition-all hover:bg-slate-50/80 relative cursor-pointer group">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none group-hover:text-red-500 transition-colors">Lead Source</label>
+                            <div className="flex items-center gap-3 mt-1.5 relative">
+                                <Globe size={16} className="text-slate-300 flex-shrink-0 group-hover:text-red-400 transition-colors" />
+                                <div className="relative flex-1">
+                                    <select
+                                        value={lead?.lead_source_id || ''}
+                                        onChange={(e) => handleUpdateQualification({ lead_source_id: e.target.value || null })}
+                                        disabled={updatingQualification}
+                                        className="w-full bg-transparent border-none p-0 text-sm font-black text-slate-800 outline-none cursor-pointer pr-6 focus:ring-0 appearance-none"
+                                    >
+                                        <option value="">Pilih Sumber...</option>
+                                        {normalizedLeadSources.map(source => (
+                                            <option key={source.id} value={source.id}>{source.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="text-slate-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
+                        </div>
                         <InfoItem 
                             label="Created At" 
                             value={lead?.formatted_at} 
@@ -420,15 +564,53 @@ export default function LeadPipelineTab({
                     subtitle="Qualified and interested"
                     codes={['prospect']}
                 >
-                    <div className="grid grid-cols-2 gap-8">
-                        <InfoItem 
-                            label="Follow-up Tracking" 
-                            value={`${lead?.follow_up_count || 0} Attempts`} 
-                            icon={MessageSquare} 
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Dropdown Program Interest */}
+                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-red-100 focus-within:border-red-500 transition-all hover:bg-slate-50/80 relative cursor-pointer group">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none group-hover:text-red-500 transition-colors">Program Minat</label>
+                            <div className="flex items-center gap-3 mt-1.5 relative">
+                                <Target size={16} className="text-slate-300 flex-shrink-0 group-hover:text-red-400 transition-colors" />
+                                <div className="relative flex-1">
+                                    <select
+                                        value={lead?.lead_type_id || ''}
+                                        onChange={(e) => handleUpdateQualification({ lead_type_id: e.target.value || null, is_online: lead.is_online })}
+                                        disabled={updatingQualification}
+                                        className="w-full bg-transparent border-none p-0 text-sm font-black text-slate-800 outline-none cursor-pointer pr-6 focus:ring-0 appearance-none"
+                                    >
+                                        <option value="">Pilih Program...</option>
+                                        {normalizedLeadTypes.map(type => (
+                                            <option key={type.id} value={type.id}>{type.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="text-slate-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Dropdown Study Mode */}
+                        <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-red-100 focus-within:border-red-500 transition-all hover:bg-slate-50/80 relative cursor-pointer group">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none group-hover:text-red-500 transition-colors">Metode Belajar</label>
+                            <div className="flex items-center gap-3 mt-1.5 relative">
+                                <Globe size={16} className="text-slate-300 flex-shrink-0 group-hover:text-red-400 transition-colors" />
+                                <div className="relative flex-1">
+                                    <select
+                                        value={lead?.is_online ? '1' : '0'}
+                                        onChange={(e) => handleUpdateQualification({ lead_type_id: lead.lead_type_id, is_online: e.target.value === '1' })}
+                                        disabled={updatingQualification}
+                                        className="w-full bg-transparent border-none p-0 text-sm font-black text-slate-800 outline-none cursor-pointer pr-6 focus:ring-0 appearance-none"
+                                    >
+                                        <option value="0">On Campus (Offline)</option>
+                                        <option value="1">Online</option>
+                                    </select>
+                                    <ChevronDown size={14} className="text-slate-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Last Engagement */}
                         <InfoItem 
                             label="Last Engagement" 
-                            value={lead?.human_at} 
+                            value={lead?.human_last_activity_at} 
                             icon={Clock} 
                         />
                     </div>

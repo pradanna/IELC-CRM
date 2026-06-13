@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { router } from '@inertiajs/react';
+
 
 export function useLeadPlacementTest({ lead, onRefresh }) {
     const [generating, setGenerating] = useState(false);
@@ -19,7 +19,7 @@ export function useLeadPlacementTest({ lead, onRefresh }) {
                 pt_exam_id: selectedExamId
             });
             setSelectedExamId('');
-            if (onRefresh) onRefresh();
+            if (onRefresh) onRefresh(true);
         } catch (error) {
             console.error('Error generating placement test link:', error);
             // Error will be handled by Toast automatically if backend returns error flash
@@ -63,7 +63,7 @@ export function useLeadPlacementTest({ lead, onRefresh }) {
         setIsDeleting(id);
         try {
             await axios.delete(route('admin.crm.pt-sessions.destroy', id));
-            if (onRefresh) onRefresh();
+            if (onRefresh) onRefresh(true);
         } catch (error) {
             console.error('Error deleting session:', error);
         } finally {

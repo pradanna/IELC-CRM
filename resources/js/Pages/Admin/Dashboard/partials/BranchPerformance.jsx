@@ -42,7 +42,7 @@ export default function BranchPerformance({ performanceData }) {
 
             <div className="mt-auto pt-8 flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Enrollment</span>
                 </div>
                 <div className="flex items-center gap-2">

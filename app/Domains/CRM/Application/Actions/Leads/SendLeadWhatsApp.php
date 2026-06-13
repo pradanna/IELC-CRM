@@ -43,6 +43,19 @@ class SendLeadWhatsApp
                 'description' => $message,
             ]);
 
+            // Record Follow-Up Tracking
+            $now = now();
+            if ($lead->follow_up_count === 0 || !$lead->last_activity_at || !$lead->last_activity_at->isToday()) {
+                $lead->increment('follow_up_count');
+            }
+            $lead->update(['last_activity_at' => $now]);
+
+            // Automation: 4x Follow-up -> Cold Leads
+            $coldPhase = \App\Domains\Master\Domain\Models\LeadPhase::where('code', 'cold-leads')->first();
+            if ($lead->follow_up_count >= 4 && $coldPhase && $lead->lead_phase_id !== $coldPhase->id) {
+                $lead->update(['lead_phase_id' => $coldPhase->id]);
+            }
+
             return $result;
         });
     }

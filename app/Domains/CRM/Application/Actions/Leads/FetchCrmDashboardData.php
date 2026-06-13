@@ -15,20 +15,29 @@ class FetchCrmDashboardData
     public function handle(array $filters = []): array
     {
         $now = \Carbon\Carbon::now();
-        $month = $filters['month'] ?? $now->month;
-        $year = $filters['year'] ?? $now->year;
+        $month = isset($filters['month']) && $filters['month'] !== '' ? (int)$filters['month'] : null;
+        $year = isset($filters['year']) && $filters['year'] !== '' ? (int)$filters['year'] : null;
         $branchId = $filters['branch_id'] ?? null;
+
+        $isFiltered = !is_null($month) && !is_null($year);
+
+        // For trend line and targets, if no filter is active, default to current month
+        $trendMonth = $month ?? (int)$now->month;
+        $trendYear = $year ?? (int)$now->year;
 
         $userId = Auth::id();
         $userRole = Auth::user()->roles->first()?->name;
         
         // Use a versioned key to mimic tag-based flushing if the store doesn't support tags
         $version = \Illuminate\Support\Facades\Cache::get('crm_dashboard_version', 1);
-        $cacheKey = "crm_dashboard_v{$version}_{$year}_{$month}_" . ($branchId ?? 'all') . "_user_{$userId}";
+        $cacheKey = "crm_dashboard_v{$version}_" . ($year ?? 'all') . "_" . ($month ?? 'all') . "_" . ($branchId ?? 'all') . "_user_{$userId}";
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function() use ($now, $month, $year, $branchId, $userRole, $userId) {
-            $startDateObj = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDateObj = $startDateObj->copy()->endOfMonth();
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function() use ($now, $month, $year, $trendMonth, $trendYear, $isFiltered, $branchId, $userRole, $userId) {
+            $startDateObj = $isFiltered ? \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth() : null;
+            $endDateObj = $isFiltered ? $startDateObj->copy()->endOfMonth() : null;
+
+            $trendStartDate = \Carbon\Carbon::createFromDate($trendYear, $trendMonth, 1)->startOfMonth();
+            $trendEndDate = $trendStartDate->copy()->endOfMonth();
 
             // Helper to apply role-based filtering
             $applyRoleFilter = function ($query) use ($userRole, $userId) {
@@ -42,31 +51,43 @@ class FetchCrmDashboardData
             };
 
             // 1. Stats Summary
-            $query = Lead::query()->whereBetween('created_at', [$startDateObj, $endDateObj]);
+            $query = Lead::query();
+            if ($isFiltered) {
+                $query->whereBetween('created_at', [$startDateObj, $endDateObj]);
+            }
             if ($branchId) $query->where('branch_id', $branchId);
-            // $applyRoleFilter($query); // Remove global filter for KPIs
 
             $phases = LeadPhase::orderBy('created_at')->get();
-            $phaseStats = $phases->map(function($p) use ($startDateObj, $endDateObj, $branchId, $applyRoleFilter) {
-                // If the phase is 'enrolled', we still want to see activity within the period
-                // to match the trend chart (How many were enrolled THIS month)
-                if ($p->code === 'enrollment') {
-                    $eQuery = Lead::where('lead_phase_id', $p->id)
-                        ->whereBetween('enrolled_at', [$startDateObj, $endDateObj]);
-                    if ($branchId) $eQuery->where('branch_id', $branchId);
-                    
-                    return [
-                        'name' => $p->name,
-                        'code' => $p->code,
-                        'status' => $p->status,
-                        'count' => $eQuery->count(),
-                    ];
-                }
-
-                // For all other phases, show the CURRENT snapshot of all active leads
-                // to ensure the pipeline breakdown is always accurate
+            $phaseStats = $phases->map(function($p) use ($startDateObj, $endDateObj, $branchId, $isFiltered) {
                 $sQuery = Lead::where('lead_phase_id', $p->id);
                 if ($branchId) $sQuery->where('branch_id', $branchId);
+
+                if ($isFiltered) {
+                    switch ($p->code) {
+                        case 'lead':
+                            $sQuery->whereBetween('created_at', [$startDateObj, $endDateObj]);
+                            break;
+                        case 'prospect':
+                            $sQuery->whereBetween('reached_prospective_at', [$startDateObj, $endDateObj]);
+                            break;
+                        case 'consultation':
+                            $sQuery->whereBetween('first_consultation_at', [$startDateObj, $endDateObj]);
+                            break;
+                        case 'placement-test':
+                            $sQuery->whereBetween('first_pt_at', [$startDateObj, $endDateObj]);
+                            break;
+                        case 'enrollment':
+                            $sQuery->whereBetween('enrolled_at', [$startDateObj, $endDateObj]);
+                            break;
+                        case 'cold-leads':
+                        case 'dropout-leads':
+                            $sQuery->whereBetween('lost_at', [$startDateObj, $endDateObj]);
+                            break;
+                        default:
+                            $sQuery->whereBetween('updated_at', [$startDateObj, $endDateObj]);
+                            break;
+                    }
+                }
 
                 return [
                     'name' => $p->name,
@@ -143,13 +164,12 @@ class FetchCrmDashboardData
 
             // 3. Enrollment Trend (Line Chart - Cumulative)
             $enrollmentTrend = [];
-            $daysInMonth = $startDateObj->daysInMonth;
+            $daysInMonth = $trendStartDate->daysInMonth;
             
             $achievedQuery = Lead::whereNotNull('enrolled_at')
-                ->whereBetween('enrolled_at', [$startDateObj, $endDateObj]);
+                ->whereBetween('enrolled_at', [$trendStartDate, $trendEndDate]);
 
             if ($branchId) $achievedQuery->where('branch_id', $branchId);
-            // $applyRoleFilter($achievedQuery); // Remove global filter for Trend
 
             $dailyCounts = $achievedQuery->select(DB::raw('DAY(enrolled_at) as day'), DB::raw('count(*) as count'))
                 ->groupBy('day')
@@ -157,7 +177,7 @@ class FetchCrmDashboardData
                 ->toArray();
 
             // Calculate Monthly Target for Trend Line
-            $targetQuery = MonthlyTarget::where('month', $month)->where('year', $year);
+            $targetQuery = MonthlyTarget::where('month', $trendMonth)->where('year', $trendYear);
             if ($branchId) {
                 $targetQuery->where('branch_id', $branchId);
             }
@@ -180,18 +200,21 @@ class FetchCrmDashboardData
                 'expiringStudents' => (new FetchExpiringStudents())->execute(14, $branchId),
                 'pending_registrations_count' => \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count(),
                 'filters' => [
-                    'month' => (int)$month,
-                    'year' => (int)$year,
+                    'month' => $month,
+                    'year' => $year,
                     'branch_id' => $branchId,
                 ],
-                'success_rates' => $this->calculateSuccessRates($startDateObj, $endDateObj, $branchId, $applyRoleFilter),
+                'success_rates' => $this->calculateSuccessRates($startDateObj, $endDateObj, $branchId, $applyRoleFilter, $isFiltered),
             ];
         });
     }
 
-    private function calculateSuccessRates($startDate, $endDate, $branchId, $applyRoleFilter): array
+    private function calculateSuccessRates($startDate, $endDate, $branchId, $applyRoleFilter, $isFiltered): array
     {
-        $cohortQuery = Lead::whereBetween('created_at', [$startDate, $endDate]);
+        $cohortQuery = Lead::query();
+        if ($isFiltered) {
+            $cohortQuery->whereBetween('created_at', [$startDate, $endDate]);
+        }
         if ($branchId) $cohortQuery->where('branch_id', $branchId);
         $applyRoleFilter($cohortQuery);
 

@@ -14,8 +14,8 @@ class RecordLeadFollowUp
         return DB::transaction(function () use ($lead, $data) {
             $now = now();
             
-            // Only increment follow_up_count MAX once per day
-            if (!$lead->last_activity_at || !$lead->last_activity_at->isToday()) {
+            // Only increment follow_up_count MAX once per day (unless it is the first follow-up)
+            if ($lead->follow_up_count === 0 || !$lead->last_activity_at || !$lead->last_activity_at->isToday()) {
                 $lead->increment('follow_up_count');
             }
 

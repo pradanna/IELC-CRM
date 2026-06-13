@@ -36,16 +36,36 @@ export default function Index({ data, branches, phases, sources, types, province
     const normalizedBranches = normalizeCollection(branches);
     const normalizedPhases = normalizeCollection(phases);
 
-    const monthName = new Date(filters.year, filters.month - 1).toLocaleString('id-ID', { month: 'long' });
-    const periodLabel = `${monthName} ${filters.year}`;
+    const hasDateFilter = filters.month && filters.year;
+    const monthName = hasDateFilter ? new Date(filters.year, filters.month - 1).toLocaleString('id-ID', { month: 'long' }) : '';
+    const periodLabel = hasDateFilter ? `${monthName} ${filters.year}` : 'All Time';
 
-    const totalLeadsCard = { title: 'TOTAL LEADS', value: stats.total, icon: 'users', variant: 'primary' };
+    const totalLeadsCard = { 
+        title: hasDateFilter ? 'NEW LEADS' : 'TOTAL LEADS', 
+        value: stats.total, 
+        icon: 'users', 
+        variant: 'primary', 
+        subtitle: periodLabel 
+    };
 
-    const phaseCards = stats.phases.map(phase => ({
-        value: phase.count,
-        phaseCode: phase.code,
-        subtitle: phase.code === 'enrollment' ? periodLabel : null
-    }));
+    const activePhases = ['lead', 'prospect', 'consultation', 'placement-test', 'pre-enrollment', 'invoice'];
+    const closedPhases = ['enrollment', 'cold-leads', 'dropout-leads'];
+
+    const activeCards = stats.phases
+        .filter(phase => activePhases.includes(phase.code))
+        .map(phase => ({
+            value: phase.count,
+            phaseCode: phase.code,
+            subtitle: null
+        }));
+
+    const closedCards = stats.phases
+        .filter(phase => closedPhases.includes(phase.code))
+        .map(phase => ({
+            value: phase.count,
+            phaseCode: phase.code,
+            subtitle: periodLabel
+        }));
 
     return (
         <AuthenticatedLayout>
@@ -77,16 +97,28 @@ export default function Index({ data, branches, phases, sources, types, province
                                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-2">Workspace Overview</h3>
                                 <p className="text-sm text-gray-400 font-medium leading-relaxed">
                                     Pantau performa pipeline recruitment dan konversi lead Anda secara real-time. 
-                                    Total leads mencakup seluruh data yang masuk pada periode bulan ini.
+                                    {hasDateFilter 
+                                        ? 'New leads mencakup seluruh data yang masuk pada periode bulan terfilter.' 
+                                        : 'Total leads mencakup seluruh data lead yang ada di sistem (All Time).'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Phase KPIs Grid */}
+                        {/* Active Pipeline KPIs Grid */}
                         <div className="space-y-6">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest border-l-4 border-red-500 pl-4">Lead Phases Breakdown</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {phaseCards.map((card, index) => (
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-4 border-indigo-500 pl-4">Pipeline Leads Aktif</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {activeCards.map((card, index) => (
+                                    <StatsCard key={index} {...card} />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Completed / Closed Outcomes KPIs Grid */}
+                        <div className="space-y-6">
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-4 border-emerald-500 pl-4">Hasil Konversi & Status Akhir (Closed)</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {closedCards.map((card, index) => (
                                     <StatsCard key={index} {...card} />
                                 ))}
                             </div>

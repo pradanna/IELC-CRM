@@ -39,11 +39,11 @@ class FetchSuperadminDashboardData
                 ->where('month', $now->month)
                 ->first();
 
-            $preEnrollmentPhase = LeadPhase::where('code', 'pre-enrollment')->first();
+            $enrollmentPhase = LeadPhase::where('code', 'enrollment')->first();
             
             $actual = Lead::where('branch_id', $branch->id)
-                ->where('lead_phase_id', $preEnrollmentPhase?->id)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->where('lead_phase_id', $enrollmentPhase?->id)
+                ->whereBetween('enrolled_at', [$startOfMonth, $endOfMonth])
                 ->count();
 
             $targetValue = $target?->target_enrolled ?? 0;

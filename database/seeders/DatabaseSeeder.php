@@ -30,6 +30,10 @@ class DatabaseSeeder extends Seeder
             ChatTemplateSeeder::class,
         ]);
 
-
+        if (app()->environment('local', 'testing')) {
+            $this->call([
+                ExampleStudyClassSeeder::class,
+            ]);
+        }
     }
 }

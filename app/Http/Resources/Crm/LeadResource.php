@@ -148,6 +148,9 @@ class LeadResource extends JsonResource
             'human_at'       => $this->created_at->diffForHumans(),
             'enrolled_at'    => $this->enrolled_at ? $this->enrolled_at->toISOString() : null,
             'formatted_enrolled_at' => $this->enrolled_at ? $this->enrolled_at->format('d M Y') : null,
+            'last_activity_at' => $this->last_activity_at ? $this->last_activity_at->toISOString() : null,
+            'formatted_last_activity_at' => $this->last_activity_at ? $this->last_activity_at->format('d M Y') : null,
+            'human_last_activity_at' => $this->last_activity_at ? $this->last_activity_at->diffForHumans() : 'Belum ada aktivitas',
         ];
     }
 }

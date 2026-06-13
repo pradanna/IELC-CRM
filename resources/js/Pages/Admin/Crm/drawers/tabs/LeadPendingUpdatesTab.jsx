@@ -44,7 +44,7 @@ export default function LeadPendingUpdatesTab({ lead, onRefresh }) {
                 : route('admin.crm.leads.reject-updates', lead.id);
             
             await axios.post(url);
-            if (onRefresh) onRefresh();
+            if (onRefresh) onRefresh(true);
         } catch (error) {
             console.error(`Error ${action}ing updates:`, error);
             alert(`Failed to ${action} updates.`);

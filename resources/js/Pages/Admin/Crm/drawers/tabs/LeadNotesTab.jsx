@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, StickyNote, User, Clock, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
-import { router } from '@inertiajs/react';
+import axios from 'axios';
 
 export default function LeadNotesTab({ lead, onRefresh }) {
     const [newNote, setNewNote] = useState('');
@@ -35,32 +35,26 @@ export default function LeadNotesTab({ lead, onRefresh }) {
         }
     }, [notes.length, isLoading]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!lead || saving || !newNote.trim()) return;
 
         setSaving(true);
         setError(null);
 
-        router.post(route('admin.crm.leads.store-note', lead.id), {
-            content: newNote
-        }, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                setNewNote('');
-                if (onRefresh) {
-                    setIsLoading(true);
-                    onRefresh();
-                }
-            },
-            onError: (errors) => {
-                console.error('Error saving note:', errors);
-                setError(errors?.content || 'Gagal menyimpan catatan. Silakan coba lagi.');
-            },
-            onFinish: () => {
-                setSaving(false);
+        try {
+            await axios.post(route('admin.crm.leads.store-note', lead.id), {
+                content: newNote
+            });
+            setNewNote('');
+            if (onRefresh) {
+                onRefresh(true);
             }
-        });
+        } catch (err) {
+            console.error('Error saving note:', err);
+            setError(err.response?.data?.errors?.content?.[0] || err.response?.data?.message || 'Gagal menyimpan catatan. Silakan coba lagi.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (

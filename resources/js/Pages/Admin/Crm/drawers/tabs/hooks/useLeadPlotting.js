@@ -101,7 +101,7 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
             alert('Plotting berhasil disimpan.');
         }
 
-        onRefresh();
+        onRefresh(true);
         setSavingPlotting(false);
     };
 

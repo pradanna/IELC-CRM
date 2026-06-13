@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { router } from '@inertiajs/react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
 import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw, StickyNote } from 'lucide-react';
 import axios from 'axios';
@@ -27,6 +26,8 @@ export default function LeadDetailDrawer({
     const [localChatTemplates, setLocalChatTemplates] = useState([]);
     const [localPhases, setLocalPhases] = useState(phases);
     const [localMediaAssets, setLocalMediaAssets] = useState([]);
+    const [localLeadTypes, setLocalLeadTypes] = useState([]);
+    const [localLeadSources, setLocalLeadSources] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const { getPhaseStyle } = useLeadPhaseStyle();
     
@@ -43,10 +44,12 @@ export default function LeadDetailDrawer({
         }
     }, [isOpen, leadId, refreshTrigger]);
 
-    const fetchLeadDetails = async () => {
-        // Clear old lead data to force a visual "refresh" state
-        setLead(null);
-        setLoading(true);
+    const fetchLeadDetails = async (silent = false) => {
+        if (!silent) {
+            // Clear old lead data to force a visual "refresh" state
+            setLead(null);
+            setLoading(true);
+        }
         
         try {
             // A tiny delay (300ms) to ensure any server-side database write operations 
@@ -69,6 +72,8 @@ export default function LeadDetailDrawer({
             if (response.data.chatTemplates) setLocalChatTemplates(response.data.chatTemplates);
             if (response.data.phases) setLocalPhases(response.data.phases);
             if (response.data.mediaAssets) setLocalMediaAssets(response.data.mediaAssets);
+            if (response.data.leadTypes) setLocalLeadTypes(response.data.leadTypes);
+            if (response.data.leadSources) setLocalLeadSources(response.data.leadSources);
 
         } catch (error) {
             console.error('Error fetching lead details:', error);
@@ -77,7 +82,9 @@ export default function LeadDetailDrawer({
                 closeDrawer();
             }
         } finally {
-            setLoading(false);
+            if (!silent) {
+                setLoading(false);
+            }
         }
     };
 
@@ -86,10 +93,8 @@ export default function LeadDetailDrawer({
             const response = await axios.patch(route('admin.crm.leads.update-phase', leadId), {
                 lead_phase_id: newPhaseId
             });
-            // Update local state and trigger side effects if needed
+            // Update local drawer state immediately from the response
             setLead(response.data.lead);
-            // Reload the parent page state (List view or Dashboard)
-            router.reload({ preserveScroll: true, preserveState: true });
         } catch (error) {
             console.error('Error updating lead phase:', error);
         }
@@ -99,8 +104,7 @@ export default function LeadDetailDrawer({
         if (confirm(`Convert ${lead.name} to a registered student?`)) {
             try {
                 await axios.post(route('admin.academic.students.promote', leadId));
-                fetchLeadDetails(); // Refresh local state
-                router.reload({ preserveScroll: true, preserveState: true });
+                fetchLeadDetails(true); // Silent refresh local state
             } catch (error) {
                 console.error('Error promoting lead:', error);
                 alert(error.response?.data?.message || 'Failed to promote lead.');
@@ -243,18 +247,20 @@ export default function LeadDetailDrawer({
                                                 </Tab.Panel>
 
                                                 <Tab.Panel className="outline-none">
-                                                    <LeadPipelineTab 
-                                                        lead={lead}
-                                                        loading={loading}
-                                                        getPhaseStyle={getPhaseStyle}
-                                                        phases={localPhases}
-                                                        onUpdatePhase={handleUpdatePhase}
-                                                        availableExams={availableExams}
-                                                        availableClasses={availableClasses}
-                                                        chatTemplates={localChatTemplates}
-                                                        priceMasters={priceMasters}
-                                                        onRefresh={fetchLeadDetails}
-                                                    />
+                                                     <LeadPipelineTab 
+                                                         lead={lead}
+                                                         loading={loading}
+                                                         getPhaseStyle={getPhaseStyle}
+                                                         phases={localPhases}
+                                                         onUpdatePhase={handleUpdatePhase}
+                                                         availableExams={availableExams}
+                                                         availableClasses={availableClasses}
+                                                         chatTemplates={localChatTemplates}
+                                                         priceMasters={priceMasters}
+                                                         onRefresh={fetchLeadDetails}
+                                                         leadTypes={localLeadTypes}
+                                                         leadSources={localLeadSources}
+                                                     />
                                                 </Tab.Panel>
 
                                                 <Tab.Panel className="outline-none p-10">

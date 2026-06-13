@@ -123,8 +123,45 @@ export default function useKanbanBoard(kanbanData) {
                     lead_phase_id: overContainer
                 });
                 
+                const todayFormatted = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const targetPhase = boardData.find(p => p.id === overContainer);
+                const isEnrollment = targetPhase?.code === 'enrollment';
+
                 // Update activeLead phase locally to prevent repeat issues
-                setActiveLead(prev => prev ? { ...prev, lead_phase_id: overContainer } : null);
+                setActiveLead(prev => prev ? { 
+                    ...prev, 
+                    lead_phase_id: overContainer, 
+                    last_activity_at: new Date().toISOString(),
+                    formatted_last_activity_at: todayFormatted,
+                    ...(isEnrollment ? { 
+                        formatted_enrolled_at: todayFormatted,
+                        enrolled_at: new Date().toISOString()
+                    } : {})
+                } : null);
+
+                // Update the lead object inside the boardData state to have the new lead_phase_id, last_activity_at, and formatted_last_activity_at!
+                setBoardData(prev => prev.map(phase => {
+                    const items = phase.leads.data || phase.leads;
+                    const index = items.findIndex(l => l.id === activeId);
+                    if (index !== -1) {
+                        const updatedLeads = [...items];
+                        updatedLeads[index] = {
+                            ...updatedLeads[index],
+                            lead_phase_id: overContainer,
+                            last_activity_at: new Date().toISOString(),
+                            formatted_last_activity_at: todayFormatted,
+                            ...(isEnrollment ? { 
+                                formatted_enrolled_at: todayFormatted,
+                                enrolled_at: new Date().toISOString()
+                            } : {})
+                        };
+                        return {
+                            ...phase,
+                            leads: phase.leads.data ? { ...phase.leads, data: updatedLeads } : updatedLeads
+                        };
+                    }
+                    return phase;
+                }));
             } catch (error) {
                 console.error("Failed to update lead phase:", error);
             }

@@ -104,6 +104,8 @@ class LeadController extends Controller
                 'chatTemplates'  => \App\Domains\Master\Domain\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->get(),
                 'phases'         => LeadPhase::orderBy('created_at', 'asc')->get(),
                 'mediaAssets'    => \App\Domains\Master\Domain\Models\MediaAsset::latest()->get(),
+                'leadTypes'      => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
+                'leadSources'    => \App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get(),
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['error' => 'Lead not found.'], 404);
@@ -182,6 +184,51 @@ class LeadController extends Controller
             'message' => 'Lead phase updated successfully.',
             'lead' => new LeadResource($lead->load([
                 'branch', 'owner', 'leadPhase', 'student.studyClasses', 'chatLogs.sender'
+            ])),
+        ]);
+    }
+
+    public function updateQualification(Request $request, Lead $lead): JsonResponse
+    {
+        $validated = $request->validate([
+            'lead_type_id'   => ['nullable', 'exists:lead_types,id'],
+            'lead_source_id' => ['nullable', 'exists:lead_sources,id'],
+            'is_online'      => ['sometimes', 'boolean'],
+        ]);
+
+        $lead->update($validated);
+        $this->clearDashboardCache();
+
+        // Record Activity
+        $leadType = $lead->leadType?->name ?: 'Belum ditentukan';
+        $mode = $lead->is_online ? 'Online' : 'Offline / On Campus';
+        $source = $lead->leadSource?->name ?: 'Belum ditentukan';
+        
+        activity()
+            ->performedOn($lead)
+            ->causedBy(auth()->user())
+            ->log("Kualifikasi diperbarui: Program - {$leadType}, Mode - {$mode}, Sumber - {$source}");
+
+        // Explicitly record to lead_activities for Reporting
+        \App\Domains\CRM\Domain\Models\LeadActivity::create([
+            'lead_id' => $lead->id,
+            'user_id' => auth()->id(),
+            'type' => 'message', // default activity type
+            'description' => "Kualifikasi diperbarui: Program: {$leadType}, Mode: {$mode}",
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Qualification updated successfully.',
+            'lead' => new LeadResource($lead->load([
+                'branch', 'owner', 'leadSource', 'leadType', 'leadPhase', 
+                'guardians', 'leadRelationships.relatedLead', 
+                'ptSessions.ptExam',
+                'consultations.consultant',
+                'invoices.items',
+                'student.studyClasses',
+                'chatLogs.sender',
+                'notes.user',
             ])),
         ]);
     }
@@ -363,6 +410,7 @@ class LeadController extends Controller
             return [
                 'id' => $phase->id,
                 'name' => $phase->name,
+                'code' => $phase->code,
                 'leads' => LeadResource::collection($columnLeads->values()),
             ];
         });
