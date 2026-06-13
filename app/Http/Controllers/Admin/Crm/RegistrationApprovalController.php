@@ -26,7 +26,7 @@ class RegistrationApprovalController extends Controller
                         ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
-            ->with(['branch', 'leadSource'])
+            ->with(['branch', 'leadSource', 'infoSource'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -38,10 +38,15 @@ class RegistrationApprovalController extends Controller
                         ->orWhere('lead_number', 'like', "%{$search}%");
                 });
             })
-            ->with(['branch', 'leadSource', 'leadType', 'leadPhase'])
+            ->with(['branch', 'leadSource', 'infoSource', 'leadType', 'leadPhase'])
             ->get();
 
         $leadSources = LeadSource::orderBy('name')->get()->map(fn($s) => [
+            'value' => $s->id,
+            'label' => $s->name,
+        ]);
+
+        $infoSources = \App\Domains\Master\Domain\Models\InfoSource::orderBy('name')->get()->map(fn($s) => [
             'value' => $s->id,
             'label' => $s->name,
         ]);
@@ -50,6 +55,7 @@ class RegistrationApprovalController extends Controller
             'registrations' => $registrations, // Simple collection for now or create resource
             'update_requests' => LeadResource::collection($updateRequests),
             'lead_sources' => $leadSources,
+            'info_sources' => $infoSources,
             'pending_registrations_count' => $registrations->count() + $updateRequests->count(),
             'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()),
             'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Domains\Master\Domain\Models\LeadPhase::select('id', 'name', 'code')->get()),

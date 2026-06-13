@@ -5,6 +5,7 @@ namespace App\Domains\CRM\Domain\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Domains\Master\Domain\Models\Branch;
 use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\InfoSource;
 
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -30,6 +31,7 @@ class LeadRegistration extends Model
         'postal_code',
         'guardian_data',
         'lead_source_id',
+        'info_source_id',
         'status',
         'admin_notes',
     ];
@@ -49,6 +51,11 @@ class LeadRegistration extends Model
     public function leadSource()
     {
         return $this->belongsTo(LeadSource::class);
+    }
+
+    public function infoSource()
+    {
+        return $this->belongsTo(InfoSource::class);
     }
 }
 

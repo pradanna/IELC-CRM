@@ -25,7 +25,7 @@ class FetchSuperadminDashboardData
         $summary = [
             'total_students' => 55, // Placeholder per request
             'hot_leads' => Lead::whereIn('lead_phase_id', $hotLeadPhases)->count(),
-            'follow_up_health' => Task::where('is_completed', false)
+            'follow_up_today' => Task::where('is_completed', false)
                 ->where('due_date', '<=', $now->toDateTimeString())
                 ->count(),
             'new_leads_this_month' => Lead::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count(),

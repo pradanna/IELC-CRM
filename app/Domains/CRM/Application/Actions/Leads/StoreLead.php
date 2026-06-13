@@ -37,6 +37,7 @@ class StoreLead
                 'owner_id' => Auth::id(),
                 'created_by' => Auth::id(),
                 'lead_source_id' => $data['lead_source_id'] ?? null,
+                'info_source_id' => $data['info_source_id'] ?? null,
                 'lead_type_id' => $data['lead_type_id'] ?? null,
                 'lead_phase_id' => $defaultPhase?->id,
                 'is_online' => $data['is_online'] ?? false,

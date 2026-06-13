@@ -39,11 +39,17 @@ class PublicLeadController extends Controller
             'value' => $s->id,
             'label' => $s->name,
         ]);
+
+        $infoSources = \App\Domains\Master\Domain\Models\InfoSource::orderBy('name')->get()->map(fn($s) => [
+            'value' => $s->id,
+            'label' => $s->name,
+        ]);
         
         return Inertia::render('Public/Form', [
             'branch' => $branch,
             'provinces' => $provinces,
             'leadSources' => $leadSources,
+            'infoSources' => $infoSources,
         ]);
     }
 
@@ -90,8 +96,15 @@ class PublicLeadController extends Controller
             'address' => 'nullable|string',
             'postal_code' => 'nullable|string|max:10',
             'guardian_data' => 'nullable|array',
-            'lead_source_id' => 'required|exists:lead_sources,id',
+            'lead_source_id' => 'nullable|exists:lead_sources,id',
+            'info_source_id' => 'nullable|exists:info_sources,id',
         ]);
+
+        $leadSourceId = $validated['lead_source_id'] ?? null;
+        if (!$leadSourceId) {
+            $webSource = \App\Domains\Master\Domain\Models\LeadSource::where('code', 'website')->first();
+            $leadSourceId = $webSource?->id;
+        }
 
         LeadRegistration::create([
             'id' => Str::uuid(),
@@ -109,7 +122,8 @@ class PublicLeadController extends Controller
             'address' => $validated['address'] ?? null,
             'postal_code' => $validated['postal_code'] ?? null,
             'guardian_data' => $validated['guardian_data'] ?? [],
-            'lead_source_id' => $validated['lead_source_id'],
+            'lead_source_id' => $leadSourceId,
+            'info_source_id' => $validated['info_source_id'] ?? null,
             'status' => 'pending',
         ]);
 
@@ -145,10 +159,16 @@ class PublicLeadController extends Controller
             'label' => $s->name,
         ]);
 
+        $infoSources = \App\Domains\Master\Domain\Models\InfoSource::orderBy('name')->get()->map(fn($s) => [
+            'value' => $s->id,
+            'label' => $s->name,
+        ]);
+
         return Inertia::render('Public/Form', [
             'branch' => $lead->branch,
             'provinces' => $provinces,
             'leadSources' => $leadSources,
+            'infoSources' => $infoSources,
             'initialData' => [
                 'name' => $lead->name,
                 'nickname' => $lead->nickname,
@@ -164,6 +184,7 @@ class PublicLeadController extends Controller
                 'address' => $lead->address,
                 'postal_code' => $lead->postal_code,
                 'lead_source_id' => $lead->lead_source_id,
+                'info_source_id' => $lead->info_source_id,
                 // Kita biarkan guardian_data kosong dulu untuk pengisian ulang bersih
                 'guardian_data' => [
                     'father_name' => '',
@@ -194,8 +215,14 @@ class PublicLeadController extends Controller
             'address' => 'nullable|string',
             'postal_code' => 'nullable|string|max:10',
             'guardian_data' => 'nullable|array',
-            'lead_source_id' => 'required|exists:lead_sources,id',
+            'lead_source_id' => 'nullable|exists:lead_sources,id',
+            'info_source_id' => 'nullable|exists:info_sources,id',
         ]);
+
+        if (empty($validated['lead_source_id'])) {
+            $webSource = \App\Domains\Master\Domain\Models\LeadSource::where('code', 'website')->first();
+            $validated['lead_source_id'] = $webSource?->id;
+        }
 
         $lead->update([
             'pending_updates' => $validated

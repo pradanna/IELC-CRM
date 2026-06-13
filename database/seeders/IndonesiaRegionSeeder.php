@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Province;
-use App\Models\City;
+use App\Domains\Master\Domain\Models\Province;
+use App\Domains\Master\Domain\Models\City;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 

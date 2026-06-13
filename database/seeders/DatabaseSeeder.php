@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Domains\Shared\Domain\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             LeadTypeSeeder::class,
             LeadPhaseSeeder::class,
             LeadSourceSeeder::class,
+            InfoSourceSeeder::class,
             RoleAndPermissionSeeder::class,
             UserSeeder::class,
             MonthlyTargetSeeder::class,

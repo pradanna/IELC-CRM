@@ -28,6 +28,7 @@ class StoreLeadRequest extends FormRequest
             'email' => 'nullable|email|max:255',
             'branch_id' => 'required|exists:branches,id',
             'lead_source_id' => 'nullable|exists:lead_sources,id',
+            'info_source_id' => 'nullable|exists:info_sources,id',
             'lead_type_id' => 'nullable|exists:lead_types,id',
             'is_online' => 'nullable|boolean',
             'province' => 'nullable|string',

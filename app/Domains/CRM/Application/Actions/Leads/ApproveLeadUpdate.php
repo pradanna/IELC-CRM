@@ -30,6 +30,7 @@ class ApproveLeadUpdate
                 'address' => $updates['address'] ?? $lead->address,
                 'postal_code' => $updates['postal_code'] ?? $lead->postal_code,
                 'lead_source_id' => $updates['lead_source_id'] ?? $lead->lead_source_id,
+                'info_source_id' => $updates['info_source_id'] ?? $lead->info_source_id,
                 'pending_updates' => null,
                 'last_activity_at' => now(),
             ]);

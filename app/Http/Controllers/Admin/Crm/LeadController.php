@@ -27,6 +27,7 @@ use App\Domains\Master\Domain\Models\ChatTemplate;
 use App\Domains\CRM\Domain\Models\Lead;
 use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\InfoSource;
 use App\Domains\Master\Domain\Models\LeadType;
 use App\Domains\Master\Domain\Models\MediaAsset;
 use App\Domains\Master\Domain\Models\Province;
@@ -38,6 +39,7 @@ use App\Http\Resources\Crm\LeadActivityResource;
 use App\Http\Resources\Crm\PtExam\PtExamResource;
 use App\Http\Resources\Crm\LeadPhaseResource;
 use App\Http\Resources\Crm\LeadSourceResource;
+use App\Http\Resources\Crm\InfoSourceResource;
 use App\Http\Resources\Crm\LeadTypeResource;
 use App\Http\Resources\Master\BranchResource;
 use App\Http\Resources\Academic\StudyClassResource;
@@ -61,6 +63,7 @@ class LeadController extends Controller
             'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
             'phases' => LeadPhaseResource::collection(LeadPhase::select('id', 'name', 'code')->get()),
             'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'infoSources' => InfoSourceResource::collection(InfoSource::select('id', 'name')->get()),
             'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
@@ -375,6 +378,7 @@ class LeadController extends Controller
             'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
             'phases' => LeadPhaseResource::collection($phases),
             'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'infoSources' => InfoSourceResource::collection(InfoSource::select('id', 'name')->get()),
             'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),

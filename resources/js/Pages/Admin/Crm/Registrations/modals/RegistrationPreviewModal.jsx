@@ -15,6 +15,7 @@ export default function RegistrationPreviewModal({
     onApprove, 
     onReject,
     leadSources = [],
+    infoSources = [],
     processing = false 
 }) {
     if (!item) return null;
@@ -155,21 +156,42 @@ export default function RegistrationPreviewModal({
                                                         <DataField label="Kelas" value={displayData.grade} icon={Calendar} />
                                                     </div>
                                                     {type === 'new' ? (
-                                                        <DataField label="Sumber Info" value={item.lead_source?.name} icon={ArrowRight} />
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <DataField label="Sumber Lead (Source)" value={item.lead_source?.name} icon={ArrowRight} />
+                                                            <DataField label="Tahu IELC dari mana?" value={item.info_source?.name} icon={ArrowRight} />
+                                                        </div>
                                                     ) : (
-                                                        <div className="flex flex-col gap-1.5">
-                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Sumber Info (Pembaruan)</span>
-                                                            <div className="flex flex-col gap-2 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                                                                <div className="flex items-center justify-between text-[10px]">
-                                                                    <span className="text-slate-400 font-bold uppercase">Original</span>
-                                                                    <span className="text-slate-600 font-black">{item.lead_source?.name || '-'}</span>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Sumber Lead (Source) (Pembaruan)</span>
+                                                                <div className="flex flex-col gap-2 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                                    <div className="flex items-center justify-between text-[10px]">
+                                                                        <span className="text-slate-400 font-bold uppercase">Original</span>
+                                                                        <span className="text-slate-600 font-black">{item.lead_source?.name || '-'}</span>
+                                                                    </div>
+                                                                    <div className="h-px bg-slate-200/50 w-full" />
+                                                                    <div className="flex items-center justify-between text-[10px]">
+                                                                        <span className="text-red-500 font-bold uppercase tracking-tighter italic">Proposed</span>
+                                                                        <span className="text-slate-900 font-black">
+                                                                            {leadSources.find(s => s.value === displayData.lead_source_id)?.label || '-'}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="h-px bg-slate-200/50 w-full" />
-                                                                <div className="flex items-center justify-between text-[10px]">
-                                                                    <span className="text-red-500 font-bold uppercase tracking-tighter italic">Proposed</span>
-                                                                    <span className="text-slate-900 font-black">
-                                                                        {leadSources.find(s => s.value === displayData.lead_source_id)?.label || '-'}
-                                                                    </span>
+                                                            </div>
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Tahu IELC dari mana? (Pembaruan)</span>
+                                                                <div className="flex flex-col gap-2 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                                    <div className="flex items-center justify-between text-[10px]">
+                                                                        <span className="text-slate-400 font-bold uppercase">Original</span>
+                                                                        <span className="text-slate-600 font-black">{item.info_source?.name || '-'}</span>
+                                                                    </div>
+                                                                    <div className="h-px bg-slate-200/50 w-full" />
+                                                                    <div className="flex items-center justify-between text-[10px]">
+                                                                        <span className="text-red-500 font-bold uppercase tracking-tighter italic">Proposed</span>
+                                                                        <span className="text-slate-900 font-black">
+                                                                            {infoSources.find(s => s.value === displayData.info_source_id)?.label || '-'}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>

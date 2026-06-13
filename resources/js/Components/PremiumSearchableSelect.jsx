@@ -12,7 +12,8 @@ export default function PremiumSearchableSelect({
     onChange, 
     placeholder = 'Search...', 
     icon: Icon,
-    className = "" 
+    className = "",
+    error = false
 }) {
     const [query, setQuery] = useState('');
 
@@ -27,8 +28,11 @@ export default function PremiumSearchableSelect({
         return options.find(opt => String(opt.value) === String(value)) || null;
     }, [value, options]);
 
+    const hasWidth = className.split(' ').some(c => c.startsWith('w-'));
+    const widthClass = hasWidth ? '' : 'w-full';
+
     return (
-        <div className={`relative ${className}`}>
+        <div className={`relative ${widthClass} ${className}`}>
             <Combobox 
                 value={selectedOption} 
                 onChange={(val) => {
@@ -41,7 +45,7 @@ export default function PremiumSearchableSelect({
                     <div className="relative">
                         {/* Trigger / Input */}
                         <div className={`
-                            relative flex items-center w-full bg-white border ${open ? 'border-red-500 shadow-sm ring-4 ring-red-500/5' : 'border-slate-300 hover:border-slate-400'} 
+                            relative flex items-center w-full bg-white border ${error ? 'border-red-500 ring-4 ring-red-500/5' : open ? 'border-red-500 shadow-sm ring-4 ring-red-500/5' : 'border-slate-300 hover:border-slate-400'} 
                             rounded-2xl transition-all duration-300 outline-none shadow-sm
                         `}>
                             <ComboboxButton as="div" className="flex items-center w-full pl-5 pr-12 py-3 cursor-text">

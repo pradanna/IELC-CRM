@@ -45,6 +45,7 @@ class LeadResource extends JsonResource
             // Raw IDs for edit mode
             'branch_id'      => $this->branch_id,
             'lead_source_id' => $this->lead_source_id,
+            'info_source_id' => $this->info_source_id,
             'lead_type_id'   => $this->lead_type_id,
             'lead_phase_id'  => $this->lead_phase_id,
             
@@ -65,6 +66,10 @@ class LeadResource extends JsonResource
             'lead_source'    => $this->whenLoaded('leadSource', fn() => [
                 'id'         => $this->leadSource->id,
                 'name'       => $this->leadSource->name,
+            ]),
+            'info_source'    => $this->whenLoaded('infoSource', fn() => [
+                'id'         => $this->infoSource->id,
+                'name'       => $this->infoSource->name,
             ]),
             'lead_type'      => $this->whenLoaded('leadType', fn() => [
                 'id'         => $this->leadType->id,

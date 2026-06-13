@@ -18,6 +18,11 @@ class User extends Authenticatable
 {
     use HasFactory, HasRoles, HasUuids, Notifiable;
 
+    protected static function newFactory()
+    {
+        return \Database\Factories\UserFactory::new();
+    }
+
     protected $appends = ['name'];
 
     protected $fillable = [

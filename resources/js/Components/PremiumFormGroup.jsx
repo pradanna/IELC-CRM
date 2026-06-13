@@ -14,9 +14,11 @@ export default function PremiumFormGroup({
     // Clone child to inject error styling if it's a standard input-like component
     const enhancedChildren = React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-            return React.cloneElement(child, {
-                className: `${child.props.className || ''} ${error ? 'border-red-500 ring-red-500/10 focus:ring-red-500/10' : ''}`
-            });
+            if (typeof child.type === 'string') {
+                return React.cloneElement(child, {
+                    className: `${child.props.className || ''} ${error ? 'border-red-500 ring-red-500/10 focus:ring-red-500/10' : ''}`
+                });
+            }
         }
         return child;
     });

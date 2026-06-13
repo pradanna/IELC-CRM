@@ -24,6 +24,7 @@ export function usePublicRegistration(branch, initialData = null, token = null) 
             mother_phone: ''
         },
         lead_source_id: initialData?.lead_source_id || '',
+        info_source_id: initialData?.info_source_id || '',
     });
 
     const [cities, setCities] = useState([]);

@@ -2,14 +2,15 @@
 
 namespace Database\Seeders;
 
-use App\Models\Lead;
-use App\Models\LeadSource;
-use App\Models\LeadType;
-use App\Models\LeadPhase;
-use App\Models\Branch;
-use App\Models\User;
-use App\Models\Province;
-use App\Models\City;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\InfoSource;
+use App\Domains\Master\Domain\Models\LeadType;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Shared\Domain\Models\User;
+use App\Domains\Master\Domain\Models\Province;
+use App\Domains\Master\Domain\Models\City;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -19,6 +20,7 @@ class LeadSeeder extends Seeder
     {
         $branches = Branch::all();
         $sources = LeadSource::all();
+        $infoSources = InfoSource::all();
         $types = LeadType::all();
         $phases = LeadPhase::all();
         $owner = User::role('superadmin')->first() ?? User::first();
@@ -83,6 +85,7 @@ class LeadSeeder extends Seeder
                 'branch_id' => $branches->random()->id,
                 'owner_id' => $owner->id,
                 'lead_source_id' => $sources->random()->id,
+                'info_source_id' => $infoSources->isEmpty() ? null : $infoSources->random()->id,
                 'lead_type_id' => $types->random()->id,
                 'lead_phase_id' => $phase->id,
                 'province' => $province->name,

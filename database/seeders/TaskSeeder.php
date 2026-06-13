@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Task;
-use App\Models\Lead;
-use App\Models\User;
+use App\Domains\CRM\Domain\Models\Task;
+use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\Shared\Domain\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

@@ -29,13 +29,32 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $user->fill($request->only('email'));
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        $name = $request->validated()['name'] ?? '';
+        if ($user->superadmin) {
+            $user->superadmin->update(['name' => $name]);
+        } elseif ($user->marketing) {
+            $user->marketing->update(['name' => $name]);
+        } elseif ($user->frontdesk) {
+            $user->frontdesk->update(['name' => $name]);
+        } elseif ($user->finance) {
+            $user->finance->update(['name' => $name]);
+        } elseif ($user->teacher) {
+            $user->teacher->update(['name' => $name]);
+        } else {
+            \App\Domains\Master\Domain\Models\Superadmin::updateOrCreate(
+                ['user_id' => $user->id],
+                ['name' => $name]
+            );
+        }
 
         return Redirect::route('profile.edit');
     }

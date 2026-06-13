@@ -135,7 +135,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                                     onChange={(val) => setData('branch_id', val)}
                                     placeholder="Select Branch"
                                     icon={MapPin}
-                                    className={errors.branch_id ? 'border-red-500' : ''}
+                                    error={errors.branch_id}
                                 />
                             </PremiumFormGroup>
 
@@ -146,7 +146,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                                     onChange={(val) => setData('instructor_id', val)}
                                     placeholder="Assign Teacher"
                                     icon={Users}
-                                    className={errors.instructor_id ? 'border-red-500' : ''}
+                                    error={errors.instructor_id}
                                 />
                             </PremiumFormGroup>
                         </div>
@@ -162,7 +162,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                                 onChange={(val) => setData('price_master_id', val)}
                                 placeholder="Pilih Skema Harga..."
                                 icon={Zap}
-                                className={errors.price_master_id ? 'border-red-500' : ''}
+                                error={errors.price_master_id}
                             />
                             <p className="text-[9px] font-bold text-slate-400 mt-1.5 ml-1 italic tracking-tight italic">
                                 * Digunakan untuk estimasi otomatis biaya pendaftaran di CRM.

@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\InfoSource;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
-class LeadSourceSeeder extends Seeder
+class InfoSourceSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -13,21 +14,21 @@ class LeadSourceSeeder extends Seeder
     public function run(): void
     {
         $sources = [
-            'Website',
             'Instagram',
-            'Facebook',
             'TikTok',
-            'Referral',
-            'Walk-in',
-            'External Event',
+            'Facebook',
             'WhatsApp',
-            'Google Ads',
+            'Google Search',
+            'Teman / Keluarga',
+            'Brosur',
+            'Event / Pameran',
+            'Lainnya',
         ];
 
         foreach ($sources as $source) {
-            LeadSource::updateOrCreate(
+            InfoSource::updateOrCreate(
                 ['name' => $source],
-                ['code' => \Illuminate\Support\Str::slug($source)]
+                ['code' => Str::slug($source)]
             );
         }
     }

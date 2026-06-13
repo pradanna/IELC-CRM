@@ -10,6 +10,7 @@ use App\Domains\Finance\Domain\Models\Invoice;
 use App\Domains\Master\Domain\Models\LeadType;
 use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\Master\Domain\Models\LeadSource;
+use App\Domains\Master\Domain\Models\InfoSource;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,7 @@ class Lead extends Model
         'owner_id',
         'created_by',
         'lead_source_id',
+        'info_source_id',
         'lead_type_id',
         'lead_phase_id',
         'is_online',
@@ -114,6 +116,11 @@ class Lead extends Model
     public function leadSource(): BelongsTo
     {
         return $this->belongsTo(LeadSource::class);
+    }
+
+    public function infoSource(): BelongsTo
+    {
+        return $this->belongsTo(InfoSource::class);
     }
 
     public function crmActivities(): HasMany

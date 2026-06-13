@@ -17,8 +17,8 @@ export function useDashboard(stats) {
             bg: 'bg-orange-50',
         },
         {
-            title: 'FOLLOW-UP HEALTH',
-            value: stats.summary.follow_up_health,
+            title: 'FOLLOW-UP TODAY',
+            value: stats.summary.follow_up_today,
             icon: 'clipboard-list',
             color: 'text-indigo-500',
             bg: 'bg-indigo-50',

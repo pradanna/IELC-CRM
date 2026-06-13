@@ -24,6 +24,7 @@ class UpdateLead
                 'grade' => $data['grade'] ?? null,
                 'branch_id' => $data['branch_id'],
                 'lead_source_id' => $data['lead_source_id'] ?? null,
+                'info_source_id' => $data['info_source_id'] ?? null,
                 'lead_type_id' => $data['lead_type_id'] ?? null,
                 'is_online' => $data['is_online'] ?? false,
                 'province' => $data['province'] ?? null,

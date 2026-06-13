@@ -21,6 +21,7 @@ class UpdateLeadRequest extends FormRequest
             'phone'          => ['required', 'string', 'max:20'],
             'email'          => ['nullable', 'email', 'unique:leads,email,' . $this->route('lead')->id],
             'lead_source_id' => ['nullable', 'exists:lead_sources,id'],
+            'info_source_id' => ['nullable', 'exists:info_sources,id'],
             'lead_type_id'   => ['nullable', 'exists:lead_types,id'],
             'is_online'      => ['boolean'],
             'province'       => ['nullable', 'string'],

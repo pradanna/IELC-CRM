@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\LeadPhase;
 use Illuminate\Database\Seeder;
 
 class LeadPhaseSeeder extends Seeder

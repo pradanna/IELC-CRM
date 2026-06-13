@@ -31,11 +31,13 @@ export default function CreateEditLeadModal({
     // Prioritize props passed manually, then page props
     const branches = normalizeCollection(customProps.branches || pageProps.branches);
     const sources = normalizeCollection(customProps.sources || pageProps.sources);
+    const infoSources = normalizeCollection(customProps.infoSources || pageProps.infoSources);
     const types = normalizeCollection(customProps.types || pageProps.types);
     const provinces = normalizeCollection(customProps.provinces || pageProps.provinces);
     const { auth } = pageProps;
 
     const normalizedSources = sources;
+    const normalizedInfoSources = infoSources;
     const normalizedTypes = types;
     const normalizedBranches = branches;
     const normalizedProvinces = provinces;
@@ -51,6 +53,7 @@ export default function CreateEditLeadModal({
         grade: '',
         branch_id: '',
         lead_source_id: '',
+        info_source_id: '',
         lead_type_id: '',
         is_online: false,
         province: '',
@@ -152,6 +155,7 @@ export default function CreateEditLeadModal({
                     grade: lead.grade || '',
                     branch_id: lead.branch_id || '',
                     lead_source_id: lead.lead_source_id || '',
+                    info_source_id: lead.info_source_id || '',
                     lead_type_id: lead.lead_type_id || '',
                     is_online: lead.is_online || false,
                     province: lead.province || '',
@@ -175,6 +179,7 @@ export default function CreateEditLeadModal({
                     grade: '',
                     branch_id: auth.user.branch_id || '',
                     lead_source_id: '',
+                    info_source_id: '',
                     lead_type_id: '',
                     is_online: false,
                     province: '',
@@ -397,7 +402,7 @@ export default function CreateEditLeadModal({
                                                                 value={data.lead_source_id}
                                                                 onChange={val => setData('lead_source_id', val)}
                                                                 placeholder="Pilih Sumber"
-                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.lead_source_id ? 'border-red-500' : ''}`}
+                                                                error={errors.lead_source_id}
                                                             />
                                                         </PremiumFormGroup>
                                                         <PremiumFormGroup label="Lead Type" error={errors.lead_type_id}>
@@ -406,10 +411,20 @@ export default function CreateEditLeadModal({
                                                                 value={data.lead_type_id}
                                                                 onChange={val => setData('lead_type_id', val)}
                                                                 placeholder="Pilih Tipe"
-                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.lead_type_id ? 'border-red-500' : ''}`}
+                                                                error={errors.lead_type_id}
                                                             />
                                                         </PremiumFormGroup>
                                                     </div>
+
+                                                    <PremiumFormGroup label="Tahu IELC dari mana?" error={errors.info_source_id}>
+                                                        <PremiumSearchableSelect
+                                                            options={normalizedInfoSources.map(s => ({ value: s.id, label: s.name }))}
+                                                            value={data.info_source_id}
+                                                            onChange={val => setData('info_source_id', val)}
+                                                            placeholder="Pilih Sumber Informasi"
+                                                            error={errors.info_source_id}
+                                                        />
+                                                    </PremiumFormGroup>
 
                                                     <div className={`p-5 rounded-xl border transition-all ${errors.is_online ? 'bg-red-50/50 border-red-200' : 'bg-slate-50/80 border-slate-200'}`}>
                                                         <div className="flex items-center justify-between mb-4">
@@ -449,7 +464,7 @@ export default function CreateEditLeadModal({
                                                                     value={data.province}
                                                                     onChange={val => setData(d => ({ ...d, province: val, city: '' }))}
                                                                     placeholder="Provinsi"
-                                                                    className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.province ? 'border-red-500' : ''}`}
+                                                                    error={errors.province}
                                                                 />
                                                             </PremiumFormGroup>
                                                             <div className="relative">
@@ -459,8 +474,9 @@ export default function CreateEditLeadModal({
                                                                         value={data.city}
                                                                         onChange={val => setData('city', val)}
                                                                         placeholder={!data.province ? "---" : "Kota"}
-                                                                        className={`${!data.province || loadingCities ? "opacity-50" : ""} rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.city ? 'border-red-500' : ''}`}
+                                                                        className={!data.province || loadingCities ? "opacity-50" : ""}
                                                                         disabled={!data.province || loadingCities}
+                                                                        error={errors.city}
                                                                     />
                                                                     {loadingCities && (
                                                                         <div className="absolute right-10 top-1/2 translate-y-[2px]">
@@ -517,7 +533,7 @@ export default function CreateEditLeadModal({
                                                                 value={data.grade}
                                                                 onChange={val => setData('grade', val)}
                                                                 placeholder="Pilih Kelas"
-                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.grade ? 'border-red-500' : ''}`}
+                                                                error={errors.grade}
                                                             />
                                                         </PremiumFormGroup>
                                                     </div>
@@ -530,7 +546,7 @@ export default function CreateEditLeadModal({
                                                                 onChange={val => setData('branch_id', val)}
                                                                 placeholder="Pilih Cabang"
                                                                 icon={Building2}
-                                                                className={`rounded-xl overflow-hidden shadow-sm h-[46px] ${errors.branch_id ? 'border-red-500' : ''}`}
+                                                                error={errors.branch_id}
                                                             />
                                                         </PremiumFormGroup>
                                                     </div>
@@ -602,7 +618,6 @@ export default function CreateEditLeadModal({
                                                             }}
                                                             placeholder="Search other Leads..."
                                                             icon={Search}
-                                                            className="h-[46px]"
                                                         />
 
                                                         <div className="space-y-3">

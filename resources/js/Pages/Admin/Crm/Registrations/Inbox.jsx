@@ -9,7 +9,7 @@ import {
 import { useRegistrationInbox } from './hooks/useRegistrationInbox';
 import RegistrationPreviewModal from './modals/RegistrationPreviewModal';
 
-export default function Inbox({ auth, registrations, update_requests = [], lead_sources = [] }) {
+export default function Inbox({ auth, registrations, update_requests = [], lead_sources = [], info_sources = [] }) {
     /**
      * Normalizes a collection that might be a raw array or a wrapped resource object.
      */
@@ -210,6 +210,7 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
                 item={previewItem}
                 type={activeTab}
                 leadSources={lead_sources}
+                infoSources={info_sources}
                 onApprove={onApprove}
                 onReject={onReject}
                 processing={processing}

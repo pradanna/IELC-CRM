@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\ChatTemplate;
-use App\Models\LeadPhase;
-use App\Models\LeadType;
+use App\Domains\Master\Domain\Models\ChatTemplate;
+use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\LeadType;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

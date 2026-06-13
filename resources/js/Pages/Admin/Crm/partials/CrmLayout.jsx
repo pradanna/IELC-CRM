@@ -12,6 +12,7 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
     const branches = customProps.branches || pageProps.branches;
     const phases = customProps.phases || pageProps.phases;
     const sources = customProps.sources || pageProps.sources;
+    const infoSources = customProps.infoSources || pageProps.infoSources;
     const types = customProps.types || pageProps.types;
     const provinces = customProps.provinces || pageProps.provinces;
     
@@ -234,6 +235,7 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
                 lead={editingLead}
                 branches={branches}
                 sources={sources}
+                infoSources={infoSources}
                 types={types}
                 provinces={provinces}
             />

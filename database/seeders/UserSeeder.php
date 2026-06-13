@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Domains\Shared\Domain\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -13,8 +13,8 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $soloBranch = \App\Models\Branch::where('code', 'SOLO')->first();
-        $semarangBranch = \App\Models\Branch::where('code', 'SMG')->first();
+        $soloBranch = \App\Domains\Master\Domain\Models\Branch::where('code', 'SOLO')->first();
+        $semarangBranch = \App\Domains\Master\Domain\Models\Branch::where('code', 'SMG')->first();
 
         $users = [
             [
@@ -62,10 +62,10 @@ class UserSeeder extends Seeder
             ];
 
             match ($userData['role']) {
-                'superadmin' => \App\Models\Superadmin::updateOrCreate(['user_id' => $user->id], $profileData),
-                'marketing' => \App\Models\Marketing::updateOrCreate(['user_id' => $user->id], $profileData),
-                'frontdesk' => \App\Models\Frontdesk::updateOrCreate(['user_id' => $user->id], $profileData),
-                'finance' => \App\Models\Finance::updateOrCreate(['user_id' => $user->id], $profileData),
+                'superadmin' => \App\Domains\Master\Domain\Models\Superadmin::updateOrCreate(['user_id' => $user->id], $profileData),
+                'marketing' => \App\Domains\CRM\Domain\Models\Marketing::updateOrCreate(['user_id' => $user->id], $profileData),
+                'frontdesk' => \App\Domains\Master\Domain\Models\Frontdesk::updateOrCreate(['user_id' => $user->id], $profileData),
+                'finance' => \App\Domains\Master\Domain\Models\Finance::updateOrCreate(['user_id' => $user->id], $profileData),
                 default => null,
             };
         }

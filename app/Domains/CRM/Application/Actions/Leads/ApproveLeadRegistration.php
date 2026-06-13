@@ -62,6 +62,7 @@ class ApproveLeadRegistration
                 'grade' => $registration->grade,
                 'branch_id' => $registration->branch_id,
                 'lead_source_id' => $leadSourceId,
+                'info_source_id' => $registration->info_source_id,
                 'province' => $registration->province,
                 'city' => $registration->city,
                 'address' => $registration->address,

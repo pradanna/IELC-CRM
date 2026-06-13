@@ -20,6 +20,7 @@
 | `lead_types` | CRM | Jenis lead (referensi) |
 | `lead_phases` | CRM | Fase pipeline lead (referensi) |
 | `lead_sources` | CRM | Sumber lead (referensi) |
+| `info_sources` | CRM | Sumber informasi / Tahu IELC dari mana (referensi) |
 | `leads` | CRM | Data utama calon siswa |
 | `lead_guardians` | CRM | Data wali/orang tua lead |
 | `lead_activities` | CRM | Log aktivitas lead |
@@ -81,7 +82,7 @@
 
 ## 🟦 CRM Module
 
-### `lead_types` / `lead_phases` / `lead_sources`
+### `lead_types` / `lead_phases` / `lead_sources` / `info_sources`
 > Tabel referensi — hanya ada `id`, `name`, timestamps (dan `color`/`code` tergantung tabel).
 
 ### `leads` ⭐ (Tabel Utama CRM)
@@ -101,6 +102,7 @@
 | `owner_id` | uuid | ❌ | FK → users (PIC marketing) |
 | `created_by` | uuid | ✅ | FK → users, set null |
 | `lead_source_id` | uuid | ✅ | FK → lead_sources |
+| `info_source_id` | uuid | ✅ | FK → info_sources |
 | `lead_type_id` | uuid | ✅ | FK → lead_types |
 | `lead_phase_id` | uuid | ✅ | FK → lead_phases |
 | `is_online` | boolean | ❌ | Default: false |
@@ -161,6 +163,8 @@
 | `school` | string | ✅ | |
 | `grade` | string | ✅ | |
 | `branch_id` | uuid | ❌ | FK → branches |
+| `lead_source_id` | uuid | ✅ | FK → lead_sources |
+| `info_source_id` | uuid | ✅ | FK → info_sources |
 | `province` / `city` / `address` / `postal_code` | — | ✅ | |
 | `guardian_data` | json | ✅ | Data wali dalam format JSON |
 | `status` | enum | ❌ | `pending`, `approved`, `rejected`. Default: `pending` |

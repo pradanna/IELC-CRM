@@ -29,6 +29,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $isAdmin = $request->user() && $request->is('admin*');
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -45,6 +47,14 @@ class HandleInertiaRequests extends Middleware
             ],
             'waServerUrl' => config('services.whatsapp.url'),
             'pending_registrations_count' => $request->user() ? \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count() : 0,
+            
+            // CRM Shared Lookups for Layouts/Modals
+            'branches' => $isAdmin ? \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()) : null,
+            'phases' => $isAdmin ? \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Domains\Master\Domain\Models\LeadPhase::select('id', 'name', 'code')->get()) : null,
+            'sources' => $isAdmin ? \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get()) : null,
+            'infoSources' => $isAdmin ? \App\Http\Resources\Crm\InfoSourceResource::collection(\App\Domains\Master\Domain\Models\InfoSource::select('id', 'name')->get()) : null,
+            'types' => $isAdmin ? \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Domains\Master\Domain\Models\LeadType::select('id', 'name')->get()) : null,
+            'provinces' => $isAdmin ? \App\Domains\Master\Domain\Models\Province::select('id', 'name')->orderBy('name')->get() : null,
         ];
     }
 }

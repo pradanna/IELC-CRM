@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\LeadType;
+use App\Domains\Master\Domain\Models\LeadType;
 use Illuminate\Database\Seeder;
 
 class LeadTypeSeeder extends Seeder

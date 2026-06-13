@@ -9,10 +9,28 @@ export default function DashboardFilters({
     branches = [], 
     targetRoute = 'admin.crm.leads.index' 
 }) {
-    const { months, years } = useMonthYear();
+    const { months, years, currentMonth, currentYear } = useMonthYear();
+    
+    const selectedYear = filters.year ? Number(filters.year) : currentYear;
+
+    const availableMonths = React.useMemo(() => {
+        if (selectedYear === currentYear) {
+            return months.filter(m => m.value <= currentMonth);
+        }
+        return months;
+    }, [selectedYear, months, currentYear, currentMonth]);
     
     const handleFilterChange = (key, value) => {
-        const newFilters = { ...filters, [key]: value };
+        let newFilters = { ...filters, [key]: value };
+
+        // Adjust month if the selected year becomes the current year and selected month is in the future
+        if (key === 'year') {
+            const nextYear = value ? Number(value) : currentYear;
+            const currentSelectedMonth = filters.month ? Number(filters.month) : currentMonth;
+            if (nextYear === currentYear && currentSelectedMonth > currentMonth) {
+                newFilters.month = currentMonth;
+            }
+        }
         
         // Clean filters: remove null, undefined, or empty strings
         const cleanedFilters = Object.keys(newFilters).reduce((acc, k) => {
@@ -63,16 +81,6 @@ export default function DashboardFilters({
                 className="w-[200px]"
             />
 
-            {/* Month Filter */}
-            <PremiumSearchableSelect 
-                options={months}
-                value={filters.month}
-                onChange={(val) => handleFilterChange('month', val)}
-                placeholder="Select Month"
-                icon={Calendar}
-                className="w-[180px]"
-            />
-
             {/* Year Filter */}
             <PremiumSearchableSelect 
                 options={years.map(y => ({ value: y, label: String(y) }))}
@@ -80,6 +88,16 @@ export default function DashboardFilters({
                 onChange={(val) => handleFilterChange('year', val)}
                 placeholder="Select Year"
                 className="w-[140px]"
+            />
+
+            {/* Month Filter */}
+            <PremiumSearchableSelect 
+                options={availableMonths}
+                value={filters.month}
+                onChange={(val) => handleFilterChange('month', val)}
+                placeholder="Select Month"
+                icon={Calendar}
+                className="w-[180px]"
             />
 
             <button 

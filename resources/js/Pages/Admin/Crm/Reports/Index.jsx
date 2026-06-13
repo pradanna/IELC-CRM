@@ -9,11 +9,24 @@ export default function Index({ leads, filters, branches, sources, phases, month
     const { auth } = usePage().props;
     const isSuperadmin = ['superadmin', 'frontdesk', 'marketing'].includes(auth.user.role) || !!auth.user.superadmin;
     
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+
     const handleFilterChange = (key, value) => {
-        router.get(route('admin.crm.reports.index'), {
+        let newFilters = {
             ...filters,
             [key]: value
-        }, {
+        };
+
+        if (key === 'year') {
+            const nextYear = value ? Number(value) : currentYear;
+            const currentSelectedMonth = filters.month ? Number(filters.month) : currentMonth;
+            if (nextYear === currentYear && currentSelectedMonth > currentMonth) {
+                newFilters.month = currentMonth;
+            }
+        }
+
+        router.get(route('admin.crm.reports.index'), newFilters, {
             preserveState: true,
             preserveScroll: true,
             replace: true
@@ -30,8 +43,12 @@ export default function Index({ leads, filters, branches, sources, phases, month
         "July", "August", "September", "October", "November", "December"
     ];
 
-    const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+    const years = Array.from({ length: 11 }, (_, i) => currentYear - i);
+
+    const selectedYear = filters.year ? Number(filters.year) : currentYear;
+    const availableMonths = selectedYear === currentYear 
+        ? months.slice(0, currentMonth) 
+        : months;
 
     return (
         <AuthenticatedLayout>
@@ -77,27 +94,30 @@ export default function Index({ leads, filters, branches, sources, phases, month
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Calendar size={16} className="text-gray-400" />
                                 <select 
-                                    value={filters.month || new Date().getMonth() + 1}
-                                    onChange={(e) => handleFilterChange('month', e.target.value)}
-                                    className="border-0 bg-transparent text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer pr-8"
-                                >
-                                    {months.map((m, i) => (
-                                        <option key={i} value={i + 1}>{m}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <select 
-                                    value={filters.year || new Date().getFullYear()}
+                                    value={filters.year || currentYear}
                                     onChange={(e) => handleFilterChange('year', e.target.value)}
                                     className="border-0 bg-transparent text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer pr-8"
                                 >
                                     {years.map((y) => (
                                         <option key={y} value={y}>{y}</option>
                                     ))}
+                                </select>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Calendar size={16} className="text-gray-400" />
+                                <select 
+                                    value={filters.month || currentMonth}
+                                    onChange={(e) => handleFilterChange('month', e.target.value)}
+                                    className="border-0 bg-transparent text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer pr-8"
+                                >
+                                    {availableMonths.map((m, idx) => {
+                                        const val = idx + 1;
+                                        return (
+                                            <option key={val} value={val}>{m}</option>
+                                        );
+                                    })}
                                 </select>
                             </div>
 

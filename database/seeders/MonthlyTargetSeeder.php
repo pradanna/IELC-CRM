@@ -9,11 +9,11 @@ class MonthlyTargetSeeder extends Seeder
 {
     public function run(): void
     {
-        $branches = \App\Models\Branch::all();
+        $branches = \App\Domains\Master\Domain\Models\Branch::all();
 
         foreach ($branches as $branch) {
             for ($month = 1; $month <= 12; $month++) {
-                \App\Models\MonthlyTarget::updateOrCreate(
+                \App\Domains\CRM\Domain\Models\MonthlyTarget::updateOrCreate(
                     [
                         'branch_id' => $branch->id,
                         'year'      => 2026,

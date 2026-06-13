@@ -6,7 +6,7 @@ import { useMemo } from 'react';
  * @param {number} yearRange Number of years to show before/after the current year
  * @returns {object} { months, years, currentMonth, currentYear }
  */
-export default function useMonthYear(yearRange = 1) {
+export default function useMonthYear() {
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
 
@@ -19,11 +19,11 @@ export default function useMonthYear(yearRange = 1) {
 
     const years = useMemo(() => {
         const yearsArray = [];
-        for (let i = currentYear - yearRange; i <= currentYear + yearRange; i++) {
+        for (let i = currentYear; i >= currentYear - 10; i--) {
             yearsArray.push(i);
         }
         return yearsArray;
-    }, [currentYear, yearRange]);
+    }, [currentYear]);
 
     return {
         months,
