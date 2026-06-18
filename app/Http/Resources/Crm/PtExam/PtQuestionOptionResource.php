@@ -18,7 +18,7 @@ class PtQuestionOptionResource extends JsonResource
             'id' => $this->id,
             'pt_question_id' => $this->pt_question_id,
             'option_text' => $this->option_text,
-            // 'is_correct' is intentionally hidden for regular users
+            'is_correct' => auth()->check() ? (bool) $this->is_correct : false,
         ];
     }
 }

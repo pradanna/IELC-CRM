@@ -5,7 +5,6 @@ import CrmLayout from '../partials/CrmLayout';
 import FiltersBar from './partials/FiltersBar';
 import LeadTable from './partials/LeadTable';
 import DeleteLeadModal from './modals/DeleteLeadModal';
-import SendWhatsappModal from './modals/SendWhatsappModal';
 import { useLeadIndex } from './hooks/useLeadIndex';
 
 export default function Index({ leads, filters, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
@@ -67,13 +66,6 @@ export default function Index({ leads, filters, branches, phases, sources, types
                 lead={deletingLead}
             />
 
-            <SendWhatsappModal
-                isOpen={isWhatsappModalOpen}
-                onClose={closeWhatsappModal}
-                lead={whatsappLead}
-                chatTemplates={chatTemplates}
-                mediaAssets={mediaAssets}
-            />
         </AuthenticatedLayout>
     );
 }

@@ -24,6 +24,8 @@ class GenerateInvoiceRequest extends FormRequest
             'student_id' => 'required_without:lead_id|nullable|exists:students,id',
             'study_class_id' => 'required|exists:study_classes,id',
             'price_master_id' => 'required|exists:price_masters,id',
+            'join_date' => 'required|date_format:Y-m-d',
+            'billing_mode' => 'required|string|in:prorata,full',
             'notes' => 'nullable|string',
             'items' => 'nullable|array',
             'items.*.name' => 'required|string|max:255',

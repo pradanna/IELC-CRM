@@ -46,7 +46,10 @@ class HandleInertiaRequests extends Middleware
                 'download_url' => $request->session()->get('download_url'),
             ],
             'waServerUrl' => config('services.whatsapp.url'),
-            'pending_registrations_count' => $request->user() ? \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count() : 0,
+            'pending_registrations_count' => $request->user() ? (
+                \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count() +
+                \App\Domains\CRM\Domain\Models\Lead::whereNotNull('pending_updates')->count()
+            ) : 0,
             
             // CRM Shared Lookups for Layouts/Modals
             'branches' => $isAdmin ? \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()) : null,
@@ -55,6 +58,8 @@ class HandleInertiaRequests extends Middleware
             'infoSources' => $isAdmin ? \App\Http\Resources\Crm\InfoSourceResource::collection(\App\Domains\Master\Domain\Models\InfoSource::select('id', 'name')->get()) : null,
             'types' => $isAdmin ? \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Domains\Master\Domain\Models\LeadType::select('id', 'name')->get()) : null,
             'provinces' => $isAdmin ? \App\Domains\Master\Domain\Models\Province::select('id', 'name')->orderBy('name')->get() : null,
+            'chatTemplates' => $isAdmin ? \App\Domains\Master\Domain\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get() : null,
+            'mediaAssets' => $isAdmin ? \App\Domains\Master\Domain\Models\MediaAsset::latest()->get() : null,
         ];
     }
 }

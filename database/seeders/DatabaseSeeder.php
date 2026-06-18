@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             LeadSeeder::class,
             TaskSeeder::class,
             ChatTemplateSeeder::class,
+            PtExamSeeder::class,
+            IeltsPtExamSeeder::class,
         ]);
 
         if (app()->environment('local', 'testing')) {

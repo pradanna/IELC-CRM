@@ -68,6 +68,35 @@ class StudentController extends Controller
         return redirect()->back()->with('success', 'Student unenrolled successfully.');
     }
 
+    /**
+     * Update the specified student's status, notes, and join date.
+     */
+    public function update(Request $request, Student $student): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:active,stop',
+            'notes' => 'nullable|string',
+            'start_join' => 'required|date',
+        ]);
+
+        $oldStatus = $student->status;
+
+        if ($validated['status'] === 'stop' && $oldStatus !== 'stop') {
+            $student->stopped_at = now();
+        } elseif ($validated['status'] === 'active' && $oldStatus !== 'active') {
+            $student->stopped_at = null;
+        }
+
+        $student->update([
+            'status' => $validated['status'],
+            'notes' => $validated['notes'],
+            'start_join' => $validated['start_join'],
+            'stopped_at' => $student->stopped_at,
+        ]);
+
+        return redirect()->back()->with('success', 'Student details updated successfully.');
+    }
+
     public function search(Request $request): JsonResponse
     {
         $query = Student::with(['lead']);

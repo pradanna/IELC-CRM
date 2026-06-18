@@ -278,9 +278,7 @@ export default function Exam({
                                             {q.text}
                                         </p>
                                         
-                                        {/* Question Content (Hidden for IELTS) */}
-                                        {exam_category !== 'IELTS' && (
-                                            <>
+                                        {/* Question Content */}
                                         {/* MCQ Rendering */}
                                         {q.type === 'mcq' && (
                                             <div className="grid grid-cols-1 gap-3">
@@ -410,8 +408,6 @@ export default function Exam({
                                                     </div>
                                                 )}
                                             </div>
-                                        )}
-                                            </>
                                         )}
                                     </div>
                                 </div>

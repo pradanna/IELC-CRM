@@ -1,4 +1,4 @@
-import { Building2, Globe, LinkIcon, Mail, MapPin, Phone, User, Users } from 'lucide-react';
+import { Building2, Globe, LinkIcon, Mail, MapPin, Phone, User, Users, Edit2 } from 'lucide-react';
 import { InfoItem, SectionHeader } from '../components/DrawerUI';
 import MagicLinkBanner from '../components/MagicLinkBanner';
 
@@ -12,9 +12,25 @@ export default function LeadDetailTab({ lead, loading, getPhaseStyle, phases = [
     }
 
     return (
-        <div className="outline-none py-4">
+        <div className="outline-none py-4 space-y-6">
             {/* Standardized Magic Link Section */}
             <MagicLinkBanner lead={lead} />
+
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                <div>
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Lead Profile Information</h3>
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Review and edit identity, contacts, address, and source details.</p>
+                </div>
+                <button
+                    onClick={() => {
+                        document.dispatchEvent(new CustomEvent('openEditLeadModal', { detail: { lead } }));
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 rounded-xl font-black text-xs transition-all active:scale-95 cursor-pointer shadow-sm"
+                >
+                    <Edit2 size={14} />
+                    <span>Edit Profile</span>
+                </button>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Left Column: Contact & Identity */}

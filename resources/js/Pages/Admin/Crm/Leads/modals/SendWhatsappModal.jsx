@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, MessageSquare, Phone, Save, Link as LinkIcon, File, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
 import useWhatsapp from '@/Hooks/useWhatsapp';
 
 /**
@@ -8,13 +9,48 @@ import useWhatsapp from '@/Hooks/useWhatsapp';
  * Dedicated modal for composing and sending WhatsApp messages with templates & media library.
  */
 export default function SendWhatsappModal({ 
-    isOpen, 
-    onClose, 
-    lead, 
-    chatTemplates = [], 
-    mediaAssets = [] 
+    isOpen: propIsOpen, 
+    onClose: propOnClose, 
+    lead: propLead, 
+    chatTemplates: propChatTemplates, 
+    mediaAssets: propMediaAssets 
 }) {
+    const { props: pageProps } = usePage();
     const { openWhatsapp } = useWhatsapp();
+
+    // Local state for self-opening/uncontrolled mode
+    const [localIsOpen, setLocalIsOpen] = useState(false);
+    const [localLead, setLocalLead] = useState(null);
+
+    const isControlled = propIsOpen !== undefined;
+    const isOpen = isControlled ? propIsOpen : localIsOpen;
+    const lead = isControlled ? propLead : localLead;
+
+    const onClose = () => {
+        if (isControlled) {
+            if (propOnClose) propOnClose();
+        } else {
+            setLocalIsOpen(false);
+            setLocalLead(null);
+        }
+    };
+
+    useEffect(() => {
+        if (isControlled) return;
+
+        const handleOpen = (e) => {
+            setLocalLead(e.detail.lead);
+            setLocalIsOpen(true);
+        };
+        document.addEventListener('openSendWhatsappModal', handleOpen);
+        return () => {
+            document.removeEventListener('openSendWhatsappModal', handleOpen);
+        };
+    }, [isControlled]);
+
+    const chatTemplates = propChatTemplates || pageProps.chatTemplates || [];
+    const mediaAssets = propMediaAssets || pageProps.mediaAssets || [];
+
     const [message, setMessage] = useState('');
     const [copyFeedback, setCopyFeedback] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');

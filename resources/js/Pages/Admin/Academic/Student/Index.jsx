@@ -1,16 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head } from '@inertiajs/react';
 import { 
     User, Phone, GraduationCap, Search, 
-    Filter, UserCheck, 
+    Filter, UserCheck, ShieldAlert,
     Calendar, MapPin, ChevronRight 
 } from 'lucide-react';
 import TextInput from '@/Components/TextInput';
 import { useStudentIndex } from './hooks/useStudentIndex';
+import EditStudentModal from './partials/EditStudentModal';
 
 export default function Index({ students, filters }) {
     const { search, setSearch, handleSearch } = useStudentIndex(filters);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+
+    const openEditModal = (student) => {
+        setSelectedStudent(student);
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setSelectedStudent(null);
+        setIsEditModalOpen(false);
+    };
 
     return (
         <AdminLayout>
@@ -82,17 +95,32 @@ export default function Index({ students, filters }) {
                                                                 <User className="w-7 h-7 text-slate-400" />
                                                             )}
                                                         </div>
-                                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center">
-                                                            <UserCheck className="w-2.5 h-2.5 text-white" />
+                                                        <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-white rounded-full flex items-center justify-center ${
+                                                            student.status === 'stop' ? 'bg-rose-500' : 'bg-emerald-500'
+                                                        }`}>
+                                                            {student.status === 'stop' ? (
+                                                                <ShieldAlert className="w-2.5 h-2.5 text-white" />
+                                                            ) : (
+                                                                <UserCheck className="w-2.5 h-2.5 text-white" />
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-1">
+                                                    <div className="space-y-1.5">
                                                         <h4 className="font-black text-slate-800 text-lg leading-none">
                                                             {student.lead?.name || 'Unknown Student'}
                                                         </h4>
-                                                        <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded">
-                                                            {student.student_number}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded">
+                                                                {student.student_number}
+                                                            </span>
+                                                            <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                                                                student.status === 'stop' 
+                                                                    ? 'bg-rose-50 text-rose-600 border-rose-100' 
+                                                                    : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                            }`}>
+                                                                {student.status}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -140,7 +168,11 @@ export default function Index({ students, filters }) {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-8 text-center">
-                                                <button className="p-2.5 bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl transition-all duration-300 group/btn shadow-sm">
+                                                <button 
+                                                    onClick={() => openEditModal(student)}
+                                                    className="p-2.5 bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl transition-all duration-300 group/btn shadow-sm"
+                                                    title="Edit Student Status & Notes"
+                                                >
                                                     <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                                                 </button>
                                             </td>
@@ -173,6 +205,15 @@ export default function Index({ students, filters }) {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Student Modal */}
+            {selectedStudent && (
+                <EditStudentModal 
+                    show={isEditModalOpen} 
+                    onClose={closeEditModal} 
+                    student={selectedStudent} 
+                />
+            )}
         </AdminLayout>
     );
 }

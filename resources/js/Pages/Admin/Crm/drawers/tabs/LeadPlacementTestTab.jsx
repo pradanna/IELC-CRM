@@ -180,13 +180,15 @@ export default function LeadPlacementTestTab({ lead, loading, availableExams = [
                                                 <FileText size={16} />
                                             </button>
                                         )}
-                                        <button 
-                                            onClick={() => confirmDelete(session)}
-                                            className="p-2.5 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                                            title="Delete Session"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        {session.status !== 'completed' && (
+                                            <button 
+                                                onClick={() => confirmDelete(session)}
+                                                className="p-2.5 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                                title="Delete Session"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 

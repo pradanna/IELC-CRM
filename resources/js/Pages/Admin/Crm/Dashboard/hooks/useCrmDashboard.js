@@ -5,19 +5,7 @@ import axios from 'axios';
 
 export const useCrmDashboard = () => {
     const { openDrawer } = useLeadDrawer();
-    const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
-    const [whatsappLead, setWhatsappLead] = useState(null);
 
-    useEffect(() => {
-        const handleWhatsapp = (e) => {
-            setWhatsappLead(e.detail.lead);
-            setIsWhatsappModalOpen(true);
-        };
-        document.addEventListener('openSendWhatsappModal', handleWhatsapp);
-        return () => {
-            document.removeEventListener('openSendWhatsappModal', handleWhatsapp);
-        };
-    }, []);
 
     const openLeadDetail = (id, tabIndex = 0) => {
         openDrawer(id, tabIndex);
@@ -34,16 +22,10 @@ export const useCrmDashboard = () => {
         }
     };
 
-    const closeWhatsappModal = () => {
-        setIsWhatsappModalOpen(false);
-        setWhatsappLead(null);
-    };
+
 
     return {
-        isWhatsappModalOpen,
-        whatsappLead,
         openLeadDetail,
         handleUpdatePhase,
-        closeWhatsappModal,
     };
 };

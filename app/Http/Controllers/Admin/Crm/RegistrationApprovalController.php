@@ -56,7 +56,6 @@ class RegistrationApprovalController extends Controller
             'update_requests' => LeadResource::collection($updateRequests),
             'lead_sources' => $leadSources,
             'info_sources' => $infoSources,
-            'pending_registrations_count' => $registrations->count() + $updateRequests->count(),
             'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()),
             'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Domains\Master\Domain\Models\LeadPhase::select('id', 'name', 'code')->get()),
             'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get()),

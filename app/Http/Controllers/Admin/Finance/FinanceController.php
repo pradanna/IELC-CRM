@@ -99,6 +99,84 @@ class FinanceController extends Controller
         
         return $pdf->stream("Invoice-{$invoice->invoice_number}.pdf");
     }
+
+    /**
+     * Generate bulk renewal invoices for all active students in a study class.
+     */
+    public function bulkInvoice(StudyClass $studyClass, GenerateInvoice $action): RedirectResponse
+    {
+        $studyClass->load(['students.lead', 'priceMaster']);
+
+        if (!$studyClass->price_master_id || !$studyClass->priceMaster) {
+            return redirect()->back()->with('error', "Cannot generate bulk invoices: Class does not have a Price Master assigned.");
+        }
+
+        $activeStudents = $studyClass->students;
+
+        if ($activeStudents->isEmpty()) {
+            return redirect()->back()->with('error', "No active students found in this class cycle.");
+        }
+
+        $nextMeetingDate = $this->getNextMeetingDate($studyClass);
+        $generatedCount = 0;
+        $skippedCount = 0;
+
+        foreach ($activeStudents as $student) {
+            // Check if there is already a pending invoice for this student, class, and pending status
+            $hasPending = Invoice::where('student_id', $student->id)
+                ->where('study_class_id', $studyClass->id)
+                ->where('status', 'pending')
+                ->exists();
+
+            if ($hasPending) {
+                $skippedCount++;
+                continue;
+            }
+
+            $action->handle([
+                'student_id' => $student->id,
+                'lead_id' => $student->lead_id,
+                'study_class_id' => $studyClass->id,
+                'price_master_id' => $studyClass->price_master_id,
+                'join_date' => $nextMeetingDate,
+                'billing_mode' => 'full',
+                'notes' => "Automatic renewal invoice for {$studyClass->name} (Next cycle starting {$nextMeetingDate})",
+            ]);
+
+            $generatedCount++;
+        }
+
+        $message = "Renewal invoices process completed. Generated: {$generatedCount} invoice(s).";
+        if ($skippedCount > 0) {
+            $message .= " Skipped: {$skippedCount} student(s) due to existing pending invoices.";
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    /**
+     * Get the next meeting date after the end session date of the class.
+     */
+    private function getNextMeetingDate(StudyClass $studyClass): string
+    {
+        $startDate = $studyClass->end_session_date ? $studyClass->end_session_date->copy() : now();
+        $scheduleDays = $studyClass->schedule_days;
+
+        if (empty($scheduleDays)) {
+            return $startDate->addDay()->toDateString();
+        }
+
+        $current = $startDate->copy();
+        // Loop up to 14 days to find the next class session day
+        for ($i = 1; $i <= 14; $i++) {
+            $current->addDay();
+            if (in_array($current->format('l'), $scheduleDays)) {
+                return $current->toDateString();
+            }
+        }
+
+        return $startDate->addDay()->toDateString();
+    }
 }
 
 

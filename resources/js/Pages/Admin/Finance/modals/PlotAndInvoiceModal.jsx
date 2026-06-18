@@ -22,8 +22,19 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         billing_mode: 'prorata', // 'prorata' or 'full'
     });
 
-    const classList = useMemo(() => Array.isArray(classes) ? classes : [], [classes]);
-    const priceMasterList = useMemo(() => Array.isArray(priceMasters) ? priceMasters : [], [priceMasters]);
+    const classList = useMemo(() => {
+        if (!classes) return [];
+        if (Array.isArray(classes)) return classes;
+        if (classes.data && Array.isArray(classes.data)) return classes.data;
+        return [];
+    }, [classes]);
+
+    const priceMasterList = useMemo(() => {
+        if (!priceMasters) return [];
+        if (Array.isArray(priceMasters)) return priceMasters;
+        if (priceMasters.data && Array.isArray(priceMasters.data)) return priceMasters.data;
+        return [];
+    }, [priceMasters]);
 
     useEffect(() => {
         if (show && (lead || student)) {

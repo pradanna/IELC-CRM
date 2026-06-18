@@ -354,6 +354,7 @@ export default function Show({ exam }) {
                     <div className="flex-1 overflow-hidden">
                         <Exam 
                             exam_title={examData.title}
+                            exam_category={examData.category}
                             pages={previewPages}
                             session={{ 
                                 token: 'preview', 

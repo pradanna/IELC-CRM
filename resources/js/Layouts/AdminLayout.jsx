@@ -14,7 +14,6 @@ import {
     PhoneCall,
     FileText,
     CircleDollarSign,
-    ClipboardCheck,
     GraduationCap,
     Tag,
     Receipt,
@@ -24,6 +23,7 @@ import Toast from "@/Components/ui/Toast";
 import NotificationToast from "@/Components/ui/NotificationToast";
 import useWhatsappNotification from "@/Hooks/useWhatsappNotification";
 import LeadDetailDrawer from "@/Pages/Admin/Crm/drawers/LeadDetailDrawer";
+import SendWhatsappModal from "@/Pages/Admin/Crm/Leads/modals/SendWhatsappModal";
 
 // IELC Logo
 const logoUrl = "/assets/images/local/IELC-Logo.webp";
@@ -90,18 +90,18 @@ const menuItems = [
                 href: route("admin.academic.study-classes.index"),
                 name: "admin.academic.study-classes.*",
             },
-            {
-                icon: <LayoutDashboard size={20} />,
-                text: "Schedule",
-                href: route("admin.schedules.index"),
-                name: "admin.schedules.*",
-            },
-            {
-                icon: <ClipboardCheck size={20} />,
-                text: "Attendances",
-                href: route("admin.attendances.index"),
-                name: "admin.attendances.*",
-            },
+            // {
+            //     icon: <LayoutDashboard size={20} />,
+            //     text: "Schedule",
+            //     href: route("admin.schedules.index"),
+            //     name: "admin.schedules.*",
+            // },
+            // {
+            //     icon: <ClipboardCheck size={20} />,
+            //     text: "Attendances",
+            //     href: route("admin.attendances.index"),
+            //     name: "admin.attendances.*",
+            // },
             {
                 icon: <GraduationCap size={20} />,
                 text: "Academic",
@@ -187,7 +187,7 @@ export default function AdminLayout({ children }) {
             ...group,
             items: group.items.filter(item => {
                 if (isFrontdesk) {
-                    const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Master', 'Class', 'Students'];
+                    const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Master', 'Class', 'Students', 'Academic'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
@@ -263,6 +263,7 @@ export default function AdminLayout({ children }) {
                 <div className="p-4">{children}</div>
             </main>
             <LeadDetailDrawer />
+            <SendWhatsappModal />
         </div>
     );
 }

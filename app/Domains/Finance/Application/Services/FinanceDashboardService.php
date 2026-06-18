@@ -8,6 +8,7 @@ use App\Domains\Academic\Domain\Models\Student;
 use App\Domains\Academic\Domain\Models\StudyClass;
 use App\Domains\Finance\Domain\Models\PriceMaster;
 use App\Domains\Finance\Domain\Models\Invoice;
+use App\Http\Resources\Academic\StudyClassResource;
 
 class FinanceDashboardService
 {
@@ -36,7 +37,13 @@ class FinanceDashboardService
         return [
             'leads' => $leadsForInvoicing,
             'rejoinStudents' => $rejoinStudents,
-            'classes' => StudyClass::with(['branch', 'instructor', 'priceMaster'])->get(),
+            'expiringClasses' => StudyClassResource::collection(
+                StudyClass::whereBetween('end_session_date', [now()->toDateString(), now()->addDays(12)->toDateString()])
+                    ->with(['branch', 'instructor', 'priceMaster', 'students.lead'])
+                    ->latest()
+                    ->get()
+            ),
+            'classes' => StudyClassResource::collection(StudyClass::with(['branch', 'instructor', 'priceMaster'])->get()),
             'priceMasters' => PriceMaster::all(),
             'recentInvoices' => Invoice::with(['lead', 'student', 'studyClass'])->latest()->limit(10)->get(),
         ];

@@ -128,7 +128,7 @@ export default function Index({ priceMasters }) {
                             onClick={() => openModal()}
                             variant="primary"
                             icon={Plus}
-                            className="w-full sm:w-auto px-6 py-2.5 bg-red-600 hover:bg-red-700 text-sm font-bold rounded-full shadow-lg shadow-red-600/20"
+                            className="w-full sm:w-auto px-6 py-2.5 bg-red-600 hover:bg-red-700 text-sm font-bold rounded-full shadow-lg shadow-red-600/20 whitespace-nowrap"
                         >
                             Create New Price
                         </Button>

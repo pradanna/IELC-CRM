@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, Link } from '@inertiajs/react';
 import { 
     Calculator, Receipt, User, 
-    CheckCircle, History,
+    CheckCircle, History, BookOpen,
     CheckCircle2, Clock, Search, Download, MessageCircle, ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
@@ -12,12 +12,19 @@ import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 import Button from '@/Components/ui/Button';
 
-export default function Index({ leads, rejoinStudents, classes, priceMasters, recentInvoices }) {
+export default function Index({ leads, rejoinStudents, classes, priceMasters, recentInvoices, expiringClasses }) {
     const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
     const [selectedEntity, setSelectedEntity] = useState(null); // Can be lead or student
     const [entityType, setEntityType] = useState('lead'); // 'lead' or 'student'
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState('new'); // 'new' or 'rejoin'
+
+    const expiringClassesList = useMemo(() => {
+        if (!expiringClasses) return [];
+        if (Array.isArray(expiringClasses)) return expiringClasses;
+        if (expiringClasses.data && Array.isArray(expiringClasses.data)) return expiringClasses.data;
+        return [];
+    }, [expiringClasses]);
 
     const openPlotModal = (entity, type = 'lead') => {
         setSelectedEntity(entity);
@@ -138,9 +145,147 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
         }
     ];
 
-    const currentData = activeTab === 'new' ? filteredLeads : rejoinStudents.filter(s => 
-        s.lead?.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredExpiringClasses = useMemo(() => {
+        return expiringClassesList.filter(studyClass =>
+            studyClass.name.toLowerCase().includes(search.toLowerCase()) ||
+            studyClass.branch?.name?.toLowerCase().includes(search.toLowerCase()) ||
+            studyClass.instructor?.name?.toLowerCase().includes(search.toLowerCase())
+        );
+    }, [expiringClassesList, search]);
+
+    const getRemainingDays = (endDateStr) => {
+        if (!endDateStr) return '';
+        const end = new Date(endDateStr);
+        const today = new Date();
+        end.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+        const diffTime = end - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) {
+            return `${Math.abs(diffDays)} hari yang lalu`;
+        } else if (diffDays === 0) {
+            return 'Hari ini';
+        } else {
+            return `${diffDays} hari lagi`;
+        }
+    };
+
+    const handleBulkClassInvoice = (studyClass) => {
+        const studentCount = studyClass.students?.length || 0;
+        if (studentCount === 0) {
+            alert('Tidak ada siswa aktif di kelas ini.');
+            return;
+        }
+        if (!studyClass.price_master) {
+            alert('Kelas ini tidak memiliki Price Master (master harga) yang valid.');
+            return;
+        }
+
+        const message = `Apakah Anda yakin ingin menerbitkan invoice renewal secara massal untuk ${studentCount} siswa aktif di kelas ${studyClass.name}?\n\n` +
+                        `Ini akan membuat invoice otomatis dengan mode "Full" menggunakan tarif ${formatCurrency(studyClass.price_master.price_per_session)}.`;
+        
+        if (confirm(message)) {
+            router.post(route('admin.finance.classes.bulk-invoice', studyClass.id));
+        }
+    };
+
+    const expiringClassColumns = [
+        {
+            header: 'Class Details',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-xl text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                        <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="font-black text-slate-900 tracking-tight uppercase">{row.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {row.branch?.name} • {row.instructor?.name || 'No Instructor'}
+                        </p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Students & Rate',
+            render: (row) => {
+                const studentCount = row.students?.length || 0;
+                return (
+                    <div className="space-y-1">
+                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg font-black text-[10px] uppercase tracking-widest border border-blue-100">
+                            {studentCount} Active Students
+                        </span>
+                        <p className="text-[11px] font-bold text-slate-500 mt-1">
+                            {row.price_master ? formatCurrency(row.price_master.price_per_session) : 'No price master rate'}
+                        </p>
+                    </div>
+                );
+            }
+        },
+        {
+            header: 'Ends On / Urgency',
+            render: (row) => {
+                const remainingDays = row.end_session_date ? Math.ceil((new Date(row.end_session_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : 0;
+                const isUrgent = remainingDays <= 5;
+                return (
+                    <div className="space-y-1">
+                        <span className={`px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border ${
+                            isUrgent 
+                                ? 'bg-rose-50 text-rose-700 border-rose-100' 
+                                : 'bg-amber-50 text-amber-700 border-amber-100'
+                        }`}>
+                            {getRemainingDays(row.end_session_date)}
+                        </span>
+                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                            {row.end_session_date}
+                        </p>
+                    </div>
+                );
+            }
+        },
+        {
+            header: 'Actions',
+            className: 'text-right',
+            render: (row) => {
+                const studentCount = row.students?.length || 0;
+                const hasPriceMaster = !!row.price_master;
+                const isDisabled = studentCount === 0 || !hasPriceMaster;
+
+                return (
+                    <Button 
+                        onClick={() => handleBulkClassInvoice(row)}
+                        variant="primary"
+                        icon={Receipt}
+                        disabled={isDisabled}
+                        className={`inline-flex py-2 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg ${
+                            isDisabled 
+                                ? 'bg-slate-200 text-slate-400 border-slate-200 shadow-none cursor-not-allowed' 
+                                : 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/10'
+                        }`}
+                        title={studentCount === 0 ? "No active students to invoice" : !hasPriceMaster ? "No price master assigned to class" : "Generate invoices for all students in this class"}
+                    >
+                        Bulk Invoice
+                    </Button>
+                );
+            }
+        }
+    ];
+
+    let currentData = [];
+    let currentColumns = [];
+
+    if (activeTab === 'new') {
+        currentData = filteredLeads;
+        currentColumns = leadColumns;
+    } else if (activeTab === 'rejoin') {
+        currentData = rejoinStudents.filter(s => 
+            s.lead?.name.toLowerCase().includes(search.toLowerCase())
+        );
+        currentColumns = leadColumns;
+    } else if (activeTab === 'expiring') {
+        currentData = filteredExpiringClasses;
+        currentColumns = expiringClassColumns;
+    }
 
     return (
         <AuthenticatedLayout>
@@ -178,6 +323,13 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
                                 >
                                     Rejoin Students ({rejoinStudents.length})
                                 </Button>
+                                <Button 
+                                    onClick={() => setActiveTab('expiring')}
+                                    variant="ghost"
+                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'expiring' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                >
+                                    Expiring Classes ({expiringClassesList.length})
+                                </Button>
                             </div>
 
                             <SearchInput 
@@ -190,15 +342,17 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
 
                         <DataTable 
                             data={currentData}
-                            columns={leadColumns}
+                            columns={currentColumns}
                             itemsPerPage={10}
                             isLoading={false}
                         />
 
-                        {currentData.length === 0 && search && (
+                        {currentData.length === 0 && (
                             <div className="py-20 flex flex-col items-center justify-center space-y-4 text-center bg-slate-50 rounded-[40px] border-4 border-dashed border-slate-200">
                                 <Search className="w-12 h-12 text-slate-200" />
-                                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No matching leads for "{search}"</p>
+                                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">
+                                    {search ? `No results found for "${search}"` : 'No items available'}
+                                </p>
                             </div>
                         )}
                     </div>

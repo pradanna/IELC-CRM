@@ -98,11 +98,11 @@ export default function TaskList({ tasks, phases = [], getPhaseStyle, onView, on
                                     </td>
                                     <td className="py-4">
                                         <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                            task.urgency === 'Overdue' 
+                                            task.urgency_level === 'danger' 
                                             ? 'bg-red-50 text-red-600 border-red-100' 
-                                            : (task.urgency === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100')
+                                            : (task.urgency_level === 'warning' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100')
                                         }`}>
-                                            {task.urgency}
+                                            {task.urgency_label}
                                         </span>
                                     </td>
                                     <td className="py-4 text-right">

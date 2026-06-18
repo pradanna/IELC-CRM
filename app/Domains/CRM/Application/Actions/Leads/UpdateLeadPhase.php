@@ -18,6 +18,15 @@ class UpdateLeadPhase
             ];
 
             if ($phase) {
+                if ($phase->code === 'enrollment') {
+                    $hasPaidInvoice = $lead->invoices()->where('status', 'paid')->exists();
+                    if (!$hasPaidInvoice) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'lead_phase_id' => ['Proses enrollment tidak dapat diselesaikan karena pembayaran tagihan belum diterima (invoice belum lunas).']
+                        ]);
+                    }
+                }
+
                 $prospectiveCodes = ['prospect', 'consultation', 'placement-test', 'pre-enrollment', 'invoice', 'enrollment'];
                 $lostCodes = ['cold-leads', 'dropout-leads'];
 

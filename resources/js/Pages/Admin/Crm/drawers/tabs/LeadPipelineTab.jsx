@@ -232,23 +232,43 @@ const PhaseSection = ({
                 )}
             </div>
 
-            {active && nextPhaseInfo && (
-                <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 -mx-8 -mb-8 p-6 rounded-b-[2.5rem]">
-                    <div>
-                        <h6 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tahap Selanjutnya: {nextPhaseInfo.name}</h6>
-                        <p className="text-[11px] text-slate-500 leading-normal font-medium max-w-lg">
-                            {nextPhaseInfo.description}
-                        </p>
+            {active && nextPhaseInfo && (() => {
+                const isCurrentStageInvoice = codes.includes('invoice');
+                const hasPaidInvoice = lead?.invoices?.some(inv => inv.status === 'paid');
+                const isNextDisabled = isCurrentStageInvoice && !hasPaidInvoice;
+                
+                return (
+                    <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 -mx-8 -mb-8 p-6 rounded-b-[2.5rem]">
+                        <div>
+                            <h6 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tahap Selanjutnya: {nextPhaseInfo.name}</h6>
+                            <p className="text-[11px] text-slate-500 leading-normal font-medium max-w-lg">
+                                {nextPhaseInfo.description}
+                            </p>
+                            {isNextDisabled && (
+                                <p className="text-[10px] font-black text-red-600 uppercase tracking-wider mt-1.5 animate-pulse">
+                                    * Invoice belum lunas. Catat pembayaran di menu Invoice terlebih dahulu.
+                                </p>
+                            )}
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (!isNextDisabled) {
+                                    onUpdatePhase(nextPhaseInfo.id);
+                                }
+                            }}
+                            disabled={isNextDisabled}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                isNextDisabled 
+                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none' 
+                                    : 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg active:scale-95 cursor-pointer'
+                            }`}
+                        >
+                            {nextPhaseInfo.buttonLabel}
+                            <ArrowRight size={12} />
+                        </button>
                     </div>
-                    <button
-                        onClick={() => onUpdatePhase(nextPhaseInfo.id)}
-                        className="flex items-center gap-2 px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-nowrap cursor-pointer"
-                    >
-                        {nextPhaseInfo.buttonLabel}
-                        <ArrowRight size={12} />
-                    </button>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 };
@@ -461,15 +481,23 @@ export default function LeadPipelineTab({
                                     {normalizedPhases.map((phase) => {
                                         const isActive = lead?.lead_phase_id === phase.id;
                                         const pStyle = getPhaseStyle(phase.code);
+                                        const isOptionDisabled = phase.code === 'enrollment' && !lead?.invoices?.some(inv => inv.status === 'paid');
                                         return (
                                             <Menu.Item key={phase.id}>
                                                 {({ active }) => (
                                                     <button
-                                                        onClick={() => onUpdatePhase(phase.id)}
+                                                        onClick={() => {
+                                                            if (!isOptionDisabled) {
+                                                                onUpdatePhase(phase.id);
+                                                            }
+                                                        }}
+                                                        disabled={isOptionDisabled}
                                                         className={`
-                                                            ${active ? 'bg-slate-50' : ''} 
+                                                            ${active && !isOptionDisabled ? 'bg-slate-50' : ''} 
                                                             group flex w-full items-center justify-between px-5 py-4 text-[10px] font-black uppercase tracking-widest transition-colors
+                                                            ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}
                                                         `}
+                                                        title={isOptionDisabled ? "Invoice belum lunas" : undefined}
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <div className={`w-2 h-2 rounded-full ${pStyle.color.replace('text-', 'bg-')}`} />

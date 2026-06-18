@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\PtExam;
+use App\Domains\Academic\Domain\Models\PtExam;
 use Illuminate\Support\Str;
 
 class IeltsPtExamSeeder extends Seeder

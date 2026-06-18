@@ -131,36 +131,121 @@ class FetchCrmDashboardData
             $applyRoleFilter($silentLeadsQuery);
             $silentLeads = $silentLeadsQuery->get();
 
-            $tasks = $manualTasks->map(fn($t) => [
-                'id' => $t->id,
-                'type' => 'manual',
-                'lead_id' => $t->lead_id,
-                'lead_name' => $t->lead->name ?? 'Unknown',
-                'lead_phone' => $t->lead->phone ?? '-',
-                'lead_phase_id' => $t->lead->lead_phase_id ?? null,
-                'lead_phase_code' => $t->lead->leadPhase->code ?? null,
-                'lead_phase_name' => $t->lead->leadPhase->name ?? null,
-                'title' => $t->title,
-                'fup_count' => $t->lead->follow_up_count ?? 0,
-                'due_date' => $t->due_date->format('Y-m-d'),
-                'urgency' => $t->due_date->isPast() ? 'Overdue' : ($t->due_date->isToday() ? 'Today' : 'Upcoming'),
-            ])->concat($silentLeads->map(fn($l) => [
-                'id' => 'fup-' . $l->id,
-                'type' => 'fup_reminder',
-                'lead_id' => $l->id,
-                'lead_name' => $l->name,
-                'lead_phone' => $l->phone,
-                'lead_phase_id' => $l->lead_phase_id,
-                'lead_phase_code' => $l->leadPhase->code ?? null,
-                'lead_phase_name' => $l->leadPhase->name ?? null,
-                'title' => "Follow-up ke-" . (($l->follow_up_count ?? 0) + 1),
-                'fup_count' => $l->follow_up_count ?? 0,
-                'due_date' => $l->last_activity_at->format('Y-m-d'),
-                'urgency' => $now->diffInDays($l->last_activity_at) >= ($fupTrigger + 2) ? 'Overdue' : 'Pending',
-            ]))->sortBy(function($t) {
-                $priority = $t['urgency'] === 'Overdue' ? 0 : 1;
-                return $priority . $t['due_date'];
-            })->values();
+            $newLeadsQuery = Lead::with(['leadPhase'])
+                ->whereHas('leadPhase', fn($q) => $q->where('code', 'lead'))
+                ->where('follow_up_count', 0);
+            $applyRoleFilter($newLeadsQuery);
+            $newLeads = $newLeadsQuery->get();
+
+            $manualTasksMapped = $manualTasks->map(function($t) use ($now) {
+                $dueDate = $t->due_date;
+                $isPast = $dueDate->isPast() && !$dueDate->isToday();
+                $isToday = $dueDate->isToday();
+
+                if ($isPast) {
+                    $days = $now->startOfDay()->diffInDays($dueDate->copy()->startOfDay());
+                    $urgencyLabel = "Terlambat {$days} hari";
+                    $urgencyLevel = 'danger';
+                } elseif ($isToday) {
+                    $urgencyLabel = "Hari Ini";
+                    $urgencyLevel = 'warning';
+                } else {
+                    $urgencyLabel = "Mendatang";
+                    $urgencyLevel = 'info';
+                }
+
+                return [
+                    'id' => $t->id,
+                    'type' => 'manual',
+                    'lead_id' => $t->lead_id,
+                    'lead_name' => $t->lead->name ?? 'Unknown',
+                    'lead_phone' => $t->lead->phone ?? '-',
+                    'lead_phase_id' => $t->lead->lead_phase_id ?? null,
+                    'lead_phase_code' => $t->lead->leadPhase->code ?? null,
+                    'lead_phase_name' => $t->lead->leadPhase->name ?? null,
+                    'title' => $t->title,
+                    'fup_count' => $t->lead->follow_up_count ?? 0,
+                    'due_date' => $dueDate->format('Y-m-d'),
+                    'urgency_label' => $urgencyLabel,
+                    'urgency_level' => $urgencyLevel,
+                ];
+            });
+
+            $fupReminders = $silentLeads->map(function($l) use ($now, $fupTrigger) {
+                if ($l->last_activity_at->isToday()) {
+                    $urgencyLabel = "Perlu follow-up (Hari Ini)";
+                    $urgencyLevel = 'warning';
+                } elseif ($l->last_activity_at->isYesterday()) {
+                    $urgencyLabel = "Perlu follow-up (Kemarin)";
+                    $urgencyLevel = 'warning';
+                } else {
+                    $days = $now->startOfDay()->diffInDays($l->last_activity_at->copy()->startOfDay());
+                    $isOverdue = $days >= ($fupTrigger + 2);
+
+                    if ($isOverdue) {
+                        $urgencyLabel = "Belum difollow {$days} hari";
+                        $urgencyLevel = 'danger';
+                    } else {
+                        $urgencyLabel = "Perlu follow-up ({$days} hari diam)";
+                        $urgencyLevel = 'warning';
+                    }
+                }
+
+                return [
+                    'id' => 'fup-' . $l->id,
+                    'type' => 'fup_reminder',
+                    'lead_id' => $l->id,
+                    'lead_name' => $l->name,
+                    'lead_phone' => $l->phone,
+                    'lead_phase_id' => $l->lead_phase_id,
+                    'lead_phase_code' => $l->leadPhase->code ?? null,
+                    'lead_phase_name' => $l->leadPhase->name ?? null,
+                    'title' => "Follow-up ke-" . (($l->follow_up_count ?? 0) + 1),
+                    'fup_count' => $l->follow_up_count ?? 0,
+                    'due_date' => $l->last_activity_at->format('Y-m-d'),
+                    'urgency_label' => $urgencyLabel,
+                    'urgency_level' => $urgencyLevel,
+                ];
+            });
+
+            $newLeadsMapped = $newLeads->map(function($l) use ($now) {
+                if ($l->created_at->isToday()) {
+                    $urgencyLabel = "Lead Baru (Hari Ini)";
+                    $urgencyLevel = 'danger';
+                } elseif ($l->created_at->isYesterday()) {
+                    $urgencyLabel = "Lead Baru (Kemarin)";
+                    $urgencyLevel = 'danger';
+                } else {
+                    $days = $now->startOfDay()->diffInDays($l->created_at->copy()->startOfDay());
+                    $urgencyLabel = "Lead Baru ({$days} hari belum difollow)";
+                    $urgencyLevel = 'danger';
+                }
+
+                return [
+                    'id' => 'new-' . $l->id,
+                    'type' => 'new_lead',
+                    'lead_id' => $l->id,
+                    'lead_name' => $l->name,
+                    'lead_phone' => $l->phone,
+                    'lead_phase_id' => $l->lead_phase_id,
+                    'lead_phase_code' => $l->leadPhase->code ?? null,
+                    'lead_phase_name' => $l->leadPhase->name ?? null,
+                    'title' => "Follow-up Pertama",
+                    'fup_count' => 0,
+                    'due_date' => $l->created_at->format('Y-m-d'),
+                    'urgency_label' => $urgencyLabel,
+                    'urgency_level' => $urgencyLevel,
+                ];
+            });
+
+            $tasks = $manualTasksMapped
+                ->concat($fupReminders)
+                ->concat($newLeadsMapped)
+                ->sortBy(function($t) {
+                    $priority = $t['urgency_level'] === 'danger' ? 0 : ($t['urgency_level'] === 'warning' ? 1 : 2);
+                    return $priority . $t['due_date'];
+                })
+                ->values();
 
             // 3. Enrollment Trend (Line Chart - Cumulative)
             $enrollmentTrend = [];

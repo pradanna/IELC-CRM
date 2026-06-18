@@ -35,7 +35,13 @@ class PtExamPublicResource extends JsonResource
                         'type' => $q->type,
                         'text' => $q->question_text,
                         'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
-                        'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
+                        'options' => $q->options->map(function($o) {
+                            $res = ['id' => $o->id, 'text' => $o->option_text];
+                            if (auth()->check()) {
+                                $res['is_correct'] = (bool) $o->is_correct;
+                            }
+                            return $res;
+                        }),
                     ]]
                 ];
             } else {
@@ -48,7 +54,13 @@ class PtExamPublicResource extends JsonResource
                         'type' => $q->type,
                         'text' => $q->question_text,
                         'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
-                        'options' => $q->options->map(fn($o) => ['id' => $o->id, 'text' => $o->option_text]),
+                        'options' => $q->options->map(function($o) {
+                            $res = ['id' => $o->id, 'text' => $o->option_text];
+                            if (auth()->check()) {
+                                $res['is_correct'] = (bool) $o->is_correct;
+                            }
+                            return $res;
+                        }),
                     ];
                 }
                 $pages[] = [

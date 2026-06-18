@@ -10,33 +10,9 @@ export const useLeadIndex = (leads) => {
     const [deletingLead, setDeletingLead] = useState(null);
     const { openDrawer } = useLeadDrawer();
 
-    // WhatsApp Modal State
-    const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
-    const [whatsappLead, setWhatsappLead] = useState(null);
-
-    useEffect(() => {
-        const handleWhatsapp = (e) => {
-            setWhatsappLead(e.detail.lead);
-            setIsWhatsappModalOpen(true);
-        };
-        document.addEventListener('openSendWhatsappModal', handleWhatsapp);
-        return () => {
-            document.removeEventListener('openSendWhatsappModal', handleWhatsapp);
-        };
-    }, []);
 
     const openLeadDetail = (id, tabIndex = 0) => {
         openDrawer(id, tabIndex);
-    };
-
-    const openWhatsappModal = (lead) => {
-        setWhatsappLead(lead);
-        setIsWhatsappModalOpen(true);
-    };
-
-    const closeWhatsappModal = () => {
-        setIsWhatsappModalOpen(false);
-        setWhatsappLead(null);
     };
 
     const openEditModal = async (leadId) => {
@@ -60,11 +36,7 @@ export const useLeadIndex = (leads) => {
     return {
         isSuperadmin,
         deletingLead,
-        isWhatsappModalOpen,
-        whatsappLead,
         openLeadDetail,
-        openWhatsappModal,
-        closeWhatsappModal,
         openEditModal,
         handleDeleteClick,
         closeDeleteModal

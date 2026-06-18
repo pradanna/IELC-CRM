@@ -6,7 +6,6 @@ import DashboardFilters from './partials/DashboardFilters';
 import TaskList from './partials/TaskList';
 import EnrollmentTrendChart from './partials/EnrollmentTrendChart';
 import StatsCard from '@/Pages/Admin/Dashboard/partials/StatsCard';
-import SendWhatsappModal from '../Leads/modals/SendWhatsappModal';
 import CrmLayout from '../partials/CrmLayout';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 import { useCrmDashboard } from './hooks/useCrmDashboard';
@@ -149,13 +148,6 @@ export default function Index({ data, branches, phases, sources, types, province
                 </CrmLayout>
             </div>
 
-            <SendWhatsappModal
-                isOpen={isWhatsappModalOpen}
-                onClose={closeWhatsappModal}
-                lead={whatsappLead}
-                chatTemplates={chatTemplates}
-                mediaAssets={mediaAssets}
-            />
         </AuthenticatedLayout>
     );
 }

@@ -68,7 +68,6 @@ class LeadController extends Controller
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
             'mediaAssets'   => MediaAsset::latest()->get(),
-            'pending_registrations_count' => \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count(),
         ]);
     }
 
@@ -431,7 +430,6 @@ class LeadController extends Controller
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
             'chatTemplates' => ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get(),
             'mediaAssets'   => MediaAsset::latest()->get(),
-            'pending_registrations_count' => \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count(),
         ]);
     }
 

@@ -22,7 +22,9 @@ class BillingService
         } else {
             // Calculate remaining sessions from join_date
             $joinDate = isset($data['join_date']) ? new \DateTime($data['join_date']) : new \DateTime();
+            $joinDate->setTime(0, 0, 0);
             $endDate = new \DateTime($studyClass->end_session_date->format('Y-m-d'));
+            $endDate->setTime(0, 0, 0);
             $scheduleDays = $studyClass->schedule_days;
 
             if ($joinDate > $endDate) {

@@ -57,9 +57,31 @@ class StudyClass extends Model
 
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(Student::class, 'study_class_student')
-            ->withPivot('cycle_number')
-            ->wherePivot('cycle_number', $this->current_session_number);
+        $query = $this->belongsToMany(Student::class, 'study_class_student')
+            ->withPivot('cycle_number');
+
+        if ($this->exists && isset($this->current_session_number)) {
+            return $query->wherePivot('cycle_number', $this->current_session_number);
+        }
+
+        // Detect if we are in a subquery/existence query context (like withCount, has, whereHas)
+        $isSubqueryContext = false;
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15) as $trace) {
+            if (isset($trace['function']) && $trace['function'] === 'getRelationWithoutConstraints') {
+                $isSubqueryContext = true;
+                break;
+            }
+        }
+
+        if ($isSubqueryContext) {
+            // No join needed, reference study_classes directly from the outer query
+            return $query->whereColumn('study_class_student.cycle_number', 'study_classes.current_session_number');
+        }
+
+        // Eager loading fallback: join study_classes
+        return $query->join('study_classes as sc_join', 'sc_join.id', '=', 'study_class_student.study_class_id')
+            ->whereColumn('study_class_student.cycle_number', 'sc_join.current_session_number')
+            ->select('students.*');
     }
 
     /**

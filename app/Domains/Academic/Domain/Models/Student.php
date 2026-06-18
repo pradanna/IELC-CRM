@@ -20,10 +20,12 @@ class Student extends Model
         'start_join',
         'status',
         'notes',
+        'stopped_at',
     ];
 
     protected $casts = [
         'start_join' => 'date',
+        'stopped_at' => 'date',
     ];
 
     public function lead(): BelongsTo

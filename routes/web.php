@@ -121,6 +121,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/invoices/generate', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'generate'])->name('invoices.generate');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'pay'])->name('invoices.pay');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'download'])->name('invoices.download');
+        Route::post('/classes/{studyClass}/bulk-invoice', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'bulkInvoice'])->name('classes.bulk-invoice');
         
         Route::resource('price-masters', \App\Http\Controllers\Admin\Finance\PriceMasterController::class);
     });
@@ -191,7 +192,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/study-classes', fn() => Inertia::render('Dashboard'))->name('study-classes.index');
     Route::get('/schedules', fn() => Inertia::render('Dashboard'))->name('schedules.index');
     Route::get('/attendances', fn() => Inertia::render('Dashboard'))->name('attendances.index');
-    Route::get('/academic', fn() => Inertia::render('Dashboard'))->name('academic.index');
+    Route::get('/academic', [\App\Http\Controllers\Admin\Academic\AcademicDashboardController::class, 'index'])->name('academic.index');
     Route::get('/teachers', fn() => Inertia::render('Dashboard'))->name('teachers.index');
     Route::get('/students', fn() => Inertia::render('Dashboard'))->name('students.index');
 });

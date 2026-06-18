@@ -197,6 +197,7 @@ export function usePtExamShow(examData) {
                     questions: (item.questions || []).sort((a,b) => (a.position - b.position) || (a.number - b.number)).map(q => ({
                         id: q.id,
                         number: q.number,
+                        type: q.type,
                         text: q.question_text,
                         audio_path: q.audio_path,
                         options: (q.options || []).map(o => ({ id: o.id, text: o.option_text, is_correct: o.is_correct }))
@@ -208,6 +209,7 @@ export function usePtExamShow(examData) {
                     questions: [{
                         id: item.id,
                         number: item.number,
+                        type: item.type,
                         text: item.question_text,
                         audio_path: item.audio_path,
                         options: (item.options || []).map(o => ({ id: o.id, text: o.option_text, is_correct: o.is_correct }))
