@@ -80,7 +80,6 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
             }
 
             setData({
-                ...data,
                 lead_id: currentLead?.id || '',
                 student_id: student?.id || '',
                 study_class_id: classId,
@@ -88,50 +87,10 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 join_date: joinDate,
                 notes: existingNotes,
                 billing_mode: billingMode,
+                items: [],
             });
         }
     }, [show, lead, student, classList]);
-
-    // Sync price_master_id when study_class_id changes manually
-    useEffect(() => {
-        if (data.study_class_id && classList.length > 0) {
-            const cls = classList.find(c => c.id === data.study_class_id);
-            if (cls && cls.price_master_id) {
-                setData('price_master_id', cls.price_master_id);
-            }
-        }
-    }, [data.study_class_id]);
-
-    // Sync join_date when billing_mode changes
-    useEffect(() => {
-        if (!show) return;
-
-        if (data.billing_mode === 'prorata') {
-            const currentLead = lead || student?.lead;
-            const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
-            
-            // Only reset if the current joinDate is in the future relative to original or today
-            setData('join_date', originalJoinDate);
-        } else if (data.billing_mode === 'full' && (student || lead)) {
-            const targetClass = selectedClass || (student?.study_classes?.[0]);
-            if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
-                const findNextMeeting = (endDateStr, scheduleDays) => {
-                    const date = new Date(endDateStr);
-                    for (let i = 1; i <= 7; i++) {
-                        const next = new Date(date);
-                        next.setDate(date.getDate() + i);
-                        const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
-                        if (scheduleDays.includes(dayName)) {
-                            return next.toISOString().split('T')[0];
-                        }
-                    }
-                    return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
-                };
-                const nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
-                setData('join_date', nextDate);
-            }
-        }
-    }, [data.billing_mode]);
 
     const selectedClass = useMemo(() => {
         return classList.find(c => c.id === data.study_class_id);
@@ -292,7 +251,14 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                 <PremiumSearchableSelect
                                                     options={classOptions}
                                                     value={data.study_class_id}
-                                                    onChange={(val) => setData('study_class_id', val)}
+                                                    onChange={(val) => {
+                                                        const cls = classList.find(c => c.id === val);
+                                                        setData(prev => ({
+                                                            ...prev,
+                                                            study_class_id: val,
+                                                            price_master_id: cls?.price_master_id || ''
+                                                        }));
+                                                    }}
                                                     icon={BookOpen}
                                                     placeholder="Cari kelas..."
                                                 />
@@ -341,7 +307,15 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        onClick={() => setData('billing_mode', 'prorata')}
+                                                        onClick={() => {
+                                                            const currentLead = lead || student?.lead;
+                                                            const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+                                                            setData(prev => ({
+                                                                ...prev,
+                                                                billing_mode: 'prorata',
+                                                                join_date: originalJoinDate
+                                                            }));
+                                                        }}
                                                         className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                                     >
                                                         Pro-rata
@@ -349,7 +323,30 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        onClick={() => setData('billing_mode', 'full')}
+                                                        onClick={() => {
+                                                            const targetClass = selectedClass || (student?.study_classes?.[0]);
+                                                            let nextDate = data.join_date;
+                                                            if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
+                                                                const findNextMeeting = (endDateStr, scheduleDays) => {
+                                                                    const date = new Date(endDateStr);
+                                                                    for (let i = 1; i <= 7; i++) {
+                                                                        const next = new Date(date);
+                                                                        next.setDate(date.getDate() + i);
+                                                                        const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                                                                        if (scheduleDays.includes(dayName)) {
+                                                                            return next.toISOString().split('T')[0];
+                                                                        }
+                                                                    }
+                                                                    return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+                                                                };
+                                                                nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
+                                                            }
+                                                            setData(prev => ({
+                                                                ...prev,
+                                                                billing_mode: 'full',
+                                                                join_date: nextDate
+                                                            }));
+                                                        }}
                                                         className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                                     >
                                                         Satu Siklus Penuh
