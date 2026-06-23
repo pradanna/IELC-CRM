@@ -8,6 +8,7 @@ use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\Master\Domain\Models\LeadSource;
 use App\Domains\CRM\Domain\Models\MonthlyTarget;
 use App\Domains\CRM\Domain\Models\Task;
+use App\Domains\Academic\Domain\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +24,7 @@ class FetchSuperadminDashboardData
         $hotLeadPhases = LeadPhase::whereIn('code', ['consultation', 'placement-test'])->pluck('id');
         
         $summary = [
-            'total_students' => 55, // Placeholder per request
+            'total_students' => Student::where('status', 'active')->count(),
             'hot_leads' => Lead::whereIn('lead_phase_id', $hotLeadPhases)->count(),
             'follow_up_today' => Task::where('is_completed', false)
                 ->where('due_date', '<=', $now->toDateTimeString())
