@@ -105,6 +105,7 @@ class LeadController extends Controller
                 'mediaAssets'    => \App\Domains\Master\Domain\Models\MediaAsset::latest()->get(),
                 'leadTypes'      => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
                 'leadSources'    => \App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get(),
+                'provinces'      => Province::select('id', 'name')->orderBy('name')->get(),
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['error' => 'Lead not found.'], 404);
@@ -190,6 +191,11 @@ class LeadController extends Controller
     public function updateQualification(Request $request, Lead $lead): JsonResponse
     {
         $validated = $request->validate([
+            'name'           => ['sometimes', 'string', 'max:255'],
+            'nickname'       => ['sometimes', 'nullable', 'string', 'max:255'],
+            'province'       => ['sometimes', 'nullable', 'string', 'max:255'],
+            'city'           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'address'        => ['sometimes', 'nullable', 'string', 'max:1000'],
             'lead_type_id'   => ['nullable', 'exists:lead_types,id'],
             'lead_source_id' => ['nullable', 'exists:lead_sources,id'],
             'is_online'      => ['sometimes', 'boolean'],
@@ -206,14 +212,14 @@ class LeadController extends Controller
         activity()
             ->performedOn($lead)
             ->causedBy(auth()->user())
-            ->log("Kualifikasi diperbarui: Program - {$leadType}, Mode - {$mode}, Sumber - {$source}");
+            ->log("Kualifikasi diperbarui: Nama: {$lead->name}, Program - {$leadType}, Mode - {$mode}, Sumber - {$source}");
 
         // Explicitly record to lead_activities for Reporting
         \App\Domains\CRM\Domain\Models\LeadActivity::create([
             'lead_id' => $lead->id,
             'user_id' => auth()->id(),
             'type' => 'message', // default activity type
-            'description' => "Kualifikasi diperbarui: Program: {$leadType}, Mode: {$mode}",
+            'description' => "Profil diperbarui: Nama: {$lead->name}, Panggilan: {$lead->nickname}, Alamat: {$lead->address}, {$lead->city}, {$lead->province}",
         ]);
 
         return response()->json([

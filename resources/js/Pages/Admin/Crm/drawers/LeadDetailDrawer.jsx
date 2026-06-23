@@ -28,6 +28,7 @@ export default function LeadDetailDrawer({
     const [localMediaAssets, setLocalMediaAssets] = useState([]);
     const [localLeadTypes, setLocalLeadTypes] = useState([]);
     const [localLeadSources, setLocalLeadSources] = useState([]);
+    const [localProvinces, setLocalProvinces] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const { getPhaseStyle } = useLeadPhaseStyle();
     
@@ -74,6 +75,7 @@ export default function LeadDetailDrawer({
             if (response.data.mediaAssets) setLocalMediaAssets(response.data.mediaAssets);
             if (response.data.leadTypes) setLocalLeadTypes(response.data.leadTypes);
             if (response.data.leadSources) setLocalLeadSources(response.data.leadSources);
+            if (response.data.provinces) setLocalProvinces(response.data.provinces);
 
         } catch (error) {
             console.error('Error fetching lead details:', error);
@@ -171,7 +173,7 @@ export default function LeadDetailDrawer({
 
                                                                     title="Edit Lead Data"
                                                                     className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-all"
-                                                                >
+                                                                 >
                                                                     <Edit2 size={14} />
                                                                 </button>
                                                                  <button 
@@ -181,7 +183,7 @@ export default function LeadDetailDrawer({
 
                                                                     title="Open WhatsApp"
                                                                     className="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-xl transition-all"
-                                                                >
+                                                                 >
                                                                     <MessageSquare size={14} />
                                                                 </button>
                                                                 {/* Promote and Student Verified states hidden - Now handled in Finance module */}
@@ -192,7 +194,7 @@ export default function LeadDetailDrawer({
                                                         {lead?.lead_number || '---'} • {lead?.formatted_at} 
                                                         {lead?.owner?.name && ` • Owner: ${lead.owner.name}`}
                                                         {lead?.creator?.name && ` • Created: ${lead.creator.name}`}
-                                                    </p>
+                                                     </p>
                                                 </div>
                                             </div>
                                             <button
@@ -260,6 +262,7 @@ export default function LeadDetailDrawer({
                                                          onRefresh={fetchLeadDetails}
                                                          leadTypes={localLeadTypes}
                                                          leadSources={localLeadSources}
+                                                         provinces={localProvinces}
                                                      />
                                                 </Tab.Panel>
 
