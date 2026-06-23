@@ -289,14 +289,14 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
 
     return (
         <AuthenticatedLayout>
-            <Head title="Finance Dashboard" />
+            <Head title="Billing Center" />
 
             <div className="max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                            Finance <span className="text-red-600">Dashboard</span>
+                            Billing <span className="text-red-600">Center</span>
                         </h1>
                         <p className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase flex items-center gap-2">
                              System Overview & Invoice Control Center

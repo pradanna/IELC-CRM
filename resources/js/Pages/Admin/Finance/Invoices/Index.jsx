@@ -77,7 +77,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                 href={route('admin.finance.dashboard')}
                                 className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors text-xs font-black uppercase tracking-widest mb-4"
                             >
-                                <ArrowLeft size={14} /> Back to Dashboard
+                                <ArrowLeft size={14} /> Back to Billing Center
                             </Link>
                             <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">
                                 Invoice <span className="text-red-600">History</span>

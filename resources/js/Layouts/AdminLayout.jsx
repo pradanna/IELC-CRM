@@ -56,8 +56,8 @@ const menuItems = [
         category: "Finance",
         items: [
             {
-                icon: <LayoutDashboard size={20} />,
-                text: "Dashboard",
+                icon: <CircleDollarSign size={20} />,
+                text: "Billing Center",
                 href: route("admin.finance.dashboard"),
                 name: "admin.finance.dashboard",
             },
