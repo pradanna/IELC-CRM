@@ -26,16 +26,16 @@ export default function PreEnrollmentStage({
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pilih Kelas</label>
-                            <select 
+                            <select
                                 value={plottingForm.study_class_id}
-                                onChange={e => setPlottingForm({...plottingForm, study_class_id: e.target.value})}
+                                onChange={e => setPlottingForm({ ...plottingForm, study_class_id: e.target.value })}
                                 className="w-full bg-white border-slate-200 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all py-3.5 px-5 shadow-sm"
                             >
                                 <option value="">-- Pilih Kelas Tersedia --</option>
                                 {availableClasses.map(cls => (
                                     <option key={cls.id} value={cls.id}>
-                                        {cls.name} 
-                                        {cls.schedule_days ? ` (${cls.schedule_days.map(d => d.substring(0,3)).join(', ')})` : ''} 
+                                        {cls.name}
+                                        {cls.schedule_days ? ` (${cls.schedule_days.map(d => d.substring(0, 3)).join(', ')})` : ''}
                                         - {cls.instructor?.name || 'No Instructor'}
                                     </option>
                                 ))}
@@ -44,9 +44,9 @@ export default function PreEnrollmentStage({
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Rencana Masuk</label>
-                            <DatePicker 
+                            <DatePicker
                                 value={plottingForm.join_date}
-                                onChange={val => setPlottingForm({...plottingForm, join_date: val})}
+                                onChange={val => setPlottingForm({ ...plottingForm, join_date: val })}
                                 inputClassName="!py-3.5 !h-auto !bg-white !border-slate-200 !rounded-2xl !text-sm !font-bold !text-slate-700 !shadow-sm !ring-red-500/20"
                             />
                         </div>
@@ -55,10 +55,10 @@ export default function PreEnrollmentStage({
                             <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estimasi Biaya (Rp)</label>
                                 <div className="relative">
-                                    <input 
+                                    <input
                                         type="number"
                                         value={plottingForm.estimated_cost}
-                                        onChange={e => setPlottingForm({...plottingForm, estimated_cost: e.target.value})}
+                                        onChange={e => setPlottingForm({ ...plottingForm, estimated_cost: e.target.value })}
                                         className="w-full pl-12 pr-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all shadow-sm"
                                         placeholder="Contoh: 1500000"
                                     />
@@ -89,8 +89,8 @@ export default function PreEnrollmentStage({
                                     <div className="flex items-center justify-between">
                                         <span className="text-[11px] font-bold text-slate-500">Periode</span>
                                         <span className="text-[11px] font-black text-slate-700">
-                                            {new Date(selectedClass.start_session_date).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })} 
-                                            - 
+                                            {new Date(selectedClass.start_session_date).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
+                                            -
                                             {new Date(selectedClass.end_session_date).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
                                         </span>
                                     </div>
@@ -112,16 +112,16 @@ export default function PreEnrollmentStage({
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center p-8 bg-white/50 border border-dashed border-slate-200 rounded-[2rem] text-center">
                                 <Compass size={32} className="text-slate-200 mb-3" />
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Pilih kelas untuk melihat<br/>estimasi sisa pertemuan</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Pilih kelas untuk melihat<br />estimasi sisa pertemuan</p>
                             </div>
                         )}
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Khusus Plotting</label>
-                            <textarea 
+                            <textarea
                                 rows={2}
                                 value={plottingForm.notes}
-                                onChange={e => setPlottingForm({...plottingForm, notes: e.target.value})}
+                                onChange={e => setPlottingForm({ ...plottingForm, notes: e.target.value })}
                                 className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all shadow-sm resize-none"
                                 placeholder="Misal: Request minta pengajar"
                             />
@@ -129,7 +129,7 @@ export default function PreEnrollmentStage({
                     </div>
                 </div>
 
-                <button 
+                <button
                     onClick={() => handleSavePlotting(openWaWeb)}
                     disabled={savingPlotting || !plottingForm.study_class_id}
                     className="w-full mt-8 py-4 bg-slate-900 hover:bg-red-600 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-[0.98]"
@@ -140,16 +140,12 @@ export default function PreEnrollmentStage({
             </div>
 
             <div className="grid grid-cols-2 gap-8">
-                <InfoItem 
-                    label="Residential Access" 
-                    value={lead?.address ? `${lead.city}, ${lead.province}` : '---'} 
-                    icon={MapPin} 
+                <InfoItem
+                    label="Residential Access"
+                    value={lead?.address ? `${lead.city}, ${lead.province}` : '---'}
+                    icon={MapPin}
                 />
-                <InfoItem 
-                    label="Self-Reg Token" 
-                    value={lead?.self_registration_token?.substring(0, 8) + '...'} 
-                    icon={Zap} 
-                />
+
             </div>
 
             {lead?.guardians?.length > 0 && (
