@@ -1,6 +1,13 @@
 module.exports = {
   apps: [
     {
+      name: "ielc-server",
+      script: "php",
+      args: "artisan serve --port=8000",
+      autorestart: true,
+      watch: false,
+    },
+    {
       name: "ielc-reverb",
       script: "php",
       args: "artisan reverb:start",
