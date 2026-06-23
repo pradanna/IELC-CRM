@@ -134,34 +134,34 @@ export default function PhaseSection({
                 </div>
             </div>
 
+            {active && phaseTemplates.length > 0 && (
+                <div className="mb-8 pb-8 border-b border-slate-100 space-y-3 animate-in fade-in duration-300">
+                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Zap size={10} className="text-amber-500" /> Suggested Messages
+                    </h5>
+                    <div className="flex flex-wrap gap-2">
+                        {phaseTemplates.map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => handleSendTemplate(t)}
+                                disabled={sendingTemplateId !== null}
+                                className={`px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 transition-all shadow-sm active:scale-95 flex items-center gap-2.5 ${
+                                    sendingTemplateId === t.id ? 'border-amber-500 text-amber-600' : 'hover:border-red-500 hover:text-red-600'
+                                } ${sendingTemplateId !== null && sendingTemplateId !== t.id ? 'opacity-50' : ''} cursor-pointer`}
+                            >
+                                {sendingTemplateId === t.id && <Loader2 size={12} className="animate-spin" />}
+                                {sendingTemplateId === t.id ? 'Sending...' : cleanTemplateTitle(t.title)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className={active ? '' : 'pointer-events-none'}>
                 {children}
             </div>
 
             <div className="mt-8 pt-8 border-t border-slate-100 space-y-6">
-                {active && phaseTemplates.length > 0 && (
-                    <div className="space-y-3">
-                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <Zap size={10} className="text-amber-500" /> Suggested Messages
-                        </h5>
-                        <div className="flex flex-wrap gap-2">
-                            {phaseTemplates.map(t => (
-                                <button
-                                    key={t.id}
-                                    onClick={() => handleSendTemplate(t)}
-                                    disabled={sendingTemplateId !== null}
-                                    className={`px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 transition-all shadow-sm active:scale-95 flex items-center gap-2.5 ${
-                                        sendingTemplateId === t.id ? 'border-amber-500 text-amber-600' : 'hover:border-red-500 hover:text-red-600'
-                                    } ${sendingTemplateId !== null && sendingTemplateId !== t.id ? 'opacity-50' : ''} cursor-pointer`}
-                                >
-                                    {sendingTemplateId === t.id && <Loader2 size={12} className="animate-spin" />}
-                                    {sendingTemplateId === t.id ? 'Sending...' : cleanTemplateTitle(t.title)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {phaseLogs.length > 0 && (
                     <div className="space-y-4">
                         <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
