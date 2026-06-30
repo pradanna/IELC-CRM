@@ -15,10 +15,10 @@ class StoreLeadRequest extends FormRequest
     {
         return [
             'branch_id' => ['required', 'exists:branches,id'],
-            'name'       => ['nullable', 'string', 'max:255'],
+            'name'       => ['required', 'string', 'max:255'],
             'nickname'   => ['nullable', 'string', 'max:255'],
             'gender'     => ['nullable', 'in:L,P'],
-            'phone'      => ['required', 'string', 'max:20'],
+            'phone'      => ['required', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
             'email'      => ['nullable', 'email', 'unique:leads,email'],
             'lead_type'  => ['nullable', 'string'], // kids, teens, adult, ielts, toefl, toefl_ibt
             'is_online'  => ['boolean'],
@@ -44,7 +44,9 @@ class StoreLeadRequest extends FormRequest
     {
         return [
             'branch_id.required' => 'Pilih cabang terlebih dahulu.',
+            'name.required'      => 'Nama lengkap wajib diisi.',
             'phone.required'     => 'Nomor telepon wajib diisi.',
+            'phone.regex'        => 'Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
             'email.unique'       => 'Email sudah terdaftar.',
         ];
     }

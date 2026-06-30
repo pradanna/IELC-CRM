@@ -312,6 +312,7 @@ export default function CreateEditLeadModal({
                                                                 onChange={e => setData('name', e.target.value)}
                                                                 className={`w-full px-5 py-3 bg-white border ${errors.name ? 'border-red-500 shadow-sm' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="Nama Lengkap"
+                                                                required
                                                             />
                                                         </PremiumFormGroup>
 
@@ -363,6 +364,9 @@ export default function CreateEditLeadModal({
                                                                 onChange={e => setData('phone', e.target.value)}
                                                                 className={`w-full px-5 py-3 bg-white border ${errors.phone ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="08..."
+                                                                required
+                                                                pattern="^(\+?62|0)8[1-9][0-9]{7,11}$"
+                                                                title="Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890."
                                                             />
                                                         </PremiumFormGroup>
 

@@ -84,7 +84,7 @@ class PublicLeadController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'nickname' => 'nullable|string|max:255',
-            'phone' => 'required|string|max:20',
+            'phone' => ['required', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
             'email' => 'nullable|email|max:255',
             'gender' => 'nullable|string|max:1',
             'birth_date' => 'nullable|date',
@@ -98,6 +98,10 @@ class PublicLeadController extends Controller
             'guardian_data' => 'nullable|array',
             'lead_source_id' => 'nullable|exists:lead_sources,id',
             'info_source_id' => 'nullable|exists:info_sources,id',
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'phone.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone.regex' => 'Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
         ]);
 
         $leadSourceId = $validated['lead_source_id'] ?? null;
@@ -204,7 +208,7 @@ class PublicLeadController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'nickname' => 'nullable|string|max:255',
-            'phone' => 'required|string|max:20',
+            'phone' => ['required', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
             'email' => 'nullable|email|max:255',
             'gender' => 'nullable|string|max:1',
             'birth_date' => 'nullable|date',
@@ -217,6 +221,10 @@ class PublicLeadController extends Controller
             'guardian_data' => 'nullable|array',
             'lead_source_id' => 'nullable|exists:lead_sources,id',
             'info_source_id' => 'nullable|exists:info_sources,id',
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'phone.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone.regex' => 'Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
         ]);
 
         if (empty($validated['lead_source_id'])) {

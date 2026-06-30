@@ -26,12 +26,12 @@ export default function PremiumFormGroup({
     return (
         <div className={`space-y-1.5 ${className}`}>
             {label && (
-                <div className="flex items-center justify-between ml-1">
+                <div className="flex items-center gap-1 ml-1">
                     <InputLabel 
                         value={label} 
                         className={`text-[10px] font-black uppercase tracking-widest text-slate-400 ${labelClassName}`} 
                     />
-                    {required && <span className="text-red-500 text-[10px] font-black -mt-0.5">*</span>}
+                    {required && <span className="text-red-500 text-[10px] font-black">*</span>}
                 </div>
             )}
             

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Globe, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 import CreateEditLeadModal from '../Leads/modals/CreateEditLeadModal';
@@ -24,6 +24,10 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
     const [isLoading, setIsLoading] = React.useState(false);
     const [showDropdown, setShowDropdown] = React.useState(false);
     const searchRef = React.useRef(null);
+
+    // Branch Dropdown State
+    const [showBranchDropdown, setShowBranchDropdown] = React.useState(false);
+    const branchDropdownRef = React.useRef(null);
 
     // Lead Modal State
     const [isLeadModalOpen, setIsLeadModalOpen] = React.useState(false);
@@ -68,6 +72,9 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
         const handleClickOutside = (event) => {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
                 setShowDropdown(false);
+            }
+            if (branchDropdownRef.current && !branchDropdownRef.current.contains(event.target)) {
+                setShowBranchDropdown(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -179,6 +186,39 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
                                 </div>
                             )}
                         </div>
+                        {/* Public Registration Link Dropdown */}
+                        <div className="relative" ref={branchDropdownRef}>
+                            <button 
+                                type="button"
+                                onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+                                className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-6 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all active:scale-95 shrink-0"
+                            >
+                                <Globe size={18} className="text-slate-400" />
+                                <span className="hidden sm:inline">Form Registrasi</span>
+                            </button>
+                            
+                            {showBranchDropdown && (
+                                <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden w-56 z-[9999] py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-2 border-b border-slate-50 mb-1">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Cabang</p>
+                                    </div>
+                                    {branches.map((b) => (
+                                        <a
+                                            key={b.id}
+                                            href={route('public.join.welcome', b.name.toLowerCase())}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={() => setShowBranchDropdown(false)}
+                                            className="w-full text-left px-5 py-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between text-sm font-bold text-slate-700"
+                                        >
+                                            <span>IELC {b.name}</span>
+                                            <ExternalLink size={14} className="text-slate-300" />
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         <button 
                             onClick={() => {
                                 setEditingLead(null);

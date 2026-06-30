@@ -18,7 +18,7 @@ class UpdateLeadRequest extends FormRequest
             'name'           => ['required', 'string', 'max:255'],
             'nickname'       => ['nullable', 'string', 'max:255'],
             'gender'         => ['nullable', 'in:L,P'],
-            'phone'          => ['required', 'string', 'max:20'],
+            'phone'          => ['required', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
             'email'          => ['nullable', 'email', 'unique:leads,email,' . $this->route('lead')->id],
             'lead_source_id' => ['nullable', 'exists:lead_sources,id'],
             'info_source_id' => ['nullable', 'exists:info_sources,id'],
@@ -55,10 +55,9 @@ class UpdateLeadRequest extends FormRequest
             'branch_id.required' => 'Pilih cabang terlebih dahulu.',
             'name.required'      => 'Nama lengkap wajib diisi.',
             'phone.required'     => 'Nomor telepon wajib diisi.',
+            'phone.regex'        => 'Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
             'email.unique'       => 'Email sudah terdaftar.',
         ];
     }
 }
-
-
 
