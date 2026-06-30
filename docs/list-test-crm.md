@@ -76,7 +76,7 @@ Modul CRM mengelola pendaftaran calon siswa (*Leads*), proses *placement test*, 
 
 ## 💬 5. Integrasi WhatsApp Gateway
 
-- [ ] **Koneksi QR Code:** Buka tab integrasi WA di cabang tertentu (misal Solo). Jika belum tersambung, pastikan QR Code dari gateway Node.js muncul untuk di-scan.
-- [ ] **Riwayat Chat:** Buka lead tertentu, klik tab WhatsApp. Pastikan 50 pesan terakhir termuat dengan benar dari SQLite gateway.
-- [ ] **Kirim Pesan Teks:** Kirim pesan tes dari panel WhatsApp CRM. Pastikan pesan terkirim ke HP penerima dan log terbuat di `lead_activities`.
-- [ ] **Rate Limit:** Coba kirim pesan secara beruntun dengan cepat. Pastikan jika melebihi batas (100 request/menit), sistem menampilkan peringatan rate limit dari gateway.
+- [V] **Koneksi QR Code:** Buka tab integrasi WA di cabang tertentu (misal Solo). Jika belum tersambung, pastikan QR Code dari gateway Node.js muncul untuk di-scan.
+- [V] **Riwayat Chat:** Buka lead tertentu, klik tab WhatsApp. Pastikan 50 pesan terakhir termuat dengan benar dari SQLite gateway.
+- [V] **Kirim Pesan Teks:** Kirim pesan tes dari panel WhatsApp CRM. Pastikan pesan terkirim ke HP penerima dan log terbuat di `lead_activities`.
+- [V] **Rate Limit:** Coba kirim pesan secara beruntun dengan cepat. Pastikan jika melebihi batas (100 request/menit), sistem menampilkan peringatan rate limit dari gateway.
