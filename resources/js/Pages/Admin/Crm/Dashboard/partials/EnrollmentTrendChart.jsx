@@ -15,6 +15,7 @@ import { TrendingUp, Target } from 'lucide-react';
 
 export default function EnrollmentTrendChart({ trendData }) {
     const target = trendData[0]?.target || 0;
+    const todayPoint = trendData.find(d => d.is_today);
 
     return (
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col h-full">
@@ -32,6 +33,12 @@ export default function EnrollmentTrendChart({ trendData }) {
                         <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Monthly Target</span>
                     </div>
+                    {todayPoint && (
+                        <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Today</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -75,6 +82,22 @@ export default function EnrollmentTrendChart({ trendData }) {
                             strokeWidth={2}
                             label={{ value: `TARGET: ${target}`, fill: '#ef4444', fontSize: 10, fontWeight: 800, position: 'right' }} 
                         />
+                        {todayPoint && (
+                            <ReferenceLine 
+                                x={todayPoint.label} 
+                                stroke="#6366f1" 
+                                strokeDasharray="4 4" 
+                                strokeWidth={2}
+                                label={{ 
+                                    value: 'TODAY', 
+                                    fill: '#6366f1', 
+                                    fontSize: 9, 
+                                    fontWeight: 900, 
+                                    position: 'insideTopLeft',
+                                    offset: 10
+                                }} 
+                            />
+                        )}
                         <Area 
                             type="stepAfter" 
                             dataKey="enrolled" 

@@ -163,6 +163,7 @@ export default function AdminLayout({ children }) {
     const isFrontdesk = userRole === 'frontdesk' || !!auth.user.frontdesk;
     const isFinance = userRole === 'finance' || !!auth.user.finance;
     const isMarketing = userRole === 'marketing' || !!auth.user.marketing;
+    const isTeacher = userRole === 'teacher' || !!auth.user.teacher;
 
     const filteredMenu = menuItems.filter(group => {
         if (isSuperAdmin) return true;
@@ -177,6 +178,10 @@ export default function AdminLayout({ children }) {
 
         if (isMarketing) {
             return ['Main', 'Management'].includes(group.category);
+        }
+
+        if (isTeacher) {
+            return ['Users'].includes(group.category);
         }
 
         return false;
@@ -196,6 +201,10 @@ export default function AdminLayout({ children }) {
                 }
                 if (isMarketing) {
                     const allowed = ['Dashboard', 'Crm'];
+                    return allowed.includes(item.text);
+                }
+                if (isTeacher) {
+                    const allowed = ['Students'];
                     return allowed.includes(item.text);
                 }
                 return true;

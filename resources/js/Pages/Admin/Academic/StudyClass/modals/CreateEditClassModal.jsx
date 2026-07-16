@@ -127,7 +127,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                             />
                         </PremiumFormGroup>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             <PremiumFormGroup label="Center Location" error={errors.branch_id} required>
                                 <PremiumSearchableSelect
                                     options={branchOptions}
@@ -136,17 +136,6 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                                     placeholder="Select Branch"
                                     icon={MapPin}
                                     error={errors.branch_id}
-                                />
-                            </PremiumFormGroup>
-
-                            <PremiumFormGroup label="Assigned Instructor" error={errors.instructor_id} required>
-                                <PremiumSearchableSelect
-                                    options={instructorOptions}
-                                    value={data.instructor_id}
-                                    onChange={(val) => setData('instructor_id', val)}
-                                    placeholder="Assign Teacher"
-                                    icon={Users}
-                                    error={errors.instructor_id}
                                 />
                             </PremiumFormGroup>
                         </div>

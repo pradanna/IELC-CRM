@@ -6,6 +6,9 @@ use App\Domains\CRM\Domain\Models\Lead;
 use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\Master\Domain\Models\LeadSource;
 use App\Domains\Master\Domain\Models\LeadType;
+use App\Domains\Master\Domain\Models\Branch;
+use App\Domains\Master\Domain\Models\InfoSource;
+use App\Domains\Shared\Domain\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class FetchLeadHistory
@@ -18,6 +21,10 @@ class FetchLeadHistory
         'lead_phase_id'  => [LeadPhase::class,  'name', 'Phase'],
         'lead_type_id'   => [LeadType::class,   'name', 'Minat Program'],
         'lead_source_id' => [LeadSource::class,  'name', 'Info Source'],
+        'branch_id'      => [Branch::class,      'name', 'Branch'],
+        'info_source_id' => [InfoSource::class,  'name', 'Info Source Detail'],
+        'owner_id'       => [null,               'name', 'Owner'],
+        'created_by'     => [null,               'name', 'Created By'],
     ];
 
     public function handle(Lead $lead): LengthAwarePaginator
@@ -48,8 +55,20 @@ class FetchLeadHistory
     {
         $maps = [];
         foreach (self::RESOLVABLE_FIELDS as $field => [$modelClass, $displayColumn, $label]) {
-            $maps[$field] = $modelClass::pluck($displayColumn, 'id')->all();
+            if ($modelClass !== null) {
+                $maps[$field] = $modelClass::pluck($displayColumn, 'id')->all();
+            }
         }
+
+        // Custom map for Users (since Name is a dynamic attribute)
+        $userMap = [];
+        $users = User::with(['superadmin', 'marketing', 'frontdesk', 'finance', 'teacher'])->get();
+        foreach ($users as $user) {
+            $userMap[$user->id] = $user->name ?? 'Unknown User';
+        }
+        $maps['owner_id'] = $userMap;
+        $maps['created_by'] = $userMap;
+
         return $maps;
     }
 

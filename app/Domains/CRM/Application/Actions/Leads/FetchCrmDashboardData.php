@@ -268,6 +268,10 @@ class FetchCrmDashboardData
             }
             $monthlyGoal = (int) $targetQuery->sum('target_enrolled') ?: 0; 
 
+            $today = \Carbon\Carbon::now();
+            $isCurrentMonthYear = ($trendMonth === (int)$today->month) && ($trendYear === (int)$today->year);
+            $todayDay = $isCurrentMonthYear ? (int)$today->day : null;
+
             $cumulative = 0;
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $cumulative += $dailyCounts[$i] ?? 0;
@@ -275,8 +279,10 @@ class FetchCrmDashboardData
                     'label' => $i,
                     'enrolled' => $cumulative,
                     'target' => $monthlyGoal,
+                    'is_today' => ($i === $todayDay),
                 ];
             }
+
 
             return [
                 'stats' => $stats,

@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 
 export const useRegistrationInbox = (registrations, updateRequests) => {
     const { post, processing } = useForm();
     const [activeTab, setActiveTab] = useState('new'); // 'new' or 'updates'
 
-    const handleApprove = (id, options = {}) => {
+    const handleApprove = (id, data = {}) => {
         if (confirm('Apakah Anda yakin ingin menyetujui (ACC) pendaftaran ini?')) {
-            post(route('admin.crm.registrations.approve', id), options);
+            router.post(route('admin.crm.registrations.approve', id), data);
         }
     };
 

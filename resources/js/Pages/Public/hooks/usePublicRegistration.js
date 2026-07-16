@@ -10,7 +10,7 @@ export function usePublicRegistration(branch, initialData = null, token = null) 
         email: initialData?.email || '',
         gender: initialData?.gender || 'L',
         birth_date: initialData?.birth_date || '',
-        branch_id: initialData?.branch_id || branch.id,
+        branch_id: initialData?.branch_id || branch?.id || '',
         school: initialData?.school || '',
         grade: initialData?.grade || '',
         province: initialData?.province || '',

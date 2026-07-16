@@ -18,18 +18,13 @@ use Illuminate\Support\Str;
 
 class PublicLeadController extends Controller
 {
-    public function welcome($branchName)
+    public function form()
     {
-        $branch = Branch::where('name', 'like', "%$branchName%")->firstOrFail();
-        
-        return Inertia::render('Public/Welcome', [
-            'branch' => $branch
+        $branches = Branch::orderBy('name')->get()->map(fn($b) => [
+            'value' => $b->id,
+            'label' => $b->name,
         ]);
-    }
 
-    public function form($branchName)
-    {
-        $branch = Branch::where('name', 'like', "%$branchName%")->firstOrFail();
         $provinces = Province::orderBy('name')->get()->map(fn($p) => [
             'value' => $p->name,
             'label' => $p->name,
@@ -46,7 +41,8 @@ class PublicLeadController extends Controller
         ]);
         
         return Inertia::render('Public/Form', [
-            'branch' => $branch,
+            'branch' => null,
+            'branches' => $branches,
             'provinces' => $provinces,
             'leadSources' => $leadSources,
             'infoSources' => $infoSources,
@@ -88,7 +84,7 @@ class PublicLeadController extends Controller
             'email' => 'nullable|email|max:255',
             'gender' => 'nullable|string|max:1',
             'birth_date' => 'nullable|date',
-            'branch_id' => 'required|exists:branches,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'school' => 'nullable|string|max:255',
             'grade' => 'nullable|string|max:50',
             'province' => 'nullable|string|max:255',
@@ -118,7 +114,7 @@ class PublicLeadController extends Controller
             'email' => $validated['email'] ?? null,
             'gender' => $validated['gender'] ?? null,
             'birth_date' => $validated['birth_date'] ?? null,
-            'branch_id' => $validated['branch_id'],
+            'branch_id' => $validated['branch_id'] ?? null,
             'school' => $validated['school'] ?? null,
             'grade' => $validated['grade'] ?? null,
             'province' => $validated['province'] ?? null,
@@ -133,9 +129,12 @@ class PublicLeadController extends Controller
 
         // Notify staff
         $superadmins = User::role('superadmin')->get();
-        $branchFrontdesk = User::role('frontdesk')
-            ->where('branch_id', $validated['branch_id'])
-            ->get();
+        $branchFrontdesk = collect();
+        if (!empty($validated['branch_id'])) {
+            $branchFrontdesk = User::role('frontdesk')
+                ->where('branch_id', $validated['branch_id'])
+                ->get();
+        }
 
         $recipients = $superadmins->merge($branchFrontdesk)->unique('id');
 

@@ -11,8 +11,13 @@ use App\Http\Controllers\Admin\Crm\PtQuestionGroupController;
 
 Route::get('/', function () {
     $user = auth()->user();
-    if ($user && $user->hasRole('finance')) {
-        return redirect()->route('admin.finance.dashboard');
+    if ($user) {
+        if ($user->hasRole('finance')) {
+            return redirect()->route('admin.finance.dashboard');
+        }
+        if ($user->hasRole('teacher')) {
+            return redirect()->route('admin.academic.students.index');
+        }
     }
     return redirect()->route('admin.crm.leads.index');
 });
@@ -28,10 +33,15 @@ Route::post('/placement-test/{token}/submit', [\App\Http\Controllers\Crm\PtExam\
 Route::get('/placement-test/{token}/result', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'result'])->name('public.placement-test.result');
 
 // Public Lead Registration
-Route::get('/join/{branch}', [\App\Http\Controllers\Public\PublicLeadController::class, 'welcome'])->name('public.join.welcome');
-Route::get('/join/{branch}/form', [\App\Http\Controllers\Public\PublicLeadController::class, 'form'])->name('public.join.form');
+Route::get('/join', [\App\Http\Controllers\Public\PublicLeadController::class, 'form'])->name('public.join.form');
 Route::get('/join/api/cities', [\App\Http\Controllers\Public\PublicLeadController::class, 'getCities'])->name('public.join.cities');
 Route::post('/join', [\App\Http\Controllers\Public\PublicLeadController::class, 'store'])->name('public.join.store');
+Route::get('/join/{branch}', function () {
+    return redirect()->route('public.join.form');
+});
+Route::get('/join/{branch}/form', function () {
+    return redirect()->route('public.join.form');
+});
 
 // Self-filling for Existing Leads
 Route::get('/fill-data/{token}', [\App\Http\Controllers\Public\PublicLeadController::class, 'fillingForm'])->name('public.join.filling');
@@ -42,8 +52,13 @@ Route::get('/invoice/{id}', [\App\Http\Controllers\Public\PublicLeadController::
 
 Route::get('/dashboard', function () {
     $user = auth()->user();
-    if ($user && $user->hasRole('finance')) {
-        return redirect()->route('admin.finance.dashboard');
+    if ($user) {
+        if ($user->hasRole('finance')) {
+            return redirect()->route('admin.finance.dashboard');
+        }
+        if ($user->hasRole('teacher')) {
+            return redirect()->route('admin.academic.students.index');
+        }
     }
     return redirect()->route('admin.crm.leads.index');
 })->middleware(['auth', 'verified'])->name('dashboard');

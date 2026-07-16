@@ -98,7 +98,7 @@
 | `gender` | enum(`L`,`P`) | ✅ | |
 | `school` | string | ✅ | |
 | `grade` | string | ✅ | |
-| `branch_id` | uuid | ❌ | FK → branches, cascade |
+| `branch_id` | uuid | ✅ | FK → branches, cascade (nullable for online/branchless leads) |
 | `owner_id` | uuid | ❌ | FK → users (PIC marketing) |
 | `created_by` | uuid | ✅ | FK → users, set null |
 | `lead_source_id` | uuid | ✅ | FK → lead_sources |

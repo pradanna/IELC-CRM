@@ -13,8 +13,9 @@
 | `superadmin` | `superadmins` | Akses penuh ke semua fitur dan modul |
 | `marketing` | `marketing` | Fokus di Finance: invoice dan pembayaran |
 | `frontdesk` | `frontdesks` | Operasional harian: CRM, kelas, master data |
+| `teacher` | `teachers` | Staff pengajar (hanya akses daftar siswa) |
 
-> ⚠️ Role `finance` dan `teacher` tersedia di tabel tapi **belum memiliki permission yang didefinisikan**. Jangan assign permission ke role tersebut sebelum didiskusikan dengan Kapten.
+> ⚠️ Role `finance` tersedia di tabel tapi **belum memiliki permission yang didefinisikan**. Jangan assign permission ke role tersebut sebelum didiskusikan dengan Kapten.
 
 ---
 
@@ -74,6 +75,14 @@ Superadmin memiliki akses ke **semua permission** di bawah ini secara otomatis, 
 | `invoice.update` | Edit invoice (sebelum paid) |
 | `invoice.payment` | Proses / konfirmasi pembayaran |
 | `lead.view` | Lihat data lead (read-only, untuk referensi) |
+| `student.view` | Lihat data siswa (read-only) |
+
+---
+
+### 👩‍🏫 Teacher — Academic Access
+
+| Permission | Deskripsi |
+|------------|-----------|
 | `student.view` | Lihat data siswa (read-only) |
 
 ---

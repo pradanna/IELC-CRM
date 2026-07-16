@@ -39,14 +39,7 @@ export default function ClassCard({ studyClass, onEdit, onDelete, onIncrement, o
                 </div>
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-3 py-4 border-y border-slate-50">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Instructor</span>
-                        <div className="flex items-center gap-2">
-                            <User className="w-3 h-3 text-slate-300" />
-                            <span className="text-xs font-bold text-slate-700 truncate">{studyClass.instructor?.name || 'Unassigned'}</span>
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 gap-3 py-4 border-y border-slate-50">
                     <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Students</span>
                         <button 

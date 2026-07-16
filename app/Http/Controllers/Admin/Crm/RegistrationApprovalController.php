@@ -10,6 +10,7 @@ use App\Domains\CRM\Domain\Models\Lead;
 use App\Domains\CRM\Domain\Models\LeadRegistration;
 use App\Domains\Master\Domain\Models\LeadSource;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -81,14 +82,19 @@ class RegistrationApprovalController extends Controller
         
         return redirect()->back()->with('success', "Usulan pembaruan profil {$lead->name} telah ditolak.");
     }
-
-    public function approve(LeadRegistration $registration, ApproveLeadRegistration $action): RedirectResponse
+    public function approve(Request $request, LeadRegistration $registration, ApproveLeadRegistration $action): RedirectResponse
     {
-        $action->handle($registration);
+        $request->validate([
+            'branch_id' => 'nullable|exists:branches,id'
+        ]);
 
-        return redirect()->back()->with('success', "Lead {$registration->name} berhasil disetujui dan ditambahkan ke CRM!");
+        $lead = $action->handle($registration, $request->input('branch_id'));
+
+        return redirect()->back()->with([
+            'success' => "Lead {$registration->name} berhasil disetujui dan ditambahkan ke CRM!",
+            'newLeadId' => $lead->id
+        ]);
     }
-
     public function reject(LeadRegistration $registration): RedirectResponse
     {
         $registration->update(['status' => 'rejected']);

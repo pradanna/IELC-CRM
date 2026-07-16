@@ -1,28 +1,37 @@
 import React from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
-import { 
-    X, User, Phone, Mail, Building2, MapPin, 
+import {
+    X, User, Phone, Mail, Building2, MapPin,
     Calendar, CheckCircle2, XCircle, Info,
-    Users, ArrowRight, ShieldCheck
+    Users, ArrowRight, ShieldCheck, ChevronDown
 } from 'lucide-react';
 
-export default function RegistrationPreviewModal({ 
-    isOpen, 
-    onClose, 
-    item, 
+export default function RegistrationPreviewModal({
+    isOpen,
+    onClose,
+    item,
     type = 'new', // 'new' or 'updates'
-    onApprove, 
+    onApprove,
     onReject,
     leadSources = [],
     infoSources = [],
-    processing = false 
+    branches = [],
+    processing = false
 }) {
     if (!item) return null;
 
+    const [selectedBranchId, setSelectedBranchId] = React.useState(item?.branch_id || '');
+
+    React.useEffect(() => {
+        if (item) {
+            setSelectedBranchId(item.branch_id || '');
+        }
+    }, [item]);
+
     // For updates, the data is inside item.pending_updates
     let displayData = type === 'new' ? item : (item.pending_updates || {});
-    
+
     // Ensure displayData is an object (it might be a JSON string from DB)
     if (typeof displayData === 'string') {
         try {
@@ -122,10 +131,10 @@ export default function RegistrationPreviewModal({
                                                         <DataField label="Gender" value={displayData.gender === 'L' ? 'Laki-laki' : (displayData.gender === 'P' ? 'Perempuan' : '-')} />
                                                     </div>
                                                     <DataField label="Email" value={displayData.email} icon={Mail} />
-                                                    <DataField 
-                                                        label="Tgl Lahir" 
-                                                        value={displayData.birth_date ? new Date(displayData.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'} 
-                                                        icon={Calendar} 
+                                                    <DataField
+                                                        label="Tgl Lahir"
+                                                        value={displayData.birth_date ? new Date(displayData.birth_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
+                                                        icon={Calendar}
                                                     />
                                                 </div>
                                             </div>
@@ -150,7 +159,30 @@ export default function RegistrationPreviewModal({
                                             <div>
                                                 <SectionTitle icon={Building2} title="Data Akademik" />
                                                 <div className="grid grid-cols-1 gap-4">
-                                                    <DataField label="Cabang IELC" value={item.branch?.name} icon={Building2} />
+                                                    {!item.branch_id && type === 'new' ? (
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Cabang IELC (Kosongkan jika Online)</span>
+                                                            <div className="relative">
+                                                                <select
+                                                                    value={selectedBranchId}
+                                                                    onChange={e => setSelectedBranchId(e.target.value)}
+                                                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all appearance-none cursor-pointer"
+                                                                >
+                                                                    <option value="">Online / Tanpa Cabang</option>
+                                                                    {branches.map((b) => (
+                                                                        <option key={b.id} value={b.id}>
+                                                                            IELC {b.name}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                                                    <ChevronDown size={14} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <DataField label="Cabang IELC" value={item.branch?.name} icon={Building2} />
+                                                    )}
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <DataField label="Sekolah" value={displayData.school} icon={Building2} />
                                                         <DataField label="Kelas" value={displayData.grade} icon={Calendar} />
@@ -256,7 +288,7 @@ export default function RegistrationPreviewModal({
                                         Tolak
                                     </button>
                                     <button
-                                        onClick={() => onApprove(item.id)}
+                                        onClick={() => onApprove(item.id, { branch_id: selectedBranchId })}
                                         disabled={processing}
                                         className={`px-12 py-4 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-3 shadow-xl ${type === 'updates' ? 'bg-slate-900 hover:bg-emerald-600 shadow-slate-100' : 'bg-slate-900 hover:bg-red-600 shadow-slate-200 hover:shadow-red-200'} disabled:opacity-50`}
                                     >

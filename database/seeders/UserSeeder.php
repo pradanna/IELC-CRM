@@ -41,6 +41,12 @@ class UserSeeder extends Seeder
                 'role' => 'finance',
                 'branch_id' => $semarangBranch?->id,
             ],
+            [
+                'name' => 'Teacher IELC',
+                'email' => 'teacher@ielc.com',
+                'role' => 'teacher',
+                'branch_id' => $soloBranch?->id,
+            ],
         ];
 
         foreach ($users as $userData) {
@@ -66,6 +72,7 @@ class UserSeeder extends Seeder
                 'marketing' => \App\Domains\CRM\Domain\Models\Marketing::updateOrCreate(['user_id' => $user->id], $profileData),
                 'frontdesk' => \App\Domains\Master\Domain\Models\Frontdesk::updateOrCreate(['user_id' => $user->id], $profileData),
                 'finance' => \App\Domains\Master\Domain\Models\Finance::updateOrCreate(['user_id' => $user->id], $profileData),
+                'teacher' => \App\Domains\Academic\Domain\Models\Teacher::updateOrCreate(['user_id' => $user->id], $profileData),
                 default => null,
             };
         }

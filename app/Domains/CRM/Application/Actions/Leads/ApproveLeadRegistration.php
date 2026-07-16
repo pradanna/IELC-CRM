@@ -16,9 +16,9 @@ class ApproveLeadRegistration
         $this->storeLead = $storeLead;
     }
 
-    public function handle(LeadRegistration $registration): void
+    public function handle(LeadRegistration $registration, ?string $branchId = null): \App\Domains\CRM\Domain\Models\Lead
     {
-        DB::transaction(function () use ($registration) {
+        return DB::transaction(function () use ($registration, $branchId) {
             // 1. Determine Lead Source
             $leadSourceId = $registration->lead_source_id;
 
@@ -60,7 +60,7 @@ class ApproveLeadRegistration
                 'birth_date' => $registration->birth_date,
                 'school' => $registration->school,
                 'grade' => $registration->grade,
-                'branch_id' => $registration->branch_id,
+                'branch_id' => $branchId ?: $registration->branch_id,
                 'lead_source_id' => $leadSourceId,
                 'info_source_id' => $registration->info_source_id,
                 'province' => $registration->province,
@@ -72,13 +72,12 @@ class ApproveLeadRegistration
             ];
 
             // 3. Promote to Official Lead
-            $this->storeLead->handle($leadData);
+            $lead = $this->storeLead->handle($leadData);
 
             // 4. Update Registration Status
             $registration->update(['status' => 'approved']);
+
+            return $lead;
         });
     }
 }
-
-
-

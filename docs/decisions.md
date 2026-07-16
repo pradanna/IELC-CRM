@@ -50,3 +50,13 @@
 - Laravel berkomunikasi ke gateway via HTTP menggunakan env `WA_SERVER_URL`.
 - Semua interaksi WA di-mirror ke `ActivityLog` untuk visibility di CRM.
 - Agent **tidak boleh** install package PHP untuk WA tanpa diskusi dengan Kapten.
+
+---
+
+## ADR-006: Cabang Opsional pada Lead (Mendukung Pembelajaran Online)
+
+**Keputusan**: Kolom `branch_id` pada tabel `leads` dan `lead_registrations` diubah menjadi nullable.
+**Alasan**: Untuk mendukung pendaftaran dan pengelolaan Lead secara Online / Branchless (tidak terikat pada cabang fisik tertentu).
+**Implikasi**:
+- Kolom `branch_id` didefinisikan sebagai nullable di database migration.
+- Logika backend dan frontend wajib menggunakan optional chaining (`branch?->name`) untuk menghindari `TypeError` ketika mengakses properti cabang dari Lead.

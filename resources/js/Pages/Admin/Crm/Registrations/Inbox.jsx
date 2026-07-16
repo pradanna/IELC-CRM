@@ -1,15 +1,16 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CrmLayout from '../partials/CrmLayout';
-import { Head } from '@inertiajs/react';
-import { 
-    CheckCircle2, XCircle, Clock, User, Phone, 
+import { Head, usePage } from '@inertiajs/react';
+import {
+    CheckCircle2, XCircle, Clock, User, Phone,
     Building2, MapPin, Inbox as InboxIcon
 } from 'lucide-react';
 import { useRegistrationInbox } from './hooks/useRegistrationInbox';
 import RegistrationPreviewModal from './modals/RegistrationPreviewModal';
+import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 
-export default function Inbox({ auth, registrations, update_requests = [], lead_sources = [], info_sources = [] }) {
+export default function Inbox({ auth, registrations, update_requests = [], lead_sources = [], info_sources = [], branches = [] }) {
     /**
      * Normalizes a collection that might be a raw array or a wrapped resource object.
      */
@@ -21,6 +22,7 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
 
     const normalizedRegistrations = normalizeCollection(registrations);
     const normalizedUpdates = normalizeCollection(update_requests);
+    const normalizedBranches = normalizeCollection(branches);
 
     const [previewItem, setPreviewItem] = React.useState(null);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -54,6 +56,17 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
         }
     }, [normalizedRegistrations]);
 
+    const { flash } = usePage().props;
+    const { openDrawer } = useLeadDrawer();
+
+    React.useEffect(() => {
+        if (flash?.newLeadId) {
+            setPreviewItem(null);
+            setIsModalOpen(false);
+            openDrawer(flash.newLeadId);
+        }
+    }, [flash?.newLeadId]);
+
     const closePreview = () => {
         setPreviewItem(null);
         setIsModalOpen(false);
@@ -86,7 +99,7 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
                     <div className="space-y-12">
                         {/* Sub-Tabs for Inbox */}
                         <div className="flex gap-4 p-1.5 bg-slate-100 rounded-2xl w-fit">
-                            <button 
+                            <button
                                 onClick={() => setActiveTab('new')}
                                 className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeTab === 'new' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             >
@@ -94,7 +107,7 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
                                 Pendaftaran Baru
                                 {normalizedRegistrations.length > 0 && <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[9px]">{normalizedRegistrations.length}</span>}
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setActiveTab('updates')}
                                 className={`px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeTab === 'updates' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             >
@@ -113,7 +126,7 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
                                     {activeTab === 'new' ? 'Inbox Kosong!' : 'Tidak Ada Pembaruan!'}
                                 </h2>
                                 <p className="text-slate-400 max-w-xs mx-auto text-sm font-medium">
-                                    {activeTab === 'new' 
+                                    {activeTab === 'new'
                                         ? 'Semua pendaftaran mandiri telah diproses. Tidak ada antrean saat ini.'
                                         : 'Tidak ada lead yang sedang mengajukan pembaruan data profil saat ini.'
                                     }
@@ -122,8 +135,8 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
                         ) : (
                             <div className="grid grid-cols-1 gap-6">
                                 {currentItems.map((reg) => (
-                                    <div 
-                                        key={reg.id} 
+                                    <div
+                                        key={reg.id}
                                         className="group bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-2xl shadow-slate-100/50 hover:border-red-200 transition-all duration-300"
                                     >
                                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
@@ -141,7 +154,7 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
                                                         <h3 className="text-xl font-black text-slate-900 leading-none truncate">{reg.name}</h3>
                                                         <div className="flex items-center gap-2 mt-2">
                                                             <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-black uppercase rounded-md border border-red-100">
-                                                                Branch {reg.branch.name}
+                                                                Branch {reg.branch?.name || 'Unassigned'}
                                                             </span>
                                                             {activeTab === 'updates' && (
                                                                 <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[9px] font-black uppercase rounded-md border border-amber-100">
@@ -204,13 +217,14 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
                 </CrmLayout>
             </div>
 
-            <RegistrationPreviewModal 
+            <RegistrationPreviewModal
                 isOpen={isModalOpen}
                 onClose={closePreview}
                 item={previewItem}
                 type={activeTab}
                 leadSources={lead_sources}
                 infoSources={info_sources}
+                branches={normalizedBranches}
                 onApprove={onApprove}
                 onReject={onReject}
                 processing={processing}

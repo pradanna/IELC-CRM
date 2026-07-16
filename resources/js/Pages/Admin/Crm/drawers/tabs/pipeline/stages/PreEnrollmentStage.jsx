@@ -36,7 +36,6 @@ export default function PreEnrollmentStage({
                                     <option key={cls.id} value={cls.id}>
                                         {cls.name}
                                         {cls.schedule_days ? ` (${cls.schedule_days.map(d => d.substring(0, 3)).join(', ')})` : ''}
-                                        - {cls.instructor?.name || 'No Instructor'}
                                     </option>
                                 ))}
                             </select>

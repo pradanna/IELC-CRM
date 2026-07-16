@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import {
     User, Mail, Phone, MapPin, Building2,
@@ -14,11 +15,13 @@ import { usePublicRegistration } from './hooks/usePublicRegistration';
 import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 
-export default function Form({ branch, provinces, leadSources = [], infoSources = [], initialData = null, token = null }) {
+export default function Form({ branch, branches = [], provinces, leadSources = [], infoSources = [], initialData = null, token = null }) {
     const {
         data, setData, errors, processing, wasSuccessful,
         cities, loadingCities, handleSubmit
     } = usePublicRegistration(branch, initialData, token);
+
+    const [showForm, setShowForm] = useState(!!token);
 
     const gradeOptions = [
         { value: 'PG', label: 'Playgroup (PG)' },
@@ -38,52 +41,85 @@ export default function Form({ branch, provinces, leadSources = [], infoSources 
                 </div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-4">Terima Kasih!</h1>
                 <p className="text-slate-500 max-w-md font-medium mb-12">
-                    Pendaftaran Anda di <strong>IELC {branch.name}</strong> telah berhasil kami terima. <br />
-                    .
+                    Pendaftaran Anda {branch ? <span>di <strong>IELC {branch.name}</strong></span> : 'ke IELC'} telah berhasil kami terima. <br />
+                    Kami akan segera menghubungi Anda.
                 </p>
-                {token ? (
-                    <a
-                        href="https://ielc.co.id/"
-                        className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-600 transition-all"
-                    >
-                        Kembali ke Beranda
-                    </a>
-                ) : (
-                    <Link
-                        href={route('public.join.welcome', branch.name.toLowerCase())}
-                        className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-600 transition-all"
-                    >
-                        Kembali ke Beranda
-                    </Link>
-                )}
+                <a
+                    href="https://ielc.co.id/"
+                    className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-600 transition-all"
+                >
+                    Kembali ke Beranda
+                </a>
             </div>
         )
     }
 
+    if (!showForm) {
+        return (
+            <div className="min-h-screen relative flex flex-col items-center justify-center text-white font-sans selection:bg-red-600 selection:text-white overflow-hidden bg-slate-900">
+                <Head title="Welcome to IELC" />
+
+                {/* Premium Full-Screen Background Image */}
+                <div className="absolute inset-0 z-0">
+                    <img 
+                        src="/assets/images/local/background-welcomepage.jpg" 
+                        alt="IELC Background" 
+                        className="w-full h-full object-cover opacity-60 scale-105 animate-in slide-in-from-bottom-4 duration-1000"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                </div>
+
+                {/* Minimalist Content */}
+                <main className="relative z-10 w-full max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+                    <div className="mb-12 animate-in fade-in zoom-in duration-700">
+                         
+                    </div>
+
+                    <h1 className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.85] mb-12 animate-in slide-in-from-bottom-8 duration-700 delay-100 italic uppercase">
+                        Start Your <br />
+                        <span className="text-red-600 not-italic">Journey</span> <br /> 
+                        at IELC.
+                    </h1>
+
+                    <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 w-full flex justify-center">
+                        <button
+                            type="button"
+                            onClick={() => setShowForm(true)}
+                            className="group relative px-12 py-6 bg-red-600 text-white rounded-full font-black uppercase tracking-[0.2em] text-sm transition-all hover:bg-white hover:text-red-600 hover:scale-110 active:scale-95 shadow-[0_20px_50px_rgba(220,38,38,0.3)] overflow-hidden whitespace-nowrap"
+                        >
+                            <span className="relative z-10 flex items-center gap-4">
+                                Mulai Isi Data Pribadi
+                                <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
+                            </span>
+                        </button>
+                    </div>
+                </main>
+
+                {/* Subtle Footer Branding */}
+                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 opacity-30">
+                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white">
+                        Official Registration Portal &bull; IELC Language Center
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50/50 font-sans selection:bg-red-100 selection:text-red-900 overflow-x-hidden">
-            <Head title={`Pendaftaran IELC ${branch.name}`} />
+            <Head title={`Pendaftaran IELC${branch ? ' ' + branch.name : ''}`} />
 
             {/* Layout Container */}
             <div className="max-w-4xl mx-auto px-6 py-12 md:py-20">
                 {/* Header Link */}
-                {token ? (
-                    <a
-                        href="https://ielc.co.id/"
-                        className="inline-flex items-center gap-2 text-slate-400 hover:text-red-600 transition-colors mb-12 group"
-                    >
-                        <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-xs font-black uppercase tracking-widest">Kembali</span>
-                    </a>
-                ) : (
-                    <Link
-                        href={route('public.join.welcome', branch.name.toLowerCase())}
-                        className="inline-flex items-center gap-2 text-slate-400 hover:text-red-600 transition-colors mb-12 group"
-                    >
-                        <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-xs font-black uppercase tracking-widest">Kembali</span>
-                    </Link>
-                )}
+                <button
+                    type="button"
+                    onClick={() => token ? window.location.href = "https://ielc.co.id/" : setShowForm(false)}
+                    className="inline-flex items-center gap-2 text-slate-400 hover:text-red-600 transition-colors mb-12 group border-0 bg-transparent cursor-pointer"
+                >
+                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-xs font-black uppercase tracking-widest">Kembali</span>
+                </button>
 
                 <div className="flex flex-col md:items-center justify-center gap-8 mb-16 text-center">
                     <div>
@@ -101,7 +137,7 @@ export default function Form({ branch, provinces, leadSources = [], infoSources 
                         <p className="text-slate-500 font-medium tracking-tight max-w-2xl mx-auto">
                             {token
                                 ? "Mohon lengkapi atau perbarui data diri Anda agar kami dapat memberikan pelayanan terbaik."
-                                : `Lengkapi data diri Anda untuk memulai perjalanan akademik yang luar biasa bersama IELC ${branch.name}.`
+                                : `Lengkapi data diri Anda untuk memulai perjalanan akademik yang luar biasa bersama IELC${branch ? ' ' + branch.name : ''}.`
                             }
                         </p>
                     </div>
@@ -422,7 +458,7 @@ export default function Form({ branch, provinces, leadSources = [], infoSources 
                 <div className="flex items-center justify-center gap-3 mb-4 opacity-20">
                     <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">IELC <span className="text-red-600">CRM</span></span>
                 </div>
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">Official Portal &bull; Branch {branch.name}</p>
+                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">Official Portal &bull; {branch ? `Branch ${branch.name}` : 'IELC Language Center'}</p>
             </div>
         </div>
     );
