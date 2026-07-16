@@ -20,6 +20,11 @@ class BranchSeeder extends Seeder
                 'name' => 'Semarang',
                 'code' => 'SMG'
             ],
+            [
+                'id'   => '97f2c695-ab3d-4c33-8cbd-73595610bc95',
+                'name' => 'Online',
+                'code' => 'ONLINE'
+            ],
         ];
 
         foreach ($branches as $branch) {

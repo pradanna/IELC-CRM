@@ -168,7 +168,7 @@ export default function RegistrationPreviewModal({
                                                                     onChange={e => setSelectedBranchId(e.target.value)}
                                                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all appearance-none cursor-pointer"
                                                                 >
-                                                                    <option value="">Online / Tanpa Cabang</option>
+                                                                    <option value="">-- Pilih Cabang --</option>
                                                                     {branches.map((b) => (
                                                                         <option key={b.id} value={b.id}>
                                                                             IELC {b.name}
