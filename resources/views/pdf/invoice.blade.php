@@ -85,6 +85,10 @@
                 <div>No: {{ $invoice->invoice_number }}</div>
                 <div>Tanggal: {{ $invoice->created_at->format('d M Y') }}</div>
                 <div>Jatuh Tempo: {{ \Carbon\Carbon::parse($invoice->due_date)->format('d M Y') }}</div>
+                <div>Tipe: {{ $invoice->student_id ? 'Rejoin' : 'New Join' }}</div>
+                @if($invoice->studyClass)
+                    <div>Kelas: {{ $invoice->studyClass->name }}</div>
+                @endif
             </td>
         </tr>
     </table>

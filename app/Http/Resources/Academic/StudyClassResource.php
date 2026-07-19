@@ -32,6 +32,7 @@ class StudyClassResource extends JsonResource
             'instructor' => $this->whenLoaded('instructor'), // Can use a UserResource if created
             'price_master' => new PriceMasterResource($this->whenLoaded('priceMaster')),
             'students' => StudentResource::collection($this->whenLoaded('students')),
+            'pending_bulk_invoices_count' => $this->pending_bulk_invoices_count ?? null,
         ];
     }
 }

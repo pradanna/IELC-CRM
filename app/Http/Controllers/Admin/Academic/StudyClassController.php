@@ -28,11 +28,11 @@ class StudyClassController extends Controller
         $data = $service->getIndexData($request);
 
         return Inertia::render('Admin/Academic/StudyClass/Index', [
-            'classes' => StudyClassResource::collection($data['classes_query']->get()),
+            'classes' => StudyClassResource::collection($data['classes_query']->paginate(12)->withQueryString()),
             'branches' => BranchResource::collection($data['branches']),
             'instructors' => $data['instructors'], 
             'priceMasters' => PriceMasterResource::collection($data['priceMasters']),
-            'filters' => $request->only(['branch_id', 'search']),
+            'filters' => $request->only(['branch_id', 'search', 'type']),
         ]);
     }
 

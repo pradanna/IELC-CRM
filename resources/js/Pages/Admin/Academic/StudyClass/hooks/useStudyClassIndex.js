@@ -23,6 +23,13 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         );
     };
 
+    const handleFilterType = (type) => {
+        router.get(route('admin.academic.study-classes.index'), 
+            { ...filters, type: type }, 
+            { preserveState: true }
+        );
+    };
+
     const openCreateModal = () => {
         setEditingClass(null);
         setIsModalOpen(true);
@@ -67,6 +74,7 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         // Actions
         handleSearch,
         handleFilterBranch,
+        handleFilterType,
         openCreateModal,
         openEditModal,
         openStudentDrawer,

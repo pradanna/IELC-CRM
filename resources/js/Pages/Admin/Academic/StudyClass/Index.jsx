@@ -8,6 +8,7 @@ import ClassStudentDrawer from './drawers/ClassStudentDrawer';
 import PremiumSelect from '@/Components/PremiumSelect';
 import TextInput from '@/Components/TextInput';
 import { useStudyClassIndex } from './hooks/useStudyClassIndex';
+import Pagination from '@/Components/ui/Pagination';
 
 export default function Index({ classes, branches, instructors, priceMasters, filters }) {
     const {
@@ -22,6 +23,7 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
         // Actions
         handleSearch,
         handleFilterBranch,
+        handleFilterType,
         openCreateModal,
         openEditModal,
         openStudentDrawer,
@@ -89,27 +91,54 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
                                 placeholder="Filter Branch"
                             />
                         </div>
+
+                        <div className="w-full md:w-64">
+                            <PremiumSelect 
+                                options={[
+                                    { value: '', label: 'All Classes' },
+                                    { value: 'group', label: 'Group Classes' },
+                                    { value: 'ielts', label: 'IELTS' },
+                                    { value: 'online', label: 'Online' },
+                                    { value: 'offline', label: 'Offline' },
+                                    { value: 'private', label: 'Private' }
+                                ]}
+                                value={filters.type || ''}
+                                onChange={handleFilterType}
+                                icon={Filter}
+                                placeholder="Filter Type"
+                            />
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic shrink-0">
                         <BookOpen className="w-3.5 h-3.5 translate-y-[-1px]" />
-                        <span>{classes.data ? classes.data.length : (classes.length || 0)} Active Tracks</span>
+                        <span>{classes.meta?.total || (classes.data ? classes.data.length : (classes.length || 0))} Active Tracks</span>
                     </div>
                 </div>
 
                 {/* Main Grid */}
                 {(classes.data ? classes.data.length : classes.length) > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {(classes.data || classes).map((c) => (
-                            <ClassCard 
-                                key={c.id} 
-                                studyClass={c} 
-                                onEdit={openEditModal}
-                                onDelete={handleDelete}
-                                onResetCycle={handleResetCycle}
-                                onManageStudents={openStudentDrawer}
-                            />
-                        ))}
+                    <div className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {(classes.data || classes).map((c) => (
+                                <ClassCard 
+                                    key={c.id} 
+                                    studyClass={c} 
+                                    onEdit={openEditModal}
+                                    onDelete={handleDelete}
+                                    onResetCycle={handleResetCycle}
+                                    onManageStudents={openStudentDrawer}
+                                />
+                            ))}
+                        </div>
+                        
+                        {/* Pagination */}
+                        <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm gap-4">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                Showing {classes.data?.length || 0} of {classes.meta?.total || 0} Classes
+                            </span>
+                            <Pagination links={classes.meta?.links || (Array.isArray(classes.links) ? classes.links : [])} />
+                        </div>
                     </div>
                 ) : (
                     <div className="py-20 flex flex-col items-center justify-center space-y-6 text-center">

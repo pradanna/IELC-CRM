@@ -34,6 +34,28 @@ class StudyClassQueryService
             $query->where('name', 'like', "%{$request->search}%");
         }
 
+        if ($request->filled('type')) {
+            $type = strtolower($request->type);
+            if ($type === 'group') {
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%group%')
+                      ->orWhere('name', 'like', '%& co%');
+                });
+            } elseif ($type === 'ielts') {
+                $query->where('name', 'like', '%ielts%');
+            } elseif ($type === 'online') {
+                $query->where('name', 'like', '%online%');
+            } elseif ($type === 'offline') {
+                $query->where('name', 'like', '%offline%');
+            } elseif ($type === 'private') {
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%private%')
+                      ->orWhere('name', 'like', '%privat%')
+                      ->orWhere('name', 'like', '%ind -%');
+                });
+            }
+        }
+
         return [
             'classes_query' => $query->latest(),
             'branches' => Branch::select('id', 'name')->get(),

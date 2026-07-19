@@ -31,12 +31,15 @@ class GenerateInvoice
             $remaining = $calculation['sessions'];
             $baseSubtotal = $calculation['amount'];
 
+            $discountAmount = isset($data['discount_amount']) ? (int) $data['discount_amount'] : 0;
+
             $invoice = Invoice::create([
                 'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
                 'lead_id' => $data['lead_id'] ?? null,
                 'student_id' => $data['student_id'] ?? null,
                 'study_class_id' => $studyClass->id,
                 'total_amount' => 0, // Updated later
+                'discount_amount' => $discountAmount,
                 'session_count' => $remaining,
                 'status' => 'pending',
                 'due_date' => now()->addDays(7),
@@ -67,6 +70,9 @@ class GenerateInvoice
                     $totalAmount += $itemSubtotal;
                 }
             }
+
+            // Apply discount
+            $totalAmount = max(0, $totalAmount - $discountAmount);
 
             $invoice->update(['total_amount' => $totalAmount]);
 

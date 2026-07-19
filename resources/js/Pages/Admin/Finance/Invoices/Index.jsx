@@ -28,6 +28,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
     const [startDate, setStartDate] = useState(filters.start_date || '');
     const [endDate, setEndDate] = useState(filters.end_date || '');
     const [status, setStatus] = useState(filters.status || '');
+    const [type, setType] = useState(filters.type || '');
 
     // Auto-filter logic
     useEffect(() => {
@@ -36,7 +37,8 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                 search,
                 start_date: startDate,
                 end_date: endDate,
-                status
+                status,
+                type
             }, {
                 preserveState: true,
                 replace: true,
@@ -45,14 +47,33 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
         }, 300);
 
         return () => clearTimeout(timeout);
-    }, [search, startDate, endDate, status]);
+    }, [search, startDate, endDate, status, type]);
 
     const handleReset = () => {
         setSearch('');
         setStartDate('');
         setEndDate('');
         setStatus('');
+        setType('');
         router.get(route('admin.finance.invoices.index'));
+    };
+
+    const handleWhatsApp = (invoice) => {
+        const phone = invoice.lead?.phone || invoice.student?.lead?.phone || '';
+        if (!phone) {
+            alert('Nomor WhatsApp tidak tersedia untuk invoice ini.');
+            return;
+        }
+        // Normalize phone: remove leading 0 and add 62, or keep if already 62
+        let normalized = phone.replace(/[^0-9]/g, '');
+        if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1);
+        else if (!normalized.startsWith('62')) normalized = '62' + normalized;
+
+        const invoiceType = invoice.student_id ? 'Rejoin' : 'New Join';
+        const className = invoice.study_class?.name || '';
+        const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(invoice.total_amount);
+        const msg = `Halo, berikut informasi tagihan Anda:%0A%0ANo. Invoice: *${invoice.invoice_number}*%0ATipe: *${invoiceType}*${className ? `%0AKelas: *${className}*` : ''}%0ATotal: *${amount}*%0AStatus: *${invoice.status.toUpperCase()}*%0A%0ASilakan lakukan pembayaran sebelum jatuh tempo. Terima kasih! 🙏`;
+        window.open(`https://wa.me/${normalized}?text=${msg}`, '_blank');
     };
 
     const formatCurrency = (amount) => {
@@ -113,7 +134,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                 />
                             </div>
 
-                            <div className="md:col-span-4 space-y-2">
+                            <div className="md:col-span-3 space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date Range</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <DatePicker 
@@ -129,7 +150,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                 </div>
                             </div>
 
-                            <div className="md:col-span-3 space-y-2">
+                            <div className="md:col-span-2 space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
                                 <select 
                                     value={status}
@@ -146,6 +167,25 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                     <option value="pending">Pending</option>
                                     <option value="paid">Paid</option>
                                     <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+
+                            <div className="md:col-span-2 space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe</label>
+                                <select 
+                                    value={type}
+                                    onChange={(e) => setType(e.target.value)}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm font-bold text-slate-700 focus:ring-4 focus:ring-red-100 focus:border-red-200 transition-all appearance-none"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                                        backgroundPosition: 'right 0.5rem center',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundSize: '1.5em 1.5em',
+                                    }}
+                                >
+                                    <option value="">Semua Tipe</option>
+                                    <option value="new_join">New Join</option>
+                                    <option value="rejoin">Rejoin</option>
                                 </select>
                             </div>
 
@@ -168,6 +208,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                             <TR hover={false}>
                                 <TH>Invoice</TH>
                                 <TH>Customer</TH>
+                                <TH>Class</TH>
                                 <TH>Date</TH>
                                 <TH>Amount</TH>
                                 <TH>Status</TH>
@@ -181,7 +222,13 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                         <TD>
                                             <div className="flex flex-col">
                                                 <span className="text-xs font-black text-slate-900 group-hover:text-red-600 transition-colors uppercase tracking-tight">{invoice.invoice_number}</span>
-                                                <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.study_class?.name || 'Manual Items'}</span>
+                                                <span className={`mt-1 inline-block self-start px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                                    invoice.student_id
+                                                        ? 'bg-violet-50 text-violet-600 border-violet-100'
+                                                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                }`}>
+                                                    {invoice.student_id ? 'Rejoin' : 'New Join'}
+                                                </span>
                                             </div>
                                         </TD>
                                         <TD>
@@ -195,6 +242,16 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                         <TD>
                                             <div className="flex flex-col">
                                                 <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                                                    {invoice.study_class?.name || <span className="text-slate-300 italic font-medium">Manual Items</span>}
+                                                </span>
+                                                {invoice.study_class && (
+                                                    <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.session_count} Sessions</span>
+                                                )}
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
                                                     {new Date(invoice.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                 </span>
                                                 <span className="text-[10px] font-bold text-slate-400 mt-0.5">At {new Date(invoice.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -203,7 +260,6 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                         <TD>
                                             <div className="flex flex-col">
                                                 <span className="text-xs font-black text-slate-900">{formatCurrency(invoice.total_amount)}</span>
-                                                <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.session_count} Sessions</span>
                                             </div>
                                         </TD>
                                         <TD>
@@ -217,6 +273,13 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                         </TD>
                                         <TD className="text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleWhatsApp(invoice)}
+                                                    className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-emerald-600 hover:border-emerald-100 rounded-xl transition-all shadow-sm"
+                                                    title="Kirim via WhatsApp"
+                                                >
+                                                    <MessageCircle size={16} />
+                                                </button>
                                                 <a 
                                                     href={route('admin.finance.invoices.download', invoice.id)} 
                                                     target="_blank"

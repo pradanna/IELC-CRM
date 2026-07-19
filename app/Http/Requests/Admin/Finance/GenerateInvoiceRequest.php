@@ -27,6 +27,7 @@ class GenerateInvoiceRequest extends FormRequest
             'join_date' => 'required|date_format:Y-m-d',
             'billing_mode' => 'required|string|in:prorata,full',
             'notes' => 'nullable|string',
+            'discount_amount' => 'nullable|integer|min:0',
             'items' => 'nullable|array',
             'items.*.name' => 'required|string|max:255',
             'items.*.unit_price' => 'required|numeric|min:0',

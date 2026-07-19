@@ -22,6 +22,7 @@ class Invoice extends Model
         'student_id',
         'study_class_id',
         'total_amount',
+        'discount_amount',
         'session_count',
         'status',
         'due_date',

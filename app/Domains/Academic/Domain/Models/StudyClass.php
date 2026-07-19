@@ -5,12 +5,14 @@ namespace App\Domains\Academic\Domain\Models;
 use App\Domains\Master\Domain\Models\Branch;
 use App\Domains\Shared\Domain\Models\User;
 use App\Domains\Finance\Domain\Models\PriceMaster;
+use App\Domains\Finance\Domain\Models\Invoice;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StudyClass extends Model
@@ -53,6 +55,11 @@ class StudyClass extends Model
     public function priceMaster(): BelongsTo
     {
         return $this->belongsTo(PriceMaster::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'study_class_id');
     }
 
     public function students(): BelongsToMany

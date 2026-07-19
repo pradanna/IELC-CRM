@@ -23,6 +23,10 @@ class FinanceDashboardService
         $leadsForInvoicing = Lead::where('lead_phase_id', $invoicePhaseId)
             ->whereDoesntHave('student')
             ->with(['leadType', 'branch'])
+            ->withCount(['invoices as pending_invoices_count' => function($q) {
+                $q->whereNull('student_id')
+                  ->whereNotIn('status', ['cancelled']);
+            }])
             ->latest()
             ->get();
 
@@ -38,8 +42,12 @@ class FinanceDashboardService
             'leads' => $leadsForInvoicing,
             'rejoinStudents' => $rejoinStudents,
             'expiringClasses' => StudyClassResource::collection(
-                StudyClass::whereBetween('end_session_date', [now()->toDateString(), now()->addDays(12)->toDateString()])
+                StudyClass::whereBetween('end_session_date', [now()->toDateString(), now()->addDays(14)->toDateString()])
                     ->with(['branch', 'instructor', 'priceMaster', 'students.lead'])
+                    ->withCount(['invoices as pending_bulk_invoices_count' => function($q) {
+                        $q->whereNotNull('student_id')
+                          ->whereNotIn('status', ['cancelled']);
+                    }])
                     ->latest()
                     ->get()
             ),

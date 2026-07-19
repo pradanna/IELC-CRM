@@ -96,12 +96,6 @@ const menuItems = [
             //     href: route("admin.schedules.index"),
             //     name: "admin.schedules.*",
             // },
-            // {
-            //     icon: <ClipboardCheck size={20} />,
-            //     text: "Attendances",
-            //     href: route("admin.attendances.index"),
-            //     name: "admin.attendances.*",
-            // },
             {
                 icon: <GraduationCap size={20} />,
                 text: "Academic",

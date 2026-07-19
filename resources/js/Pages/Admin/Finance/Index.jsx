@@ -130,18 +130,65 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
             )
         },
         {
+            header: 'Invoice Status',
+            render: (row) => {
+                const invoiceCount = row.pending_invoices_count ?? null;
+                if (invoiceCount === null) return null;
+
+                if (invoiceCount > 0) {
+                    return (
+                        <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-1 w-fit">
+                            <CheckCircle className="w-3 h-3" />
+                            Invoiced
+                        </span>
+                    );
+                }
+
+                return (
+                    <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-amber-50 text-amber-700 border-amber-100 flex items-center gap-1 w-fit">
+                        <Clock className="w-3 h-3" />
+                        Not Yet
+                    </span>
+                );
+            }
+        },
+        {
             header: 'Actions',
             className: 'text-right',
-            render: (row) => (
-                <Button 
-                    onClick={() => openPlotModal(activeTab === 'new' ? row : row, activeTab === 'new' ? 'lead' : 'student')}
-                    variant="primary"
-                    icon={Calculator}
-                    className="inline-flex py-2 px-4 bg-red-600 hover:bg-red-700 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/10"
-                >
-                    Plot & Invoice
-                </Button>
-            )
+            render: (row) => {
+                const alreadyInvoiced = (row.pending_invoices_count ?? 0) > 0;
+
+                if (alreadyInvoiced) {
+                    return (
+                        <div className="flex items-center justify-end gap-2">
+                            <span className="inline-flex items-center gap-1.5 py-2 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Invoice Sent
+                            </span>
+                            <Button
+                                onClick={() => openPlotModal(row, 'lead')}
+                                variant="ghost"
+                                icon={Calculator}
+                                className="inline-flex py-2 px-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all text-slate-400 hover:text-slate-700 border border-slate-200"
+                                title="Re-generate invoice"
+                            >
+                                Re-Invoice
+                            </Button>
+                        </div>
+                    );
+                }
+
+                return (
+                    <Button 
+                        onClick={() => openPlotModal(activeTab === 'new' ? row : row, activeTab === 'new' ? 'lead' : 'student')}
+                        variant="primary"
+                        icon={Calculator}
+                        className="inline-flex py-2 px-4 bg-red-600 hover:bg-red-700 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/10"
+                    >
+                        Plot &amp; Invoice
+                    </Button>
+                );
+            }
         }
     ];
 
@@ -223,6 +270,35 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
             }
         },
         {
+            header: 'Invoice Status',
+            render: (row) => {
+                const studentCount = row.students?.length || 0;
+                const invoiceCount = row.pending_bulk_invoices_count ?? null;
+                if (invoiceCount === null) return null;
+
+                if (invoiceCount > 0) {
+                    return (
+                        <div className="space-y-1">
+                            <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-1 w-fit">
+                                <CheckCircle className="w-3 h-3" />
+                                Invoiced
+                            </span>
+                            <p className="text-[10px] font-bold text-slate-400 mt-1">
+                                {invoiceCount} of {studentCount} students
+                            </p>
+                        </div>
+                    );
+                }
+
+                return (
+                    <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-amber-50 text-amber-700 border-amber-100 flex items-center gap-1 w-fit">
+                        <Clock className="w-3 h-3" />
+                        Not Yet
+                    </span>
+                );
+            }
+        },
+        {
             header: 'Ends On / Urgency',
             render: (row) => {
                 const remainingDays = row.end_session_date ? Math.ceil((new Date(row.end_session_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : 0;
@@ -250,6 +326,27 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
                 const studentCount = row.students?.length || 0;
                 const hasPriceMaster = !!row.price_master;
                 const isDisabled = studentCount === 0 || !hasPriceMaster;
+                const alreadyInvoiced = (row.pending_bulk_invoices_count ?? 0) > 0;
+
+                if (alreadyInvoiced) {
+                    return (
+                        <div className="flex items-center justify-end gap-2">
+                            <span className="inline-flex items-center gap-1.5 py-2 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Invoice Sent
+                            </span>
+                            <Button
+                                onClick={() => handleBulkClassInvoice(row)}
+                                variant="ghost"
+                                icon={Receipt}
+                                className="inline-flex py-2 px-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all text-slate-400 hover:text-slate-700 border border-slate-200"
+                                title="Re-generate bulk invoice"
+                            >
+                                Re-Invoice
+                            </Button>
+                        </div>
+                    );
+                }
 
                 return (
                     <Button 
@@ -278,11 +375,6 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
         currentData = filteredLeads;
         currentColumns = leadColumns;
     } else if (activeTab === 'rejoin') {
-        currentData = rejoinStudents.filter(s => 
-            s.lead?.name.toLowerCase().includes(search.toLowerCase())
-        );
-        currentColumns = leadColumns;
-    } else if (activeTab === 'expiring') {
         currentData = filteredExpiringClasses;
         currentColumns = expiringClassColumns;
     }
@@ -321,14 +413,7 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
                                     variant="ghost"
                                     className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'rejoin' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                 >
-                                    Rejoin Students ({rejoinStudents.length})
-                                </Button>
-                                <Button 
-                                    onClick={() => setActiveTab('expiring')}
-                                    variant="ghost"
-                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'expiring' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
-                                >
-                                    Expiring Classes ({expiringClassesList.length})
+                                    Rejoin Students ({expiringClassesList.length})
                                 </Button>
                             </div>
 

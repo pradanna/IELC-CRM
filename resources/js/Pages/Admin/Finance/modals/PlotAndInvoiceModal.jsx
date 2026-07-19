@@ -19,6 +19,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         join_date: '',
         notes: '',
         items: [],
+        discount_amount: 0,
         billing_mode: 'prorata', // 'prorata' or 'full'
     });
 
@@ -87,6 +88,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 join_date: joinDate,
                 notes: existingNotes,
                 billing_mode: billingMode,
+                discount_amount: 0,
                 items: [],
             });
         }
@@ -158,7 +160,9 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         return (data.items || []).reduce((sum, item) => sum + (Number(item.unit_price || 0) * Number(item.quantity || 1)), 0);
     }, [data.items]);
 
-    const totalAmount = useMemo(() => baseClassSubtotal + itemsTotal, [baseClassSubtotal, itemsTotal]);
+    const discountAmount = useMemo(() => Number(data.discount_amount || 0), [data.discount_amount]);
+
+    const totalAmount = useMemo(() => Math.max(0, baseClassSubtotal + itemsTotal - discountAmount), [baseClassSubtotal, itemsTotal, discountAmount]);
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -445,6 +449,31 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                         <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-600">
                                                             <span>Extra Items</span>
                                                             <span className="font-black text-slate-900">{formatCurrency(itemsTotal)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Discount Input row */}
+                                                    <div className="flex justify-between items-center gap-4 pt-2 border-t border-dashed border-slate-100">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
+                                                            <Tag className="w-3 h-3 text-violet-500" />
+                                                            Diskon
+                                                        </label>
+                                                        <div className="relative flex items-center">
+                                                            <span className="absolute left-3 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                value={data.discount_amount}
+                                                                onChange={e => setData('discount_amount', Math.max(0, parseInt(e.target.value) || 0))}
+                                                                className="w-36 pl-9 pr-3 py-2 bg-violet-50 border border-violet-100 rounded-xl text-sm font-black text-violet-700 text-right focus:ring-4 focus:ring-violet-100 focus:border-violet-300 transition-all"
+                                                                placeholder="0"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    {discountAmount > 0 && (
+                                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-violet-600">
+                                                            <span>Potongan Diskon</span>
+                                                            <span className="font-black">- {formatCurrency(discountAmount)}</span>
                                                         </div>
                                                     )}
                                                 </div>

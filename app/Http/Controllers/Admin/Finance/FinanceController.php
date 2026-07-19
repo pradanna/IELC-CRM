@@ -77,9 +77,16 @@ class FinanceController extends Controller
             $query->where('status', $request->status);
         }
 
+        // 4. Filter by Type: new_join (no student_id) or rejoin (has student_id)
+        if ($request->type === 'new_join') {
+            $query->whereNull('student_id');
+        } elseif ($request->type === 'rejoin') {
+            $query->whereNotNull('student_id');
+        }
+
         return Inertia::render('Admin/Finance/Invoices/Index', [
             'invoices' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only(['search', 'start_date', 'end_date', 'status']),
+            'filters' => $request->only(['search', 'start_date', 'end_date', 'status', 'type']),
             'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()),
             'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Domains\Master\Domain\Models\LeadPhase::select('id', 'name', 'code')->get()),
             'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get()),

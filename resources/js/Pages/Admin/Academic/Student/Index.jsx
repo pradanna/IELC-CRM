@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { 
     User, Phone, GraduationCap, Search, 
     Filter, UserCheck, ShieldAlert,
@@ -9,11 +9,25 @@ import {
 import TextInput from '@/Components/TextInput';
 import { useStudentIndex } from './hooks/useStudentIndex';
 import EditStudentModal from './partials/EditStudentModal';
+import { AcademicDashboardContent } from '../Dashboard';
+import Pagination from '@/Components/ui/Pagination';
 
-export default function Index({ students, filters }) {
+export default function Index({ students, filters, reports }) {
     const { search, setSearch, handleSearch } = useStudentIndex(filters);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const [activeMainTab, setActiveMainTab] = useState(urlParams.get('mainTab') || 'list');
+
+    const handleDashboardFilterChange = (newFilters) => {
+        const params = {
+            ...newFilters,
+            mainTab: 'analytics',
+            search: search || '',
+        };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
+    };
 
     const openEditModal = (student) => {
         setSelectedStudent(student);
@@ -41,10 +55,42 @@ export default function Index({ students, filters }) {
                             Active Enrolled Learners
                         </p>
                     </div>
+
+                    {/* Tabs switcher */}
+                    <div className="flex items-center gap-1 bg-slate-100/85 p-1 rounded-xl w-fit border border-slate-200/50 backdrop-blur-md">
+                        <button
+                            onClick={() => {
+                                setActiveMainTab('list');
+                                router.get('/admin/academic/students', { mainTab: 'list' }, { preserveState: true });
+                            }}
+                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
+                                activeMainTab === 'list' 
+                                    ? 'bg-slate-900 text-white shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                        >
+                            Database Siswa
+                        </button>
+                        <button
+                            onClick={() => {
+                                setActiveMainTab('analytics');
+                                router.get('/admin/academic/students', { mainTab: 'analytics' }, { preserveState: true });
+                            }}
+                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
+                                activeMainTab === 'analytics' 
+                                    ? 'bg-slate-900 text-white shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-900'
+                            }`}
+                        >
+                            Statistik &amp; Analisis
+                        </button>
+                    </div>
                 </div>
 
-                {/* Filters & Actions Card */}
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-center justify-between relative z-20">
+                {activeMainTab === 'list' ? (
+                    <>
+                        {/* Filters & Actions Card */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-center justify-between relative z-20">
                     <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                         <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
                             <Filter size={14} className="text-red-500" />
@@ -64,7 +110,7 @@ export default function Index({ students, filters }) {
 
                     <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic shrink-0">
                         <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{students.data ? students.data.length : students.length} Registered Students</span>
+                        <span>{students.meta?.total || (students.data ? students.data.length : students.length)} Registered Students</span>
                     </div>
                 </div>
 
@@ -197,13 +243,23 @@ export default function Index({ students, filters }) {
                         </table>
                     </div>
                     
-                    {/* Pagination Placeholder */}
-                    <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                            {students.data ? students.data.length : 0} Total Registered Students
+                    {/* Pagination */}
+                    <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <span className="text-xs font-bold text-slate-450 uppercase tracking-widest">
+                            Showing {students.data?.length || 0} of {students.meta?.total || 0} Registered Students
                         </span>
+                        <Pagination links={students.meta?.links || (Array.isArray(students.links) ? students.links : [])} />
                     </div>
                 </div>
+                    </>
+                ) : (
+                    <AcademicDashboardContent 
+                        reports={reports} 
+                        filters={filters} 
+                        onFilterChange={handleDashboardFilterChange} 
+                        hideHeader={true} 
+                    />
+                )}
             </div>
 
             {/* Edit Student Modal */}

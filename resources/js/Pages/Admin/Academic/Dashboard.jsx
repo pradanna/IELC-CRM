@@ -17,7 +17,7 @@ const MONTH_NAMES = [
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
-export default function Dashboard({ reports, filters }) {
+export function AcademicDashboardContent({ reports, filters, onFilterChange, hideHeader = false }) {
     const [activeTab, setActiveTab] = useState(filters?.tab || 'overall');
 
     const { overall, join_patterns, siswa_stop, grades } = reports;
@@ -42,7 +42,9 @@ export default function Dashboard({ reports, filters }) {
         Object.keys(params).forEach(k => {
             if (params[k] === null || params[k] === undefined || params[k] === '') delete params[k];
         });
-        router.get('/admin/academic', params, { preserveState: true, preserveScroll: true });
+        if (onFilterChange) {
+            onFilterChange(params);
+        }
     };
 
     // ── Filter Bar Sub-component ─────────────────────────────────
@@ -61,7 +63,7 @@ export default function Dashboard({ reports, filters }) {
                     onChange={(e) => handleFilterChange({ year: parseInt(e.target.value) })}
                     className="text-xs font-bold text-slate-700 bg-transparent border-none outline-none cursor-pointer pr-5 appearance-none"
                 >
-                    {available_years.map(y => (
+                    {available_years?.map(y => (
                         <option key={y} value={y}>Tahun {y}</option>
                     ))}
                 </select>
@@ -113,11 +115,9 @@ export default function Dashboard({ reports, filters }) {
         : MONTH_NAMES[new Date().getMonth()];
 
     return (
-        <AdminLayout>
-            <Head title="Academic Dashboard" />
-
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 pb-20">
-                {/* ═══ Header ═══════════════════════════════════════ */}
+        <div className="space-y-10">
+            {/* ═══ Header ═══════════════════════════════════════ */}
+            {!hideHeader && (
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -129,8 +129,9 @@ export default function Dashboard({ reports, filters }) {
                         </p>
                     </div>
                 </div>
+            )}
 
-                {/* ═══ Tabs Navigation ═════════════════════════════ */}
+            {/* ═══ Tabs Navigation ═════════════════════════════ */}
                 <div className="flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl w-fit border border-slate-200/50 backdrop-blur-md">
                     {[
                         { id: 'overall', label: 'Overall Overview', icon: GraduationCap },
@@ -507,6 +508,26 @@ export default function Dashboard({ reports, filters }) {
                         </div>
                     </div>
                 )}
+        </div>
+    );
+}
+
+export default function Dashboard({ reports, filters }) {
+    return (
+        <AdminLayout>
+            <Head title="Academic" />
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+                <div className="bg-white rounded-[2.5rem] p-12 border border-slate-100 shadow-sm max-w-lg mx-auto space-y-6">
+                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                        <GraduationCap className="w-8 h-8 animate-pulse" />
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="text-xl font-black text-slate-800 uppercase tracking-wider">Modul Akademik</h3>
+                        <p className="text-xs font-bold text-slate-405 leading-relaxed max-w-sm mx-auto">
+                            Halaman ini sedang dalam pemeliharaan. Laporan statistik dan analisis siswa saat ini telah dipindahkan ke menu **Students (Tab Statistik & Analisis)**.
+                        </p>
+                    </div>
+                </div>
             </div>
         </AdminLayout>
     );

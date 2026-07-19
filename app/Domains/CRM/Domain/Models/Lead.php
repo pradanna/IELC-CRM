@@ -132,7 +132,7 @@ class Lead extends Model
     {
         return $this->hasOne(Student::class);
     }
-
+ 
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
