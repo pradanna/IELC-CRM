@@ -30,11 +30,49 @@ class StudentController extends Controller
             })->orWhere('student_number', 'like', "%{$request->search}%");
         }
 
+        if ($request->filled('expiry_status')) {
+            $status = $request->input('expiry_status');
+            if ($status === 'expired') {
+                $query->whereHas('studyClasses', function ($q) {
+                    $q->where('end_session_date', '<', now()->toDateString());
+                });
+            } elseif ($status === 'expiring_soon') {
+                $query->whereHas('studyClasses', function ($q) {
+                    $q->whereBetween('end_session_date', [now()->toDateString(), now()->addDays(21)->toDateString()]);
+                });
+            } elseif ($status === 'not_expired') {
+                $query->whereHas('studyClasses', function ($q) {
+                    $q->where('end_session_date', '>', now()->addDays(21)->toDateString());
+                })->whereDoesntHave('studyClasses', function ($q) {
+                    $q->where('end_session_date', '<=', now()->addDays(21)->toDateString());
+                });
+            }
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $sortField = $request->input('sort_field', 'created_at');
+        $sortDirection = $request->input('sort_direction', 'desc');
+
+        if ($sortField === 'name') {
+            $query->join('leads', 'students.lead_id', '=', 'leads.id')
+                  ->select('students.*')
+                  ->orderBy('leads.name', $sortDirection);
+        } elseif ($sortField === 'student_number') {
+            $query->orderBy('student_number', $sortDirection);
+        } elseif ($sortField === 'start_join') {
+            $query->orderByRaw('COALESCE(start_join, created_at) ' . $sortDirection);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
         $dashboardData = $this->getAcademicDashboardData($request);
 
         return Inertia::render('Admin/Academic/Student/Index', array_merge([
-            'students' => StudentResource::collection($query->latest()->paginate(12)->withQueryString()),
-            'filters' => array_merge($request->only(['search']), $dashboardData['filters']),
+            'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
+            'filters' => array_merge($request->only(['search', 'expiry_status', 'status', 'sort_field', 'sort_direction']), $dashboardData['filters']),
         ], $dashboardData));
     }
 

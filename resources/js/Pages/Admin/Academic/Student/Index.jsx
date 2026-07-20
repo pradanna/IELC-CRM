@@ -3,19 +3,25 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { 
     User, Phone, GraduationCap, Search, 
-    Filter, UserCheck, ShieldAlert,
-    Calendar, MapPin, ChevronRight, Package, Award 
+    Filter, UserCheck, ShieldAlert, Clock,
+    Calendar, MapPin, ChevronRight, Package, Award, Edit3,
+    ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import TextInput from '@/Components/TextInput';
+import PremiumSelect from '@/Components/PremiumSelect';
+import TableActionDropdown from '@/Components/ui/TableActionDropdown';
 import { useStudentIndex } from './hooks/useStudentIndex';
 import EditStudentModal from './partials/EditStudentModal';
+import StudentDetailModal from './partials/StudentDetailModal';
 import { AcademicDashboardContent } from '../Dashboard';
 import Pagination from '@/Components/ui/Pagination';
 
 export default function Index({ students, filters, reports }) {
-    const { search, setSearch, handleSearch } = useStudentIndex(filters);
+    const { search, setSearch, handleSearch, handleFilterExpiry, handleFilterStatus, handleSort } = useStudentIndex(filters);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [defaultEditStatus, setDefaultEditStatus] = useState(null);
 
     const urlParams = new URLSearchParams(window.location.search);
     const [activeMainTab, setActiveMainTab] = useState(urlParams.get('mainTab') || 'list');
@@ -29,14 +35,46 @@ export default function Index({ students, filters, reports }) {
         router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
-    const openEditModal = (student) => {
+    const openEditModal = (student, defaultStatus = null) => {
         setSelectedStudent(student);
+        setDefaultEditStatus(defaultStatus);
         setIsEditModalOpen(true);
     };
 
     const closeEditModal = () => {
         setSelectedStudent(null);
+        setDefaultEditStatus(null);
         setIsEditModalOpen(false);
+    };
+
+    const openDetailModal = (student) => {
+        setSelectedStudent(student);
+        setIsDetailModalOpen(true);
+    };
+
+    const closeDetailModal = () => {
+        setSelectedStudent(null);
+        setIsDetailModalOpen(false);
+    };
+
+    const renderSortHeader = (label, field) => {
+        const isSorted = filters.sort_field === field;
+        const isAsc = filters.sort_direction === 'asc';
+        
+        return (
+            <button 
+                type="button"
+                onClick={() => handleSort(field)}
+                className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase tracking-[0.2em] text-[10px] font-black text-left"
+            >
+                <span>{label}</span>
+                {isSorted ? (
+                    isAsc ? <ArrowUp size={12} className="text-red-500" /> : <ArrowDown size={12} className="text-red-500" />
+                ) : (
+                    <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-455" />
+                )}
+            </button>
+        );
     };
 
     return (
@@ -106,6 +144,35 @@ export default function Index({ students, filters, reports }) {
                             />
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
                         </form>
+
+                        <div className="w-full md:w-64">
+                             <PremiumSelect
+                                 options={[
+                                     { value: '', label: 'Semua Status Masa Aktif' },
+                                     { value: 'not_expired', label: 'Belum Habis (Aktif)' },
+                                     { value: 'expiring_soon', label: 'Hampir Habis (≤ 21 Hari)' },
+                                     { value: 'expired', label: 'Sudah Habis' }
+                                 ]}
+                                 value={filters.expiry_status || ''}
+                                 onChange={handleFilterExpiry}
+                                 icon={Clock}
+                                 placeholder="Filter Masa Aktif"
+                             />
+                        </div>
+
+                        <div className="w-full md:w-56">
+                             <PremiumSelect
+                                 options={[
+                                     { value: '', label: 'Semua Status Siswa' },
+                                     { value: 'active', label: 'Aktif' },
+                                     { value: 'stop', label: 'Stopped (Berhenti)' }
+                                 ]}
+                                 value={filters.status || ''}
+                                 onChange={handleFilterStatus}
+                                 icon={UserCheck}
+                                 placeholder="Filter Status"
+                             />
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic shrink-0">
@@ -120,10 +187,14 @@ export default function Index({ students, filters, reports }) {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/50">
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Student Profile</th>
+                                    <th className="px-8 py-5 border-b border-slate-100">
+                                        {renderSortHeader('Student Profile', 'name')}
+                                    </th>
                                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 uppercase">Contact & Branch</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 uppercase">Active Classes</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 uppercase">Enrollment</th>
+                                    <th className="px-8 py-5 border-b border-slate-100">
+                                        {renderSortHeader('Enrollment', 'start_join')}
+                                    </th>
                                     <th className="px-8 py-5 text-center border-b border-slate-100 w-20"></th>
                                 </tr>
                             </thead>
@@ -204,15 +275,47 @@ export default function Index({ students, filters, reports }) {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5">
-                                                <div className="flex flex-wrap gap-2">
-                                                    {student.study_classes?.slice(0, 2).map(cls => (
-                                                        <span key={cls.id} className="px-3 py-1.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-wider rounded-xl border border-red-100 flex items-center gap-2">
-                                                            <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
-                                                            {cls.name}
-                                                        </span>
-                                                    ))}
+                                                <div className="flex flex-wrap gap-3">
+                                                    {student.study_classes?.slice(0, 2).map(cls => {
+                                                        const warning = (() => {
+                                                            if (!cls.end_session_date) return null;
+                                                            const end = new Date(cls.end_session_date);
+                                                            const today = new Date();
+                                                            end.setHours(0,0,0,0);
+                                                            today.setHours(0,0,0,0);
+                                                            const diffTime = end - today;
+                                                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                                            
+                                                            if (diffDays < 0) {
+                                                                return {
+                                                                    text: `Habis (${Math.abs(diffDays)} hari lalu)`,
+                                                                    class: 'bg-rose-50 text-rose-700 border-rose-100'
+                                                                };
+                                                            } else if (diffDays <= 21) {
+                                                                return {
+                                                                    text: `Hampir Habis (${diffDays} hari lagi)`,
+                                                                    class: 'bg-amber-50 text-amber-700 border-amber-100'
+                                                                };
+                                                            }
+                                                            return null;
+                                                        })();
+
+                                                        return (
+                                                            <div key={cls.id} className="flex flex-col gap-1.5">
+                                                                <span className="px-3 py-1.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-wider rounded-xl border border-red-100 flex items-center gap-2 w-fit">
+                                                                    <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
+                                                                    {cls.name}
+                                                                </span>
+                                                                {warning && (
+                                                                    <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded border ${warning.class} w-fit`}>
+                                                                        {warning.text}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                     {student.study_classes?.length > 2 && (
-                                                        <span className="px-2 py-1 bg-slate-50 text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100">
+                                                        <span className="px-2 py-1 bg-slate-50 text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100 align-self-start">
                                                             +{student.study_classes.length - 2} More
                                                         </span>
                                                     )}
@@ -228,18 +331,34 @@ export default function Index({ students, filters, reports }) {
                                                         <span className="text-xs font-bold text-slate-700">Joined Date</span>
                                                     </div>
                                                     <span className="text-xs font-bold text-slate-400 ml-6">
-                                                        {new Date(student.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                        {student.start_join ? new Date(student.start_join).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : (student.enrolled_at || '-')}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-8 text-center">
-                                                <button 
-                                                    onClick={() => openEditModal(student)}
-                                                    className="p-2.5 bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl transition-all duration-300 group/btn shadow-sm"
-                                                    title="Edit Student Status & Notes"
-                                                >
-                                                    <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-                                                </button>
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="flex justify-end">
+                                                    <TableActionDropdown>
+                                                        <TableActionDropdown.Item 
+                                                            icon={User} 
+                                                            onClick={() => openDetailModal(student)}
+                                                        >
+                                                            Lihat Detail
+                                                        </TableActionDropdown.Item>
+                                                        <TableActionDropdown.Item 
+                                                            icon={Edit3} 
+                                                            onClick={() => openEditModal(student)}
+                                                        >
+                                                            Edit Status / Tanggal
+                                                        </TableActionDropdown.Item>
+                                                        <TableActionDropdown.Item 
+                                                            icon={ShieldAlert} 
+                                                            onClick={() => openEditModal(student, 'stop')}
+                                                            variant="danger"
+                                                        >
+                                                            Stop Siswa
+                                                        </TableActionDropdown.Item>
+                                                    </TableActionDropdown>
+                                                </div>
                                             </td>
                                         </tr>
                                     )) : (
@@ -287,6 +406,16 @@ export default function Index({ students, filters, reports }) {
                     show={isEditModalOpen} 
                     onClose={closeEditModal} 
                     student={selectedStudent} 
+                    defaultStatus={defaultEditStatus}
+                />
+            )}
+
+            {/* Student Detail Modal */}
+            {selectedStudent && (
+                <StudentDetailModal
+                    show={isDetailModalOpen}
+                    onClose={closeDetailModal}
+                    student={selectedStudent}
                 />
             )}
         </AdminLayout>

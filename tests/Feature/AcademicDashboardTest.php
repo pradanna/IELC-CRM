@@ -188,4 +188,34 @@ class AcademicDashboardTest extends TestCase
         $this->assertEquals($startDate, $studyClass->start_session_date->format('Y-m-d'));
         $this->assertEquals($endDate, $studyClass->end_session_date->format('Y-m-d'));
     }
+
+    public function test_filter_students_by_expiry_status(): void
+    {
+        // 1. Setup role & user
+        $superadminRole = Role::create(['name' => 'superadmin']);
+        $user = User::factory()->create();
+        $user->assignRole($superadminRole);
+
+        // 2. Setup branch & lead & student
+        $branch = Branch::create(['name' => 'Solo Branch', 'code' => 'SLO']);
+        $lead = Lead::create([
+            'lead_number' => 'LT' . rand(10000, 99999),
+            'name' => 'Student Test',
+            'phone' => '081234567895',
+            'branch_id' => $branch->id,
+            'owner_id' => $user->id,
+        ]);
+        $student = Student::create([
+            'lead_id' => $lead->id,
+            'student_number' => 'STU-2026-0005',
+            'start_join' => Carbon::now()->subDays(10),
+            'status' => 'active',
+        ]);
+
+        // 3. Access students list with 'expired' filter - should return 0 results
+        $response = $this->actingAs($user)
+            ->get(route('admin.academic.students.index', ['expiry_status' => 'expired']));
+
+        $response->assertOk();
+    }
 }

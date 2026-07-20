@@ -5,13 +5,38 @@ export const useStudentIndex = (filters) => {
     const [search, setSearch] = useState(filters.search || '');
 
     const handleSearch = (e) => {
-        e.preventDefault();
-        router.get(route('admin.academic.students.index'), { search }, { preserveState: true });
+        if (e) e.preventDefault();
+        router.get(route('admin.academic.students.index'), { ...filters, search }, { preserveState: true });
+    };
+
+    const handleFilterExpiry = (expiryStatus) => {
+        router.get(route('admin.academic.students.index'), 
+            { ...filters, search, expiry_status: expiryStatus }, 
+            { preserveState: true }
+        );
+    };
+
+    const handleFilterStatus = (status) => {
+        router.get(route('admin.academic.students.index'), 
+            { ...filters, search, status: status }, 
+            { preserveState: true }
+        );
+    };
+
+    const handleSort = (field) => {
+        const direction = filters.sort_field === field && filters.sort_direction === 'asc' ? 'desc' : 'asc';
+        router.get(route('admin.academic.students.index'), 
+            { ...filters, search, sort_field: field, sort_direction: direction }, 
+            { preserveState: true }
+        );
     };
 
     return {
         search,
         setSearch,
-        handleSearch
+        handleSearch,
+        handleFilterExpiry,
+        handleFilterStatus,
+        handleSort
     };
 };

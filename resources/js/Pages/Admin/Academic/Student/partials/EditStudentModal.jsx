@@ -8,7 +8,7 @@ import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import TextArea from '@/Components/ui/TextArea';
 
-export default function EditStudentModal({ show, onClose, student }) {
+export default function EditStudentModal({ show, onClose, student, defaultStatus = null }) {
     const { data, setData, put, processing, errors, reset, clearErrors } = useForm({
         status: 'active',
         start_join: '',
@@ -18,13 +18,13 @@ export default function EditStudentModal({ show, onClose, student }) {
     useEffect(() => {
         if (show && student) {
             setData({
-                status: student.status || 'active',
+                status: defaultStatus || student.status || 'active',
                 start_join: student.start_join || '',
                 notes: student.notes || '',
             });
             clearErrors();
         }
-    }, [show, student]);
+    }, [show, student, defaultStatus]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
