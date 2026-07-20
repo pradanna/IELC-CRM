@@ -48,8 +48,7 @@ class GenerateInvoice
                     
                     if ($matchingSetting) {
                         $discountAmount += $matchingSetting->discount_amount;
-                        $additionalNotes[] = "Mendapatkan Voucher: " . $matchingSetting->voucher_name;
-                        $additionalNotes[] = "*Pemesanan ini berhak mendapatkan cashback Voucher Cafe senilai Rp " . number_format($matchingSetting->cafe_points, 0, ',', '.') . " setelah tagihan dilunasi.";
+                        $additionalNotes[] = "Mendapatkan Voucher: " . $matchingSetting->voucher_name . " dan Voucher Cafe senilai Rp " . number_format($matchingSetting->cafe_points, 0, ',', '.') . " setelah tagihan dilunasi.";
                     }
 
                     // 2. Sibling Discount matching

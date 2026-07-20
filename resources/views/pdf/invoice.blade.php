@@ -152,17 +152,20 @@
             @if($invoice->discount_amount > 0)
                 @php
                     $discountLabel = 'Diskon';
-                    if ($invoice->student_id) {
-                        $student = \App\Domains\Academic\Domain\Models\Student::find($invoice->student_id);
-                        if ($student) {
-                            $setting = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'desc')
-                                ->get()
-                                ->first(function ($setting) use ($student) {
-                                    return $setting->matchesStudent($student);
-                                });
-                            if ($setting) {
-                                $discountLabel = 'Diskon Voucher ' . $setting->voucher_name;
-                            }
+                    $notes = $invoice->notes ?? '';
+                    $hasSibling = str_contains($notes, 'Diskon Sibling');
+                    $hasVoucher = str_contains($notes, 'Mendapatkan Voucher:');
+                    
+                    if ($hasSibling && $hasVoucher) {
+                        $discountLabel = 'Diskon Voucher & Sibling';
+                    } elseif ($hasSibling) {
+                        $discountLabel = 'Diskon Sibling';
+                    } elseif ($hasVoucher) {
+                        $pattern = '/Mendapatkan Voucher:\s*(.*?)(?:\s*dan\s*Voucher Cafe|$)/i';
+                        if (preg_match($pattern, $notes, $matches)) {
+                            $discountLabel = 'Diskon Voucher ' . trim($matches[1]);
+                        } else {
+                            $discountLabel = 'Diskon Voucher';
                         }
                     }
                 @endphp
