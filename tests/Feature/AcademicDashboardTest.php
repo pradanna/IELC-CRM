@@ -141,4 +141,51 @@ class AcademicDashboardTest extends TestCase
         $this->assertEquals('active', $student->status);
         $this->assertNull($student->stopped_at);
     }
+
+    public function test_reset_class_cycle_with_new_dates(): void
+    {
+        // 1. Setup role & user
+        $superadminRole = Role::create(['name' => 'superadmin']);
+        $user = User::factory()->create();
+        $user->assignRole($superadminRole);
+
+        // 2. Setup branch & price master & study class
+        $branch = Branch::create([
+            'name' => 'Sudirman Branch',
+            'code' => 'SDR',
+        ]);
+        $priceMaster = \App\Domains\Finance\Domain\Models\PriceMaster::create([
+            'name' => 'Regular Package Rate',
+            'price_per_session' => 1500000,
+        ]);
+        $studyClass = \App\Domains\Academic\Domain\Models\StudyClass::create([
+            'branch_id' => $branch->id,
+            'price_master_id' => $priceMaster->id,
+            'name' => 'Expiring IELTS Class',
+            'start_session_date' => Carbon::now()->subDays(15),
+            'end_session_date' => Carbon::now()->addDays(5),
+            'total_meetings' => 24,
+            'meetings_per_week' => 2,
+            'current_session_number' => 1,
+            'schedule_days' => ['Monday', 'Wednesday'],
+        ]);
+
+        // 3. Request reset cycle with new dates
+        $startDate = Carbon::now()->addDays(10)->format('Y-m-d');
+        $endDate = Carbon::now()->addDays(30)->format('Y-m-d');
+
+        $response = $this->actingAs($user)
+            ->post(route('admin.academic.study-classes.reset-cycle', $studyClass->id), [
+                'start_session_date' => $startDate,
+                'end_session_date' => $endDate,
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+
+        $studyClass->refresh();
+        $this->assertEquals(2, $studyClass->current_session_number);
+        $this->assertEquals($startDate, $studyClass->start_session_date->format('Y-m-d'));
+        $this->assertEquals($endDate, $studyClass->end_session_date->format('Y-m-d'));
+    }
 }

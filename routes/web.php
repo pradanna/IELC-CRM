@@ -137,8 +137,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'pay'])->name('invoices.pay');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'download'])->name('invoices.download');
         Route::post('/classes/{studyClass}/bulk-invoice', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'bulkInvoice'])->name('classes.bulk-invoice');
+        Route::get('/reports', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'reports'])->name('reports.index');
         
         Route::resource('price-masters', \App\Http\Controllers\Admin\Finance\PriceMasterController::class);
+        Route::post('loyalty-settings/sibling', [\App\Http\Controllers\Admin\Finance\LoyaltySettingsController::class, 'updateSiblingSettings'])->name('loyalty-settings.sibling');
+        Route::resource('loyalty-settings', \App\Http\Controllers\Admin\Finance\LoyaltySettingsController::class);
     });
 
     // Add others as placeholders for now

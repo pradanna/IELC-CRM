@@ -19,6 +19,8 @@ class StudentResource extends JsonResource
             'notes' => $this->notes,
             'stopped_at' => $this->stopped_at ? $this->stopped_at->format('Y-m-d') : null,
             'start_join' => $this->start_join ? $this->start_join->format('Y-m-d') : null,
+            'rejoin_count' => $this->rejoin_count,
+            'loyalty_tier' => $this->loyalty_tier,
             
             // Relationships
             'lead' => new LeadResource($this->whenLoaded('lead')),

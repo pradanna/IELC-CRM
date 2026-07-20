@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 
 export default function Pagination({ links }) {
-    if (links.length <= 3) return null; // Nesting check for [Previous, 1, Next]
 
     return (
         <div className="flex flex-wrap items-center gap-1">

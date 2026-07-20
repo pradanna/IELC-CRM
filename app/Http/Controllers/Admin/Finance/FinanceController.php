@@ -55,7 +55,7 @@ class FinanceController extends Controller
      */
     public function invoices(Request $request): Response
     {
-        $query = Invoice::with(['lead', 'student.lead', 'studyClass.branch'])->latest();
+        $query = Invoice::with(['lead', 'student.lead', 'studyClass.branch', 'items'])->latest();
 
         // 1. Search by Invoice Number or Name
         if ($request->search) {
@@ -85,7 +85,7 @@ class FinanceController extends Controller
         }
 
         return Inertia::render('Admin/Finance/Invoices/Index', [
-            'invoices' => $query->paginate(20)->withQueryString(),
+            'invoices' => $query->paginate(10)->withQueryString(),
             'filters' => $request->only(['search', 'start_date', 'end_date', 'status', 'type']),
             'branches' => \App\Http\Resources\Master\BranchResource::collection(\App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get()),
             'phases' => \App\Http\Resources\Crm\LeadPhaseResource::collection(\App\Domains\Master\Domain\Models\LeadPhase::select('id', 'name', 'code')->get()),
@@ -129,16 +129,22 @@ class FinanceController extends Controller
         $skippedCount = 0;
 
         foreach ($activeStudents as $student) {
-            // Check if there is already a pending invoice for this student, class, and pending status
-            $hasPending = Invoice::where('student_id', $student->id)
+            // Check if there is already a paid invoice for this student and class (do not touch paid ones)
+            $hasPaidInvoice = Invoice::where('student_id', $student->id)
                 ->where('study_class_id', $studyClass->id)
-                ->where('status', 'pending')
+                ->where('status', 'paid')
                 ->exists();
 
-            if ($hasPending) {
+            if ($hasPaidInvoice) {
                 $skippedCount++;
                 continue;
             }
+
+            // Delete any existing pending invoice so we can regenerate it with the new price
+            Invoice::where('student_id', $student->id)
+                ->where('study_class_id', $studyClass->id)
+                ->where('status', 'pending')
+                ->forceDelete();
 
             $action->handle([
                 'student_id' => $student->id,
@@ -155,7 +161,7 @@ class FinanceController extends Controller
 
         $message = "Renewal invoices process completed. Generated: {$generatedCount} invoice(s).";
         if ($skippedCount > 0) {
-            $message .= " Skipped: {$skippedCount} student(s) due to existing pending invoices.";
+            $message .= " Skipped: {$skippedCount} student(s) due to existing paid invoices.";
         }
 
         return redirect()->back()->with('success', $message);
@@ -183,6 +189,73 @@ class FinanceController extends Controller
         }
 
         return $startDate->addDay()->toDateString();
+    }
+
+    /**
+     * Display financial reports and charts.
+     */
+    public function reports(): Response
+    {
+        $paidInvoicesQuery = Invoice::where('status', 'paid');
+        $pendingInvoicesQuery = Invoice::where('status', 'pending');
+
+        $totalRevenue = (int) $paidInvoicesQuery->sum('total_amount');
+        $totalPending = (int) $pendingInvoicesQuery->sum('total_amount');
+        $totalDiscount = (int) $paidInvoicesQuery->sum('discount_amount');
+        $paidCount = $paidInvoicesQuery->count();
+        $averageOrderValue = $paidCount > 0 ? (int) round($totalRevenue / $paidCount) : 0;
+
+        // Revenue by Student Type (New Join vs. Rejoin)
+        $newJoinRevenue = (int) Invoice::where('status', 'paid')->whereNull('student_id')->sum('total_amount');
+        $rejoinRevenue = (int) Invoice::where('status', 'paid')->whereNotNull('student_id')->sum('total_amount');
+
+        // Revenue by Class
+        $classRevenue = Invoice::where('status', 'paid')
+            ->whereNotNull('study_class_id')
+            ->with('studyClass')
+            ->get()
+            ->groupBy('study_class_id')
+            ->map(function ($group) {
+                return [
+                    'class_name' => $group->first()->studyClass->name,
+                    'total' => (int) $group->sum('total_amount'),
+                    'count' => $group->count(),
+                ];
+            })
+            ->values()
+            ->sortByDesc('total')
+            ->take(5)
+            ->values();
+
+        // Monthly Trend (Last 6 Months)
+        $monthlyTrend = collect();
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $monthLabel = $monthStart->translatedFormat('F Y');
+
+            $monthlySum = (int) Invoice::where('status', 'paid')
+                ->whereBetween('paid_at', [$monthStart, $monthEnd])
+                ->sum('total_amount');
+
+            $monthlyTrend->push([
+                'month' => $monthLabel,
+                'total' => $monthlySum,
+            ]);
+        }
+
+        return Inertia::render('Admin/Finance/Reports/Index', [
+            'stats' => [
+                'total_revenue' => $totalRevenue,
+                'total_pending' => $totalPending,
+                'total_discount' => $totalDiscount,
+                'average_order_value' => $averageOrderValue,
+                'new_join_revenue' => $newJoinRevenue,
+                'rejoin_revenue' => $rejoinRevenue,
+                'class_revenue' => $classRevenue,
+                'monthly_trend' => $monthlyTrend,
+            ]
+        ]);
     }
 }
 

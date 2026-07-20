@@ -5,7 +5,7 @@ import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
 import TextArea from '@/Components/ui/TextArea';
-import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle } from 'lucide-react';
+import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle, Gift, CheckCircle2 } from 'lucide-react';
 import DatePicker from '@/Components/form/DatePicker';
 import Button from '@/Components/ui/Button';
 import TextInput from '@/Components/TextInput';
@@ -20,6 +20,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         notes: '',
         items: [],
         discount_amount: 0,
+        loyalty_reward_id: '',
         billing_mode: 'prorata', // 'prorata' or 'full'
     });
 
@@ -89,6 +90,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 notes: existingNotes,
                 billing_mode: billingMode,
                 discount_amount: 0,
+                loyalty_reward_id: '',
                 items: [],
             });
         }
@@ -235,6 +237,11 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                 </Dialog.Title>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">
                                                     {student ? 'Rejoin Student' : 'Plotting lead'}: {student ? student.lead?.name : lead?.name}
+                                                    {student?.loyalty_tier && (
+                                                        <span className="ml-2 px-2.5 py-1 bg-red-50 text-red-600 rounded-full font-black text-[9px] uppercase tracking-wider border border-red-100">
+                                                            {student.loyalty_tier} ({student.rejoin_count || 0}x Join)
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
@@ -257,10 +264,37 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                     value={data.study_class_id}
                                                     onChange={(val) => {
                                                         const cls = classList.find(c => c.id === val);
+                                                        let nextJoinDate = data.join_date;
+                                                        if (student) {
+                                                            const currentClass = student.study_classes?.[0];
+                                                            const endDate = currentClass?.end_session_date || new Date().toISOString().split('T')[0];
+                                                            const scheduleDays = cls?.schedule_days || [];
+                                                            
+                                                            if (endDate && Array.isArray(scheduleDays) && scheduleDays.length > 0) {
+                                                                const date = new Date(endDate);
+                                                                let found = false;
+                                                                for (let i = 1; i <= 7; i++) {
+                                                                    const next = new Date(date);
+                                                                    next.setDate(date.getDate() + i);
+                                                                    const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                                                                    if (scheduleDays.includes(dayName)) {
+                                                                        nextJoinDate = next.toISOString().split('T')[0];
+                                                                        found = true;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                                if (!found) {
+                                                                    const fallback = new Date(date);
+                                                                    fallback.setDate(fallback.getDate() + 1);
+                                                                    nextJoinDate = fallback.toISOString().split('T')[0];
+                                                                }
+                                                            }
+                                                        }
                                                         setData(prev => ({
                                                             ...prev,
                                                             study_class_id: val,
-                                                            price_master_id: cls?.price_master_id || ''
+                                                            price_master_id: cls?.price_master_id || '',
+                                                            join_date: nextJoinDate,
                                                         }));
                                                     }}
                                                     icon={BookOpen}
@@ -301,63 +335,78 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4 pt-4 border-t border-slate-50">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Metode Penagihan</h3>
-                                                    <p className="text-[9px] font-bold text-slate-400 italic">Pilih satu siklus penuh atau hitung sisa pertemuan</p>
-                                                </div>
-                                                <div className="flex bg-slate-100 p-1 rounded-xl">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        onClick={() => {
-                                                            const currentLead = lead || student?.lead;
-                                                            const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
-                                                            setData(prev => ({
-                                                                ...prev,
-                                                                billing_mode: 'prorata',
-                                                                join_date: originalJoinDate
-                                                            }));
-                                                        }}
-                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
-                                                    >
-                                                        Pro-rata
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        onClick={() => {
-                                                            const targetClass = selectedClass || (student?.study_classes?.[0]);
-                                                            let nextDate = data.join_date;
-                                                            if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
-                                                                const findNextMeeting = (endDateStr, scheduleDays) => {
-                                                                    const date = new Date(endDateStr);
-                                                                    for (let i = 1; i <= 7; i++) {
-                                                                        const next = new Date(date);
-                                                                        next.setDate(date.getDate() + i);
-                                                                        const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
-                                                                        if (scheduleDays.includes(dayName)) {
-                                                                            return next.toISOString().split('T')[0];
+                                        {/* Billing Mode Section */}
+                                        {!student ? (
+                                            <div className="space-y-4 pt-4 border-t border-slate-50">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Metode Penagihan</h3>
+                                                        <p className="text-[9px] font-bold text-slate-400 italic">Pilih satu siklus penuh atau hitung sisa pertemuan</p>
+                                                    </div>
+                                                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                const currentLead = lead || student?.lead;
+                                                                const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+                                                                setData(prev => ({
+                                                                    ...prev,
+                                                                    billing_mode: 'prorata',
+                                                                    join_date: originalJoinDate
+                                                                }));
+                                                            }}
+                                                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                                        >
+                                                            Pro-rata
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            onClick={() => {
+                                                                const targetClass = selectedClass || (student?.study_classes?.[0]);
+                                                                let nextDate = data.join_date;
+                                                                if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
+                                                                    const findNextMeeting = (endDateStr, scheduleDays) => {
+                                                                        const date = new Date(endDateStr);
+                                                                        for (let i = 1; i <= 7; i++) {
+                                                                            const next = new Date(date);
+                                                                            next.setDate(date.getDate() + i);
+                                                                            const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                                                                            if (scheduleDays.includes(dayName)) {
+                                                                                return next.toISOString().split('T')[0];
+                                                                            }
                                                                         }
-                                                                    }
-                                                                    return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
-                                                                };
-                                                                nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
-                                                            }
-                                                            setData(prev => ({
-                                                                ...prev,
-                                                                billing_mode: 'full',
-                                                                join_date: nextDate
-                                                            }));
-                                                        }}
-                                                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
-                                                    >
-                                                        Satu Siklus Penuh
-                                                    </Button>
+                                                                        return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+                                                                    };
+                                                                    nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
+                                                                }
+                                                                setData(prev => ({
+                                                                    ...prev,
+                                                                    billing_mode: 'full',
+                                                                    join_date: nextDate
+                                                                }));
+                                                            }}
+                                                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                                        >
+                                                            Satu Siklus Penuh
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className="space-y-4 pt-4 border-t border-slate-50">
+                                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-start gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <h4 className="text-xs font-black text-emerald-950 uppercase tracking-wider">Rejoin Mode Aktif</h4>
+                                                        <p className="text-[10px] font-bold text-emerald-700 leading-relaxed uppercase tracking-wider mt-1">
+                                                            Biaya dihitung penuh 1 siklus paket. Tanggal masuk diinisialisasi otomatis ke jadwal pertemuan pertama setelah kelas sebelumnya selesai ({data.join_date}).
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="space-y-6 pt-4 border-t border-slate-50">
                                             <div className="flex items-center justify-between">
@@ -451,6 +500,45 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                             <span className="font-black text-slate-900">{formatCurrency(itemsTotal)}</span>
                                                         </div>
                                                     )}
+
+                                                     {student?.loyalty_rewards?.length > 0 && (
+                                                         <div className="space-y-3">
+                                                             <div className="flex justify-between items-center gap-4 pt-2 border-t border-dashed border-slate-100">
+                                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
+                                                                     <Gift className="w-3.5 h-3.5 text-red-500 animate-bounce" />
+                                                                     Gunakan Voucher Loyalty
+                                                                 </label>
+                                                                 <select
+                                                                     value={data.loyalty_reward_id}
+                                                                     onChange={e => {
+                                                                         const rId = e.target.value;
+                                                                         const rewardItem = student.loyalty_rewards.find(r => r.id === rId);
+                                                                         setData(prev => ({
+                                                                             ...prev,
+                                                                             loyalty_reward_id: rId,
+                                                                             discount_amount: rewardItem ? rewardItem.discount_amount : 0
+                                                                         }));
+                                                                     }}
+                                                                     className="w-48 px-3 py-2 bg-red-50 border border-red-100 rounded-xl text-xs font-black text-red-700 focus:ring-4 focus:ring-red-100 focus:border-red-300 transition-all"
+                                                                 >
+                                                                     <option value="">-- Tanpa Voucher --</option>
+                                                                     {student.loyalty_rewards.map(reward => (
+                                                                         <option key={reward.id} value={reward.id}>
+                                                                             {reward.voucher_name} ({reward.tier_name})
+                                                                         </option>
+                                                                     ))}
+                                                                 </select>
+                                                             </div>
+                                                             {data.loyalty_reward_id && (
+                                                                 <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-300">
+                                                                     <Gift className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                                                                     <p className="text-[10px] font-bold text-red-700 leading-relaxed uppercase tracking-wider">
+                                                                         Potongan harga {formatCurrency(data.discount_amount)} otomatis diterapkan. Student juga berhak mendapatkan Voucher Cafe {student.loyalty_rewards.find(r => r.id === data.loyalty_reward_id)?.voucher_name} senilai {formatCurrency(student.loyalty_rewards.find(r => r.id === data.loyalty_reward_id)?.cafe_points || 0)} setelah invoice lunas dibayar.
+                                                                     </p>
+                                                                 </div>
+                                                             )}
+                                                         </div>
+                                                     )}
 
                                                     {/* Discount Input row */}
                                                     <div className="flex justify-between items-center gap-4 pt-2 border-t border-dashed border-slate-100">

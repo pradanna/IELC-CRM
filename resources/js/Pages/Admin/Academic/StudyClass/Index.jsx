@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/react';
 import { Plus, Search, Filter, BookOpen } from 'lucide-react';
 import ClassCard from './partials/ClassCard';
 import CreateEditClassModal from './modals/CreateEditClassModal';
+import ResetCycleModal from './modals/ResetCycleModal';
 import ClassStudentDrawer from './drawers/ClassStudentDrawer';
 import PremiumSelect from '@/Components/PremiumSelect';
 import TextInput from '@/Components/TextInput';
@@ -15,8 +16,10 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
         // State
         isModalOpen,
         isDrawerOpen,
+        isResetModalOpen,
         selectedClass,
         editingClass,
+        resettingClass,
         search,
         setSearch,
         
@@ -30,7 +33,8 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
         handleResetCycle,
         handleDelete,
         closeModal,
-        closeDrawer
+        closeDrawer,
+        closeResetModal
     } = useStudyClassIndex(classes, branches, instructors, filters);
 
     return (
@@ -167,6 +171,12 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
                 isOpen={isDrawerOpen}
                 onClose={closeDrawer}
                 studyClass={selectedClass}
+            />
+
+            <ResetCycleModal 
+                isOpen={isResetModalOpen}
+                onClose={closeResetModal}
+                studyClass={resettingClass}
             />
         </AdminLayout>
     );

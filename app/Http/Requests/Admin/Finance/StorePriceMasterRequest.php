@@ -24,6 +24,17 @@ class StorePriceMasterRequest extends FormRequest
             'price_per_session' => 'required|numeric|min:0',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Nama track/produk harga wajib diisi.',
+            'name.unique' => 'Nama track/produk harga sudah digunakan.',
+            'price_per_session.required' => 'Harga per sesi wajib diisi.',
+            'price_per_session.numeric' => 'Harga per sesi harus berupa angka.',
+            'price_per_session.min' => 'Harga per sesi tidak boleh bernilai negatif.',
+        ];
+    }
 }
 
 

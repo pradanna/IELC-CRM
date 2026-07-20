@@ -51,7 +51,9 @@ class FetchCrmDashboardData
             };
 
             // 1. Stats Summary
-            $query = Lead::query();
+            $activePhaseIds = LeadPhase::whereNotIn('code', ['enrollment', 'cold-leads', 'dropout-leads'])->pluck('id');
+
+            $query = Lead::query()->whereIn('lead_phase_id', $activePhaseIds);
             if ($isFiltered) {
                 $query->whereBetween('created_at', [$startDateObj, $endDateObj]);
             }

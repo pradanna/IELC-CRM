@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Tag, Package, DollarSign } from 'lucide-react';
 import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 import Button from '@/Components/ui/Button';
+import TableActionDropdown from '@/Components/ui/TableActionDropdown';
 import CreateEditPriceMasterModal from './modals/CreateEditPriceMasterModal';
 
 export default function Index({ priceMasters }) {
@@ -77,26 +78,28 @@ export default function Index({ priceMasters }) {
         {
             header: 'Actions',
             className: 'text-right',
-            render: (row) => (
-                <div className="flex justify-end gap-2">
-                    <Button 
-                        variant="secondary"
-                        onClick={() => openModal(row)} 
-                        className="p-2.5 rounded-xl hover:scale-110 active:scale-95 bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-none border-none"
-                        title="Edit Price"
-                    >
-                        <Edit2 size={16} />
-                    </Button>
-                    <Button 
-                        variant="danger"
-                        onClick={() => handleDelete(row.id)} 
-                        className="p-2.5 rounded-xl hover:scale-110 active:scale-95 shadow-none"
-                        title="Delete Price"
-                    >
-                        <Trash2 size={16} />
-                    </Button>
-                </div>
-            )
+            render: (row, index) => {
+                const isNearBottom = index >= filteredPriceMasters.length - 2 && filteredPriceMasters.length > 2;
+                return (
+                    <div className="flex justify-end">
+                        <TableActionDropdown align={isNearBottom ? "top-right" : "right"}>
+                            <TableActionDropdown.Item 
+                                onClick={() => openModal(row)}
+                                icon={Edit2}
+                            >
+                                Edit Price
+                            </TableActionDropdown.Item>
+                            <TableActionDropdown.Item 
+                                onClick={() => handleDelete(row.id)}
+                                icon={Trash2}
+                                variant="danger"
+                            >
+                                Delete Price
+                            </TableActionDropdown.Item>
+                        </TableActionDropdown>
+                    </div>
+                );
+            }
         }
     ];
 

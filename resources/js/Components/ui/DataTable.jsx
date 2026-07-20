@@ -92,7 +92,7 @@ const DataTable = ({
                                         className={`align-top ${col.className || ""}`}
                                     >
                                         {col.render
-                                            ? col.render(row)
+                                            ? col.render(row, rowIndex)
                                             : row[col.accessor]}
                                     </TD>
                                 ))}
@@ -112,7 +112,7 @@ const DataTable = ({
             </Table>
 
             {/* --- Pagination Footer --- */}
-            {(isServerSide || data.length > itemsPerPage) && (
+            {(isServerSide || data.length > 0) && (
                 <div className="p-4 mt-4 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white rounded-3xl border border-slate-100 shadow-sm">
                     <span>
                         Showing{" "}

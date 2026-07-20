@@ -4,7 +4,7 @@ import { Head, router } from '@inertiajs/react';
 import { 
     User, Phone, GraduationCap, Search, 
     Filter, UserCheck, ShieldAlert,
-    Calendar, MapPin, ChevronRight 
+    Calendar, MapPin, ChevronRight, Package, Award 
 } from 'lucide-react';
 import TextInput from '@/Components/TextInput';
 import { useStudentIndex } from './hooks/useStudentIndex';
@@ -151,23 +151,42 @@ export default function Index({ students, filters, reports }) {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-1.5">
-                                                        <h4 className="font-black text-slate-800 text-lg leading-none">
-                                                            {student.lead?.name || 'Unknown Student'}
-                                                        </h4>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded">
-                                                                {student.student_number}
-                                                            </span>
-                                                            <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
-                                                                student.status === 'stop' 
-                                                                    ? 'bg-rose-50 text-rose-600 border-rose-100' 
-                                                                    : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                                            }`}>
-                                                                {student.status}
-                                                            </span>
-                                                        </div>
-                                                    </div>
+                                                     <div className="space-y-1.5">
+                                                         <h4 className="font-black text-slate-800 text-lg leading-none">
+                                                             {student.lead?.name || 'Unknown Student'}
+                                                         </h4>
+                                                         <div className="flex items-center gap-2">
+                                                             <span className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-50 px-2 py-0.5 rounded">
+                                                                 {student.student_number}
+                                                             </span>
+                                                             <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                                                                 student.status === 'stop' 
+                                                                     ? 'bg-rose-50 text-rose-600 border-rose-100' 
+                                                                     : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                             }`}>
+                                                                 {student.status}
+                                                             </span>
+                                                         </div>
+                                                         
+                                                         {/* Loyalty Card & Packages Purchased Badge */}
+                                                         <div className="flex items-center flex-wrap gap-1.5 pt-0.5">
+                                                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200/50 flex items-center gap-1 shadow-sm">
+                                                                 <Package size={10} className="text-slate-400 shrink-0" />
+                                                                 {student.rejoin_count || 0} Paket
+                                                             </span>
+                                                             {student.loyalty_tier && (
+                                                                 <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border flex items-center gap-1 shadow-sm ${
+                                                                     student.loyalty_tier.toLowerCase() === 'silver' ? 'bg-slate-50 text-slate-600 border-slate-200' :
+                                                                     student.loyalty_tier.toLowerCase() === 'gold' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                                     student.loyalty_tier.toLowerCase() === 'platinum' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                                     'bg-red-50 text-red-700 border-red-200'
+                                                                 }`}>
+                                                                     <Award size={10} className="shrink-0" />
+                                                                     {student.loyalty_tier}
+                                                                 </span>
+                                                             )}
+                                                         </div>
+                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5">

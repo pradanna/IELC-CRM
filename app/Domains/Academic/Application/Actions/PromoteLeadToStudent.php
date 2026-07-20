@@ -14,10 +14,13 @@ class PromoteLeadToStudent
         $count = Student::whereYear('created_at', $year)->count() + 1;
         $studentNumber = 'STU-' . $year . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
 
+        $latestInvoice = $lead->invoices()->latest()->first();
+        $startJoin = $latestInvoice ? ($latestInvoice->start_date ?? now()) : now();
+
         $student = Student::create([
             'lead_id' => $lead->id,
             'student_number' => $studentNumber,
-            'start_join' => now(),
+            'start_join' => $startJoin,
             'status' => 'active',
         ]);
 

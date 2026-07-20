@@ -254,6 +254,22 @@ class LegacyStudentMigrationSeeder extends Seeder
             $sequence = str_pad($generatedCounters[$yearMonth], 4, '0', STR_PAD_LEFT);
             $studentNumber = "STU-{$yearMonth}-{$sequence}";
 
+            // Generate random rejoin count (0 to 12)
+            $rejoinCount = rand(0, 12);
+            $loyaltyTier = null;
+            
+            if ($rejoinCount > 0) {
+                $tempStudent = new Student(['rejoin_count' => $rejoinCount, 'start_join' => $joinDate]);
+                $matchingSetting = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'desc')
+                    ->get()
+                    ->first(function ($setting) use ($tempStudent) {
+                        return $setting->matchesStudent($tempStudent);
+                    });
+                if ($matchingSetting) {
+                    $loyaltyTier = $matchingSetting->tier_name;
+                }
+            }
+
             // 2. Create or update Student record
             $student = Student::where('lead_id', $lead->id)->first();
             if (!$student) {
@@ -262,14 +278,38 @@ class LegacyStudentMigrationSeeder extends Seeder
                     'student_number' => $studentNumber,
                     'start_join' => $joinDate,
                     'status' => 'active',
+                    'rejoin_count' => $rejoinCount,
+                    'loyalty_tier' => $loyaltyTier,
                     'notes' => (!empty($profile) && !empty($profile['NIK'])) ? "NIK: {$profile['NIK']}" : null,
                 ]);
             } else {
                 $student->update([
                     'start_join' => $joinDate,
                     'status' => 'active',
+                    'rejoin_count' => $rejoinCount,
+                    'loyalty_tier' => $loyaltyTier,
                     'notes' => (!empty($profile) && !empty($profile['NIK'])) ? "NIK: {$profile['NIK']}" : null,
                 ]);
+            }
+
+            // Seed student loyalty rewards based on their computed tiers
+            if ($loyaltyTier) {
+                $settingsToAward = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'desc')
+                    ->get()
+                    ->filter(function ($setting) use ($student) {
+                        return $setting->matchesStudent($student);
+                    });
+                foreach ($settingsToAward as $setting) {
+                    $student->loyaltyRewards()->updateOrCreate(
+                        ['tier_name' => $setting->tier_name],
+                        [
+                            'voucher_name' => $setting->voucher_name,
+                            'discount_amount' => $setting->discount_amount,
+                            'cafe_points' => $setting->cafe_points,
+                            'is_used' => (bool) rand(0, 1),
+                        ]
+                    );
+                }
             }
 
             // 3. Enroll Student to current Class if active

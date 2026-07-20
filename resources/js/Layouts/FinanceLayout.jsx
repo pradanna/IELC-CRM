@@ -7,6 +7,8 @@ import {
     Receipt,
     ChevronFirst,
     ChevronLast,
+    Gift,
+    BarChart3,
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
@@ -36,6 +38,18 @@ const menuItems = [
                 text: "Price Master",
                 href: route("admin.finance.price-masters.index"),
                 name: "admin.finance.price-masters.*",
+            },
+            {
+                icon: <Gift size={20} />,
+                text: "Diskon",
+                href: route("admin.finance.loyalty-settings.index"),
+                name: "admin.finance.loyalty-settings.*",
+            },
+            {
+                icon: <BarChart3 size={20} />,
+                text: "Laporan",
+                href: route("admin.finance.reports.index"),
+                name: "admin.finance.reports.index",
             },
         ],
     },

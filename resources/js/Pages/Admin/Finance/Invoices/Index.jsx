@@ -22,6 +22,8 @@ import Button from '@/Components/ui/Button';
 import SearchInput from '@/Components/ui/SearchInput';
 import TextInput from '@/Components/TextInput';
 import DatePicker from '@/Components/form/DatePicker';
+import TableActionDropdown from '@/Components/ui/TableActionDropdown';
+import InvoiceDetailModal from './modals/InvoiceDetailModal';
 
 export default function InvoiceIndex({ auth, invoices, filters }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -29,6 +31,8 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
     const [endDate, setEndDate] = useState(filters.end_date || '');
     const [status, setStatus] = useState(filters.status || '');
     const [type, setType] = useState(filters.type || '');
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     // Auto-filter logic
     useEffect(() => {
@@ -82,6 +86,17 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
             currency: 'IDR',
             minimumFractionDigits: 0
         }).format(amount);
+    };
+
+    const handlePayInvoice = (invoiceId) => {
+        if (confirm('Tandai invoice ini sebagai lunas? Langkah ini secara otomatis akan mempromosikan lead menjadi siswa aktif dan mendaftarkannya ke kelas.')) {
+            router.post(route('admin.finance.invoices.pay', invoiceId));
+        }
+    };
+
+    const handleShowDetails = (invoice) => {
+        setSelectedInvoice(invoice);
+        setIsDetailModalOpen(true);
     };
 
     return (
@@ -272,23 +287,34 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                             </span>
                                         </TD>
                                         <TD className="text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
+                                            <TableActionDropdown align="right">
+                                                <TableActionDropdown.Item 
+                                                    onClick={() => handleShowDetails(invoice)}
+                                                    icon={FileText}
+                                                >
+                                                    Detail Invoice
+                                                </TableActionDropdown.Item>
+                                                <TableActionDropdown.Item 
+                                                    onClick={() => window.open(route('admin.finance.invoices.download', invoice.id), '_blank')}
+                                                    icon={Download}
+                                                >
+                                                    Download PDF
+                                                </TableActionDropdown.Item>
+                                                <TableActionDropdown.Item 
                                                     onClick={() => handleWhatsApp(invoice)}
-                                                    className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-emerald-600 hover:border-emerald-100 rounded-xl transition-all shadow-sm"
-                                                    title="Kirim via WhatsApp"
+                                                    icon={MessageCircle}
                                                 >
-                                                    <MessageCircle size={16} />
-                                                </button>
-                                                <a 
-                                                    href={route('admin.finance.invoices.download', invoice.id)} 
-                                                    target="_blank"
-                                                    className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-red-600 hover:border-red-100 rounded-xl transition-all shadow-sm"
-                                                    title="Download PDF"
-                                                >
-                                                    <Download size={16} />
-                                                </a>
-                                            </div>
+                                                    Kirim via WhatsApp
+                                                </TableActionDropdown.Item>
+                                                {invoice.status === 'pending' && (
+                                                    <TableActionDropdown.Item 
+                                                        onClick={() => handlePayInvoice(invoice.id)}
+                                                        icon={CheckCircle}
+                                                    >
+                                                        Terima Pembayaran
+                                                    </TableActionDropdown.Item>
+                                                )}
+                                            </TableActionDropdown>
                                         </TD>
                                     </TR>
                                 ))
@@ -309,7 +335,7 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                     </Table>
 
                     {/* Pagination */}
-                    {invoices.last_page > 1 && (
+                    {invoices.total > 0 && (
                         <div className="mt-8 flex items-center justify-between bg-white px-8 py-6 rounded-3xl border border-slate-100 shadow-sm">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                 Showing <span className="text-slate-900 font-black">{invoices.from}-{invoices.to}</span> of <span className="text-slate-900 font-black">{invoices.total}</span> Invoices
@@ -319,6 +345,13 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                     )}
                 </div>
             </div>
+
+            <InvoiceDetailModal 
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                invoice={selectedInvoice}
+                onPay={handlePayInvoice}
+            />
         </AuthenticatedLayout>
     );
 }

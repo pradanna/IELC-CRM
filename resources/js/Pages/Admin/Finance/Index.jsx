@@ -12,12 +12,12 @@ import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 import Button from '@/Components/ui/Button';
 
-export default function Index({ leads, rejoinStudents, classes, priceMasters, recentInvoices, expiringClasses }) {
+export default function Index({ leads, rejoinStudents = [], paketLanjutStudents = [], classes, priceMasters, recentInvoices, expiringClasses }) {
     const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
     const [selectedEntity, setSelectedEntity] = useState(null); // Can be lead or student
     const [entityType, setEntityType] = useState('lead'); // 'lead' or 'student'
     const [search, setSearch] = useState('');
-    const [activeTab, setActiveTab] = useState('new'); // 'new' or 'rejoin'
+    const [activeTab, setActiveTab] = useState('new'); // 'new', 'paket_lanjut', or 'rejoin'
 
     const expiringClassesList = useMemo(() => {
         if (!expiringClasses) return [];
@@ -200,6 +200,13 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
         );
     }, [expiringClassesList, search]);
 
+    const filteredRejoinStudents = useMemo(() => {
+        return rejoinStudents.filter(student =>
+            (student.lead?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+            (student.student_number || '').toLowerCase().includes(search.toLowerCase())
+        );
+    }, [rejoinStudents, search]);
+
     const getRemainingDays = (endDateStr) => {
         if (!endDateStr) return '';
         const end = new Date(endDateStr);
@@ -367,6 +374,62 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
             }
         }
     ];
+    const rejoinStudentColumns = [
+        {
+            header: 'Siswa Rejoin',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-xl text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                        <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="font-black text-slate-900 tracking-tight uppercase">{row.lead?.name || 'Unknown Student'}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {row.student_number} • Join {row.rejoin_count || 0}x
+                        </p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Kelas Terakhir',
+            render: (row) => {
+                const lastClass = row.study_classes?.[0];
+                return (
+                    <div>
+                        <p className="font-black text-slate-700 tracking-tight uppercase">{lastClass?.name || 'Belum Ada Kelas'}</p>
+                        {lastClass && (
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                Selesai Pada: {lastClass.end_session_date}
+                            </p>
+                        )}
+                    </div>
+                );
+            }
+        },
+        {
+            header: 'Paket Selesai',
+            render: (row) => (
+                <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-100">
+                    {row.rejoin_count || 0} Paket
+                </span>
+            )
+        },
+        {
+            header: 'Actions',
+            className: 'text-right',
+            render: (row) => (
+                <Button 
+                    onClick={() => openPlotModal(row, 'student')}
+                    variant="primary"
+                    icon={Calculator}
+                    className="inline-flex py-2 px-4 bg-red-600 hover:bg-red-700 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/10"
+                >
+                    Plot &amp; Invoice
+                </Button>
+            )
+        }
+    ];
 
     let currentData = [];
     let currentColumns = [];
@@ -374,9 +437,12 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
     if (activeTab === 'new') {
         currentData = filteredLeads;
         currentColumns = leadColumns;
-    } else if (activeTab === 'rejoin') {
+    } else if (activeTab === 'paket_lanjut') {
         currentData = filteredExpiringClasses;
         currentColumns = expiringClassColumns;
+    } else if (activeTab === 'rejoin') {
+        currentData = filteredRejoinStudents;
+        currentColumns = rejoinStudentColumns;
     }
 
     return (
@@ -409,11 +475,18 @@ export default function Index({ leads, rejoinStudents, classes, priceMasters, re
                                     New Leads ({leads.length})
                                 </Button>
                                 <Button 
+                                    onClick={() => setActiveTab('paket_lanjut')}
+                                    variant="ghost"
+                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'paket_lanjut' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                >
+                                    Paket Lanjut ({expiringClassesList.length})
+                                </Button>
+                                <Button 
                                     onClick={() => setActiveTab('rejoin')}
                                     variant="ghost"
                                     className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'rejoin' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                 >
-                                    Rejoin Students ({expiringClassesList.length})
+                                    Rejoin ({rejoinStudents.length})
                                 </Button>
                             </div>
 

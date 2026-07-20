@@ -50,9 +50,22 @@ class StudyClassController extends Controller
         return redirect()->back()->with('success', 'Class updated successfully.');
     }
 
-    public function resetCycle(StudyClass $studyClass, ResetClassCycle $action): RedirectResponse
+    public function resetCycle(Request $request, StudyClass $studyClass, ResetClassCycle $action): RedirectResponse
     {
-        $action->handle($studyClass);
+        $request->validate([
+            'start_session_date' => 'required|date',
+            'end_session_date' => 'required|date|after_or_equal:start_session_date',
+        ], [
+            'start_session_date.required' => 'Tanggal mulai wajib diisi.',
+            'end_session_date.required' => 'Tanggal selesai wajib diisi.',
+            'end_session_date.after_or_equal' => 'Tanggal selesai harus setelah atau sama dengan tanggal mulai.',
+        ]);
+
+        $action->handle(
+            $studyClass,
+            $request->input('start_session_date'),
+            $request->input('end_session_date')
+        );
 
         return redirect()->back()->with('success', "New cycle started for {$studyClass->name}. Keep teaching!");
     }

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Domains\Master\Domain\Models\Branch;
 use App\Domains\Academic\Domain\Models\StudyClass;
+use App\Domains\Finance\Domain\Models\PriceMaster;
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
 
@@ -97,6 +98,8 @@ class ExampleStudyClassSeeder extends Seeder
         ];
 
         $branchCount = $branches->count();
+        $defaultPriceMaster = PriceMaster::first();
+        $defaultPriceMasterId = $defaultPriceMaster?->id;
 
         foreach ($classes as $index => $name) {
             $branch = $branches[$index % $branchCount];
@@ -120,6 +123,7 @@ class ExampleStudyClassSeeder extends Seeder
                     'branch_id' => $branch->id,
                 ],
                 [
+                    'price_master_id' => $defaultPriceMasterId,
                     'start_session_date' => Carbon::now()->startOfMonth()->subDays(15), // active class started mid-month
                     'end_session_date' => Carbon::now()->startOfMonth()->addMonths(3),
                     'total_meetings' => $totalMeetings,

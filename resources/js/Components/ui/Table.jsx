@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Table = ({ children, className = "", noPanel = false }) => (
     <div className={noPanel ? `w-full ${className}` : `bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden ${className}`}>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[280px]">
             <table className="w-full text-left border-collapse">
                 {children}
             </table>

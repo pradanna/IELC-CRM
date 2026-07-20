@@ -24,6 +24,7 @@ class Invoice extends Model
         'total_amount',
         'discount_amount',
         'session_count',
+        'start_date',
         'status',
         'due_date',
         'paid_at',
@@ -35,6 +36,7 @@ class Invoice extends Model
         return [
             'due_date' => 'date',
             'paid_at'  => 'datetime',
+            'start_date' => 'date',
         ];
     }
 
@@ -56,6 +58,11 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoicedItem::class);
+    }
+
+    public function loyaltyRewards(): HasMany
+    {
+        return $this->hasMany(StudentLoyaltyReward::class);
     }
 }
 

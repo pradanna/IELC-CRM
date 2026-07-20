@@ -31,16 +31,30 @@ class FinanceDashboardService
             ->get();
 
         $rejoinStudents = Student::where('status', 'stop')
-            ->orWhereHas('studyClasses', function($q) {
+            ->with([
+                'lead.branch', 
+                'studyClasses' => fn($q) => $q->latest()->take(1),
+                'loyaltyRewards' => fn($q) => $q->where('is_used', false)
+            ])
+            ->latest()
+            ->get();
+
+        $paketLanjutStudents = Student::where('status', 'active')
+            ->whereHas('studyClasses', function($q) {
                 $q->whereBetween('end_session_date', [now()->toDateString(), now()->addDays(14)->toDateString()]);
             })
-            ->with(['lead.branch', 'studyClasses' => fn($q) => $q->latest()->take(1)])
+            ->with([
+                'lead.branch', 
+                'studyClasses' => fn($q) => $q->latest()->take(1),
+                'loyaltyRewards' => fn($q) => $q->where('is_used', false)
+            ])
             ->latest()
             ->get();
 
         return [
             'leads' => $leadsForInvoicing,
             'rejoinStudents' => $rejoinStudents,
+            'paketLanjutStudents' => $paketLanjutStudents,
             'expiringClasses' => StudyClassResource::collection(
                 StudyClass::whereBetween('end_session_date', [now()->toDateString(), now()->addDays(14)->toDateString()])
                     ->with(['branch', 'instructor', 'priceMaster', 'students.lead'])

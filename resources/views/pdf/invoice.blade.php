@@ -149,12 +149,45 @@
             @endforeach
         </tbody>
         <tfoot>
+            @if($invoice->discount_amount > 0)
+                @php
+                    $discountLabel = 'Diskon';
+                    if ($invoice->student_id) {
+                        $student = \App\Domains\Academic\Domain\Models\Student::find($invoice->student_id);
+                        if ($student) {
+                            $setting = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'desc')
+                                ->get()
+                                ->first(function ($setting) use ($student) {
+                                    return $setting->matchesStudent($student);
+                                });
+                            if ($setting) {
+                                $discountLabel = 'Diskon Voucher ' . $setting->voucher_name;
+                            }
+                        }
+                    }
+                @endphp
+                <tr>
+                    <td colspan="4" class="text-right" style="color: #6b7280; font-size: 12px; font-weight: normal; border: none;">Subtotal</td>
+                    <td class="text-right" style="color: #6b7280; font-size: 12px; font-weight: normal; border: none;">Rp {{ number_format($invoice->total_amount + $invoice->discount_amount, 0, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">{{ $discountLabel }}</td>
+                    <td class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">-Rp {{ number_format($invoice->discount_amount, 0, ',', '.') }}</td>
+                </tr>
+            @endif
             <tr class="total-row">
                 <td colspan="4" class="text-right">Total Tagihan</td>
                 <td class="text-right">Rp {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
             </tr>
         </tfoot>
     </table>
+
+    @if($invoice->notes)
+        <div style="margin-top: 20px; padding: 15px; background-color: #f9fafb; border-radius: 12px; border-left: 4px solid #dc2626; border-top: 1px solid #f3f4f6; border-right: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;">
+            <strong style="color: #111827; font-size: 11px; text-transform: uppercase; tracking-wider">Catatan / Keterangan Tagihan:</strong>
+            <p style="margin: 8px 0 0 0; color: #4b5563; font-size: 11px; line-height: 1.6; white-space: pre-line;">{!! nl2br(e($invoice->notes)) !!}</p>
+        </div>
+    @endif
 
     <div style="margin-top: 50px;">
         <p>Terima kasih atas kepercayaan Anda.</p>

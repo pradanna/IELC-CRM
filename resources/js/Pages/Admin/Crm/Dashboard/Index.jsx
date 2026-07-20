@@ -40,7 +40,7 @@ export default function Index({ data, branches, phases, sources, types, province
     const periodLabel = hasDateFilter ? `${monthName} ${filters.year}` : 'All Time';
 
     const totalLeadsCard = { 
-        title: hasDateFilter ? 'NEW LEADS' : 'TOTAL LEADS', 
+        title: hasDateFilter ? 'NEW LEADS AKTIF' : 'TOTAL LEADS AKTIF', 
         value: stats.total, 
         icon: 'users', 
         variant: 'primary', 
@@ -97,8 +97,8 @@ export default function Index({ data, branches, phases, sources, types, province
                                 <p className="text-sm text-gray-400 font-medium leading-relaxed">
                                     Pantau performa pipeline recruitment dan konversi lead Anda secara real-time. 
                                     {hasDateFilter 
-                                        ? 'New leads mencakup seluruh data yang masuk pada periode bulan terfilter.' 
-                                        : 'Total leads mencakup seluruh data lead yang ada di sistem (All Time).'}
+                                        ? 'New leads mencakup data lead aktif yang masuk pada periode bulan terfilter.' 
+                                        : 'Total leads mencakup seluruh data lead aktif yang ada di sistem.'}
                                 </p>
                             </div>
                         </div>

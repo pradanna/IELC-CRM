@@ -6,7 +6,6 @@ import {
     BookCopy,
     Package,
     Users,
-    UserCircle,
     Settings,
     ChevronFirst,
     ChevronLast,
@@ -17,6 +16,8 @@ import {
     GraduationCap,
     Tag,
     Receipt,
+    Gift,
+    BarChart3,
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
@@ -30,25 +31,54 @@ const logoUrl = "/assets/images/local/IELC-Logo.webp";
 
 const menuItems = [
     {
-        category: "Main",
+        category: "CRM & Leads",
         items: [
             {
                 icon: <LayoutDashboard size={20} />,
-                text: "Dashboard",
-                name: "admin.dashboard",
-                href: route("admin.dashboard"),
+                text: "CRM Dashboard",
+                href: route("admin.crm.leads.index"),
+                name: "admin.crm.leads.index",
             },
             {
-                icon: <Headset size={20} />,
-                text: "Crm",
-                href: route("admin.crm.leads.index"),
-                name: "admin.crm.leads.*",
+                icon: <Users size={20} />,
+                text: "Leads List",
+                href: route("admin.crm.leads.list"),
+                name: "admin.crm.leads.list",
+            },
+            {
+                icon: <Building2 size={20} />,
+                text: "Kanban Pipeline",
+                href: route("admin.crm.leads.kanban"),
+                name: "admin.crm.leads.kanban",
             },
             {
                 icon: <FileText size={20} />,
-                text: "Placement Test",
-                href: route("admin.placement-tests.index"),
-                name: "admin.placement-tests.*",
+                text: "CRM Reports",
+                href: route("admin.crm.reports.index"),
+                name: "admin.crm.reports.*",
+            },
+        ],
+    },
+    {
+        category: "Academic",
+        items: [
+            {
+                icon: <GraduationCap size={20} />,
+                text: "Academic Dashboard",
+                href: route("admin.academic.index"),
+                name: "admin.academic.index",
+            },
+            {
+                icon: <Users size={20} />,
+                text: "Students",
+                href: route("admin.academic.students.index"),
+                name: "admin.academic.students.*",
+            },
+            {
+                icon: <BookCopy size={20} />,
+                text: "Study Classes",
+                href: route("admin.academic.study-classes.index"),
+                name: "admin.academic.study-classes.*",
             },
         ],
     },
@@ -73,6 +103,18 @@ const menuItems = [
                 href: route("admin.finance.price-masters.index"),
                 name: "admin.finance.price-masters.*",
             },
+            {
+                icon: <Gift size={20} />,
+                text: "Diskon",
+                href: route("admin.finance.loyalty-settings.index"),
+                name: "admin.finance.loyalty-settings.*",
+            },
+            {
+                icon: <BarChart3 size={20} />,
+                text: "Laporan",
+                href: route("admin.finance.reports.index"),
+                name: "admin.finance.reports.index",
+            },
         ],
     },
     {
@@ -83,12 +125,6 @@ const menuItems = [
                 text: "Master",
                 href: route("admin.master.index"),
                 name: "admin.master.index",
-            },
-            {
-                icon: <Building2 size={20} />,
-                text: "Class",
-                href: route("admin.academic.study-classes.index"),
-                name: "admin.academic.study-classes.*",
             },
             // {
             //     icon: <LayoutDashboard size={20} />,
@@ -112,12 +148,6 @@ const menuItems = [
                 text: "Teachers",
                 href: route("admin.teachers.index"),
                 name: "admin.teachers.*",
-            },
-            {
-                icon: <UserCircle size={20} />,
-                text: "Students",
-                href: route("admin.academic.students.index"),
-                name: "admin.academic.students.*",
             },
         ],
     },

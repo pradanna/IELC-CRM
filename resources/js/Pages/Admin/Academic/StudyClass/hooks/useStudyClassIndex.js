@@ -45,12 +45,17 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         setIsDrawerOpen(true);
     };
 
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const [resettingClass, setResettingClass] = useState(null);
+
     const handleResetCycle = (studyClass) => {
-        if (confirm(`Finalize Cycle #${studyClass.current_session_number} for "${studyClass.name}" and start a new one? Current students will be carried over.`)) {
-            router.post(route('admin.academic.study-classes.reset-cycle', studyClass.id), {}, {
-                preserveScroll: true,
-            });
-        }
+        setResettingClass(studyClass);
+        setIsResetModalOpen(true);
+    };
+
+    const closeResetModal = () => {
+        setResettingClass(null);
+        setIsResetModalOpen(false);
     };
 
     const handleDelete = (studyClass) => {
@@ -66,8 +71,10 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         // State
         isModalOpen,
         isDrawerOpen,
+        isResetModalOpen,
         selectedClass,
         editingClass,
+        resettingClass,
         search,
         setSearch,
         
@@ -81,6 +88,7 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         handleResetCycle,
         handleDelete,
         closeModal,
-        closeDrawer
+        closeDrawer,
+        closeResetModal
     };
 }

@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             ChatTemplateSeeder::class,
             PtExamSeeder::class,
             IeltsPtExamSeeder::class,
+            LoyaltySettingSeeder::class,
         ]);
 
         if (app()->environment('local', 'testing')) {
