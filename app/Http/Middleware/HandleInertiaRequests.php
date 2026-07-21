@@ -60,6 +60,11 @@ class HandleInertiaRequests extends Middleware
             'provinces' => $isAdmin ? \App\Domains\Master\Domain\Models\Province::select('id', 'name')->orderBy('name')->get() : null,
             'chatTemplates' => $isAdmin ? \App\Domains\Master\Domain\Models\ChatTemplate::with(['leadPhases', 'leadTypes'])->latest()->get() : null,
             'mediaAssets' => $isAdmin ? \App\Domains\Master\Domain\Models\MediaAsset::latest()->get() : null,
+            'loyaltySettings' => $isAdmin ? \App\Domains\Finance\Domain\Models\LoyaltySetting::all() : null,
+            'siblingSettings' => $isAdmin ? [
+                'use_sibling_discount' => filter_var(\App\Domains\Finance\Domain\Models\FinanceSetting::get('use_sibling_discount', '0'), FILTER_VALIDATE_BOOLEAN),
+                'sibling_discount_percent' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('sibling_discount_percent', '0'),
+            ] : null,
         ];
     }
 }

@@ -31,7 +31,7 @@ class GenerateInvoice
             $remaining = $calculation['sessions'];
             $baseSubtotal = $calculation['amount'];
 
-            $discountAmount = isset($data['discount_amount']) ? (int) $data['discount_amount'] : 0;
+            $discountAmount = 0;
             $notes = $data['notes'] ?? null;
 
             // Automatically calculate discounts based on loyalty settings and sibling relationship
@@ -62,6 +62,17 @@ class GenerateInvoice
                                 $discountAmount += $siblingAmt;
                                 $additionalNotes[] = "Diskon Sibling ({$siblingPercent}%): Rp " . number_format($siblingAmt, 0, ',', '.');
                             }
+                        }
+                    }
+
+                    // 3. Manual discounts from admin
+                    $manualDiscounts = $data['manual_discounts'] ?? [];
+                    foreach ($manualDiscounts as $md) {
+                        $amt = (int) ($md['amount'] ?? 0);
+                        if ($amt > 0) {
+                            $discountAmount += $amt;
+                            $label = trim($md['name'] ?? 'Diskon Tambahan');
+                            $additionalNotes[] = "{$label}: Rp " . number_format($amt, 0, ',', '.');
                         }
                     }
                 }

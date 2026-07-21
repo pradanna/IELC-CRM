@@ -28,22 +28,9 @@ class GenerateInvoiceRequest extends FormRequest
             'billing_mode' => 'required|string|in:prorata,full',
             'notes' => 'nullable|string',
             'discount_amount' => 'nullable|integer|min:0',
-            'loyalty_reward_id' => [
-                'nullable',
-                'uuid',
-                'exists:student_loyalty_rewards,id',
-                function ($attribute, $value, $fail) {
-                    $reward = \Illuminate\Support\Facades\DB::table('student_loyalty_rewards')->where('id', $value)->first();
-                    if ($reward) {
-                        if ($reward->is_used) {
-                            $fail('Voucher ini sudah pernah digunakan.');
-                        }
-                        if ($this->student_id && $reward->student_id !== $this->student_id) {
-                            $fail('Voucher ini bukan milik student yang bersangkutan.');
-                        }
-                    }
-                }
-            ],
+            'manual_discounts' => 'nullable|array',
+            'manual_discounts.*.name' => 'nullable|string|max:255',
+            'manual_discounts.*.amount' => 'nullable|integer|min:0',
             'items' => 'nullable|array',
             'items.*.name' => 'required|string|max:255',
             'items.*.unit_price' => 'required|numeric|min:0',

@@ -33,6 +33,7 @@ class FinanceDashboardService
         $rejoinStudents = Student::where('status', 'stop')
             ->with([
                 'lead.branch', 
+                'lead.relatedLeads',
                 'studyClasses' => fn($q) => $q->latest()->take(1),
                 'loyaltyRewards' => fn($q) => $q->where('is_used', false)
             ])
@@ -45,6 +46,7 @@ class FinanceDashboardService
             })
             ->with([
                 'lead.branch', 
+                'lead.relatedLeads',
                 'studyClasses' => fn($q) => $q->latest()->take(1),
                 'loyaltyRewards' => fn($q) => $q->where('is_used', false)
             ])
@@ -67,6 +69,11 @@ class FinanceDashboardService
             ),
             'classes' => StudyClassResource::collection(StudyClass::with(['branch', 'instructor', 'priceMaster'])->get()),
             'priceMasters' => PriceMaster::all(),
+            'loyaltySettings' => \App\Domains\Finance\Domain\Models\LoyaltySetting::all(),
+            'siblingSettings' => [
+                'use_sibling_discount' => filter_var(\App\Domains\Finance\Domain\Models\FinanceSetting::get('use_sibling_discount', '0'), FILTER_VALIDATE_BOOLEAN),
+                'sibling_discount_percent' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('sibling_discount_percent', '0'),
+            ],
             'recentInvoices' => Invoice::with(['lead', 'student', 'studyClass'])->latest()->limit(10)->get(),
         ];
     }

@@ -157,15 +157,21 @@
                     $hasVoucher = str_contains($notes, 'Mendapatkan Voucher:');
                     
                     if ($hasSibling && $hasVoucher) {
-                        $discountLabel = 'Diskon Voucher & Sibling';
+                        $discountLabel = 'Diskon Loyalty & Sibling';
                     } elseif ($hasSibling) {
                         $discountLabel = 'Diskon Sibling';
                     } elseif ($hasVoucher) {
                         $pattern = '/Mendapatkan Voucher:\s*(.*?)(?:\s*dan\s*Voucher Cafe|$)/i';
                         if (preg_match($pattern, $notes, $matches)) {
-                            $discountLabel = 'Diskon Voucher ' . trim($matches[1]);
+                            $voucherName = trim($matches[1]);
+                            $setting = \App\Domains\Finance\Domain\Models\LoyaltySetting::where('voucher_name', $voucherName)->first();
+                            if ($setting) {
+                                $discountLabel = 'Diskon Loyalty ' . $setting->tier_name;
+                            } else {
+                                $discountLabel = 'Diskon Loyalty ' . $voucherName;
+                            }
                         } else {
-                            $discountLabel = 'Diskon Voucher';
+                            $discountLabel = 'Diskon Loyalty';
                         }
                     }
                 @endphp

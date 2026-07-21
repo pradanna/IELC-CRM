@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
 import TextArea from '@/Components/ui/TextArea';
-import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle, Gift, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle, Gift, CheckCircle2, Percent } from 'lucide-react';
 import DatePicker from '@/Components/form/DatePicker';
 import Button from '@/Components/ui/Button';
 import TextInput from '@/Components/TextInput';
 
 export default function PlotAndInvoiceModal({ show, onClose, lead, student, classes = [], priceMasters = [] }) {
+    const { loyaltySettings = [], siblingSettings = {} } = usePage().props;
+
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         lead_id: '',
         student_id: '',
@@ -19,9 +21,8 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         join_date: '',
         notes: '',
         items: [],
-        discount_amount: 0,
-        loyalty_reward_id: '',
-        billing_mode: 'prorata', // 'prorata' or 'full'
+        manual_discounts: [], // [{name, amount}] - admin-added discounts
+        billing_mode: 'prorata',
     });
 
     const classList = useMemo(() => {
@@ -89,8 +90,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 join_date: joinDate,
                 notes: existingNotes,
                 billing_mode: billingMode,
-                discount_amount: 0,
-                loyalty_reward_id: '',
+                manual_discounts: [],
                 items: [],
             });
         }
@@ -162,9 +162,55 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         return (data.items || []).reduce((sum, item) => sum + (Number(item.unit_price || 0) * Number(item.quantity || 1)), 0);
     }, [data.items]);
 
-    const discountAmount = useMemo(() => Number(data.discount_amount || 0), [data.discount_amount]);
+    // Auto-compute loyalty discount from loyaltySettings props (preview only, backend also calculates)
+    const autoLoyaltyDiscount = useMemo(() => {
+        if (!student || !loyaltySettings?.length) return null;
+        const rejoinCount = student.rejoin_count || 0;
+        const startJoin = student.start_join;
+        const sorted = [...loyaltySettings].sort((a, b) => b.min_rejoin_count - a.min_rejoin_count);
+        const match = sorted.find(s => {
+            if (rejoinCount < s.min_rejoin_count) return false;
+            if (s.use_join_date_limit && startJoin && s.join_date_limit) {
+                const sj = new Date(startJoin);
+                const limit = new Date(s.join_date_limit);
+                if (s.join_date_operator === 'before' && !(sj < limit)) return false;
+                if (s.join_date_operator === 'after' && !(sj >= limit)) return false;
+            }
+            return true;
+        });
+        return match || null;
+    }, [student, loyaltySettings]);
 
-    const totalAmount = useMemo(() => Math.max(0, baseClassSubtotal + itemsTotal - discountAmount), [baseClassSubtotal, itemsTotal, discountAmount]);
+    // Auto-compute sibling discount
+    const autoSiblingDiscount = useMemo(() => {
+        if (!student || !siblingSettings?.use_sibling_discount) return null;
+        const hasSibling = student.lead?.related_leads?.some(r => r.pivot?.type === 'sibling') ||
+                           student.lead?.relatedLeads?.some(r => r.pivot?.type === 'sibling');
+        if (!hasSibling) return null;
+        const pct = siblingSettings.sibling_discount_percent || 0;
+        if (!pct) return null;
+        return { percent: pct, amount: Math.round((pct / 100) * baseClassSubtotal) };
+    }, [student, siblingSettings, baseClassSubtotal]);
+
+    const manualDiscountTotal = useMemo(() => {
+        return (data.manual_discounts || []).reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+    }, [data.manual_discounts]);
+
+    const autoDiscountTotal = useMemo(() => {
+        return (autoLoyaltyDiscount?.discount_amount || 0) + (autoSiblingDiscount?.amount || 0);
+    }, [autoLoyaltyDiscount, autoSiblingDiscount]);
+
+    const totalDiscountPreview = manualDiscountTotal + autoDiscountTotal;
+
+    const totalAmount = useMemo(() => Math.max(0, baseClassSubtotal + itemsTotal - totalDiscountPreview), [baseClassSubtotal, itemsTotal, totalDiscountPreview]);
+
+    const addManualDiscount = (name = '', amount = 0) => {
+        setData('manual_discounts', [...(data.manual_discounts || []), { name, amount }]);
+    };
+
+    const removeManualDiscount = (idx) => {
+        setData('manual_discounts', data.manual_discounts.filter((_, i) => i !== idx));
+    };
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -501,77 +547,107 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                         </div>
                                                     )}
 
-                                                     {student?.loyalty_rewards?.length > 0 && (
-                                                         <div className="space-y-3">
-                                                             <div className="flex justify-between items-center gap-4 pt-2 border-t border-dashed border-slate-100">
-                                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
-                                                                     <Gift className="w-3.5 h-3.5 text-red-500 animate-bounce" />
-                                                                     Gunakan Voucher Loyalty
-                                                                 </label>
-                                                                 <select
-                                                                     value={data.loyalty_reward_id}
-                                                                     onChange={e => {
-                                                                         const rId = e.target.value;
-                                                                         const rewardItem = student.loyalty_rewards.find(r => r.id === rId);
-                                                                         setData(prev => ({
-                                                                             ...prev,
-                                                                             loyalty_reward_id: rId,
-                                                                             discount_amount: rewardItem ? rewardItem.discount_amount : 0
-                                                                         }));
-                                                                     }}
-                                                                     className="w-48 px-3 py-2 bg-red-50 border border-red-100 rounded-xl text-xs font-black text-red-700 focus:ring-4 focus:ring-red-100 focus:border-red-300 transition-all"
-                                                                 >
-                                                                     <option value="">-- Tanpa Voucher --</option>
-                                                                     {student.loyalty_rewards.map(reward => (
-                                                                         <option key={reward.id} value={reward.id}>
-                                                                             {reward.voucher_name} ({reward.tier_name})
-                                                                         </option>
-                                                                     ))}
-                                                                 </select>
-                                                             </div>
-                                                             {data.loyalty_reward_id && (
-                                                                 <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 animate-in fade-in duration-300">
-                                                                     <Gift className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                                                                     <p className="text-[10px] font-bold text-red-700 leading-relaxed uppercase tracking-wider">
-                                                                         Potongan harga {formatCurrency(data.discount_amount)} otomatis diterapkan. Student juga berhak mendapatkan Voucher Cafe {student.loyalty_rewards.find(r => r.id === data.loyalty_reward_id)?.voucher_name} senilai {formatCurrency(student.loyalty_rewards.find(r => r.id === data.loyalty_reward_id)?.cafe_points || 0)} setelah invoice lunas dibayar.
-                                                                     </p>
+                                                     {/* Auto Discounts - Read Only Preview */}
+                                                     {autoLoyaltyDiscount && (
+                                                         <div className="pt-2 border-t border-dashed border-slate-100 space-y-2">
+                                                             <div className="flex justify-between items-center">
+                                                                 <div className="flex items-center gap-1.5">
+                                                                     <Gift className="w-3 h-3 text-rose-500" />
+                                                                     <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Diskon Loyalty {autoLoyaltyDiscount.tier_name}</span>
                                                                  </div>
-                                                             )}
+                                                                 <span className="text-[10px] font-black text-rose-600">- {formatCurrency(autoLoyaltyDiscount.discount_amount)}</span>
+                                                             </div>
+                                                             <p className="text-[9px] font-bold text-rose-400 uppercase tracking-wider pl-4.5">
+                                                                 + Voucher Cafe Rp {Number(autoLoyaltyDiscount.cafe_points || 0).toLocaleString('id-ID')} setelah lunas
+                                                             </p>
                                                          </div>
                                                      )}
 
-                                                    {/* Discount Input row */}
-                                                    <div className="flex justify-between items-center gap-4 pt-2 border-t border-dashed border-slate-100">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
-                                                            <Tag className="w-3 h-3 text-violet-500" />
-                                                            Diskon
-                                                        </label>
-                                                        <div className="relative flex items-center">
-                                                            <span className="absolute left-3 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                value={data.discount_amount}
-                                                                onChange={e => setData('discount_amount', Math.max(0, parseInt(e.target.value) || 0))}
-                                                                className="w-36 pl-9 pr-3 py-2 bg-violet-50 border border-violet-100 rounded-xl text-sm font-black text-violet-700 text-right focus:ring-4 focus:ring-violet-100 focus:border-violet-300 transition-all"
-                                                                placeholder="0"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    {discountAmount > 0 && (
-                                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-violet-600">
-                                                            <span>Potongan Diskon</span>
-                                                            <span className="font-black">- {formatCurrency(discountAmount)}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="pt-6 border-t border-slate-100 flex justify-between items-end">
-                                                    <div>
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Invoice Amount</span>
-                                                        <p className="text-[8px] font-bold text-emerald-600 uppercase mt-1 tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Awaiting Confirmation</p>
-                                                    </div>
-                                                    <span className="text-4xl font-black tracking-tighter text-red-600">{formatCurrency(totalAmount)}</span>
-                                                </div>
+                                                     {autoSiblingDiscount && (
+                                                         <div className="flex justify-between items-center">
+                                                             <div className="flex items-center gap-1.5">
+                                                                 <Percent className="w-3 h-3 text-sky-500" />
+                                                                 <span className="text-[10px] font-black text-sky-600 uppercase tracking-widest">Diskon Sibling ({autoSiblingDiscount.percent}%)</span>
+                                                             </div>
+                                                             <span className="text-[10px] font-black text-sky-600">- {formatCurrency(autoSiblingDiscount.amount)}</span>
+                                                         </div>
+                                                     )}
+
+                                                     {/* Manual Discounts - Admin Added */}
+                                                     <div className="pt-2 border-t border-dashed border-slate-100 space-y-2">
+                                                         <div className="flex items-center justify-between">
+                                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                                 <Tag className="w-3 h-3 text-violet-500" />
+                                                                 Diskon Tambahan
+                                                             </span>
+                                                             <Button
+                                                                 type="button"
+                                                                 variant="secondary"
+                                                                 icon={Plus}
+                                                                 onClick={() => addManualDiscount('', 0)}
+                                                                 className="text-[9px] font-black px-3 py-1.5 bg-violet-50 text-violet-600 rounded-xl uppercase tracking-wider hover:bg-violet-600 hover:text-white transition-all shadow-none"
+                                                             >
+                                                                 Tambah
+                                                             </Button>
+                                                         </div>
+
+                                                         {data.manual_discounts.length > 0 ? (
+                                                             <div className="space-y-2">
+                                                                 {data.manual_discounts.map((d, idx) => (
+                                                                     <div key={idx} className="flex items-center gap-2 bg-violet-50 px-3 py-2 rounded-xl group">
+                                                                         <TextInput
+                                                                             value={d.name}
+                                                                             onChange={e => {
+                                                                                 const n = [...data.manual_discounts];
+                                                                                 n[idx].name = e.target.value;
+                                                                                 setData('manual_discounts', n);
+                                                                             }}
+                                                                             className="flex-1 bg-transparent border-none focus:ring-0 text-xs font-bold text-violet-800 placeholder:text-violet-300 p-0"
+                                                                             placeholder="Nama diskon..."
+                                                                         />
+                                                                         <div className="relative flex items-center">
+                                                                             <span className="absolute left-0 text-[10px] font-black text-violet-400 pointer-events-none">Rp</span>
+                                                                             <TextInput
+                                                                                 type="number"
+                                                                                 min="0"
+                                                                                 value={d.amount}
+                                                                                 onChange={e => {
+                                                                                     const n = [...data.manual_discounts];
+                                                                                     n[idx].amount = Math.max(0, parseInt(e.target.value) || 0);
+                                                                                     setData('manual_discounts', n);
+                                                                                 }}
+                                                                                 className="w-28 bg-transparent border-none focus:ring-0 text-xs font-black text-violet-900 text-right p-0 pl-5"
+                                                                                 placeholder="0"
+                                                                             />
+                                                                         </div>
+                                                                         <Button
+                                                                             type="button"
+                                                                             variant="ghost"
+                                                                             onClick={() => removeManualDiscount(idx)}
+                                                                             className="w-6 h-6 rounded-lg flex items-center justify-center text-violet-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shadow-none p-0"
+                                                                         >
+                                                                             <Trash2 size={12}/>
+                                                                         </Button>
+                                                                     </div>
+                                                                 ))}
+                                                             </div>
+                                                         ) : null}
+
+                                                         {manualDiscountTotal > 0 && (
+                                                             <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-violet-600">
+                                                                 <span>Total Diskon Tambahan</span>
+                                                                 <span className="font-black">- {formatCurrency(manualDiscountTotal)}</span>
+                                                             </div>
+                                                         )}
+                                                     </div>
+                                                 </div>
+                                                 <div className="pt-6 border-t border-slate-100 flex justify-between items-end">
+                                                     <div>
+                                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Invoice Amount</span>
+                                                         <p className="text-[8px] font-bold text-emerald-600 uppercase mt-1 tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Awaiting Confirmation</p>
+                                                     </div>
+                                                     <span className="text-4xl font-black tracking-tighter text-red-600">{formatCurrency(totalAmount)}</span>
+                                                 </div>
                                             </div>
                                         )}
 
