@@ -14,6 +14,13 @@ export default function ClassCard({ studyClass, onEdit, onDelete, onIncrement, o
                              <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded">
                                 Cycle #{studyClass.current_session_number}
                             </span>
+                            <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded ${
+                                studyClass.type === 'online' 
+                                    ? 'bg-sky-50 text-sky-600 border border-sky-200' 
+                                    : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            }`}>
+                                {studyClass.type || 'offline'}
+                            </span>
                             {studyClass.schedule_days && (
                                 <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase rounded">
                                     {Array.isArray(studyClass.schedule_days) ? studyClass.schedule_days.join(', ') : studyClass.schedule_days}

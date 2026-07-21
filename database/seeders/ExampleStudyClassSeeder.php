@@ -117,12 +117,15 @@ class ExampleStudyClassSeeder extends Seeder
                 ? ['Monday', 'Wednesday'] 
                 : ['Tuesday', 'Thursday'];
 
+            $type = ($index % 5 === 0) ? 'online' : 'offline';
+
             StudyClass::updateOrCreate(
                 [
                     'name' => $name,
                     'branch_id' => $branch->id,
                 ],
                 [
+                    'type' => $type,
                     'price_master_id' => $defaultPriceMasterId,
                     'start_session_date' => Carbon::now()->startOfMonth()->subDays(15), // active class started mid-month
                     'end_session_date' => Carbon::now()->startOfMonth()->addMonths(3),

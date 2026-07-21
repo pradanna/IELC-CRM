@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw, StickyNote } from 'lucide-react';
+import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw, StickyNote, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 import useWhatsapp from '@/Hooks/useWhatsapp';
@@ -20,6 +20,7 @@ export default function LeadDetailDrawer({
     
     const [lead, setLead] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [updatingPhase, setUpdatingPhase] = useState(false);
     const [availableExams, setAvailableExams] = useState([]);
     const [availableClasses, setAvailableClasses] = useState([]);
     const [priceMasters, setPriceMasters] = useState([]);
@@ -46,17 +47,13 @@ export default function LeadDetailDrawer({
     }, [isOpen, leadId, refreshTrigger]);
 
     const fetchLeadDetails = async (silent = false) => {
-        if (!silent) {
-            // Clear old lead data to force a visual "refresh" state
-            setLead(null);
+        if (!silent && !lead) {
             setLoading(true);
         }
         
         try {
-            // A tiny delay (300ms) to ensure any server-side database write operations 
             await new Promise(resolve => setTimeout(resolve, 300));
 
-            // Use both timestamp and explicit no-cache headers for maximum compatibility with Chrome/Brave
             const response = await axios.get(route('admin.crm.leads.show', leadId) + `?t=${new Date().getTime()}`, {
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -84,13 +81,12 @@ export default function LeadDetailDrawer({
                 closeDrawer();
             }
         } finally {
-            if (!silent) {
-                setLoading(false);
-            }
+            setLoading(false);
         }
     };
 
     const handleUpdatePhase = async (newPhaseId) => {
+        setUpdatingPhase(true);
         try {
             const response = await axios.patch(route('admin.crm.leads.update-phase', leadId), {
                 lead_phase_id: newPhaseId
@@ -99,6 +95,8 @@ export default function LeadDetailDrawer({
             setLead(response.data.lead);
         } catch (error) {
             console.error('Error updating lead phase:', error);
+        } finally {
+            setUpdatingPhase(false);
         }
     };
 
@@ -252,6 +250,7 @@ export default function LeadDetailDrawer({
                                                      <LeadPipelineTab 
                                                          lead={lead}
                                                          loading={loading}
+                                                         updatingPhase={updatingPhase}
                                                          getPhaseStyle={getPhaseStyle}
                                                          phases={localPhases}
                                                          onUpdatePhase={handleUpdatePhase}

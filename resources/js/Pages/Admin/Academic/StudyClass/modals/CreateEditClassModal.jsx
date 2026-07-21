@@ -16,6 +16,7 @@ import { X, GraduationCap, MapPin, Users, Calendar, Hash, Zap } from 'lucide-rea
 export default function CreateEditClassModal({ isOpen, onClose, studyClass = null, branches = [], instructors = [], priceMasters = [] }) {
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
+        type: 'offline',
         branch_id: '',
         instructor_id: '',
         price_master_id: '',
@@ -29,6 +30,11 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
 
     // Automate calculations
     useClassScheduleCalculation(data, setData);
+
+    const typeOptions = [
+        { value: 'offline', label: 'Offline' },
+        { value: 'online', label: 'Online' },
+    ];
 
     const dayOptions = [
         { value: 'Monday', label: 'Monday' },
@@ -44,6 +50,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
         if (studyClass) {
             setData({
                 name: studyClass.name || '',
+                type: studyClass.type || 'offline',
                 branch_id: studyClass.branch_id || '',
                 instructor_id: studyClass.instructor_id || '',
                 price_master_id: studyClass.price_master_id || '',
@@ -127,7 +134,18 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                             />
                         </PremiumFormGroup>
 
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <PremiumFormGroup label="Jenis Kelas" error={errors.type} required>
+                                <PremiumSearchableSelect
+                                    options={typeOptions}
+                                    value={data.type}
+                                    onChange={(val) => setData('type', val)}
+                                    placeholder="Pilih Jenis Kelas"
+                                    icon={GraduationCap}
+                                    error={errors.type}
+                                />
+                            </PremiumFormGroup>
+
                             <PremiumFormGroup label="Center Location" error={errors.branch_id} required>
                                 <PremiumSearchableSelect
                                     options={branchOptions}

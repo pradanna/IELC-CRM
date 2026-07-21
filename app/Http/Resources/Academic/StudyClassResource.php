@@ -14,6 +14,7 @@ class StudyClassResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'type' => $this->type ?? 'offline',
             'branch_id' => $this->branch_id,
             'instructor_id' => $this->instructor_id,
             'price_master_id' => $this->price_master_id,
