@@ -36,9 +36,12 @@ class GenerateInvoice
 
             // Automatically calculate discounts based on loyalty settings and sibling relationship
             $additionalNotes = [];
+            $leadObj = null;
+
             if (!empty($data['student_id'])) {
                 $student = \App\Domains\Academic\Domain\Models\Student::find($data['student_id']);
                 if ($student) {
+                    $leadObj = $student->lead;
                     // 1. Loyalty Setting matching
                     $matchingSetting = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'desc')
                         ->get()
@@ -47,24 +50,33 @@ class GenerateInvoice
                         });
                     
                     if ($matchingSetting) {
-                        $discountAmount += $matchingSetting->discount_amount;
+                        if ($discountAmount === 0) {
+                            $discountAmount += $matchingSetting->discount_amount;
+                        }
                         $additionalNotes[] = "Mendapatkan Voucher: " . $matchingSetting->voucher_name;
                         $additionalNotes[] = "*Pemesanan ini berhak mendapatkan cashback Voucher Cafe senilai Rp " . number_format($matchingSetting->cafe_points, 0, ',', '.') . " setelah tagihan dilunasi.";
                     }
+                }
+            }
 
-                    // 2. Sibling Discount matching
-                    $useSiblingDiscount = filter_var(\App\Domains\Finance\Domain\Models\FinanceSetting::get('use_sibling_discount', '0'), FILTER_VALIDATE_BOOLEAN);
-                    if ($useSiblingDiscount && $student->lead) {
-                        $hasSibling = $student->lead->relatedLeads()->wherePivot('type', 'sibling')->exists();
-                        if ($hasSibling) {
-                            $siblingPercent = (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('sibling_discount_percent', '0');
-                            if ($siblingPercent > 0) {
-                                $siblingAmt = (int) round(($siblingPercent / 100) * $baseSubtotal);
-                                $discountAmount += $siblingAmt;
-                                $additionalNotes[] = "Diskon Sibling ({$siblingPercent}%): Rp " . number_format($siblingAmt, 0, ',', '.');
-                            }
-                        }
+            if (!$leadObj && !empty($data['lead_id'])) {
+                $leadObj = \App\Domains\CRM\Domain\Models\Lead::find($data['lead_id']);
+            }
+
+            // 2. Sibling Discount matching
+            $useSiblingDiscount = filter_var(\App\Domains\Finance\Domain\Models\FinanceSetting::get('use_sibling_discount', '1'), FILTER_VALIDATE_BOOLEAN);
+            if ($useSiblingDiscount && $leadObj) {
+                $hasSibling = $leadObj->relatedLeads()->wherePivot('type', 'sibling')->exists();
+                if ($hasSibling) {
+                    $siblingPercent = (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('sibling_discount_percent', '10');
+                    if ($siblingPercent === 0) {
+                        $siblingPercent = 10;
                     }
+                    $siblingAmt = (int) round(($siblingPercent / 100) * $baseSubtotal);
+                    if ($discountAmount === 0) {
+                        $discountAmount = $siblingAmt;
+                    }
+                    $additionalNotes[] = "Diskon Sibling ({$siblingPercent}%): Rp " . number_format($siblingAmt, 0, ',', '.');
                 }
             }
 

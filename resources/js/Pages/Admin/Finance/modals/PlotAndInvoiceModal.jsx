@@ -5,7 +5,7 @@ import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
 import TextArea from '@/Components/ui/TextArea';
-import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle, Gift, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, Trash2, X, RefreshCw, AlertCircle, Gift, CheckCircle2, Users } from 'lucide-react';
 import DatePicker from '@/Components/form/DatePicker';
 import Button from '@/Components/ui/Button';
 import TextInput from '@/Components/TextInput';
@@ -37,6 +37,15 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         if (priceMasters.data && Array.isArray(priceMasters.data)) return priceMasters.data;
         return [];
     }, [priceMasters]);
+
+    const hasSibling = useMemo(() => {
+        const currentLead = lead || student?.lead;
+        if (!currentLead) return false;
+        if (Array.isArray(currentLead.lead_relationships) && currentLead.lead_relationships.length > 0) {
+            return currentLead.lead_relationships.some(r => r.type === 'sibling');
+        }
+        return false;
+    }, [lead, student]);
 
     useEffect(() => {
         if (show && (lead || student)) {
@@ -148,6 +157,18 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         const rate = (selectedPrice.price_per_session || 0) / (selectedClass.total_meetings || 1);
         return Math.round(remainingSessions * rate);
     }, [selectedPrice, remainingSessions, selectedClass, data.billing_mode]);
+
+    const siblingPercent = 10;
+    const siblingDiscountAmount = useMemo(() => {
+        if (!hasSibling || !baseClassSubtotal) return 0;
+        return Math.round((siblingPercent / 100) * baseClassSubtotal);
+    }, [hasSibling, baseClassSubtotal]);
+
+    useEffect(() => {
+        if (hasSibling && siblingDiscountAmount > 0 && data.discount_amount === 0) {
+            setData('discount_amount', siblingDiscountAmount);
+        }
+    }, [hasSibling, siblingDiscountAmount]);
 
     const isExpired = useMemo(() => {
         if (!selectedClass?.end_session_date) return false;
@@ -501,6 +522,23 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                         </div>
                                                     )}
 
+                                                     {hasSibling && (
+                                                         <div className="p-3.5 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between animate-in fade-in duration-300">
+                                                             <div className="flex items-center gap-2.5">
+                                                                 <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-md shadow-indigo-600/20">
+                                                                     {siblingPercent}%
+                                                                 </div>
+                                                                 <div>
+                                                                     <p className="text-[10px] font-black text-indigo-950 uppercase tracking-wider">Diskon Sibling ({siblingPercent}%) Terdeteksi</p>
+                                                                     <p className="text-[9px] font-bold text-indigo-600">Potongan otomatis diterapkan karena memiliki hubungan saudara/sibling.</p>
+                                                                 </div>
+                                                             </div>
+                                                             <span className="text-xs font-black text-indigo-700 shrink-0">
+                                                                 - {formatCurrency(siblingDiscountAmount)}
+                                                             </span>
+                                                         </div>
+                                                     )}
+
                                                      {student?.loyalty_rewards?.length > 0 && (
                                                          <div className="space-y-3">
                                                              <div className="flex justify-between items-center gap-4 pt-2 border-t border-dashed border-slate-100">
@@ -541,25 +579,30 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                      )}
 
                                                     {/* Discount Input row */}
-                                                    <div className="flex justify-between items-center gap-4 pt-2 border-t border-dashed border-slate-100">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
-                                                            <Tag className="w-3 h-3 text-violet-500" />
-                                                            Diskon
-                                                        </label>
+                                                    <div className="flex justify-between items-center gap-4 pt-3 border-t border-dashed border-slate-100">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-7 h-7 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-md shadow-violet-600/20 shrink-0">
+                                                                <Tag size={13} />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">Diskon Tambahan</h4>
+                                                                <p className="text-[9px] font-bold text-slate-400">Atur besaran potongan harga khusus</p>
+                                                            </div>
+                                                        </div>
                                                         <div className="relative flex items-center">
-                                                            <span className="absolute left-3 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
+                                                            <span className="absolute left-3 text-[10px] font-black text-violet-600 uppercase pointer-events-none">Rp</span>
                                                             <input
                                                                 type="number"
                                                                 min="0"
                                                                 value={data.discount_amount}
                                                                 onChange={e => setData('discount_amount', Math.max(0, parseInt(e.target.value) || 0))}
-                                                                className="w-36 pl-9 pr-3 py-2 bg-violet-50 border border-violet-100 rounded-xl text-sm font-black text-violet-700 text-right focus:ring-4 focus:ring-violet-100 focus:border-violet-300 transition-all"
+                                                                className="w-40 pl-9 pr-3 py-2 bg-violet-50/80 border border-violet-200 rounded-xl text-sm font-black text-violet-700 text-right focus:ring-4 focus:ring-violet-100 focus:border-violet-400 transition-all shadow-sm"
                                                                 placeholder="0"
                                                             />
                                                         </div>
                                                     </div>
                                                     {discountAmount > 0 && (
-                                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-violet-600">
+                                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-violet-600 pt-1">
                                                             <span>Potongan Diskon</span>
                                                             <span className="font-black">- {formatCurrency(discountAmount)}</span>
                                                         </div>

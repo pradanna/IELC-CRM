@@ -24,6 +24,7 @@ class StudyClass extends Model
         'instructor_id',
         'price_master_id',
         'name',
+        'type',
         'start_session_date',
         'end_session_date',
         'total_meetings',

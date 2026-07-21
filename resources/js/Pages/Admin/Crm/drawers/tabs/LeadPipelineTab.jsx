@@ -43,6 +43,7 @@ const normalizeCollection = (collection) => {
 export default function LeadPipelineTab({ 
     lead, 
     loading, 
+    updatingPhase = false,
     getPhaseStyle, 
     phases = [], 
     onUpdatePhase,
@@ -55,7 +56,7 @@ export default function LeadPipelineTab({
     leadSources = [],
     provinces = []
 }) {
-    if (loading) {
+    if (loading && !lead) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -297,9 +298,21 @@ export default function LeadPipelineTab({
                         </button>
 
                         <Menu as="div" className="relative">
-                            <Menu.Button className="flex items-center gap-2 pl-6 pr-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-slate-200">
-                                Update Phase
-                                <ChevronDown size={12} className="opacity-60" />
+                            <Menu.Button 
+                                disabled={updatingPhase}
+                                className="flex items-center gap-2 pl-6 pr-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-slate-200 disabled:opacity-75 disabled:cursor-wait"
+                            >
+                                {updatingPhase ? (
+                                    <>
+                                        <Loader2 size={12} className="animate-spin text-white" />
+                                        <span>Updating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Update Phase</span>
+                                        <ChevronDown size={12} className="opacity-60" />
+                                    </>
+                                )}
                             </Menu.Button>
                         <Transition
                             as={Fragment}
@@ -325,7 +338,7 @@ export default function LeadPipelineTab({
                                                                 onUpdatePhase(phase.id);
                                                             }
                                                         }}
-                                                        disabled={isOptionDisabled}
+                                                        disabled={isOptionDisabled || updatingPhase}
                                                         className={`
                                                             ${active && !isOptionDisabled ? 'bg-slate-50' : ''} 
                                                             group flex w-full items-center justify-between px-5 py-4 text-[10px] font-black uppercase tracking-widest transition-colors
@@ -351,6 +364,16 @@ export default function LeadPipelineTab({
                     </Menu>
                 </div>
                 </div>
+
+                {updatingPhase && (
+                    <div className="mt-3 py-2 px-4 bg-red-500 text-white rounded-xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                            <Loader2 size={12} className="animate-spin" />
+                            <span>Memperbarui Phase Lead...</span>
+                        </div>
+                        <span className="text-[9px] font-bold opacity-80 uppercase tracking-wider">Scroll Tetap Aktif</span>
+                    </div>
+                )}
             </div>
 
             <div className="space-y-12 px-10 pb-20">
