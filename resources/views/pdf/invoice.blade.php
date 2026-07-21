@@ -89,6 +89,15 @@
                 @if($invoice->studyClass)
                     <div>Kelas: {{ $invoice->studyClass->name }}</div>
                 @endif
+                @php
+                    $startDate = $invoice->start_date ?? ($invoice->studyClass ? $invoice->studyClass->start_session_date : null);
+                    $endDate = $invoice->end_date ?? ($invoice->studyClass ? $invoice->studyClass->end_session_date : null);
+                @endphp
+                @if($startDate && $endDate)
+                    <div style="font-weight: bold; color: #dc2626; margin-top: 3px;">Periode Belajar: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }} s/d {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y') }}</div>
+                @elseif($startDate)
+                    <div style="font-weight: bold; color: #dc2626; margin-top: 3px;">Periode Belajar: Mulai {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }}</div>
+                @endif
             </td>
         </tr>
     </table>

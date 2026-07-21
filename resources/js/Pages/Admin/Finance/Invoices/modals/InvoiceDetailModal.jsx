@@ -106,9 +106,10 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onPay }) 
                                      <>
                                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Cabang: {invoice.study_class.branch?.name}</p>
                                          <p className="text-[10px] text-slate-400 font-medium">{invoice.session_count} Sesi Belajar</p>
-                                         {invoice.start_date && (
+                                         {(invoice.start_date || invoice.study_class?.start_session_date) && (
                                              <p className="text-[10px] text-red-600 font-black uppercase tracking-wider mt-1">
-                                                 Mulai Belajar: {new Date(invoice.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                 Periode Belajar: {new Date(invoice.start_date || invoice.study_class.start_session_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                 {(invoice.end_date || invoice.study_class?.end_session_date) ? ` s/d ${new Date(invoice.end_date || invoice.study_class.end_session_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
                                              </p>
                                          )}
                                      </>

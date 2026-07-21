@@ -69,25 +69,20 @@ class GenerateInvoice
                     if ($siblingPercent === 0) {
                         $siblingPercent = 10;
                     }
-<<<<<<< HEAD
-
-                    // 3. Manual discounts from admin
-                    $manualDiscounts = $data['manual_discounts'] ?? [];
-                    foreach ($manualDiscounts as $md) {
-                        $amt = (int) ($md['amount'] ?? 0);
-                        if ($amt > 0) {
-                            $discountAmount += $amt;
-                            $label = trim($md['name'] ?? 'Diskon Tambahan');
-                            $additionalNotes[] = "{$label}: Rp " . number_format($amt, 0, ',', '.');
-                        }
-                    }
-=======
                     $siblingAmt = (int) round(($siblingPercent / 100) * $baseSubtotal);
-                    if ($discountAmount === 0) {
-                        $discountAmount = $siblingAmt;
-                    }
+                    $discountAmount += $siblingAmt;
                     $additionalNotes[] = "Diskon Sibling ({$siblingPercent}%): Rp " . number_format($siblingAmt, 0, ',', '.');
->>>>>>> feature/student
+                }
+            }
+
+            // 3. Manual discounts from admin
+            $manualDiscounts = $data['manual_discounts'] ?? [];
+            foreach ($manualDiscounts as $md) {
+                $amt = (int) ($md['amount'] ?? 0);
+                if ($amt > 0) {
+                    $discountAmount += $amt;
+                    $label = trim($md['name'] ?? 'Diskon Tambahan');
+                    $additionalNotes[] = "{$label}: Rp " . number_format($amt, 0, ',', '.');
                 }
             }
 
@@ -95,9 +90,8 @@ class GenerateInvoice
                 $notes = implode("\n", $additionalNotes);
             }
 
-            if (empty($notes)) {
-                $notes = "Invoice for {$remaining} sessions in {$studyClass->name}";
-            }
+            $startDate = $data['join_date'] ?? ($studyClass->start_session_date ? $studyClass->start_session_date->format('Y-m-d') : null);
+            $endDate = $studyClass->end_session_date ? $studyClass->end_session_date->format('Y-m-d') : null;
 
             $invoice = Invoice::create([
                 'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
@@ -107,16 +101,23 @@ class GenerateInvoice
                 'total_amount' => 0, // Updated later
                 'discount_amount' => $discountAmount,
                 'session_count' => $remaining,
-                'start_date' => $data['join_date'] ?? null,
+                'start_date' => $startDate,
                 'status' => 'pending',
                 'due_date' => now()->addDays(7),
                 'notes' => $notes,
             ]);
 
+            $periodLabel = '';
+            if ($startDate && $endDate) {
+                $startFmt = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y');
+                $endFmt = \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y');
+                $periodLabel = " | Periode Belajar: {$startFmt} - {$endFmt}";
+            }
+
             // Create base class plot item
             $invoice->items()->create([
                 'price_master_id' => $priceMaster->id,
-                'name' => "Plotting: {$studyClass->name} ({$remaining} sessions)",
+                'name' => "Plotting: {$studyClass->name} ({$remaining} Sesi{$periodLabel})",
                 'quantity' => 1,
                 'unit_price' => $baseSubtotal,
                 'subtotal' => $baseSubtotal,
