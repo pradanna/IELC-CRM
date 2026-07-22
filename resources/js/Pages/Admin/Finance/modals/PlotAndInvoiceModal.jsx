@@ -87,7 +87,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
                 || '';
             const existingNotes = existingInvoice?.notes || currentLead?.plotting?.notes || '';
 
-            let joinDate = existingInvoice?.start_date || currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+            let joinDate = (existingInvoice?.start_date || currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0]).substring(0, 10);
             let billingMode = 'prorata';
 
             // Special logic for Rejoin Students (Renewal)
@@ -98,16 +98,17 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
                 if (!existingInvoice && currentClass?.end_session_date && Array.isArray(currentClass.schedule_days)) {
                     const findNextMeeting = (endDateStr, scheduleDays) => {
                         const date = new Date(endDateStr);
-                        // Loop up to 7 days to find the next matching day
                         for (let i = 1; i <= 7; i++) {
                             const next = new Date(date);
                             next.setDate(date.getDate() + i);
                             const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
                             if (scheduleDays.includes(dayName)) {
-                                return next.toISOString().split('T')[0];
+                                return next.toISOString().substring(0, 10);
                             }
                         }
-                        return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+                        const nextDay = new Date(date);
+                        nextDay.setDate(date.getDate() + 1);
+                        return nextDay.toISOString().substring(0, 10);
                     };
 
                     joinDate = findNextMeeting(currentClass.end_session_date, currentClass.schedule_days);
@@ -537,7 +538,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
                                                              variant="ghost"
                                                              onClick={() => {
                                                                  const targetClass = selectedClass || (student?.study_classes?.[0]);
-                                                                 let nextDate = data.join_date;
+                                                                 let nextDate = (data.join_date || '').substring(0, 10);
                                                                  if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
                                                                      const findNextMeeting = (endDateStr, scheduleDays) => {
                                                                          const date = new Date(endDateStr);
@@ -546,10 +547,12 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
                                                                              next.setDate(date.getDate() + i);
                                                                              const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
                                                                              if (scheduleDays.includes(dayName)) {
-                                                                                 return next.toISOString().split('T')[0];
+                                                                                 return next.toISOString().substring(0, 10);
                                                                              }
                                                                          }
-                                                                         return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+                                                                         const nextDay = new Date(date);
+                                                                         nextDay.setDate(date.getDate() + 1);
+                                                                         return nextDay.toISOString().substring(0, 10);
                                                                      };
                                                                      nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
                                                                  }
