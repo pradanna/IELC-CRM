@@ -31,6 +31,11 @@ class AuthenticatedSessionController extends Controller
     {
         $action->handle($request);
 
+        $user = Auth::user();
+        if ($user && $user->hasRole('finance')) {
+            return redirect()->intended(route('admin.finance.dashboard', absolute: false));
+        }
+
         return redirect()->intended(route('admin.crm.leads.index', absolute: false));
     }
 
