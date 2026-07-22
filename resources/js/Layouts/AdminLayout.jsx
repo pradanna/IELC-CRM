@@ -222,7 +222,7 @@ export default function AdminLayout({ children }) {
             ...group,
             items: group.items.filter(item => {
                 if (isFrontdesk) {
-                    const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Master', 'Class', 'Students', 'Academic'];
+                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'Academic Dashboard', 'Students', 'Study Classes', 'Master', 'Academic'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
