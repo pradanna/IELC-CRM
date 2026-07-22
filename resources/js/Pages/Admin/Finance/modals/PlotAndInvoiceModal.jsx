@@ -10,7 +10,7 @@ import DatePicker from '@/Components/form/DatePicker';
 import Button from '@/Components/ui/Button';
 import TextInput from '@/Components/TextInput';
 
-export default function PlotAndInvoiceModal({ show, onClose, lead, student, classes = [], priceMasters = [] }) {
+export default function PlotAndInvoiceModal({ show, onClose, lead, student, targetInvoice = null, classes = [], priceMasters = [] }) {
     const { loyaltySettings = [], siblingSettings = {}, initialFeeSettings = {} } = usePage().props;
     const defaultRegFee = initialFeeSettings.registration_fee ?? 25000;
     const defaultPtFee = initialFeeSettings.placement_test_fee ?? 100000;
@@ -66,7 +66,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
             return true;
         }
 
-        const guardians = currentLead.guardians || [];
+        const guardians = currentLead.guardians || currentLead.lead_guardians || currentLead.leadGuardians || [];
         if (Array.isArray(guardians) && guardians.some(g => g.role === 'sibling' || g.role === 'saudara')) {
             return true;
         }
@@ -75,12 +75,19 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
     }, [lead, student]);
 
     useEffect(() => {
-        if (show && (lead || student)) {
-            const currentLead = lead || student?.lead;
-            const classId = student?.study_classes?.[0]?.id || currentLead?.plotting?.study_class_id || '';
-            const existingNotes = currentLead?.plotting?.notes || '';
+        if (show && (lead || student || targetInvoice)) {
+            const currentLead = lead || student?.lead || targetInvoice?.lead;
+            const existingInvoice = targetInvoice 
+                || currentLead?.invoices?.find(inv => inv.status === 'pending') 
+                || student?.invoices?.find(inv => inv.status === 'pending');
 
-            let joinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+            const classId = existingInvoice?.study_class_id 
+                || student?.study_classes?.[0]?.id 
+                || currentLead?.plotting?.study_class_id 
+                || '';
+            const existingNotes = existingInvoice?.notes || currentLead?.plotting?.notes || '';
+
+            let joinDate = existingInvoice?.start_date || currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
             let billingMode = 'prorata';
 
             // Special logic for Rejoin Students (Renewal)
@@ -88,7 +95,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 billingMode = 'full'; // Default to full cycle for renewals
                 const currentClass = student.study_classes?.[0] || classList.find(c => c.id === classId);
 
-                if (currentClass?.end_session_date && Array.isArray(currentClass.schedule_days)) {
+                if (!existingInvoice && currentClass?.end_session_date && Array.isArray(currentClass.schedule_days)) {
                     const findNextMeeting = (endDateStr, scheduleDays) => {
                         const date = new Date(endDateStr);
                         // Loop up to 7 days to find the next matching day
@@ -117,18 +124,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 }
             }
 
-            // If editing an existing pending invoice, pre-fill from its data
-            const existingInvoice = currentLead?.invoices?.find(inv => inv.status === 'pending') 
-                || student?.invoices?.find(inv => inv.status === 'pending');
-
             if (existingInvoice) {
-                const classId = existingInvoice.study_class_id || student?.study_classes?.[0]?.id || currentLead?.plotting?.study_class_id || '';
-                let priceId = '';
-                if (classId && classList.length > 0) {
-                    const cls = classList.find(c => c.id === classId);
-                    if (cls) priceId = cls.price_master_id || '';
-                }
-
                 // Extract custom non-class items from existing invoice
                 const customItems = (existingInvoice.items || [])
                     .filter(item => !item.name.toLowerCase().startsWith('kelas:'))
@@ -139,12 +135,12 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                     }));
 
                 setData({
-                    lead_id: currentLead?.id || '',
-                    student_id: student?.id || '',
+                    lead_id: currentLead?.id || existingInvoice.lead_id || '',
+                    student_id: student?.id || existingInvoice.student_id || '',
                     study_class_id: classId,
                     price_master_id: priceId,
-                    join_date: existingInvoice.start_date || currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0],
-                    notes: existingInvoice.notes || currentLead?.plotting?.notes || '',
+                    join_date: joinDate,
+                    notes: existingNotes,
                     billing_mode: billingMode,
                     manual_discounts: [],
                     items: customItems,
@@ -168,7 +164,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 });
             }
         }
-    }, [show, lead, student, classList]);
+    }, [show, lead, student, targetInvoice, classList]);
 
     const selectedClass = useMemo(() => {
         return classList.find(c => c.id === data.study_class_id);

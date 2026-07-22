@@ -478,6 +478,7 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                                                             onClick={() => {
                                                                 const entity = invoice.student || invoice.lead;
                                                                 const type = invoice.student ? 'student' : 'lead';
+                                                                setSelectedInvoice(invoice);
                                                                 if (entity) {
                                                                     setSelectedPlotEntity(entity);
                                                                     setPlotEntityType(type);
@@ -540,9 +541,13 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
 
             <PlotAndInvoiceModal 
                 show={isPlotModalOpen}
-                onClose={() => setIsPlotModalOpen(false)}
+                onClose={() => {
+                    setIsPlotModalOpen(false);
+                    setSelectedInvoice(null);
+                }}
                 lead={plotEntityType === 'lead' ? selectedPlotEntity : selectedPlotEntity?.lead}
                 student={plotEntityType === 'student' ? selectedPlotEntity : null}
+                targetInvoice={selectedInvoice}
                 classes={classes}
                 priceMasters={priceMasters}
             />
