@@ -624,7 +624,7 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
 
                             <DataTable
                                 data={stats.today_invoices || []}
-                                columns={dailyColumns}
+                                columns={columns}
                                 itemsPerPage={15}
                                 noPanel={true}
                             />
