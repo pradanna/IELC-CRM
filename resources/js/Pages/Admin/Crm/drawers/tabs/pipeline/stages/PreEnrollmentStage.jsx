@@ -70,9 +70,20 @@ export default function PreEnrollmentStage({
                                 )}
                             </div>
                         )}
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Khusus Plotting</label>
+                            <textarea
+                                rows={2}
+                                value={plottingForm.notes}
+                                onChange={e => setPlottingForm({ ...plottingForm, notes: e.target.value })}
+                                className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all shadow-sm resize-none"
+                                placeholder="Misal: Request minta pengajar"
+                            />
+                        </div>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="flex flex-col">
                         {selectedClass ? (
                             <div className="p-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm animate-in fade-in zoom-in-95 duration-300">
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Detail Jadwal Kelas</p>
@@ -109,29 +120,18 @@ export default function PreEnrollmentStage({
                                 </div>
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center p-8 bg-white/50 border border-dashed border-slate-200 rounded-[2rem] text-center">
-                                <Compass size={32} className="text-slate-200 mb-3" />
+                            <div className="min-h-[200px] flex-1 flex flex-col items-center justify-center p-8 bg-white/60 border border-dashed border-slate-200 rounded-[2rem] text-center">
+                                <Compass size={32} className="text-slate-300 mb-3" />
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Pilih kelas untuk melihat<br />estimasi sisa pertemuan</p>
                             </div>
                         )}
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Khusus Plotting</label>
-                            <textarea
-                                rows={2}
-                                value={plottingForm.notes}
-                                onChange={e => setPlottingForm({ ...plottingForm, notes: e.target.value })}
-                                className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all shadow-sm resize-none"
-                                placeholder="Misal: Request minta pengajar"
-                            />
-                        </div>
                     </div>
                 </div>
 
                 <button
                     onClick={() => handleSavePlotting(openWaWeb)}
                     disabled={savingPlotting || !plottingForm.study_class_id}
-                    className="w-full mt-8 py-4 bg-slate-900 hover:bg-red-600 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 disabled:opacity-50 active:scale-[0.98]"
+                    className="w-full mt-8 py-4 bg-slate-900 hover:bg-red-600 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none active:scale-[0.98]"
                 >
                     {savingPlotting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     Simpan Plotting Kelas

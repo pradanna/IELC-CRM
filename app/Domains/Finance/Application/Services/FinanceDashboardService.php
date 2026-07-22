@@ -30,7 +30,7 @@ class FinanceDashboardService
             ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads'])
             ->withCount(['invoices as pending_invoices_count' => function($q) {
                 $q->whereNull('student_id')
-                  ->whereNotIn('status', ['cancelled']);
+                  ->where('status', 'pending');
             }])
             ->latest()
             ->get();
@@ -40,7 +40,7 @@ class FinanceDashboardService
             ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads'])
             ->withCount(['invoices as pending_invoices_count' => function($q) {
                 $q->whereNull('student_id')
-                  ->whereNotIn('status', ['cancelled']);
+                  ->where('status', 'pending');
             }])
             ->latest()
             ->get();
