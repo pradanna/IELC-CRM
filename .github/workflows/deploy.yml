@@ -1,0 +1,34 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploying to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Executing remote SSH commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/pradana/IELC-CRM
+            
+            # 1. Pull perubahan terbaru dari branch main
+            git pull origin main
+            
+            # 2. Install & Build Frontend assets
+            npm install
+            npm run build
+            
+            # 3. Optimasi Laravel (opsional, aman dijalankan)
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
