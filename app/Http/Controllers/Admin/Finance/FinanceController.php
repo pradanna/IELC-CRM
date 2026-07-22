@@ -150,6 +150,17 @@ class FinanceController extends Controller
             'sources' => \App\Http\Resources\Crm\LeadSourceResource::collection(\App\Domains\Master\Domain\Models\LeadSource::select('id', 'name')->get()),
             'types' => \App\Http\Resources\Crm\LeadTypeResource::collection(\App\Domains\Master\Domain\Models\LeadType::select('id', 'name')->get()),
             'provinces' => \App\Domains\Master\Domain\Models\Province::select('id', 'name')->orderBy('name')->get(),
+            'classes' => \App\Http\Resources\Academic\StudyClassResource::collection(StudyClass::with(['branch', 'instructor', 'priceMaster'])->get()),
+            'priceMasters' => PriceMaster::all(),
+            'loyaltySettings' => \App\Domains\Finance\Domain\Models\LoyaltySetting::all(),
+            'siblingSettings' => [
+                'use_sibling_discount' => filter_var(\App\Domains\Finance\Domain\Models\FinanceSetting::get('use_sibling_discount', '0'), FILTER_VALIDATE_BOOLEAN),
+                'sibling_discount_percent' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('sibling_discount_percent', '0'),
+            ],
+            'initialFeeSettings' => [
+                'registration_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('registration_fee', 25000),
+                'placement_test_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('placement_test_fee', 100000),
+            ],
         ]);
     }
 

@@ -28,8 +28,9 @@ import TextInput from '@/Components/TextInput';
 import DatePicker from '@/Components/form/DatePicker';
 import TableActionDropdown from '@/Components/ui/TableActionDropdown';
 import InvoiceDetailModal from './modals/InvoiceDetailModal';
+import PlotAndInvoiceModal from '../modals/PlotAndInvoiceModal';
 
-export default function InvoiceIndex({ auth, invoices, filters, summary = {} }) {
+export default function InvoiceIndex({ auth, invoices, filters, summary = {}, classes = [], priceMasters = [] }) {
     const getStartOfMonth = () => {
         const d = new Date();
         const y = d.getFullYear();
@@ -52,6 +53,11 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {} }) 
     const [type, setType] = useState(filters.type || '');
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    // Plot / Invoice Edit Modal state
+    const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
+    const [selectedPlotEntity, setSelectedPlotEntity] = useState(null);
+    const [plotEntityType, setPlotEntityType] = useState('lead');
 
     // Auto-filter logic
     useEffect(() => {
@@ -473,7 +479,9 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {} }) 
                                                                 const entity = invoice.student || invoice.lead;
                                                                 const type = invoice.student ? 'student' : 'lead';
                                                                 if (entity) {
-                                                                    router.get(route('admin.finance.dashboard'), { edit_invoice_id: invoice.id });
+                                                                    setSelectedPlotEntity(entity);
+                                                                    setPlotEntityType(type);
+                                                                    setIsPlotModalOpen(true);
                                                                 } else {
                                                                     handleShowDetails(invoice);
                                                                 }
@@ -528,6 +536,15 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {} }) 
                 onClose={() => setIsDetailModalOpen(false)}
                 invoice={selectedInvoice}
                 onPay={handlePayInvoice}
+            />
+
+            <PlotAndInvoiceModal 
+                show={isPlotModalOpen}
+                onClose={() => setIsPlotModalOpen(false)}
+                lead={plotEntityType === 'lead' ? selectedPlotEntity : selectedPlotEntity?.lead}
+                student={plotEntityType === 'student' ? selectedPlotEntity : null}
+                classes={classes}
+                priceMasters={priceMasters}
             />
         </AuthenticatedLayout>
     );
