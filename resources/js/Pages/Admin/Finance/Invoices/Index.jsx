@@ -17,7 +17,8 @@ import {
     MessageCircle,
     RotateCcw,
     Copy,
-    XCircle
+    XCircle,
+    Edit2
 } from 'lucide-react';
 import Pagination from '@/Components/ui/Pagination';
 import { Table, THead, TBody, TR, TH, TD } from '@/Components/ui/Table';
@@ -466,12 +467,28 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {} }) 
                                                     Download PDF
                                                 </TableActionDropdown.Item>
                                                 {invoice.status === 'pending' && (
-                                                    <TableActionDropdown.Item 
-                                                        onClick={() => handlePayInvoice(invoice.id)}
-                                                        icon={CheckCircle}
-                                                    >
-                                                        Terima Pembayaran
-                                                    </TableActionDropdown.Item>
+                                                    <>
+                                                        <TableActionDropdown.Item 
+                                                            onClick={() => {
+                                                                const entity = invoice.student || invoice.lead;
+                                                                const type = invoice.student ? 'student' : 'lead';
+                                                                if (entity) {
+                                                                    router.get(route('admin.finance.dashboard'), { edit_invoice_id: invoice.id });
+                                                                } else {
+                                                                    handleShowDetails(invoice);
+                                                                }
+                                                            }}
+                                                            icon={Edit2}
+                                                        >
+                                                            Edit Invoice
+                                                        </TableActionDropdown.Item>
+                                                        <TableActionDropdown.Item 
+                                                            onClick={() => handlePayInvoice(invoice.id)}
+                                                            icon={CheckCircle}
+                                                        >
+                                                            Terima Pembayaran
+                                                        </TableActionDropdown.Item>
+                                                    </>
                                                 )}
                                             </TableActionDropdown>
                                         </TD>

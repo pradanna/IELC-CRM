@@ -318,6 +318,8 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
             render: (row) => {
                 const studentCount = row.students?.length || 0;
                 const invoiceCount = row.pending_bulk_invoices_count ?? null;
+                const paidCount = row.paid_bulk_invoices_count ?? 0;
+
                 if (invoiceCount === null) return null;
 
                 if (invoiceCount > 0) {
@@ -325,10 +327,12 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                         <div className="space-y-1">
                             <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-1 w-fit">
                                 <CheckCircle className="w-3 h-3" />
-                                Invoiced
+                                Invoiced ({invoiceCount}/{studentCount})
                             </span>
-                            <p className="text-[10px] font-bold text-slate-400 mt-1">
-                                {invoiceCount} of {studentCount} students
+                            <p className="text-[10px] font-bold text-slate-500 mt-1">
+                                <span className={paidCount > 0 ? "text-emerald-600 font-extrabold" : "text-slate-400"}>
+                                    {paidCount} siswa sudah bayar
+                                </span>
                             </p>
                         </div>
                     );
@@ -337,7 +341,7 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                 return (
                     <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-amber-50 text-amber-700 border-amber-100 flex items-center gap-1 w-fit">
                         <Clock className="w-3 h-3" />
-                        Not Yet
+                        Belum Terbit
                     </span>
                 );
             }

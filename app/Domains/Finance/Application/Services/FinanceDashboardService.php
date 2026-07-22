@@ -80,6 +80,10 @@ class FinanceDashboardService
                         $q->whereNotNull('student_id')
                           ->whereNotIn('status', ['cancelled']);
                     }])
+                    ->withCount(['invoices as paid_bulk_invoices_count' => function($q) {
+                        $q->whereNotNull('student_id')
+                          ->where('status', 'paid');
+                    }])
                     ->latest()
                     ->get()
             ),
