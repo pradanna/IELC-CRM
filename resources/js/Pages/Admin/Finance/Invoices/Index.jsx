@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { 
     Search, 
@@ -14,7 +15,9 @@ import {
     ExternalLink,
     FileText,
     MessageCircle,
-    RotateCcw
+    RotateCcw,
+    Copy,
+    XCircle
 } from 'lucide-react';
 import Pagination from '@/Components/ui/Pagination';
 import { Table, THead, TBody, TR, TH, TD } from '@/Components/ui/Table';
@@ -25,10 +28,25 @@ import DatePicker from '@/Components/form/DatePicker';
 import TableActionDropdown from '@/Components/ui/TableActionDropdown';
 import InvoiceDetailModal from './modals/InvoiceDetailModal';
 
-export default function InvoiceIndex({ auth, invoices, filters }) {
+export default function InvoiceIndex({ auth, invoices, filters, summary = {} }) {
+    const getStartOfMonth = () => {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}-01`;
+    };
+
+    const getToday = () => {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
     const [search, setSearch] = useState(filters.search || '');
-    const [startDate, setStartDate] = useState(filters.start_date || '');
-    const [endDate, setEndDate] = useState(filters.end_date || '');
+    const [startDate, setStartDate] = useState(filters.start_date || getStartOfMonth());
+    const [endDate, setEndDate] = useState(filters.end_date || getToday());
     const [status, setStatus] = useState(filters.status || '');
     const [type, setType] = useState(filters.type || '');
     const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -53,31 +71,63 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
         return () => clearTimeout(timeout);
     }, [search, startDate, endDate, status, type]);
 
+
     const handleReset = () => {
+        const start = getStartOfMonth();
+        const end = getToday();
         setSearch('');
-        setStartDate('');
-        setEndDate('');
+        setStartDate(start);
+        setEndDate(end);
         setStatus('');
         setType('');
-        router.get(route('admin.finance.invoices.index'));
+        router.get(route('admin.finance.invoices.index'), {
+            start_date: start,
+            end_date: end,
+        });
     };
 
-    const handleWhatsApp = (invoice) => {
+    const handleWhatsApp = async (invoice) => {
         const phone = invoice.lead?.phone || invoice.student?.lead?.phone || '';
         if (!phone) {
             alert('Nomor WhatsApp tidak tersedia untuk invoice ini.');
             return;
         }
-        // Normalize phone: remove leading 0 and add 62, or keep if already 62
+
         let normalized = phone.replace(/[^0-9]/g, '');
         if (normalized.startsWith('0')) normalized = '62' + normalized.slice(1);
         else if (!normalized.startsWith('62')) normalized = '62' + normalized;
 
-        const invoiceType = invoice.student_id ? 'Rejoin' : 'New Join';
-        const className = invoice.study_class?.name || '';
+        const customerName = invoice.lead?.name || invoice.student?.lead?.name || 'Siswa';
         const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(invoice.total_amount);
-        const msg = `Halo, berikut informasi tagihan Anda:%0A%0ANo. Invoice: *${invoice.invoice_number}*%0ATipe: *${invoiceType}*${className ? `%0AKelas: *${className}*` : ''}%0ATotal: *${amount}*%0AStatus: *${invoice.status.toUpperCase()}*%0A%0ASilakan lakukan pembayaran sebelum jatuh tempo. Terima kasih! 🙏`;
-        window.open(`https://wa.me/${normalized}?text=${msg}`, '_blank');
+        const magicUrl = `${window.location.origin}/invoice/${invoice.id}`;
+        const branchCode = (
+            invoice.study_class?.branch?.code ||
+            invoice.lead?.branch?.code ||
+            invoice.student?.lead?.branch?.code ||
+            'solo'
+        ).toLowerCase();
+
+        const msg = `Halo *${customerName}*,\n\nBerikut informasi tagihan invoice Anda dari Interactive English Language Center (IELC):\n\n📄 No. Invoice: *${invoice.invoice_number}*\n💰 Total Tagihan: *${amount}*\n\nSilakan klik link berikut untuk melihat / mengunduh invoice Anda:\n🔗 ${magicUrl}\n\nTerima kasih! 🙏`;
+
+        if (!confirm(`Kirim invoice ke ${customerName} (${normalized}) via WhatsApp?`)) return;
+
+        try {
+            await axios.post(route('admin.whatsapp.send'), {
+                branch: branchCode,
+                phone: normalized,
+                message: msg,
+            });
+            alert(`Invoice berhasil dikirim ke ${customerName} via WhatsApp!`);
+        } catch (error) {
+            console.error('Error sending WA:', error);
+            alert('Gagal mengirim WhatsApp: ' + (error.response?.data?.error || error.response?.data?.message || 'Server error'));
+        }
+    };
+
+    const handleCopyMagicLink = (invoice) => {
+        const magicUrl = `${window.location.origin}/invoice/${invoice.id}`;
+        navigator.clipboard.writeText(magicUrl);
+        alert(`Invoice link ${invoice.invoice_number} berhasil disalin:\n${magicUrl}`);
     };
 
     const formatCurrency = (amount) => {
@@ -123,15 +173,71 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="bg-white px-6 py-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                                <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
-                                    <FileText size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Total Records</p>
-                                    <h3 className="text-xl font-black text-slate-900 leading-none">{invoices.total} Invoices</h3>
-                                </div>
+                    </div>
+
+                    {/* Summary Cards Row */}
+                    <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Card 1: Paid Invoices */}
+                        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
+                                <CheckCircle size={22} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Paid Invoices</p>
+                                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none truncate">
+                                    {formatCurrency(summary.paid_amount || 0)}
+                                </h3>
+                                <p className="text-[11px] font-bold text-emerald-600 mt-1">
+                                    {summary.paid_count || 0} Invoices
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Card 2: Pending Invoices */}
+                        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                            <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shrink-0">
+                                <Clock size={22} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Pending Invoices</p>
+                                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none truncate">
+                                    {formatCurrency(summary.pending_amount || 0)}
+                                </h3>
+                                <p className="text-[11px] font-bold text-amber-600 mt-1">
+                                    {summary.pending_count || 0} Invoices
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Card 3: Cancelled Invoices */}
+                        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                            <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
+                                <XCircle size={22} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Cancelled Invoices</p>
+                                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none truncate">
+                                    {summary.cancelled_count || 0} Invoices
+                                </h3>
+                                <p className="text-[11px] font-bold text-rose-600 mt-1">
+                                    Dibatalkan
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Card 4: Total Invoices */}
+                        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                            <div className="p-3 bg-slate-100 text-slate-700 rounded-2xl shrink-0">
+                                <FileText size={22} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Total Records</p>
+                                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-none truncate">
+                                    {invoices.total || summary.total_count || 0} Invoices
+                                </h3>
+                                <p className="text-[11px] font-bold text-slate-500 mt-1">
+                                    Filtered Period
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -200,7 +306,9 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                 >
                                     <option value="">Semua Tipe</option>
                                     <option value="new_join">New Join</option>
+                                    <option value="paket_lanjut">Paket Lanjut</option>
                                     <option value="rejoin">Rejoin</option>
+                                    <option value="placement_test">Placement Test</option>
                                 </select>
                             </div>
 
@@ -232,17 +340,32 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                         </THead>
                         <TBody>
                             {invoices.data.length > 0 ? (
-                                invoices.data.map((invoice) => (
+                                invoices.data.map((invoice) => {
+                                    let typeBadgeLabel = 'New Join';
+                                    let typeBadgeStyle = 'bg-emerald-50 text-emerald-600 border-emerald-100';
+
+                                    const typeVal = invoice.type || (invoice.student_id ? 'rejoin' : 'new_join');
+
+                                    if (typeVal === 'placement_test' || (!invoice.study_class_id && invoice.items?.some(i => i.name?.includes('Placement Test')))) {
+                                        typeBadgeLabel = 'Placement Test';
+                                        typeBadgeStyle = 'bg-purple-50 text-purple-600 border-purple-100';
+                                    } else if (typeVal === 'rejoin') {
+                                        if (invoice.student?.rejoin_count > 0 || invoice.notes?.includes('renewal')) {
+                                            typeBadgeLabel = 'Paket Lanjut';
+                                            typeBadgeStyle = 'bg-blue-50 text-blue-600 border-blue-100';
+                                        } else {
+                                            typeBadgeLabel = 'Rejoin';
+                                            typeBadgeStyle = 'bg-violet-50 text-violet-600 border-violet-100';
+                                        }
+                                    }
+
+                                    return (
                                     <TR key={invoice.id}>
                                         <TD>
                                             <div className="flex flex-col">
                                                 <span className="text-xs font-black text-slate-900 group-hover:text-red-600 transition-colors uppercase tracking-tight">{invoice.invoice_number}</span>
-                                                <span className={`mt-1 inline-block self-start px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                                                    invoice.student_id
-                                                        ? 'bg-violet-50 text-violet-600 border-violet-100'
-                                                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                                }`}>
-                                                    {invoice.student_id ? 'Rejoin' : 'New Join'}
+                                                <span className={`mt-1 inline-block self-start px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${typeBadgeStyle}`}>
+                                                    {typeBadgeLabel}
                                                 </span>
                                             </div>
                                         </TD>
@@ -251,7 +374,9 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                                 <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
                                                     {invoice.lead?.name || invoice.student?.lead?.name || 'Unknown'}
                                                 </span>
-                                                <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.lead?.phone || invoice.student?.lead?.phone || '-'}</span>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-[10px] font-bold text-slate-400">{invoice.lead?.phone || invoice.student?.lead?.phone || '-'}</span>
+                                                </div>
                                             </div>
                                         </TD>
                                         <TD>
@@ -259,9 +384,16 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                                 <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
                                                     {invoice.study_class?.name || <span className="text-slate-300 italic font-medium">Manual Items</span>}
                                                 </span>
-                                                {invoice.study_class && (
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-0.5">{invoice.session_count} Sessions</span>
-                                                )}
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {invoice.study_class && (
+                                                        <span className="text-[10px] font-bold text-slate-400">{invoice.session_count} Sessions</span>
+                                                    )}
+                                                    {invoice.student && (
+                                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                            Selesai: {invoice.student.rejoin_count || 0} Paket
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </TD>
                                         <TD>
@@ -281,6 +413,8 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                             <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] border ${
                                                 invoice.status === 'paid' 
                                                 ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' 
+                                                : invoice.status === 'cancelled'
+                                                ? 'bg-red-50 text-red-600 border-red-100'
                                                 : 'bg-amber-50 text-amber-600 border-amber-100'
                                             }`}>
                                                 {invoice.status}
@@ -295,16 +429,22 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                                     Detail Invoice
                                                 </TableActionDropdown.Item>
                                                 <TableActionDropdown.Item 
-                                                    onClick={() => window.open(route('admin.finance.invoices.download', invoice.id), '_blank')}
-                                                    icon={Download}
+                                                    onClick={() => handleCopyMagicLink(invoice)}
+                                                    icon={Copy}
                                                 >
-                                                    Download PDF
+                                                    Copy Invoice Link
                                                 </TableActionDropdown.Item>
                                                 <TableActionDropdown.Item 
                                                     onClick={() => handleWhatsApp(invoice)}
                                                     icon={MessageCircle}
                                                 >
                                                     Kirim via WhatsApp
+                                                </TableActionDropdown.Item>
+                                                <TableActionDropdown.Item 
+                                                    onClick={() => window.open(route('admin.finance.invoices.download', invoice.id), '_blank')}
+                                                    icon={Download}
+                                                >
+                                                    Download PDF
                                                 </TableActionDropdown.Item>
                                                 {invoice.status === 'pending' && (
                                                     <TableActionDropdown.Item 
@@ -317,7 +457,8 @@ export default function InvoiceIndex({ auth, invoices, filters }) {
                                             </TableActionDropdown>
                                         </TD>
                                     </TR>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <TR hover={false}>
                                     <TD colSpan="6" className="py-32 text-center">

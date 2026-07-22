@@ -11,7 +11,19 @@ import Button from '@/Components/ui/Button';
 import TextInput from '@/Components/TextInput';
 
 export default function PlotAndInvoiceModal({ show, onClose, lead, student, classes = [], priceMasters = [] }) {
-    const { loyaltySettings = [], siblingSettings = {} } = usePage().props;
+    const { loyaltySettings = [], siblingSettings = {}, initialFeeSettings = {} } = usePage().props;
+    const defaultRegFee = initialFeeSettings.registration_fee ?? 25000;
+    const defaultPtFee = initialFeeSettings.placement_test_fee ?? 100000;
+
+    const formatNumberWithDots = (num) => {
+        if (!num && num !== 0) return '';
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
+    const parseNumberFromDots = (val) => {
+        const clean = val.replace(/\./g, '').replace(/[^0-9]/g, '');
+        return clean === '' ? 0 : parseInt(clean, 10);
+    };
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         lead_id: '',
@@ -42,9 +54,23 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
     const hasSibling = useMemo(() => {
         const currentLead = lead || student?.lead;
         if (!currentLead) return false;
-        if (Array.isArray(currentLead.lead_relationships) && currentLead.lead_relationships.length > 0) {
-            return currentLead.lead_relationships.some(r => r.type === 'sibling');
+
+        // Strictly check for sibling relationship type
+        const relationships = currentLead.lead_relationships || currentLead.leadRelationships || currentLead.relationships || [];
+        if (Array.isArray(relationships) && relationships.some(r => (r.type === 'sibling' || r.pivot?.type === 'sibling'))) {
+            return true;
         }
+
+        const related = currentLead.related_leads || currentLead.relatedLeads || [];
+        if (Array.isArray(related) && related.some(r => (r.pivot?.type === 'sibling' || r.type === 'sibling'))) {
+            return true;
+        }
+
+        const guardians = currentLead.guardians || [];
+        if (Array.isArray(guardians) && guardians.some(g => g.role === 'sibling' || g.role === 'saudara')) {
+            return true;
+        }
+
         return false;
     }, [lead, student]);
 
@@ -91,6 +117,11 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 }
             }
 
+            const isPlacementTestPhase = currentLead?.lead_phase?.code === 'placement-test' || currentLead?.lead_phase?.name === 'Placement Test';
+            const initialItems = (isPlacementTestPhase && !classId) 
+                ? [{ name: 'Placement Test Fee', unit_price: 50000, quantity: 1 }] 
+                : [];
+
             setData({
                 lead_id: currentLead?.id || '',
                 student_id: student?.id || '',
@@ -100,7 +131,7 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 notes: existingNotes,
                 billing_mode: billingMode,
                 manual_discounts: [],
-                items: [],
+                items: initialItems,
             });
         }
     }, [show, lead, student, classList]);
@@ -108,6 +139,22 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
     const selectedClass = useMemo(() => {
         return classList.find(c => c.id === data.study_class_id);
     }, [data.study_class_id, classList]);
+
+    const formattedScheduleDays = useMemo(() => {
+        if (!selectedClass || !Array.isArray(selectedClass.schedule_days) || selectedClass.schedule_days.length === 0) {
+            return '';
+        }
+        const dayTranslations = {
+            'Monday': 'Senin',
+            'Tuesday': 'Selasa',
+            'Wednesday': 'Rabu',
+            'Thursday': 'Kamis',
+            'Friday': 'Jumat',
+            'Saturday': 'Sabtu',
+            'Sunday': 'Minggu',
+        };
+        return selectedClass.schedule_days.map(d => dayTranslations[d] || d).join(', ');
+    }, [selectedClass]);
 
     const selectedPrice = useMemo(() => {
         return priceMasterList.find(p => p.id === data.price_master_id);
@@ -202,16 +249,12 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
         return match || null;
     }, [student, loyaltySettings]);
 
-    // Auto-compute sibling discount
+    // Auto-compute sibling discount for both Lead and Student
     const autoSiblingDiscount = useMemo(() => {
-        if (!student || !siblingSettings?.use_sibling_discount) return null;
-        const hasSibling = student.lead?.related_leads?.some(r => r.pivot?.type === 'sibling') ||
-            student.lead?.relatedLeads?.some(r => r.pivot?.type === 'sibling');
-        if (!hasSibling) return null;
-        const pct = siblingSettings.sibling_discount_percent || 0;
-        if (!pct) return null;
+        if (!hasSibling || !baseClassSubtotal) return null;
+        const pct = Number(siblingSettings?.sibling_discount_percent) || 10;
         return { percent: pct, amount: Math.round((pct / 100) * baseClassSubtotal) };
-    }, [student, siblingSettings, baseClassSubtotal]);
+    }, [hasSibling, siblingSettings, baseClassSubtotal]);
 
     const manualDiscountTotal = useMemo(() => {
         return (data.manual_discounts || []).reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
@@ -291,21 +334,21 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
-                            <Dialog.Panel className="relative transform overflow-hidden rounded-[32px] bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-slate-100">
+                            <Dialog.Panel className="relative transform overflow-hidden rounded-[36px] bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-slate-100">
                                 <form onSubmit={submit}>
-                                    <div className="px-8 pt-8 pb-6 border-b border-slate-50 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-3 bg-red-600 text-white rounded-2xl shadow-lg shadow-red-600/20">
-                                                <Calculator size={20} />
+                                    <div className="px-10 pt-10 pb-8 border-b border-slate-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-5">
+                                            <div className="p-4 bg-red-600 text-white rounded-2xl shadow-lg shadow-red-600/20">
+                                                <Calculator size={26} />
                                             </div>
                                             <div>
-                                                <Dialog.Title className="text-xl font-black text-slate-900 tracking-tight uppercase">
+                                                <Dialog.Title className="text-2xl font-black text-slate-900 tracking-tight uppercase">
                                                     Issue <span className="text-red-600">Invoice</span>
                                                 </Dialog.Title>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">
-                                                    {student ? 'Rejoin Student' : 'Plotting lead'}: {student ? student.lead?.name : lead?.name}
+                                                <p className="text-sm font-bold text-slate-600 uppercase tracking-wider mt-1">
+                                                    {student ? 'Rejoin Student' : 'Plotting lead'}: <span className="text-slate-900 font-black">{student ? student.lead?.name : lead?.name}</span>
                                                     {student?.loyalty_tier && (
-                                                        <span className="ml-2 px-2.5 py-1 bg-red-50 text-red-600 rounded-full font-black text-[9px] uppercase tracking-wider border border-red-100">
+                                                        <span className="ml-3 px-3 py-1 bg-red-50 text-red-600 rounded-full font-black text-sm uppercase tracking-wider border border-red-100">
                                                             {student.loyalty_tier} ({student.rejoin_count || 0}x Join)
                                                         </span>
                                                     )}
@@ -318,14 +361,30 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                             onClick={onClose}
                                             className="p-2 text-slate-400 hover:text-slate-900 transition-colors shadow-none"
                                         >
-                                            <X size={20} />
+                                            <X size={24} />
                                         </Button>
                                     </div>
 
-                                    <div className="px-8 py-10 space-y-10">
+                                    <div className="px-10 py-10 space-y-10">
+                                        {Object.keys(errors).length > 0 && (
+                                            <div className="p-5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-4 animate-in fade-in">
+                                                <AlertCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+                                                <div>
+                                                    <h5 className="text-sm font-black text-red-900 uppercase tracking-wide">Gagal Membuat Invoice</h5>
+                                                    <ul className="mt-1 text-sm font-bold text-red-700 list-disc list-inside space-y-1">
+                                                        {Object.values(errors).map((err, idx) => (
+                                                            <li key={idx}>{err}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-3">
-                                                <InputLabel value="Seleksi Kelas" className="uppercase text-[10px] tracking-widest font-black text-slate-400" />
+                                                <div className="flex items-center justify-between">
+                                                    <InputLabel value="Seleksi Kelas" className="uppercase text-sm tracking-wider font-black text-slate-700" />
+                                                    <span className="text-sm font-bold text-slate-500">(Kosongkan jika hanya Placement Test)</span>
+                                                </div>
                                                 <PremiumSearchableSelect
                                                     options={classOptions}
                                                     value={data.study_class_id}
@@ -366,142 +425,167 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                     }}
                                                     icon={BookOpen}
                                                     placeholder="Cari kelas..."
-                                                />
-                                                <InputError message={errors.study_class_id} />
+                                                 />
+                                                 <InputError message={errors.study_class_id} />
 
-                                                {/* Warning Messages */}
-                                                {hasNoPrice && (
-                                                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
-                                                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                                        <p className="text-[10px] font-bold text-amber-700 leading-relaxed uppercase tracking-wider">
-                                                            Kelas ini belum memiliki data Master Harga. Silakan hubungi Akademik untuk setting harga kelas.
-                                                        </p>
-                                                    </div>
-                                                )}
+                                                 {selectedClass && (
+                                                     <div className="mt-3 p-4 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-start gap-3.5 animate-in fade-in slide-in-from-top-1 shadow-sm">
+                                                         <Calendar className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                                                         <div>
+                                                             <p className="text-sm font-black text-blue-950 uppercase tracking-wider">
+                                                                 Jadwal Kelas: {formattedScheduleDays || 'Belum ada hari diset'}
+                                                             </p>
+                                                             <p className="text-xs font-bold text-blue-700 mt-1">
+                                                                 {selectedClass.meetings_per_week ? `${selectedClass.meetings_per_week}x Pertemuan / Minggu` : ''} 
+                                                                 {selectedClass.total_meetings ? ` • Total ${selectedClass.total_meetings} Pertemuan` : ''}
+                                                                 {selectedClass.instructor?.name ? ` • Pengajar: ${selectedClass.instructor.name}` : ''}
+                                                             </p>
+                                                         </div>
+                                                     </div>
+                                                 )}
 
-                                                {isExpired && (
-                                                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
-                                                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                                                        <p className="text-[10px] font-bold text-red-700 leading-relaxed uppercase tracking-wider">
-                                                            Masa berlaku kelas ini sudah berakhir ({selectedClass.end_session_date}). Tidak disarankan untuk invoice baru.
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="space-y-3">
-                                                <InputLabel value="Tanggal Rencana Masuk" className="uppercase text-[10px] tracking-widest font-black text-slate-400" />
-                                                <DatePicker
-                                                    value={data.join_date}
-                                                    onChange={(val) => setData('join_date', val)}
-                                                    className="w-full"
-                                                />
-                                                <InputError message={errors.join_date} />
-                                                <p className="text-[9px] font-bold text-slate-400 italic flex items-center gap-1.5 ml-1">
-                                                    <RefreshCw size={8} /> Diinisialisasi dari data Pre-Enrollment
-                                                </p>
-                                            </div>
-                                        </div>
+                                                 {/* Warning Messages */}
+                                                 {hasNoPrice && (
+                                                     <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
+                                                         <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                                         <p className="text-xs font-bold text-amber-700 leading-relaxed uppercase tracking-wider">
+                                                             Kelas ini belum memiliki data Master Harga. Silakan hubungi Akademik untuk setting harga kelas.
+                                                         </p>
+                                                     </div>
+                                                 )}
 
-                                        {/* Billing Mode Section */}
-                                        {!student ? (
-                                            <div className="space-y-4 pt-4 border-t border-slate-50">
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Metode Penagihan</h3>
-                                                        <p className="text-[9px] font-bold text-slate-400 italic">Pilih satu siklus penuh atau hitung sisa pertemuan</p>
-                                                    </div>
-                                                    <div className="flex bg-slate-100 p-1 rounded-xl">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            onClick={() => {
-                                                                const currentLead = lead || student?.lead;
-                                                                const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
-                                                                setData(prev => ({
-                                                                    ...prev,
-                                                                    billing_mode: 'prorata',
-                                                                    join_date: originalJoinDate
-                                                                }));
-                                                            }}
-                                                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
-                                                        >
-                                                            Pro-rata
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            onClick={() => {
-                                                                const targetClass = selectedClass || (student?.study_classes?.[0]);
-                                                                let nextDate = data.join_date;
-                                                                if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
-                                                                    const findNextMeeting = (endDateStr, scheduleDays) => {
-                                                                        const date = new Date(endDateStr);
-                                                                        for (let i = 1; i <= 7; i++) {
-                                                                            const next = new Date(date);
-                                                                            next.setDate(date.getDate() + i);
-                                                                            const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
-                                                                            if (scheduleDays.includes(dayName)) {
-                                                                                return next.toISOString().split('T')[0];
-                                                                            }
-                                                                        }
-                                                                        return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
-                                                                    };
-                                                                    nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
-                                                                }
-                                                                setData(prev => ({
-                                                                    ...prev,
-                                                                    billing_mode: 'full',
-                                                                    join_date: nextDate
-                                                                }));
-                                                            }}
-                                                            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
-                                                        >
-                                                            Satu Siklus Penuh
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4 pt-4 border-t border-slate-50">
-                                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-start gap-3">
-                                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                                                    <div>
-                                                        <h4 className="text-xs font-black text-emerald-950 uppercase tracking-wider">Rejoin Mode Aktif</h4>
-                                                        <p className="text-[10px] font-bold text-emerald-700 leading-relaxed uppercase tracking-wider mt-1">
-                                                            Biaya dihitung penuh 1 siklus paket. Tanggal masuk diinisialisasi otomatis ke jadwal pertemuan pertama setelah kelas sebelumnya selesai ({data.join_date}).
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                                 {isExpired && (
+                                                     <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
+                                                         <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                                                         <p className="text-xs font-bold text-red-700 leading-relaxed uppercase tracking-wider">
+                                                             Masa berlaku kelas ini sudah berakhir ({selectedClass.end_session_date}). Tidak disarankan untuk invoice baru.
+                                                         </p>
+                                                     </div>
+                                                 )}
+                                             </div>
+                                             <div className="space-y-3">
+                                                 <InputLabel value="Tanggal Rencana Masuk" className="uppercase text-sm tracking-wider font-black text-slate-700" />
+                                                 <DatePicker
+                                                     value={data.join_date}
+                                                     onChange={(val) => setData('join_date', val)}
+                                                     className="w-full"
+                                                 />
+                                                 <InputError message={errors.join_date} />
+                                                 <p className="text-sm font-bold text-slate-500 italic flex items-center gap-2 ml-1">
+                                                     <RefreshCw size={14} /> Diinisialisasi dari data Pre-Enrollment
+                                                 </p>
+                                             </div>
+                                         </div>
 
-                                        <div className="space-y-6 pt-4 border-t border-slate-50">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Addons & Extras</h3>
-                                                    <p className="text-[9px] font-bold text-slate-400 italic">Tambahkan biaya lain jika diperlukan</p>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        icon={Plus}
-                                                        onClick={() => addItem('Placement Test Fee', 50000)}
-                                                        className="group text-[9px] font-black px-3.5 py-2 bg-indigo-50 text-indigo-600 rounded-xl uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all shadow-none"
-                                                    >
-                                                        Placement
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        icon={Plus}
-                                                        onClick={() => addItem('', 0)}
-                                                        className="group text-[9px] font-black px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl uppercase tracking-wider hover:bg-slate-900 hover:text-white transition-all shadow-none"
-                                                    >
-                                                        Custom
-                                                    </Button>
-                                                </div>
-                                            </div>
+                                         {/* Billing Mode Section */}
+                                         {!student ? (
+                                             <div className="space-y-4 pt-6 border-t border-slate-100">
+                                                 <div className="flex items-center justify-between">
+                                                     <div>
+                                                         <h3 className="text-base font-black text-slate-900 uppercase tracking-wider leading-none mb-2">Metode Penagihan</h3>
+                                                         <p className="text-sm font-bold text-slate-500 italic">Pilih satu siklus penuh atau hitung sisa pertemuan</p>
+                                                     </div>
+                                                     <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+                                                         <Button
+                                                             type="button"
+                                                             variant="ghost"
+                                                             onClick={() => {
+                                                                 const currentLead = lead || student?.lead;
+                                                                 const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+                                                                 setData(prev => ({
+                                                                     ...prev,
+                                                                     billing_mode: 'prorata',
+                                                                     join_date: originalJoinDate
+                                                                 }));
+                                                             }}
+                                                             className={`px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-500 hover:text-slate-800 hover:bg-transparent'}`}
+                                                         >
+                                                             Pro-rata
+                                                         </Button>
+                                                         <Button
+                                                             type="button"
+                                                             variant="ghost"
+                                                             onClick={() => {
+                                                                 const targetClass = selectedClass || (student?.study_classes?.[0]);
+                                                                 let nextDate = data.join_date;
+                                                                 if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
+                                                                     const findNextMeeting = (endDateStr, scheduleDays) => {
+                                                                         const date = new Date(endDateStr);
+                                                                         for (let i = 1; i <= 7; i++) {
+                                                                             const next = new Date(date);
+                                                                             next.setDate(date.getDate() + i);
+                                                                             const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                                                                             if (scheduleDays.includes(dayName)) {
+                                                                                 return next.toISOString().split('T')[0];
+                                                                             }
+                                                                         }
+                                                                         return new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+                                                                     };
+                                                                     nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
+                                                                 }
+                                                                 setData(prev => ({
+                                                                     ...prev,
+                                                                     billing_mode: 'full',
+                                                                     join_date: nextDate
+                                                                 }));
+                                                             }}
+                                                             className={`px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-500 hover:text-slate-800 hover:bg-transparent'}`}
+                                                         >
+                                                             Satu Siklus Penuh
+                                                         </Button>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         ) : (
+                                             <div className="space-y-4 pt-6 border-t border-slate-100">
+                                                 <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-start gap-4">
+                                                     <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+                                                     <div>
+                                                         <h4 className="text-sm font-black text-emerald-950 uppercase tracking-wider">Rejoin Mode Aktif</h4>
+                                                         <p className="text-sm font-bold text-emerald-800 leading-relaxed uppercase tracking-wider mt-1">
+                                                             Biaya dihitung penuh 1 siklus paket. Tanggal masuk diinisialisasi otomatis ke jadwal pertemuan pertama setelah kelas sebelumnya selesai ({data.join_date}).
+                                                         </p>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
+
+                                         <div className="space-y-6 pt-6 border-t border-slate-100">
+                                             <div className="flex items-center justify-between">
+                                                 <div>
+                                                     <h3 className="text-base font-black text-slate-900 uppercase tracking-wider leading-none mb-2">Addons & Extras</h3>
+                                                     <p className="text-sm font-bold text-slate-500 italic">Tambahkan biaya lain jika diperlukan</p>
+                                                 </div>
+                                                 <div className="flex flex-wrap gap-3">
+                                                       <Button
+                                                           type="button"
+                                                           variant="secondary"
+                                                           icon={Plus}
+                                                           onClick={() => addItem('Registration Fee', defaultRegFee)}
+                                                           className="group text-sm font-black px-5 py-3 !bg-orange-500 hover:!bg-orange-600 text-white rounded-2xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
+                                                       >
+                                                           Registrasi
+                                                       </Button>
+                                                       <Button
+                                                           type="button"
+                                                           variant="secondary"
+                                                           icon={Plus}
+                                                           onClick={() => addItem('Placement Test Fee', defaultPtFee)}
+                                                           className="group text-sm font-black px-5 py-3 !bg-blue-600 hover:!bg-blue-700 text-white rounded-2xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
+                                                       >
+                                                           Placement
+                                                       </Button>
+                                                       <Button
+                                                           type="button"
+                                                           variant="secondary"
+                                                           icon={Plus}
+                                                           onClick={() => addItem('', 0)}
+                                                           className="group text-sm font-black px-5 py-3 !bg-slate-900 hover:!bg-slate-800 text-white rounded-2xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
+                                                       >
+                                                           Custom
+                                                       </Button>
+                                                  </div>
+                                             </div>
 
                                             {data.items.length > 0 ? (
                                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -511,32 +595,38 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                                 <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
                                                                     <Tag size={14} />
                                                                 </div>
-                                                                <TextInput
+                                                                <input
+                                                                    type="text"
                                                                     value={item.name}
                                                                     onChange={e => { const n = [...data.items]; n[idx].name = e.target.value; setData('items', n); }}
-                                                                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 placeholder:text-slate-300 placeholder:italic p-0"
+                                                                    className="w-full bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-bold text-slate-700 placeholder:text-slate-300 placeholder:italic p-0 shadow-none"
                                                                     placeholder="Nama biaya tambahan..."
                                                                 />
                                                             </div>
                                                             <div className="flex items-center gap-3">
                                                                 <div className="relative">
                                                                     <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
-                                                                    <TextInput
-                                                                        type="number"
-                                                                        value={item.unit_price}
-                                                                        onChange={e => { const n = [...data.items]; n[idx].unit_price = e.target.value; setData('items', n); }}
-                                                                        className="w-28 bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900 text-right p-0 pl-6"
+                                                                    <input
+                                                                        type="text"
+                                                                        value={formatNumberWithDots(item.unit_price)}
+                                                                        onChange={e => {
+                                                                            const cleanVal = parseNumberFromDots(e.target.value);
+                                                                            const n = [...data.items];
+                                                                            n[idx].unit_price = cleanVal;
+                                                                            setData('items', n);
+                                                                        }}
+                                                                        className="w-28 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-black text-slate-900 text-right p-0 pl-6 shadow-none"
                                                                         placeholder="0"
                                                                     />
                                                                 </div>
-                                                                <Button
+                                                                <button
                                                                     type="button"
-                                                                    variant="ghost"
                                                                     onClick={() => setData('items', data.items.filter((_, i) => i !== idx))}
-                                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shadow-none p-0"
+                                                                    className="w-10 h-10 bg-red-100 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                                                                    title="Hapus Item"
                                                                 >
-                                                                    <Trash2 size={14} />
-                                                                </Button>
+                                                                    <Trash2 className="w-5 h-5 stroke-[2.5]" />
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -549,154 +639,155 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                                                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-700">
                                                     <DollarSign size={100} className="text-slate-900" />
                                                 </div>
-                                                <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] pb-6 border-b border-slate-100">
-                                                    <span className="flex items-center gap-3">
-                                                        <Calculator className="w-4 h-4 text-red-600" />
-                                                        Calculation Breakdown
-                                                    </span>
-                                                    <span>Pro-Rata</span>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-600">
-                                                        <span>Class Plotting ({remainingSessions} Sessions)</span>
-                                                        <span className="font-black text-slate-900">{formatCurrency(baseClassSubtotal)}</span>
-                                                    </div>
-                                                    {itemsTotal > 0 && (
-                                                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-600">
-                                                            <span>Extra Items</span>
-                                                            <span className="font-black text-slate-900">{formatCurrency(itemsTotal)}</span>
-                                                        </div>
-                                                    )}
+                                                 <div className="flex justify-between items-center text-sm font-black text-slate-800 uppercase pb-6 border-b border-slate-100">
+                                                     <span className="flex items-center gap-3">
+                                                         <Calculator className="w-5 h-5 text-red-600" />
+                                                         Calculation Breakdown
+                                                     </span>
+                                                     <span>Pro-Rata</span>
+                                                 </div>
+                                                 <div className="space-y-4">
+                                                     <div className="flex justify-between items-center text-sm font-bold uppercase text-slate-700">
+                                                         <span>Class Plotting ({remainingSessions} Sessions)</span>
+                                                         <span className="font-black text-slate-900 text-base">{formatCurrency(baseClassSubtotal)}</span>
+                                                     </div>
+                                                     {itemsTotal > 0 && (
+                                                         <div className="flex justify-between text-sm font-bold uppercase text-slate-700">
+                                                             <span>Extra Items</span>
+                                                             <span className="font-black text-slate-900 text-base">{formatCurrency(itemsTotal)}</span>
+                                                         </div>
+                                                     )}
 
-                                                    {/* Auto Discounts - Read Only Preview */}
-                                                    {
-                                                        autoLoyaltyDiscount && (
-                                                            <div className="pt-2 border-t border-dashed border-slate-100 space-y-2">
-                                                                <div className="flex justify-between items-center">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <Gift className="w-3 h-3 text-rose-500" />
-                                                                        <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Diskon Loyalty {autoLoyaltyDiscount.tier_name}</span>
-                                                                    </div>
-                                                                    <span className="text-[10px] font-black text-rose-600">- {formatCurrency(autoLoyaltyDiscount.discount_amount)}</span>
-                                                                </div>
-                                                                <p className="text-[9px] font-bold text-rose-400 uppercase tracking-wider pl-4.5">
-                                                                    + Voucher Cafe Rp {Number(autoLoyaltyDiscount.cafe_points || 0).toLocaleString('id-ID')} setelah lunas
-                                                                </p>
-                                                            </div>
-                                                        )}
+                                                     {/* Auto Discounts - Read Only Preview */}
+                                                     {
+                                                         autoLoyaltyDiscount && (
+                                                             <div className="pt-2 border-t border-dashed border-slate-200 space-y-2">
+                                                                 <div className="flex justify-between items-center">
+                                                                     <div className="flex items-center gap-2">
+                                                                         <Gift className="w-4 h-4 text-rose-500" />
+                                                                         <span className="text-sm font-black text-rose-600 uppercase">Diskon Loyalty {autoLoyaltyDiscount.tier_name}</span>
+                                                                     </div>
+                                                                     <span className="text-sm font-black text-rose-600">- {formatCurrency(autoLoyaltyDiscount.discount_amount)}</span>
+                                                                 </div>
+                                                                 <p className="text-sm font-bold text-rose-500 uppercase tracking-wider pl-6">
+                                                                     + Voucher Cafe Rp {Number(autoLoyaltyDiscount.cafe_points || 0).toLocaleString('id-ID')} setelah lunas
+                                                                 </p>
+                                                             </div>
+                                                         )}
 
-                                                    {
-                                                        autoSiblingDiscount && (
-                                                            <div className="flex justify-between items-center">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <Percent className="w-3 h-3 text-sky-500" />
-                                                                    <span className="text-[10px] font-black text-sky-600 uppercase tracking-widest">Diskon Sibling ({autoSiblingDiscount.percent}%)</span>
-                                                                </div>
-                                                                <span className="text-[10px] font-black text-sky-600">- {formatCurrency(autoSiblingDiscount.amount)}</span>
-                                                            </div>
-                                                        )
-                                                    }
+                                                     {
+                                                         autoSiblingDiscount && (
+                                                             <div className="flex justify-between items-center">
+                                                                 <div className="flex items-center gap-2">
+                                                                     <Percent className="w-4 h-4 text-sky-500" />
+                                                                     <span className="text-sm font-black text-sky-600 uppercase">Diskon Sibling ({autoSiblingDiscount.percent}%)</span>
+                                                                 </div>
+                                                                 <span className="text-sm font-black text-sky-600">- {formatCurrency(autoSiblingDiscount.amount)}</span>
+                                                             </div>
+                                                         )
+                                                     }
 
-                                                    {/* Manual Discounts - Admin Added */}
-                                                    <div className="pt-2 border-t border-dashed border-slate-100 space-y-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                                <Tag className="w-3 h-3 text-violet-500" />
-                                                                Diskon Tambahan
-                                                            </span>
-                                                            <Button
-                                                                type="button"
-                                                                variant="secondary"
-                                                                icon={Plus}
-                                                                onClick={() => addManualDiscount('', 0)}
-                                                                className="text-[9px] font-black px-3 py-1.5 bg-violet-50 text-violet-600 rounded-xl uppercase tracking-wider hover:bg-violet-600 hover:text-white transition-all shadow-none"
-                                                            >
-                                                                Tambah
-                                                            </Button>
-                                                        </div>
+                                                     {/* Manual Discounts - Admin Added */}
+                                                     <div className="pt-3 border-t border-dashed border-slate-200 space-y-3">
+                                                         <div className="flex items-center justify-between">
+                                                             <span className="text-sm font-black text-slate-700 uppercase flex items-center gap-2">
+                                                                 <Tag className="w-4 h-4 text-violet-500" />
+                                                                 Diskon Tambahan
+                                                             </span>
+                                                             <Button
+                                                                 type="button"
+                                                                 variant="secondary"
+                                                                 icon={Plus}
+                                                                 onClick={() => addManualDiscount('', 0)}
+                                                                 className="text-sm font-black px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
+                                                             >
+                                                                 Tambah
+                                                             </Button>
+                                                         </div>
 
-                                                        {data.manual_discounts.length > 0 ? (
-                                                            <div className="space-y-2">
-                                                                {data.manual_discounts.map((d, idx) => (
-                                                                    <div key={idx} className="flex items-center gap-2 bg-violet-50 px-3 py-2 rounded-xl group">
-                                                                        <TextInput
-                                                                            value={d.name}
-                                                                            onChange={e => {
-                                                                                const n = [...data.manual_discounts];
-                                                                                n[idx].name = e.target.value;
-                                                                                setData('manual_discounts', n);
-                                                                            }}
-                                                                            className="flex-1 bg-transparent border-none focus:ring-0 text-xs font-bold text-violet-800 placeholder:text-violet-300 p-0"
-                                                                            placeholder="Nama diskon..."
-                                                                        />
-                                                                        <div className="relative flex items-center">
-                                                                            <span className="absolute left-0 text-[10px] font-black text-violet-400 pointer-events-none">Rp</span>
-                                                                            <TextInput
-                                                                                type="number"
-                                                                                min="0"
-                                                                                value={d.amount}
-                                                                                onChange={e => {
-                                                                                    const n = [...data.manual_discounts];
-                                                                                    n[idx].amount = Math.max(0, parseInt(e.target.value) || 0);
-                                                                                    setData('manual_discounts', n);
-                                                                                }}
-                                                                                className="w-28 bg-transparent border-none focus:ring-0 text-xs font-black text-violet-900 text-right p-0 pl-5"
-                                                                                placeholder="0"
-                                                                            />
-                                                                        </div>
-                                                                        <Button
+                                                         {data.manual_discounts.length > 0 ? (
+                                                             <div className="space-y-2">
+                                                                 {data.manual_discounts.map((d, idx) => (
+                                                                     <div key={idx} className="flex items-center gap-3 bg-white border border-violet-200 px-4 py-2.5 rounded-2xl group shadow-sm">
+                                                                         <input
+                                                                             type="text"
+                                                                             value={d.name}
+                                                                             onChange={e => {
+                                                                                 const n = [...data.manual_discounts];
+                                                                                 n[idx].name = e.target.value;
+                                                                                 setData('manual_discounts', n);
+                                                                             }}
+                                                                             className="flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-bold text-violet-950 placeholder:text-slate-400 p-0 shadow-none"
+                                                                             placeholder="Nama diskon..."
+                                                                         />
+                                                                         <div className="relative flex items-center">
+                                                                             <span className="absolute left-0 text-xs font-black text-violet-400 pointer-events-none">Rp</span>
+                                                                             <input
+                                                                                 type="text"
+                                                                                 value={formatNumberWithDots(d.amount)}
+                                                                                 onChange={e => {
+                                                                                     const cleanVal = parseNumberFromDots(e.target.value);
+                                                                                     const n = [...data.manual_discounts];
+                                                                                     n[idx].amount = cleanVal;
+                                                                                     setData('manual_discounts', n);
+                                                                                 }}
+                                                                                 className="w-32 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-black text-violet-900 text-right p-0 pl-6 shadow-none"
+                                                                                 placeholder="0"
+                                                                             />
+                                                                         </div>
+                                                                         <button
                                                                             type="button"
-                                                                            variant="ghost"
                                                                             onClick={() => removeManualDiscount(idx)}
-                                                                            className="w-6 h-6 rounded-lg flex items-center justify-center text-violet-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shadow-none p-0"
+                                                                            className="w-10 h-10 bg-red-100 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                                                                            title="Hapus Diskon"
                                                                         >
-                                                                            <Trash2 size={12} />
-                                                                        </Button>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : null}
+                                                                            <Trash2 className="w-5 h-5 stroke-[2.5]" />
+                                                                        </button>
+                                                                     </div>
+                                                                 ))}
+                                                             </div>
+                                                         ) : null}
 
-                                                        {manualDiscountTotal > 0 && (
-                                                            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-violet-600">
-                                                                <span>Total Diskon Tambahan</span>
-                                                                <span className="font-black">- {formatCurrency(manualDiscountTotal)}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div >
-                                                <div className="pt-6 border-t border-slate-100 flex justify-between items-end">
-                                                    <div>
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Invoice Amount</span>
-                                                        <p className="text-[8px] font-bold text-emerald-600 uppercase mt-1 tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 inline-block">Awaiting Confirmation</p>
-                                                    </div>
-                                                    <span className="text-4xl font-black tracking-tighter text-red-600">{formatCurrency(totalAmount)}</span>
-                                                </div>
-                                            </div >
+                                                         {manualDiscountTotal > 0 && (
+                                                             <div className="flex justify-between text-sm font-bold uppercase text-violet-600">
+                                                                 <span>Total Diskon Tambahan</span>
+                                                                 <span className="font-black">- {formatCurrency(manualDiscountTotal)}</span>
+                                                             </div>
+                                                         )}
+                                                     </div>
+                                                 </div >
+                                                 <div className="pt-6 border-t border-slate-200 flex justify-between items-end">
+                                                     <div>
+                                                         <span className="text-sm font-black text-slate-700 uppercase tracking-wider">Total Invoice Amount</span>
+                                                         <p className="text-sm font-bold text-emerald-800 uppercase mt-2 tracking-wider bg-emerald-50 px-4 py-1.5 rounded-full border border-emerald-100 inline-block">Awaiting Confirmation</p>
+                                                     </div>
+                                                     <span className="text-5xl font-black tracking-tighter text-red-600">{formatCurrency(totalAmount)}</span>
+                                                 </div>
+                                             </div >
                                         )
                                         }
 
                                         <div>
-                                            <InputLabel value="Catatan Internal" className="uppercase text-[10px] tracking-widest font-black text-slate-400 mb-2" />
-                                            <TextArea value={data.notes} onChange={e => setData('notes', e.target.value)} className="bg-slate-50 border-none rounded-2xl text-[11px] font-bold" rows={2} placeholder="Opsional..." />
+                                            <InputLabel value="Catatan Internal" className="uppercase text-sm tracking-wider font-black text-slate-700 mb-2" />
+                                            <TextArea value={data.notes} onChange={e => setData('notes', e.target.value)} className="bg-slate-50 border-none rounded-2xl text-sm font-bold" rows={2} placeholder="Opsional..." />
                                         </div>
                                     </div >
 
-                                    <div className="px-8 py-8 bg-slate-50 flex items-center justify-end gap-3 rounded-b-[32px]">
+                                    <div className="px-10 py-10 bg-slate-50 flex items-center justify-end gap-4 rounded-b-[36px]">
                                         <Button
                                             variant="secondary"
                                             onClick={onClose}
-                                            className="!rounded-2xl !text-[10px] uppercase tracking-widest font-black px-6 py-3.5"
+                                            className="!rounded-2xl !text-sm uppercase tracking-wider font-black px-8 py-4"
                                         >
                                             Batal
                                         </Button>
                                         <Button
                                             type="submit"
                                             variant="primary"
-                                            disabled={processing || !selectedClass || !selectedPrice || isExpired || hasNoPrice}
-                                            className="!bg-red-600 hover:!bg-red-700 !rounded-2xl !text-[10px] uppercase tracking-widest font-black px-10 py-3.5 shadow-xl shadow-red-600/30"
+                                            disabled={processing || (!selectedClass && (data.items || []).length === 0) || (selectedClass && (!selectedPrice || isExpired || hasNoPrice))}
+                                            className="!bg-red-600 hover:!bg-red-700 !rounded-2xl !text-sm uppercase tracking-wider font-black px-12 py-4 shadow-xl shadow-red-600/30"
                                         >
-                                            {processing ? <Loader2 className="animate-spin mr-2" size={14} /> : <Save className="mr-2" size={14} />}
+                                            {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save className="mr-2" size={16} />}
                                             Generate Invoice
                                         </Button>
                                     </div>

@@ -77,27 +77,18 @@
 <body>
     <table class="header">
         <tr>
-            <td style="width: 50%;">
+            <td style="width: 55%;">
                 <img src="{{ public_path('assets/images/local/logo-full.png') }}" class="logo" alt="IELC Logo">
+                <div style="margin-top: 6px; font-size: 11px; color: #4b5563; line-height: 1.4;">
+                    <strong>Interactive English Language Center</strong><br>
+                    Jl. Haryo Panular No. 48 SURAKARTA JAWA TENGAH 57149 INDONESIA
+                </div>
             </td>
-            <td style="width: 50%;" class="text-right">
+            <td style="width: 45%;" class="text-right">
                 <div class="invoice-title">INVOICE</div>
                 <div>No: {{ $invoice->invoice_number }}</div>
                 <div>Tanggal: {{ $invoice->created_at->format('d M Y') }}</div>
                 <div>Jatuh Tempo: {{ \Carbon\Carbon::parse($invoice->due_date)->format('d M Y') }}</div>
-                <div>Tipe: {{ $invoice->student_id ? 'Rejoin' : 'New Join' }}</div>
-                @if($invoice->studyClass)
-                    <div>Kelas: {{ $invoice->studyClass->name }}</div>
-                @endif
-                @php
-                    $startDate = $invoice->start_date ?? ($invoice->studyClass ? $invoice->studyClass->start_session_date : null);
-                    $endDate = $invoice->end_date ?? ($invoice->studyClass ? $invoice->studyClass->end_session_date : null);
-                @endphp
-                @if($startDate && $endDate)
-                    <div style="font-weight: bold; color: #dc2626; margin-top: 3px;">Periode Belajar: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }} s/d {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y') }}</div>
-                @elseif($startDate)
-                    <div style="font-weight: bold; color: #dc2626; margin-top: 3px;">Periode Belajar: Mulai {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }}</div>
-                @endif
             </td>
         </tr>
     </table>
@@ -150,7 +141,7 @@
             @foreach ($invoice->items as $index => $item)
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>{{ $item->name }}</td>
+                    <td>{!! nl2br(e($item->name)) !!}</td>
                     <td class="text-right">{{ $item->quantity }}</td>
                     <td class="text-right">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
                     <td class="text-right">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
@@ -159,39 +150,40 @@
         </tbody>
         <tfoot>
             @if($invoice->discount_amount > 0)
-                @php
-                    $discountLabel = 'Diskon';
-                    $notes = $invoice->notes ?? '';
-                    $hasSibling = str_contains($notes, 'Diskon Sibling');
-                    $hasVoucher = str_contains($notes, 'Mendapatkan Voucher:');
-                    
-                    if ($hasSibling && $hasVoucher) {
-                        $discountLabel = 'Diskon Loyalty & Sibling';
-                    } elseif ($hasSibling) {
-                        $discountLabel = 'Diskon Sibling';
-                    } elseif ($hasVoucher) {
-                        $pattern = '/Mendapatkan Voucher:\s*(.*?)(?:\s*dan\s*Voucher Cafe|$)/i';
-                        if (preg_match($pattern, $notes, $matches)) {
-                            $voucherName = trim($matches[1]);
-                            $setting = \App\Domains\Finance\Domain\Models\LoyaltySetting::where('voucher_name', $voucherName)->first();
-                            if ($setting) {
-                                $discountLabel = 'Diskon Loyalty ' . $setting->tier_name;
-                            } else {
-                                $discountLabel = 'Diskon Loyalty ' . $voucherName;
-                            }
-                        } else {
-                            $discountLabel = 'Diskon Loyalty';
-                        }
-                    }
-                @endphp
                 <tr>
                     <td colspan="4" class="text-right" style="color: #6b7280; font-size: 12px; font-weight: normal; border: none;">Subtotal</td>
                     <td class="text-right" style="color: #6b7280; font-size: 12px; font-weight: normal; border: none;">Rp {{ number_format($invoice->total_amount + $invoice->discount_amount, 0, ',', '.') }}</td>
                 </tr>
-                <tr>
-                    <td colspan="4" class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">{{ $discountLabel }}</td>
-                    <td class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">-Rp {{ number_format($invoice->discount_amount, 0, ',', '.') }}</td>
-                </tr>
+                @php
+                    $discountLines = collect(explode("\n", $invoice->discount_breakdown ?? ''))
+                        ->map(fn($line) => trim($line))
+                        ->filter(fn($line) => strlen($line) > 0);
+                @endphp
+
+                @if($discountLines->isNotEmpty())
+                    @foreach($discountLines as $line)
+                        @php
+                            $parts = explode(':', $line, 2);
+                            $label = trim($parts[0]);
+                            $valStr = isset($parts[1]) ? trim($parts[1]) : '';
+                        @endphp
+                        <tr>
+                            <td colspan="4" class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">{{ $label }}</td>
+                            <td class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">
+                                @if(str_contains($valStr, 'Rp'))
+                                    -{{ $valStr }}
+                                @else
+                                    -Rp {{ number_format($invoice->discount_amount, 0, ',', '.') }}
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="4" class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">Total Diskon</td>
+                        <td class="text-right" style="color: #dc2626; font-size: 12px; font-weight: normal; border: none;">-Rp {{ number_format($invoice->discount_amount, 0, ',', '.') }}</td>
+                    </tr>
+                @endif
             @endif
             <tr class="total-row">
                 <td colspan="4" class="text-right">Total Tagihan</td>
@@ -200,10 +192,13 @@
         </tfoot>
     </table>
 
-    @if($invoice->notes)
-        <div style="margin-top: 20px; padding: 15px; background-color: #f9fafb; border-radius: 12px; border-left: 4px solid #dc2626; border-top: 1px solid #f3f4f6; border-right: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;">
-            <strong style="color: #111827; font-size: 11px; text-transform: uppercase; tracking-wider">Catatan / Keterangan Tagihan:</strong>
-            <p style="margin: 8px 0 0 0; color: #4b5563; font-size: 11px; line-height: 1.6; white-space: pre-line;">{!! nl2br(e($invoice->notes)) !!}</p>
+
+    @if($invoice->discount_breakdown && str_contains($invoice->discount_breakdown, 'Akan mendapatkan voucher (20)'))
+        <div style="margin-top: 25px; padding: 15px; background-color: #f0fdf4; border-radius: 12px; border: 1.5px dashed #16a34a;">
+            <strong style="color: #14532d; font-size: 11px; text-transform: uppercase; tracking-wider">Loyalty Promo:</strong>
+            <p style="margin: 6px 0 0 0; color: #166534; font-size: 12px; font-weight: bold; line-height: 1.5;">
+                Apabila dibayarkan sebelum tanggal jatuh tempo, Akan mendapatkan voucher (20)
+            </p>
         </div>
     @endif
 

@@ -21,6 +21,8 @@ Modul Academic mengelola data siswa aktif (*Students*), kelas belajar (*Study Cl
     - [ ] Masukkan tanggal mulai sesi (*start_session_date*) dan tentukan hari kelas pada pilihan checkbox `schedule_days` (misal centang "Senin" dan "Rabu").
     - [ ] Pastikan sistem otomatis memperbarui nilai jumlah pertemuan per minggu (*meetings_per_week*) menjadi `2` (sesuai jumlah hari yang dicentang).
     - [ ] Pastikan tanggal akhir sesi (*end_session_date*) otomatis terhitung maju sebanyak 12 kali pertemuan (atau sesuai *total_meetings* yang diinput) dari tanggal mulai dengan melompati hari selain Senin dan Rabu (proses ini diatur oleh hook `useClassScheduleCalculation`).
+- [ ] **Pilihan Jenis Kelas (Online / Offline):** Pilih jenis kelas `Online` atau `Offline` saat membuat/mengedit kelas. Pastikan terdaftar dengan benar di database.
+- [ ] **Badge Display & Filter Jenis Kelas:** Buka halaman manajemen kelas. Pastikan setiap kartu kelas menampilkan badge `ONLINE` atau `OFFLINE` dan filter jenis kelas menyaring data dengan tepat.
 - [ ] **Penyimpanan Kelas:** Simpan kelas dan pastikan data tersimpan di tabel `study_classes` dengan `current_session_number = 1`.
 
 ### B. Pembaruan & Penghapusan Kelas

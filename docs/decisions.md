@@ -60,3 +60,27 @@
 **Implikasi**:
 - Kolom `branch_id` didefinisikan sebagai nullable di database migration.
 - Logika backend dan frontend wajib menggunakan optional chaining (`branch?->name`) untuk menghindari `TypeError` ketika mengakses properti cabang dari Lead.
+
+---
+
+## ADR-007: Atribut Jenis Kelas (`type`: `online` / `offline`) pada Modul Academic
+
+**Keputusan**: Penambahan kolom `type` (`'online'` / `'offline'`) pada tabel `study_classes`.
+**Alasan**: Membedakan kelas fisik (cabang) dengan kelas daring secara eksplisit untuk kebutuhan filter, pencarian, dan visualisasi badge di dashboard.
+**Implikasi**:
+- Migration menambahkan kolom `type` dengan nilai bawaan `'offline'`.
+- Model, Validation Form Request, API Resource, dan Query Service wajib menyertakan `type`.
+
+---
+
+## ADR-008: Pembatalan Otomatis Invoice Lama saat Re-Invoice & Invoice Placement Test Mandiri
+
+**Keputusan**:
+1. Saat invoice baru diterbitkan untuk Lead/Student yang sama, seluruh invoice lama berstatus `pending` otomatis diubah statusnya menjadi `cancelled`.
+2. Invoice dapat diterbitkan tanpa memilih kelas (`study_class_id` nullable) untuk kasus *Placement Test Fee*.
+**Alasan**:
+1. Mencegah penumpukan tagihan aktif ganda untuk customer yang sama.
+2. Memfasilitasi pendaftaran Placement Test yang belum memiliki alokasi kelas.
+**Implikasi**:
+- Action `GenerateInvoice` mengeksekusi query pembaruan status `cancelled` secara otomatis di awal transaksi.
+- Status `cancelled` ditampilkan dengan badge warna merah (`bg-red-50 text-red-600 border-red-100`).

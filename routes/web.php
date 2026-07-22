@@ -135,10 +135,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/invoices', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'invoices'])->name('invoices.index');
         Route::post('/invoices/generate', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'generate'])->name('invoices.generate');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'pay'])->name('invoices.pay');
+        Route::post('/invoices/{invoice}/cancel', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'cancel'])->name('invoices.cancel');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'download'])->name('invoices.download');
         Route::post('/classes/{studyClass}/bulk-invoice', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'bulkInvoice'])->name('classes.bulk-invoice');
         Route::get('/reports', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'reports'])->name('reports.index');
+        Route::get('/reports/export-pdf', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'exportReportsPdf'])->name('reports.export-pdf');
+        Route::get('/reports/export-excel', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'exportReportsExcel'])->name('reports.export-excel');
         
+        Route::post('price-masters/initial-fees', [\App\Http\Controllers\Admin\Finance\PriceMasterController::class, 'updateInitialFees'])->name('price-masters.initial-fees');
         Route::resource('price-masters', \App\Http\Controllers\Admin\Finance\PriceMasterController::class);
         Route::post('loyalty-settings/sibling', [\App\Http\Controllers\Admin\Finance\LoyaltySettingsController::class, 'updateSiblingSettings'])->name('loyalty-settings.sibling');
         Route::resource('loyalty-settings', \App\Http\Controllers\Admin\Finance\LoyaltySettingsController::class);

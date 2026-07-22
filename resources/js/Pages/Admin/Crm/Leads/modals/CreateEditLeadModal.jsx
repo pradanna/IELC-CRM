@@ -582,8 +582,8 @@ export default function CreateEditLeadModal({
                                                             </div>
                                                         ) : (
                                                             data.guardians.map((guardian, index) => (
-                                                                <div key={index} className="group relative p-5 bg-slate-50 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:shadow-lg">
-                                                                    <button type="button" onClick={() => removeGuardian(index)} className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:text-red-600 opacity-0 group-hover:opacity-100"><X size={10} /></button>
+                                                                 <div key={index} className="group relative p-5 bg-slate-50 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:shadow-lg">
+                                                                    <button type="button" onClick={() => removeGuardian(index)} className="absolute -top-2 -right-2 w-6 h-6 bg-red-50 border border-red-200 text-red-500 rounded-full flex items-center justify-center hover:bg-red-100 hover:text-red-700 transition-all shadow-sm" title="Hapus Guardian"><X size={12} /></button>
                                                                     <div className="space-y-4">
                                                                         <div className="grid grid-cols-2 gap-3">
                                                                             <PremiumSearchableSelect 
@@ -644,7 +644,7 @@ export default function CreateEditLeadModal({
                                                                                 </label>
                                                                             </div>
                                                                         </div>
-                                                                        <button type="button" onClick={() => removeRelationship(rel.related_lead_id)} className="text-red-300 hover:text-red-600 transition-colors">
+                                                                        <button type="button" onClick={() => removeRelationship(rel.related_lead_id)} className="w-7 h-7 rounded-xl bg-red-100/80 text-red-600 hover:bg-red-200 flex items-center justify-center transition-all shrink-0" title="Hapus Relasi">
                                                                             <X size={14} />
                                                                         </button>
                                                                     </div>

@@ -268,6 +268,7 @@
 | `branch_id` | uuid | ❌ | FK → branches, cascade |
 | `instructor_id` | uuid | ✅ | FK → users (guru), null on delete |
 | `name` | string | ❌ | |
+| `type` | string | ❌ | Default: `'offline'` (`'online'` / `'offline'`) |
 | `start_session_date` | date | ✅ | |
 | `end_session_date` | date | ✅ | |
 | `total_meetings` | unsignedInt | ❌ | Default: 12 |

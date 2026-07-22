@@ -23,13 +23,29 @@ class GenerateInvoice
     public function handle(array $data): Invoice
     {
         return DB::transaction(function () use ($data) {
-            $studyClass = $this->studyClassRepository->findOrFail($data['study_class_id']);
-            $priceMaster = PriceMaster::findOrFail($data['price_master_id']);
+            // Cancel previous pending invoices for this lead or student to prevent multiple active pending invoices
+            if (!empty($data['student_id'])) {
+                Invoice::where('student_id', $data['student_id'])
+                    ->where('status', 'pending')
+                    ->update(['status' => 'cancelled']);
+            } elseif (!empty($data['lead_id'])) {
+                Invoice::where('lead_id', $data['lead_id'])
+                    ->where('status', 'pending')
+                    ->update(['status' => 'cancelled']);
+            }
+
+            $studyClass = !empty($data['study_class_id']) ? \App\Domains\Academic\Domain\Models\StudyClass::find($data['study_class_id']) : null;
+            $priceMaster = !empty($data['price_master_id']) ? PriceMaster::find($data['price_master_id']) : null;
             
-            // Delegate calculation to Domain Service
-            $calculation = $this->billingService->calculatePlottingAmount($studyClass, $priceMaster, $data);
-            $remaining = $calculation['sessions'];
-            $baseSubtotal = $calculation['amount'];
+            $remaining = 0;
+            $baseSubtotal = 0;
+
+            if ($studyClass && $priceMaster) {
+                // Delegate calculation to Domain Service
+                $calculation = $this->billingService->calculatePlottingAmount($studyClass, $priceMaster, $data);
+                $remaining = $calculation['sessions'];
+                $baseSubtotal = $calculation['amount'];
+            }
 
             $discountAmount = 0;
             $notes = $data['notes'] ?? null;
@@ -51,7 +67,7 @@ class GenerateInvoice
                     
                     if ($matchingSetting) {
                         $discountAmount += $matchingSetting->discount_amount;
-                        $additionalNotes[] = "Mendapatkan Voucher: " . $matchingSetting->voucher_name . " dan Voucher Cafe senilai Rp " . number_format($matchingSetting->cafe_points, 0, ',', '.') . " setelah tagihan dilunasi.";
+                        $additionalNotes[] = "Apabila dibayarkan sebelum tanggal jatuh tempo, Akan mendapatkan voucher (20)";
                     }
                 }
             }
@@ -62,8 +78,11 @@ class GenerateInvoice
 
             // 2. Sibling Discount matching
             $useSiblingDiscount = filter_var(\App\Domains\Finance\Domain\Models\FinanceSetting::get('use_sibling_discount', '1'), FILTER_VALIDATE_BOOLEAN);
-            if ($useSiblingDiscount && $leadObj) {
-                $hasSibling = $leadObj->relatedLeads()->wherePivot('type', 'sibling')->exists();
+            if ($useSiblingDiscount && $leadObj && $baseSubtotal > 0) {
+                $hasSibling = $leadObj->relatedLeads()->wherePivot('type', 'sibling')->exists()
+                           || \App\Domains\CRM\Domain\Models\LeadRelationship::where(function($q) use ($leadObj) {
+                               $q->where('lead_id', $leadObj->id)->orWhere('related_lead_id', $leadObj->id);
+                           })->where('type', 'sibling')->exists();
                 if ($hasSibling) {
                     $siblingPercent = (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('sibling_discount_percent', '10');
                     if ($siblingPercent === 0) {
@@ -86,44 +105,57 @@ class GenerateInvoice
                 }
             }
 
-            if (!empty($additionalNotes)) {
-                $notes = implode("\n", $additionalNotes);
-            }
+            $userNotes = !empty($data['notes']) ? trim($data['notes']) : null;
+            $discountBreakdown = !empty($additionalNotes) ? implode("\n", $additionalNotes) : null;
 
-            $startDate = $data['join_date'] ?? ($studyClass->start_session_date ? $studyClass->start_session_date->format('Y-m-d') : null);
-            $endDate = $studyClass->end_session_date ? $studyClass->end_session_date->format('Y-m-d') : null;
+            $startDate = $data['join_date'] ?? ($studyClass?->start_session_date ? $studyClass->start_session_date->format('Y-m-d') : null);
+            $endDate = $studyClass?->end_session_date ? $studyClass->end_session_date->format('Y-m-d') : null;
+
+            // Determine invoice type at creation time (immutable)
+            $invoiceType = 'new_join';
+            if (!empty($data['student_id'])) {
+                $invoiceType = 'rejoin';
+            } elseif (empty($data['study_class_id'])) {
+                $invoiceType = 'placement_test';
+            }
 
             $invoice = Invoice::create([
                 'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
-                'lead_id' => $data['lead_id'] ?? null,
-                'student_id' => $data['student_id'] ?? null,
-                'study_class_id' => $studyClass->id,
-                'total_amount' => 0, // Updated later
+                'lead_id'        => $data['lead_id'] ?? null,
+                'student_id'     => $data['student_id'] ?? null,
+                'study_class_id' => $studyClass?->id,
+                'total_amount'   => 0, // Updated later
                 'discount_amount' => $discountAmount,
-                'session_count' => $remaining,
-                'start_date' => $startDate,
-                'status' => 'pending',
-                'due_date' => now()->addDays(7),
-                'notes' => $notes,
+                'session_count'  => $remaining,
+                'start_date'     => $startDate,
+                'status'         => 'pending',
+                'due_date'       => now()->addDays(7),
+                'notes'          => $userNotes,
+                'discount_breakdown' => $discountBreakdown,
+                'type'           => $invoiceType,
             ]);
 
-            $periodLabel = '';
-            if ($startDate && $endDate) {
-                $startFmt = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y');
-                $endFmt = \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y');
-                $periodLabel = " | Periode Belajar: {$startFmt} - {$endFmt}";
+            $totalAmount = 0;
+
+            if ($studyClass && $priceMaster) {
+                $periodLabel = '';
+                if ($startDate && $endDate) {
+                    $startFmt = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y');
+                    $endFmt = \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y');
+                    $periodLabel = "\nPeriode Belajar: {$startFmt} - {$endFmt}";
+                }
+
+                // Create base class plot item
+                $invoice->items()->create([
+                    'price_master_id' => $priceMaster->id,
+                    'name' => "Kelas: {$studyClass->name} ({$remaining} Sesi){$periodLabel}",
+                    'quantity' => 1,
+                    'unit_price' => $baseSubtotal,
+                    'subtotal' => $baseSubtotal,
+                ]);
+
+                $totalAmount += $baseSubtotal;
             }
-
-            // Create base class plot item
-            $invoice->items()->create([
-                'price_master_id' => $priceMaster->id,
-                'name' => "Plotting: {$studyClass->name} ({$remaining} Sesi{$periodLabel})",
-                'quantity' => 1,
-                'unit_price' => $baseSubtotal,
-                'subtotal' => $baseSubtotal,
-            ]);
-
-            $totalAmount = $baseSubtotal;
 
             // Handle additional items
             if (!empty($data['items'])) {

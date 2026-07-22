@@ -14,7 +14,10 @@ class ProcessInvoicePayment
     public function handle(Invoice $invoice): void
     {
         DB::transaction(function () use ($invoice) {
-            $invoice->update(['status' => 'paid']);
+            $invoice->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
 
             // Update student status if applicable
             if ($invoice->student_id) {
