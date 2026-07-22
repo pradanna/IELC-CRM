@@ -53,8 +53,12 @@ use Inertia\Response;
 
 class LeadController extends Controller
 {
-    public function index(Request $request, LeadQueryService $service): Response
+    public function index(Request $request, LeadQueryService $service): Response|RedirectResponse
     {
+        if (auth()->user()?->hasRole('finance')) {
+            return redirect()->route('admin.finance.dashboard');
+        }
+
         $leads = $service->getPaginatedLeads($request);
 
         return Inertia::render('Admin/Crm/Leads/Index', [
