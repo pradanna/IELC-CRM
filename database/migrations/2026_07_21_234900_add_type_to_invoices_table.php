@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::table('invoices', function (Blueprint $table) {
             // Stores the invoice type at creation time, immutable after creation
-            $table->enum('type', ['new_join', 'rejoin', 'placement_test'])
+            $table->string('type', 50)
                   ->default('new_join')
                   ->after('status');
         });
