@@ -62,11 +62,26 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onPay }) 
             'solo'
         ).toLowerCase();
 
+        let typeLabel = 'pendaftaran';
+        if (invoice.type === 'placement_test') {
+            typeLabel = 'placement test';
+        } else if (invoice.type === 'rejoin') {
+            typeLabel = 'rejoin';
+        } else if (invoice.type === 'paket_lanjut') {
+            typeLabel = 'paket lanjut';
+        }
+
         const dueDateFmt = invoice.due_date
             ? new Date(invoice.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
             : '-';
 
-        const message = `Halo *${customerName}*,\n\nBerikut adalah invoice pembayaran Anda dari Interactive English Language Center (IELC):\n\n📄 *Nomor Invoice*: ${invoice.invoice_number}\n💰 *Total Tagihan*: ${formatCurrency(invoice.total_amount)}\n📅 *Jatuh Tempo*: ${dueDateFmt}\n\nSilakan klik link berikut untuk melihat / mengunduh invoice Anda:\n🔗 ${magicUrl}\n\nTerima kasih! 🙏`;
+        const isPaid = invoice.status === 'paid';
+        let message = `Halo *${customerName}*,\n\n`;
+        if (isPaid) {
+            message += `Berikut adalah bukti pembayaran ${typeLabel} Anda dari Interactive English Language Center (IELC):\n\n📄 *Nomor Invoice*: ${invoice.invoice_number}\n💰 *Total Terbayar*: ${formatCurrency(invoice.total_amount)}\n\nSilakan klik link berikut untuk melihat / mengunduh bukti pembayaran Anda:\n🔗 ${magicUrl}\n\nTerima kasih! 🙏`;
+        } else {
+            message += `Berikut adalah tagihan ${typeLabel} Anda dari Interactive English Language Center (IELC):\n\n📄 *Nomor Invoice*: ${invoice.invoice_number}\n💰 *Total Tagihan*: ${formatCurrency(invoice.total_amount)}\n📅 *Jatuh Tempo*: ${dueDateFmt}\n\nSilakan klik link berikut untuk melihat / mengunduh invoice Anda:\n🔗 ${magicUrl}\n\nSilakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+        }
 
         if (!confirm(`Kirim invoice ke ${customerName} (${phone}) via WhatsApp?`)) return;
 

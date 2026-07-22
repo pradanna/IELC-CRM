@@ -168,10 +168,29 @@ export default function LeadPipelineTab({
     };
 
     const handleSendInvoiceWA = async (invoice) => {
-        const message = `Halo *${lead.nickname || lead.name}*,\n\n` +
-                        `Berikut adalah link invoice pendaftaran Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
-                        `${invoice.download_url}\n\n` +
-                        `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+        const name = lead.nickname || lead.name;
+        const publicUrl = invoice.download_url || route('public.invoice.download', invoice.id);
+        const isPaid = invoice.status === 'paid';
+
+        let typeLabel = 'pendaftaran';
+        if (invoice.type === 'placement_test') {
+            typeLabel = 'placement test';
+        } else if (invoice.type === 'rejoin') {
+            typeLabel = 'rejoin';
+        } else if (invoice.type === 'paket_lanjut') {
+            typeLabel = 'paket lanjut';
+        }
+
+        let message = `Halo *${name}*,\n\n`;
+        if (isPaid) {
+            message += `Berikut adalah bukti pembayaran ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                       `${publicUrl}\n\n` +
+                       `Terima kasih! 🙏`;
+        } else {
+            message += `Berikut adalah tagihan ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                       `${publicUrl}\n\n` +
+                       `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+        }
         
         if (window.confirm(`Kirim invoice ${invoice.invoice_number} via WhatsApp?`)) {
             try {

@@ -107,7 +107,26 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {} }) 
             'solo'
         ).toLowerCase();
 
-        const msg = `Halo *${customerName}*,\n\nBerikut informasi tagihan invoice Anda dari Interactive English Language Center (IELC):\n\n📄 No. Invoice: *${invoice.invoice_number}*\n💰 Total Tagihan: *${amount}*\n\nSilakan klik link berikut untuk melihat / mengunduh invoice Anda:\n🔗 ${magicUrl}\n\nTerima kasih! 🙏`;
+        let typeLabel = 'pendaftaran';
+        if (invoice.type === 'placement_test') {
+            typeLabel = 'placement test';
+        } else if (invoice.type === 'rejoin') {
+            typeLabel = 'rejoin';
+        } else if (invoice.type === 'paket_lanjut') {
+            typeLabel = 'paket lanjut';
+        }
+
+        const isPaid = invoice.status === 'paid';
+        let msg = `Halo *${customerName}*,\n\n`;
+        if (isPaid) {
+            msg += `Berikut adalah bukti pembayaran ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                   `📄 No. Invoice: *${invoice.invoice_number}*\n💰 Total Terbayar: *${amount}*\n\n` +
+                   `Silakan klik link berikut untuk melihat / mengunduh bukti pembayaran Anda:\n🔗 ${magicUrl}\n\nTerima kasih! 🙏`;
+        } else {
+            msg += `Berikut adalah tagihan ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                   `📄 No. Invoice: *${invoice.invoice_number}*\n💰 Total Tagihan: *${amount}*\n\n` +
+                   `Silakan klik link berikut untuk melihat / mengunduh invoice Anda:\n🔗 ${magicUrl}\n\nSilakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+        }
 
         if (!confirm(`Kirim invoice ke ${customerName} (${normalized}) via WhatsApp?`)) return;
 
