@@ -94,11 +94,13 @@ class FinanceController extends Controller
             $query->where('status', $request->status);
         }
 
-        // 4. Filter by Type: new_join, rejoin, placement_test
+        // 4. Filter by Type: new_join, rejoin, paket_lanjut, placement_test
         if ($request->type === 'new_join') {
             $query->where('type', 'new_join');
         } elseif ($request->type === 'rejoin') {
             $query->where('type', 'rejoin');
+        } elseif ($request->type === 'paket_lanjut') {
+            $query->where('type', 'paket_lanjut');
         } elseif ($request->type === 'placement_test') {
             $query->where('type', 'placement_test');
         }

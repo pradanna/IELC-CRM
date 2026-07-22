@@ -114,7 +114,12 @@ class GenerateInvoice
             // Determine invoice type at creation time (immutable)
             $invoiceType = 'new_join';
             if (!empty($data['student_id'])) {
-                $invoiceType = 'rejoin';
+                $student = \App\Domains\Academic\Domain\Models\Student::find($data['student_id']);
+                if ($student && $student->status === 'stop') {
+                    $invoiceType = 'rejoin';
+                } else {
+                    $invoiceType = 'paket_lanjut';
+                }
             } elseif (empty($data['study_class_id'])) {
                 $invoiceType = 'placement_test';
             }
