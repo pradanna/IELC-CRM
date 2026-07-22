@@ -41,7 +41,7 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
     };
 
     const handlePayInvoice = (invoiceId) => {
-        if (confirm('Mark this invoice as paid? This will automatically promote the lead to current student and enroll them in the class.')) {
+        if (confirm('Tandai invoice ini sebagai lunas?')) {
             router.post(route('admin.finance.invoices.pay', invoiceId));
         }
     };
@@ -627,14 +627,14 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                                                 icon={CheckCircle2}
                                                 className="flex-[2] py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/10 transition-all active:scale-95"
                                             >
-                                                Mark Paid
+                                                Tandai Lunas
                                             </Button>
                                         )}
                                         
                                         {invoice.status === 'paid' && (
                                             <div className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
                                                 <CheckCircle className="w-3 h-3" />
-                                                <span className="text-[8px] font-black uppercase tracking-widest">Enrollment Verified</span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest">Tagihan Terbayarkan</span>
                                             </div>
                                         )}
                                     </div>
