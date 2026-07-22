@@ -23,15 +23,15 @@ class GenerateInvoice
     public function handle(array $data): Invoice
     {
         return DB::transaction(function () use ($data) {
-            // Cancel previous pending invoices for this lead or student to prevent multiple active pending invoices
+            // Remove previous pending invoice for this lead or student so updating overwrites the existing pending invoice
             if (!empty($data['student_id'])) {
                 Invoice::where('student_id', $data['student_id'])
                     ->where('status', 'pending')
-                    ->update(['status' => 'cancelled']);
+                    ->forceDelete();
             } elseif (!empty($data['lead_id'])) {
                 Invoice::where('lead_id', $data['lead_id'])
                     ->where('status', 'pending')
-                    ->update(['status' => 'cancelled']);
+                    ->forceDelete();
             }
 
             $studyClass = !empty($data['study_class_id']) ? \App\Domains\Academic\Domain\Models\StudyClass::find($data['study_class_id']) : null;

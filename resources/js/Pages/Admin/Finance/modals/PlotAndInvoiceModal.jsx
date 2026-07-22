@@ -117,22 +117,56 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, clas
                 }
             }
 
-            const isPlacementTestPhase = currentLead?.lead_phase?.code === 'placement-test' || currentLead?.lead_phase?.name === 'Placement Test';
-            const initialItems = (isPlacementTestPhase && !classId) 
-                ? [{ name: 'Placement Test Fee', unit_price: 50000, quantity: 1 }] 
-                : [];
+            // If editing an existing pending invoice, pre-fill from its data
+            const existingInvoice = currentLead?.invoices?.find(inv => inv.status === 'pending') 
+                || student?.invoices?.find(inv => inv.status === 'pending');
 
-            setData({
-                lead_id: currentLead?.id || '',
-                student_id: student?.id || '',
-                study_class_id: classId,
-                price_master_id: priceId,
-                join_date: joinDate,
-                notes: existingNotes,
-                billing_mode: billingMode,
-                manual_discounts: [],
-                items: initialItems,
-            });
+            if (existingInvoice) {
+                const classId = existingInvoice.study_class_id || student?.study_classes?.[0]?.id || currentLead?.plotting?.study_class_id || '';
+                let priceId = '';
+                if (classId && classList.length > 0) {
+                    const cls = classList.find(c => c.id === classId);
+                    if (cls) priceId = cls.price_master_id || '';
+                }
+
+                // Extract custom non-class items from existing invoice
+                const customItems = (existingInvoice.items || [])
+                    .filter(item => !item.name.toLowerCase().startsWith('kelas:'))
+                    .map(item => ({
+                        name: item.name,
+                        unit_price: item.unit_price,
+                        quantity: item.quantity
+                    }));
+
+                setData({
+                    lead_id: currentLead?.id || '',
+                    student_id: student?.id || '',
+                    study_class_id: classId,
+                    price_master_id: priceId,
+                    join_date: existingInvoice.start_date || currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0],
+                    notes: existingInvoice.notes || currentLead?.plotting?.notes || '',
+                    billing_mode: billingMode,
+                    manual_discounts: [],
+                    items: customItems,
+                });
+            } else {
+                const isPlacementTestPhase = currentLead?.lead_phase?.code === 'placement-test' || currentLead?.lead_phase?.name === 'Placement Test';
+                const initialItems = (isPlacementTestPhase && !classId) 
+                    ? [{ name: 'Placement Test Fee', unit_price: 50000, quantity: 1 }] 
+                    : [];
+
+                setData({
+                    lead_id: currentLead?.id || '',
+                    student_id: student?.id || '',
+                    study_class_id: classId,
+                    price_master_id: priceId,
+                    join_date: joinDate,
+                    notes: existingNotes,
+                    billing_mode: billingMode,
+                    manual_discounts: [],
+                    items: initialItems,
+                });
+            }
         }
     }, [show, lead, student, classList]);
 
