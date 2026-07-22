@@ -193,7 +193,7 @@
     </table>
 
 
-    @if($invoice->discount_breakdown && str_contains($invoice->discount_breakdown, 'Akan mendapatkan voucher (20)'))
+    @if($invoice->discount_breakdown && (str_contains($invoice->discount_breakdown, 'Diskon Loyalty') || str_contains($invoice->discount_breakdown, 'voucher')))
         <div style="margin-top: 25px; padding: 15px; background-color: #f0fdf4; border-radius: 12px; border: 1.5px dashed #16a34a;">
             <strong style="color: #14532d; font-size: 11px; text-transform: uppercase; tracking-wider">Loyalty Promo:</strong>
             <p style="margin: 6px 0 0 0; color: #166534; font-size: 12px; font-weight: bold; line-height: 1.5;">

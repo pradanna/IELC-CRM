@@ -67,7 +67,7 @@ class GenerateInvoice
                     
                     if ($matchingSetting) {
                         $discountAmount += $matchingSetting->discount_amount;
-                        $additionalNotes[] = "Apabila dibayarkan sebelum tanggal jatuh tempo, Akan mendapatkan voucher (20)";
+                        $additionalNotes[] = "Diskon Loyalty";
                     }
                 }
             }
