@@ -53,6 +53,12 @@ const menuItems = [
             },
             {
                 icon: <FileText size={20} />,
+                text: "Placement Tests",
+                href: route("admin.placement-tests.index"),
+                name: "admin.placement-tests.*",
+            },
+            {
+                icon: <FileText size={20} />,
                 text: "CRM Reports",
                 href: route("admin.crm.reports.index"),
                 name: "admin.crm.reports.*",
@@ -193,7 +199,7 @@ export default function AdminLayout({ children }) {
         if (isSuperAdmin) return true;
         
         if (isFrontdesk) {
-            return ['Main', 'Management', 'Users'].includes(group.category);
+            return ['CRM & Leads', 'Academic', 'Management', 'Users'].includes(group.category);
         }
 
         if (isFinance) {
