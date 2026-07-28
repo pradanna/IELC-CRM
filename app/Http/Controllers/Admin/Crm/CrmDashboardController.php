@@ -17,6 +17,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+use App\Domains\Master\Domain\Models\InfoSource;
+use App\Http\Resources\Crm\InfoSourceResource;
+
 class CrmDashboardController extends Controller
 {
     public function index(Request $request, FetchCrmDashboardData $action): Response
@@ -29,6 +32,7 @@ class CrmDashboardController extends Controller
             'branches' => BranchResource::collection(Branch::select('id', 'name')->get()),
             'phases' => LeadPhaseResource::collection(LeadPhase::select('id', 'name', 'code')->get()),
             'sources' => LeadSourceResource::collection(LeadSource::select('id', 'name')->get()),
+            'infoSources' => InfoSourceResource::collection(InfoSource::select('id', 'name')->get()),
             'types' => LeadTypeResource::collection(LeadType::select('id', 'name')->get()),
             'provinces' => Province::select('id', 'name')->orderBy('name')->get(),
         ]);

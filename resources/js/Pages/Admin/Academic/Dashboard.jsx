@@ -11,6 +11,7 @@ import {
     BarChart, Bar, PieChart, Pie, Cell, 
     XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from 'recharts';
+import ExportButtons from '@/Components/ui/ExportButtons';
 
 const MONTH_NAMES = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -30,6 +31,16 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
     // ── Navigation ───────────────────────────────────────────────
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
+    };
+
+    // ── Export helpers ────────────────────────────────────────────
+    const buildExportUrl = (format, tab) => {
+        const base = format === 'excel'
+            ? '/admin/academic/students/export/excel'
+            : '/admin/academic/students/export/pdf';
+        const params = new URLSearchParams({ tab, year });
+        if (month) params.set('month', month);
+        return `${base}?${params.toString()}`;
     };
 
     const handleFilterChange = (newFilters) => {
@@ -163,7 +174,17 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 ═══════════════════════════════════════════════════ */}
                 {activeTab === 'overall' && (
                     <div className="space-y-8 animate-fadeIn">
-                        <FilterBar showMonth={true} />
+                        <div className="space-y-3">
+                            <FilterBar showMonth={false} />
+                            <div className="flex justify-end items-center gap-3 flex-wrap">
+                                <ExportButtons
+                                    onPdf={buildExportUrl('pdf', 'branch_matrix')}
+                                    onExcel={buildExportUrl('excel', 'branch_matrix')}
+                                    label="Matriks Cabang"
+                                    size="sm"
+                                />
+                            </div>
+                        </div>
 
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -297,7 +318,17 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 ═══════════════════════════════════════════════════ */}
                 {activeTab === 'join_patterns' && (
                     <div className="space-y-8 animate-fadeIn">
-                        <FilterBar showMonth={true} />
+                        <div className="space-y-3">
+                            <FilterBar showMonth={true} />
+                            <div className="flex justify-end">
+                                <ExportButtons
+                                    onPdf={buildExportUrl('pdf', 'join_patterns')}
+                                    onExcel={buildExportUrl('excel', 'join_patterns')}
+                                    label="Pola Join"
+                                    size="sm"
+                                />
+                            </div>
+                        </div>
 
                         {join_patterns.length > 0 ? (
                             <>
@@ -396,7 +427,17 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 ═══════════════════════════════════════════════════ */}
                 {activeTab === 'siswa_stop' && (
                     <div className="space-y-8 animate-fadeIn">
-                        <FilterBar showMonth={true} />
+                        <div className="space-y-3">
+                            <FilterBar showMonth={true} />
+                            <div className="flex justify-end">
+                                <ExportButtons
+                                    onPdf={buildExportUrl('pdf', 'siswa_stop')}
+                                    onExcel={buildExportUrl('excel', 'siswa_stop')}
+                                    label="Siswa Stop"
+                                    size="sm"
+                                />
+                            </div>
+                        </div>
 
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -463,7 +504,17 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 ═══════════════════════════════════════════════════ */}
                 {activeTab === 'grades' && (
                     <div className="space-y-8 animate-fadeIn">
-                        <FilterBar showMonth={true} />
+                        <div className="space-y-3">
+                            <FilterBar showMonth={true} />
+                            <div className="flex justify-end">
+                                <ExportButtons
+                                    onPdf={buildExportUrl('pdf', 'grades')}
+                                    onExcel={buildExportUrl('excel', 'grades')}
+                                    label="Tingkat Pendidikan"
+                                    size="sm"
+                                />
+                            </div>
+                        </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                             <div className="lg:col-span-8 bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm space-y-4">

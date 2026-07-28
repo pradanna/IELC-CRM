@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('lead_registrations', function (Blueprint $table) {
-            $table->foreignUuid('branch_id')->nullable()->change();
+        Schema::table('study_classes', function (Blueprint $table) {
+            $table->string('category')->default('group')->after('type');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('lead_registrations', function (Blueprint $table) {
-            $table->foreignUuid('branch_id')->nullable(false)->change();
+        Schema::table('study_classes', function (Blueprint $table) {
+            $table->dropColumn('category');
         });
     }
 };

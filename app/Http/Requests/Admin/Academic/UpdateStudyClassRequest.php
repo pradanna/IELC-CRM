@@ -19,6 +19,8 @@ class UpdateStudyClassRequest extends FormRequest
             'price_master_id' => 'required|exists:price_masters,id',
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:online,offline',
+            'category' => 'nullable|string|in:group,private',
+            'status' => 'nullable|string|in:active,inactive',
             'start_session_date' => 'nullable|date',
             'end_session_date' => 'nullable|date',
             'total_meetings' => 'required|integer|min:1',

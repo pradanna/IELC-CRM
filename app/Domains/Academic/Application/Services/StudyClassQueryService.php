@@ -26,6 +26,25 @@ class StudyClassQueryService
             'students.lead'
         ])->withCount('students');
 
+        $status = $request->input('status', 'active');
+        if ($status !== 'all' && in_array($status, ['active', 'inactive'])) {
+            $query->where('status', $status);
+        }
+
+        if ($request->filled('session_status')) {
+            $today = now()->toDateString();
+            if ($request->session_status === 'expired') {
+                $query->where(function($q) use ($today) {
+                    $q->where('end_session_date', '<', $today);
+                });
+            } elseif ($request->session_status === 'active_session') {
+                $query->where(function($q) use ($today) {
+                    $q->whereNull('end_session_date')
+                      ->orWhere('end_session_date', '>=', $today);
+                });
+            }
+        }
+
         if ($request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
         }
@@ -38,19 +57,13 @@ class StudyClassQueryService
             $type = strtolower($request->type);
             if (in_array($type, ['online', 'offline'])) {
                 $query->where('type', $type);
-            } elseif ($type === 'group') {
-                $query->where(function($q) {
-                    $q->where('name', 'like', '%group%')
-                      ->orWhere('name', 'like', '%& co%');
-                });
-            } elseif ($type === 'ielts') {
-                $query->where('name', 'like', '%ielts%');
-            } elseif ($type === 'private') {
-                $query->where(function($q) {
-                    $q->where('name', 'like', '%private%')
-                      ->orWhere('name', 'like', '%privat%')
-                      ->orWhere('name', 'like', '%ind -%');
-                });
+            }
+        }
+
+        if ($request->filled('category')) {
+            $category = strtolower($request->category);
+            if (in_array($category, ['group', 'private'])) {
+                $query->where('category', $category);
             }
         }
 

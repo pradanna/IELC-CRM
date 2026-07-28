@@ -26,10 +26,11 @@ class LeadObserver
                 $lead->reached_prospective_at = $now;
             }
 
-            // 2. Closing Tracking
-            if ($phase->status === 'closing' && !$lead->enrolled_at) {
-                $lead->enrolled_at = $now;
-                // If they skip directly to closing, they also reached prospective
+            // 2. Closing Tracking — enrolled_at is now set by
+            // CreateLeadEnrollmentOnInvoicePaid listener (after invoice payment),
+            // NOT when phase changes. We only auto-fill reached_prospective_at
+            // if they skip directly to closing.
+            if ($phase->status === 'closing') {
                 if (!$lead->reached_prospective_at) {
                     $lead->reached_prospective_at = $now;
                 }

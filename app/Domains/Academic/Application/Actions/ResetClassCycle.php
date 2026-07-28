@@ -27,9 +27,18 @@ class ResetClassCycle
         // 4. Carry over students to the new cycle ('lanjut sesi sebelumnya')
         if ($currentStudents->isNotEmpty()) {
             foreach ($currentStudents as $studentId) {
-                $studyClass->students()->attach($studentId, [
-                    'cycle_number' => $studyClass->current_session_number
-                ]);
+                $student = \App\Domains\Academic\Domain\Models\Student::find($studentId);
+                if ($student) {
+                    $studyClass->students()->syncWithoutDetaching([
+                        $studentId => [
+                            'lead_id' => $student->lead_id,
+                            'joined_at' => $startDate ?? now()->toDateString(),
+                            'end_date' => $endDate,
+                            'status' => 'active',
+                            'cycle_number' => $studyClass->current_session_number,
+                        ]
+                    ]);
+                }
             }
         }
         

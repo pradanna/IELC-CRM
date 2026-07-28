@@ -1,5 +1,5 @@
 import React, { Fragment } from 'react';
-import { Eye, Bell, MoreVertical, ChevronDown, Check } from 'lucide-react';
+import { Eye, Bell, MoreVertical, ChevronDown, Check, PhoneCall, MessageSquare } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 
 export default function TaskList({ tasks, phases = [], getPhaseStyle, onView, onUpdatePhase }) {
@@ -106,12 +106,37 @@ export default function TaskList({ tasks, phases = [], getPhaseStyle, onView, on
                                         </span>
                                     </td>
                                     <td className="py-4 text-right">
-                                        <button 
-                                            onClick={() => onView(task.lead_id)}
-                                            className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm shadow-indigo-100"
-                                        >
-                                            <Eye size={18} />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-1.5">
+                                            <button 
+                                                onClick={() => {
+                                                    document.dispatchEvent(new CustomEvent('openRecordFollowUpModal', { 
+                                                        detail: { lead: { id: task.lead_id, name: task.lead_name, follow_up_count: task.fup_count } } 
+                                                    }));
+                                                }}
+                                                title="Catat Follow-Up (Phone/SMS/Lainnya)"
+                                                className="p-2.5 rounded-2xl bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all shadow-sm shadow-amber-100"
+                                            >
+                                                <PhoneCall size={18} />
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    document.dispatchEvent(new CustomEvent('openSendWhatsappModal', { 
+                                                        detail: { lead: { id: task.lead_id, name: task.lead_name, phone: task.phone, lead_phase_id: task.lead_phase_id } } 
+                                                    }));
+                                                }}
+                                                title="Kirim WhatsApp (Baileys / Template)"
+                                                className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm shadow-emerald-100"
+                                            >
+                                                <MessageSquare size={18} />
+                                            </button>
+                                            <button 
+                                                onClick={() => onView(task.lead_id)}
+                                                title="Lihat Detail Lead"
+                                                className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm shadow-indigo-100"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             );

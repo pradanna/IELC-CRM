@@ -124,8 +124,19 @@ class GenerateInvoice
                 $invoiceType = 'placement_test';
             }
 
+            $yearMonth = now()->format('ym');
+            $count = Invoice::where('invoice_number', 'like', "INV-{$yearMonth}-%")->count() + 1;
+            do {
+                $sequence = str_pad($count, 4, '0', STR_PAD_LEFT);
+                $invoiceNumber = "INV-{$yearMonth}-{$sequence}";
+                $exists = Invoice::where('invoice_number', $invoiceNumber)->exists();
+                if ($exists) {
+                    $count++;
+                }
+            } while ($exists);
+
             $invoice = Invoice::create([
-                'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
+                'invoice_number' => $invoiceNumber,
                 'lead_id'        => $data['lead_id'] ?? null,
                 'student_id'     => $data['student_id'] ?? null,
                 'study_class_id' => $studyClass?->id,

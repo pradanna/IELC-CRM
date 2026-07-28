@@ -63,9 +63,9 @@ export default function LeadStage({
                 <FieldStatus name="nickname" />
             </div>
 
-            {/* Editable Initial Type Dropdown */}
+            {/* Editable Program Minat Dropdown */}
             <div className="flex flex-col gap-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-red-100 focus-within:border-red-500 transition-all hover:bg-slate-50/80 relative cursor-pointer group">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none group-hover:text-red-500 transition-colors">Initial Type</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none group-hover:text-red-500 transition-colors">Program Minat</label>
                 <div className="flex items-center gap-3 mt-1.5 relative">
                     <Users size={16} className="text-slate-300 flex-shrink-0 group-hover:text-red-400 transition-colors" />
                     <div className="relative flex-1">

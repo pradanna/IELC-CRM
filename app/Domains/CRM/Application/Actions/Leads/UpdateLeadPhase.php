@@ -17,6 +17,10 @@ class UpdateLeadPhase
                 'last_activity_at' => now(),
             ];
 
+            if ($phase && $lead->lead_phase_id !== $data['lead_phase_id']) {
+                $updateData['follow_up_count'] = 0; // Reset FUP counter whenever phase changes
+            }
+
             if ($phase) {
                 if ($phase->code === 'enrollment') {
                     $hasPaidInvoice = $lead->invoices()->where('status', 'paid')->exists();

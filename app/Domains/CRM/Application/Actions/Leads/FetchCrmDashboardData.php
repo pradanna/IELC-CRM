@@ -3,6 +3,7 @@
 namespace App\Domains\CRM\Application\Actions\Leads;
 
 use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\CRM\Domain\Models\LeadEnrollment;
 use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\CRM\Domain\Models\Task;
 use App\Domains\CRM\Domain\Models\MonthlyTarget;
@@ -61,6 +62,23 @@ class FetchCrmDashboardData
 
             $phases = LeadPhase::orderBy('created_at')->get();
             $phaseStats = $phases->map(function($p) use ($startDateObj, $endDateObj, $branchId, $isFiltered) {
+                if ($p->code === 'enrollment') {
+                    $eQuery = LeadEnrollment::query();
+                    if ($branchId) {
+                        $eQuery->whereHas('lead', fn($q) => $q->where('branch_id', $branchId));
+                    }
+                    if ($isFiltered) {
+                        $eQuery->whereBetween('joined_at', [$startDateObj->toDateString(), $endDateObj->toDateString()]);
+                    }
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                        'code' => $p->code,
+                        'status' => $p->status,
+                        'count' => $eQuery->count(),
+                    ];
+                }
+
                 $sQuery = Lead::where('lead_phase_id', $p->id);
                 if ($branchId) $sQuery->where('branch_id', $branchId);
 
@@ -78,9 +96,6 @@ class FetchCrmDashboardData
                         case 'placement-test':
                             $sQuery->whereBetween('first_pt_at', [$startDateObj, $endDateObj]);
                             break;
-                        case 'enrollment':
-                            $sQuery->whereBetween('enrolled_at', [$startDateObj, $endDateObj]);
-                            break;
                         case 'cold-leads':
                         case 'dropout-leads':
                             $sQuery->whereBetween('lost_at', [$startDateObj, $endDateObj]);
@@ -92,6 +107,7 @@ class FetchCrmDashboardData
                 }
 
                 return [
+                    'id' => $p->id,
                     'name' => $p->name,
                     'code' => $p->code,
                     'status' => $p->status,
@@ -249,19 +265,40 @@ class FetchCrmDashboardData
                 })
                 ->values();
 
-            // 3. Enrollment Trend (Line Chart - Cumulative)
+            // 3. Enrollment Trend (Line Chart - Cumulative) — now from lead_enrollments
             $enrollmentTrend = [];
             $daysInMonth = $trendStartDate->daysInMonth;
             
-            $achievedQuery = Lead::whereNotNull('enrolled_at')
-                ->whereBetween('enrolled_at', [$trendStartDate, $trendEndDate]);
+            $achievedQuery = LeadEnrollment::with(['studyClass', 'lead'])
+                ->whereBetween('joined_at', [$trendStartDate, $trendEndDate]);
 
-            if ($branchId) $achievedQuery->where('branch_id', $branchId);
+            if ($branchId) {
+                $achievedQuery->whereHas('lead', fn($q) => $q->where('branch_id', $branchId));
+            }
 
-            $dailyCounts = $achievedQuery->select(DB::raw('DAY(enrolled_at) as day'), DB::raw('count(*) as count'))
-                ->groupBy('day')
-                ->pluck('count', 'day')
-                ->toArray();
+            $enrollmentsList = $achievedQuery->get();
+
+            $dailyOfflineCounts = [];
+            $dailyOnlineCounts = [];
+            $dailyTotalCounts = [];
+
+            foreach ($enrollmentsList as $e) {
+                $day = (int) \Carbon\Carbon::parse($e->joined_at)->format('j');
+                
+                $isOnline = false;
+                if ($e->studyClass) {
+                    $isOnline = ($e->studyClass->type === 'online');
+                } elseif ($e->lead) {
+                    $isOnline = (bool) $e->lead->is_online;
+                }
+                
+                if ($isOnline) {
+                    $dailyOnlineCounts[$day] = ($dailyOnlineCounts[$day] ?? 0) + 1;
+                } else {
+                    $dailyOfflineCounts[$day] = ($dailyOfflineCounts[$day] ?? 0) + 1;
+                }
+                $dailyTotalCounts[$day] = ($dailyTotalCounts[$day] ?? 0) + 1;
+            }
 
             // Calculate Monthly Target for Trend Line
             $targetQuery = MonthlyTarget::where('month', $trendMonth)->where('year', $trendYear);
@@ -274,12 +311,20 @@ class FetchCrmDashboardData
             $isCurrentMonthYear = ($trendMonth === (int)$today->month) && ($trendYear === (int)$today->year);
             $todayDay = $isCurrentMonthYear ? (int)$today->day : null;
 
-            $cumulative = 0;
+            $cumulativeTotal = 0;
+            $cumulativeOffline = 0;
+            $cumulativeOnline = 0;
+
             for ($i = 1; $i <= $daysInMonth; $i++) {
-                $cumulative += $dailyCounts[$i] ?? 0;
+                $cumulativeTotal += $dailyTotalCounts[$i] ?? 0;
+                $cumulativeOffline += $dailyOfflineCounts[$i] ?? 0;
+                $cumulativeOnline += $dailyOnlineCounts[$i] ?? 0;
+
                 $enrollmentTrend[] = [
                     'label' => $i,
-                    'enrolled' => $cumulative,
+                    'enrolled' => $cumulativeTotal,
+                    'enrolled_offline' => $cumulativeOffline,
+                    'enrolled_online' => $cumulativeOnline,
                     'target' => $monthlyGoal,
                     'is_today' => ($i === $todayDay),
                 ];
@@ -292,6 +337,7 @@ class FetchCrmDashboardData
                 'trend' => $enrollmentTrend ?? [],
                 'expiringStudents' => (new FetchExpiringStudents())->execute(14, $branchId),
                 'pending_registrations_count' => \App\Domains\CRM\Domain\Models\LeadRegistration::where('status', 'pending')->count(),
+                'unassigned_branch_leads_count' => Lead::whereNull('branch_id')->count(),
                 'filters' => [
                     'month' => $month,
                     'year' => $year,
@@ -330,7 +376,12 @@ class FetchCrmDashboardData
         $reachedProspectiveCount = $leads->filter(fn($l) => !is_null($l->reached_prospective_at))->count();
         $consultationCount = $leads->filter(fn($l) => !is_null($l->first_consultation_at))->count();
         $ptCount = $leads->filter(fn($l) => !is_null($l->first_pt_at))->count();
-        $closingCount = $leads->filter(fn($l) => !is_null($l->enrolled_at))->count();
+        // Closing count from lead_enrollments (per-enrollment, not per-lead)
+        $enrollmentQuery = LeadEnrollment::whereIn('lead_id', $leads->pluck('id'));
+        if ($startDate && $endDate) {
+            $enrollmentQuery->whereBetween('joined_at', [$startDate, $endDate]);
+        }
+        $closingCount = $enrollmentQuery->count();
 
         return [
             'new_to_prospective' => [

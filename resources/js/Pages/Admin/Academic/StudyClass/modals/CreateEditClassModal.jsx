@@ -17,6 +17,8 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
         type: 'offline',
+        category: 'group',
+        status: 'active',
         branch_id: '',
         instructor_id: '',
         price_master_id: '',
@@ -31,9 +33,19 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
     // Automate calculations
     useClassScheduleCalculation(data, setData);
 
+    const categoryOptions = [
+        { value: 'group', label: 'Group Class' },
+        { value: 'private', label: 'Private Class' },
+    ];
+
     const typeOptions = [
         { value: 'offline', label: 'Offline' },
         { value: 'online', label: 'Online' },
+    ];
+
+    const statusOptions = [
+        { value: 'active', label: 'Aktif' },
+        { value: 'inactive', label: 'Tidak Aktif' },
     ];
 
     const dayOptions = [
@@ -51,6 +63,8 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
             setData({
                 name: studyClass.name || '',
                 type: studyClass.type || 'offline',
+                category: studyClass.category || (studyClass.is_private ? 'private' : 'group'),
+                status: studyClass.status || 'active',
                 branch_id: studyClass.branch_id || '',
                 instructor_id: studyClass.instructor_id || '',
                 price_master_id: studyClass.price_master_id || '',
@@ -134,7 +148,18 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                             />
                         </PremiumFormGroup>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <PremiumFormGroup label="Kategori Kelas" error={errors.category} required>
+                                <PremiumSearchableSelect
+                                    options={categoryOptions}
+                                    value={data.category}
+                                    onChange={(val) => setData('category', val)}
+                                    placeholder="Pilih Kategori"
+                                    icon={Users}
+                                    error={errors.category}
+                                />
+                            </PremiumFormGroup>
+
                             <PremiumFormGroup label="Jenis Kelas" error={errors.type} required>
                                 <PremiumSearchableSelect
                                     options={typeOptions}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { 
-    User, Phone, GraduationCap, Search, 
+    User, Users, Phone, GraduationCap, Search, 
     Filter, UserCheck, ShieldAlert, Clock,
     Calendar, MapPin, ChevronRight, Package, Award, Edit3,
     ArrowUpDown, ArrowUp, ArrowDown
@@ -15,9 +15,19 @@ import EditStudentModal from './partials/EditStudentModal';
 import StudentDetailModal from './partials/StudentDetailModal';
 import { AcademicDashboardContent } from '../Dashboard';
 import Pagination from '@/Components/ui/Pagination';
+import ExportButtons from '@/Components/ui/ExportButtons';
 
-export default function Index({ students, filters, reports }) {
-    const { search, setSearch, handleSearch, handleFilterExpiry, handleFilterStatus, handleSort } = useStudentIndex(filters);
+export default function Index({ students, studyClassesList = [], filters, reports }) {
+    const { 
+        search, 
+        setSearch, 
+        handleSearch, 
+        handleFilterExpiry, 
+        handleFilterStatus, 
+        handleFilterCategory,
+        handleFilterClass,
+        handleSort 
+    } = useStudentIndex(filters);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
@@ -127,59 +137,90 @@ export default function Index({ students, filters, reports }) {
 
                 {activeMainTab === 'list' ? (
                     <>
-                        {/* Filters & Actions Card */}
-                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-center justify-between relative z-20">
-                    <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-                        <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
-                            <Filter size={14} className="text-red-500" />
-                            <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Filters</span>
+                        {/* Filters Card */}
+                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-wrap items-center gap-3 relative z-20">
+                            <div className="flex flex-wrap items-center gap-2.5 flex-1">
+                                <form onSubmit={handleSearch} className="relative group w-full sm:w-48 xl:w-56">
+                                    <TextInput 
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        placeholder="Search students by name, ID..."
+                                        className="w-full !rounded-full !pl-10 !py-2.5 border-slate-200 focus:border-red-500 transition-all shadow-xs font-bold text-xs"
+                                    />
+                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+                                </form>
+
+                                <div className="w-full sm:w-36 xl:w-44">
+                                    <PremiumSelect
+                                        options={[
+                                            { value: '', label: 'Semua Kategori' },
+                                            { value: 'group', label: 'Group Class' },
+                                            { value: 'private', label: 'Private Class' }
+                                        ]}
+                                        value={filters.class_category || ''}
+                                        onChange={handleFilterCategory}
+                                        icon={Users}
+                                        placeholder="Kategori Kelas"
+                                    />
+                                </div>
+
+                                <div className="w-full sm:w-36 xl:w-44">
+                                    <PremiumSelect
+                                        options={[
+                                            { value: '', label: 'Semua Kelas' },
+                                            ...studyClassesList.map(c => ({ value: c.id, label: c.name }))
+                                        ]}
+                                        value={filters.study_class_id || ''}
+                                        onChange={handleFilterClass}
+                                        icon={GraduationCap}
+                                        placeholder="Filter Kelas"
+                                    />
+                                </div>
+
+                                <div className="w-full sm:w-36 xl:w-44">
+                                    <PremiumSelect
+                                        options={[
+                                            { value: '', label: 'Semua Masa Aktif' },
+                                            { value: 'not_expired', label: 'Belum Habis (Aktif)' },
+                                            { value: 'expiring_soon', label: 'Hampir Habis (≤ 21 Hari)' },
+                                            { value: 'expired', label: 'Sudah Habis' }
+                                        ]}
+                                        value={filters.expiry_status || ''}
+                                        onChange={handleFilterExpiry}
+                                        icon={Clock}
+                                        placeholder="Filter Masa Aktif"
+                                    />
+                                </div>
+
+                                <div className="w-full sm:w-36 xl:w-44">
+                                    <PremiumSelect
+                                        options={[
+                                            { value: '', label: 'Semua Status Siswa' },
+                                            { value: 'active', label: 'Aktif' },
+                                            { value: 'stop', label: 'Stopped (Berhenti)' }
+                                        ]}
+                                        value={filters.status || ''}
+                                        onChange={handleFilterStatus}
+                                        icon={UserCheck}
+                                        placeholder="Filter Status"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-                        <form onSubmit={handleSearch} className="relative group w-full md:w-80">
-                            <TextInput 
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search students by name, ID..."
-                                className="w-full !rounded-xl !pl-11 !py-3 border-slate-200 focus:border-red-500 transition-all shadow-sm font-bold text-sm"
+                        {/* Export + student count — below filter, right-aligned */}
+                        <div className="flex items-center justify-between px-1">
+                            <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic">
+                                <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>{students.meta?.total || (students.data ? students.data.length : students.length)} Registered Students</span>
+                            </div>
+                            <ExportButtons
+                                onPdf={`/admin/academic/students/export/pdf?tab=list&${new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([,v]) => v))).toString()}`}
+                                onExcel={`/admin/academic/students/export/excel?tab=list&${new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([,v]) => v))).toString()}`}
+                                label="Daftar Siswa"
+                                size="sm"
                             />
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
-                        </form>
-
-                        <div className="w-full md:w-64">
-                             <PremiumSelect
-                                 options={[
-                                     { value: '', label: 'Semua Status Masa Aktif' },
-                                     { value: 'not_expired', label: 'Belum Habis (Aktif)' },
-                                     { value: 'expiring_soon', label: 'Hampir Habis (≤ 21 Hari)' },
-                                     { value: 'expired', label: 'Sudah Habis' }
-                                 ]}
-                                 value={filters.expiry_status || ''}
-                                 onChange={handleFilterExpiry}
-                                 icon={Clock}
-                                 placeholder="Filter Masa Aktif"
-                             />
                         </div>
-
-                        <div className="w-full md:w-56">
-                             <PremiumSelect
-                                 options={[
-                                     { value: '', label: 'Semua Status Siswa' },
-                                     { value: 'active', label: 'Aktif' },
-                                     { value: 'stop', label: 'Stopped (Berhenti)' }
-                                 ]}
-                                 value={filters.status || ''}
-                                 onChange={handleFilterStatus}
-                                 icon={UserCheck}
-                                 placeholder="Filter Status"
-                             />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic shrink-0">
-                        <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{students.meta?.total || (students.data ? students.data.length : students.length)} Registered Students</span>
-                    </div>
-                </div>
 
                 {/* Main List */}
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">

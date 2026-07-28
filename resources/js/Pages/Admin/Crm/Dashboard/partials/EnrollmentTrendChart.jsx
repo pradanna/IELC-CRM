@@ -24,19 +24,27 @@ export default function EnrollmentTrendChart({ trendData }) {
                     <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Enrollment Target vs Achieved</h2>
                     <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">Monthly performance track</p>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 flex-wrap">
                     <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Enrolled Leads</span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Total Enrolled</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-sky-600" />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Offline</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Online</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Monthly Target</span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Monthly Target</span>
                     </div>
                     {todayPoint && (
                         <div className="flex items-center gap-2">
                             <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Today</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Today</span>
                         </div>
                     )}
                 </div>
@@ -74,6 +82,14 @@ export default function EnrollmentTrendChart({ trendData }) {
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                             labelStyle={{ fontSize: '10px', fontWeight: 'bold', color: '#111827', textTransform: 'uppercase', marginBottom: '4px' }}
                             itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                            formatter={(value, name) => {
+                                const labels = {
+                                    enrolled: 'Total Enrolled',
+                                    enrolled_offline: 'Offline Enrolled',
+                                    enrolled_online: 'Online Enrolled'
+                                };
+                                return [value, labels[name] || name];
+                            }}
                         />
                         <ReferenceLine 
                             y={target} 
@@ -101,11 +117,30 @@ export default function EnrollmentTrendChart({ trendData }) {
                         <Area 
                             type="stepAfter" 
                             dataKey="enrolled" 
+                            name="enrolled"
                             stroke="#10b981" 
-                            strokeWidth={4}
+                            strokeWidth={3}
                             fillOpacity={1} 
                             fill="url(#colorEnrolled)" 
-                            activeDot={{ r: 8, fill: '#10b981', stroke: '#fff', strokeWidth: 3 }}
+                            activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                        />
+                        <Line 
+                            type="stepAfter" 
+                            dataKey="enrolled_offline" 
+                            name="enrolled_offline"
+                            stroke="#0284c7" 
+                            strokeWidth={3}
+                            dot={false}
+                            activeDot={{ r: 6, fill: '#0284c7', stroke: '#fff', strokeWidth: 2 }}
+                        />
+                        <Line 
+                            type="stepAfter" 
+                            dataKey="enrolled_online" 
+                            name="enrolled_online"
+                            stroke="#8b5cf6" 
+                            strokeWidth={3}
+                            dot={false}
+                            activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

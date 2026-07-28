@@ -119,6 +119,20 @@ class ExampleStudyClassSeeder extends Seeder
 
             $type = ($index % 5 === 0) ? 'online' : 'offline';
 
+            $nameLower = strtolower($name);
+            $category = 'group';
+            if (
+                str_contains($nameLower, 'private') || 
+                str_contains($nameLower, 'privat') || 
+                str_contains($nameLower, 'ind -') || 
+                str_contains($nameLower, 'toefl') || 
+                str_contains($nameLower, 'ielts')
+            ) {
+                $category = 'private';
+            } elseif (str_contains($nameLower, '& co') || str_contains($nameLower, 'group')) {
+                $category = 'group';
+            }
+
             StudyClass::updateOrCreate(
                 [
                     'name' => $name,
@@ -126,6 +140,7 @@ class ExampleStudyClassSeeder extends Seeder
                 ],
                 [
                     'type' => $type,
+                    'category' => $category,
                     'price_master_id' => $defaultPriceMasterId,
                     'start_session_date' => Carbon::now()->startOfMonth()->subDays(15), // active class started mid-month
                     'end_session_date' => Carbon::now()->startOfMonth()->addMonths(3),

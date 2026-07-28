@@ -18,13 +18,14 @@ class PlotLeadClass
             // Calculate pro-rata meetings
             $remaining = 0;
             if ($studyClass->start_session_date && is_array($studyClass->schedule_days)) {
-                $joinDate = Carbon::parse($data['join_date']);
+                $joinDate = Carbon::parse($data['join_date'])->startOfWeek(Carbon::MONDAY);
+                $startDate = $studyClass->start_session_date;
                 $endDate = $studyClass->end_session_date;
                 
                 if ($endDate && $joinDate->lessThanOrEqualTo($endDate)) {
                     $period = CarbonPeriod::create($joinDate, $endDate);
                     foreach ($period as $date) {
-                        if (in_array($date->format('l'), $studyClass->schedule_days)) {
+                        if ($date->greaterThanOrEqualTo($startDate) && in_array($date->format('l'), $studyClass->schedule_days)) {
                             $remaining++;
                         }
                     }

@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('students', function (Blueprint $table) {
-            $table->unsignedInteger('rejoin_count')->default(0)->after('status');
-            $table->string('loyalty_tier')->nullable()->after('rejoin_count');
+        Schema::table('study_classes', function (Blueprint $table) {
+            $table->string('status')->default('active')->after('type');
         });
     }
 
@@ -22,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('students', function (Blueprint $table) {
-            $table->dropColumn(['rejoin_count', 'loyalty_tier']);
+        Schema::table('study_classes', function (Blueprint $table) {
+            $table->dropColumn('status');
         });
     }
 };

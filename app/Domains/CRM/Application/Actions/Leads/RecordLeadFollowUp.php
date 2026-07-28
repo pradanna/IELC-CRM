@@ -25,11 +25,17 @@ class RecordLeadFollowUp
             $msgSnippet = !empty($data['message']) ? ': "' . Str::limit($data['message'], 100) . '"' : '';
             $logMessage = "[$fupText]$msgSnippet";
 
-            // Automation: 4x Follow-up -> Cold Leads
+            // Automation: Cold Leads threshold based on Lead Phase status
+            // Status 'prospective' requires 7x follow-up, other statuses require 4x
+            $maxFup = ($lead->leadPhase?->status === 'prospective') ? 7 : 4;
+
             $coldPhase = LeadPhase::where('code', 'cold-leads')->first();
-            if ($lead->follow_up_count >= 4 && $coldPhase && $lead->lead_phase_id !== $coldPhase->id) {
-                $lead->update(['lead_phase_id' => $coldPhase->id]);
-                $logMessage .= " | Otomatis masuk ke Cold Leads.";
+            if ($lead->follow_up_count >= $maxFup && $coldPhase && $lead->lead_phase_id !== $coldPhase->id) {
+                $lead->update([
+                    'lead_phase_id' => $coldPhase->id,
+                    'follow_up_count' => 0, // Reset counter on moving to cold leads
+                ]);
+                $logMessage .= " | Otomatis masuk ke Cold Leads (Mencapai {$maxFup}x Follow-Up).";
             }
 
             activity()

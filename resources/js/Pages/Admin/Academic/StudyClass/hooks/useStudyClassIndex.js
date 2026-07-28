@@ -30,6 +30,42 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         );
     };
 
+    const handleFilterCategory = (category) => {
+        router.get(route('admin.academic.study-classes.index'), 
+            { ...filters, category: category }, 
+            { preserveState: true }
+        );
+    };
+
+    const handleFilterStatus = (status) => {
+        router.get(route('admin.academic.study-classes.index'), 
+            { ...filters, status: status }, 
+            { preserveState: true }
+        );
+    };
+
+    const handleFilterSessionStatus = (sessionStatus) => {
+        router.get(route('admin.academic.study-classes.index'), 
+            { ...filters, session_status: sessionStatus }, 
+            { preserveState: true }
+        );
+    };
+
+    const handleToggleStatus = (studyClass) => {
+        const isCurrentActive = (studyClass.status || 'active') === 'active';
+        const newStatus = isCurrentActive ? 'inactive' : 'active';
+        const actionMessage = isCurrentActive 
+            ? `Apakah Anda yakin ingin MENONAKTIFKAN kelas "${studyClass.name}"?` 
+            : `Apakah Anda yakin ingin MENGAKTIFKAN KEMBALI kelas "${studyClass.name}"?`;
+
+        if (window.confirm(actionMessage)) {
+            router.patch(route('admin.academic.study-classes.update', studyClass.id), {
+                ...studyClass,
+                status: newStatus,
+            }, { preserveScroll: true });
+        }
+    };
+
     const openCreateModal = () => {
         setEditingClass(null);
         setIsModalOpen(true);
@@ -82,6 +118,10 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         handleSearch,
         handleFilterBranch,
         handleFilterType,
+        handleFilterCategory,
+        handleFilterStatus,
+        handleFilterSessionStatus,
+        handleToggleStatus,
         openCreateModal,
         openEditModal,
         openStudentDrawer,

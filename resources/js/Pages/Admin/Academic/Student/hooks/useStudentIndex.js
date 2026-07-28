@@ -23,6 +23,20 @@ export const useStudentIndex = (filters) => {
         );
     };
 
+    const handleFilterCategory = (category) => {
+        router.get(route('admin.academic.students.index'), 
+            { ...filters, search, class_category: category }, 
+            { preserveState: true }
+        );
+    };
+
+    const handleFilterClass = (classId) => {
+        router.get(route('admin.academic.students.index'), 
+            { ...filters, search, study_class_id: classId }, 
+            { preserveState: true }
+        );
+    };
+
     const handleSort = (field) => {
         const direction = filters.sort_field === field && filters.sort_direction === 'asc' ? 'desc' : 'asc';
         router.get(route('admin.academic.students.index'), 
@@ -37,6 +51,8 @@ export const useStudentIndex = (filters) => {
         handleSearch,
         handleFilterExpiry,
         handleFilterStatus,
+        handleFilterCategory,
+        handleFilterClass,
         handleSort
     };
 };

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('leads', function (Blueprint $table) {
-            $table->foreignUuid('branch_id')->nullable()->change();
+            $table->timestamp('first_consultation_at')->nullable()->after('reached_prospective_at');
+            $table->timestamp('first_pt_at')->nullable()->after('first_consultation_at');
         });
     }
 
@@ -22,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('leads', function (Blueprint $table) {
-            $table->foreignUuid('branch_id')->nullable(false)->change();
+            $table->dropColumn(['first_consultation_at', 'first_pt_at']);
         });
     }
 };

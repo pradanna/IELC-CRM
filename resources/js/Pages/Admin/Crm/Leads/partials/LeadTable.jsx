@@ -1,9 +1,11 @@
 import { Phone, User, Building2, Calendar, MapPin, Eye, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
+import useBranchStyle from '@/Hooks/useBranchStyle';
 
 export default function LeadTable({ leads, onView, onEdit, onDelete, canDelete = false }) {
     const { getPhaseStyle } = useLeadPhaseStyle();
+    const { getBranchStyle } = useBranchStyle();
 
     return (
         <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
@@ -75,12 +77,17 @@ export default function LeadTable({ leads, onView, onEdit, onDelete, canDelete =
                                     </td>
                                     <td className="px-6 py-6">
                                         <div className="space-y-1.5">
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                                                <Building2 size={12} className="text-slate-300" />
-                                                {lead.branch?.name}
-                                            </div>
-                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
-                                                By {lead.owner?.name}
+                                            {(() => {
+                                                const branchStyle = getBranchStyle(lead.branch?.name);
+                                                return (
+                                                    <div className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-xl border ${branchStyle.bg} ${branchStyle.text} ${branchStyle.border}`}>
+                                                        <Building2 size={12} className={branchStyle.icon} />
+                                                        <span>{lead.branch?.name || 'Unassigned'}</span>
+                                                    </div>
+                                                );
+                                            })()}
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-wide ml-0.5">
+                                                By {lead.owner?.name || '---'}
                                             </div>
                                         </div>
                                     </td>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Crm;
 
 use App\Http\Controllers\Controller;
 use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\CRM\Domain\Models\LeadEnrollment;
 use App\Domains\Master\Domain\Models\Branch;
 use App\Domains\Master\Domain\Models\LeadSource;
 use App\Domains\Master\Domain\Models\LeadPhase;
@@ -170,11 +171,15 @@ class CrmReportController extends Controller
         if ($targetOwnerId) $newLeadsQuery->where('owner_id', $targetOwnerId);
         $newLeads = $newLeadsQuery->latest()->get();
 
-        // 2. New Enrollments (Enrolled today)
-        $enrollmentsQuery = \App\Domains\CRM\Domain\Models\Lead::with(['branch', 'leadSource'])
-            ->whereBetween('enrolled_at', [$start, $end]);
-        if ($targetBranchId) $enrollmentsQuery->where('branch_id', $targetBranchId);
-        if ($targetOwnerId) $enrollmentsQuery->where('owner_id', $targetOwnerId);
+        // 2. New Enrollments (Enrolled today) — from lead_enrollments
+        $enrollmentsQuery = LeadEnrollment::with(['lead.branch', 'lead.leadSource', 'studyClass'])
+            ->whereBetween('joined_at', [$start, $end]);
+        if ($targetBranchId) {
+            $enrollmentsQuery->whereHas('lead', fn($q) => $q->where('branch_id', $targetBranchId));
+        }
+        if ($targetOwnerId) {
+            $enrollmentsQuery->whereHas('lead', fn($q) => $q->where('owner_id', $targetOwnerId));
+        }
         $enrollments = $enrollmentsQuery->latest()->get();
 
         // 3. Activities
@@ -266,7 +271,10 @@ class CrmReportController extends Controller
         $reachedProspectiveCount = $cohortLeads->filter(fn($l) => !is_null($l->reached_prospective_at))->count();
         $consultationCount = $cohortLeads->filter(fn($l) => !is_null($l->first_consultation_at))->count();
         $ptCount = $cohortLeads->filter(fn($l) => !is_null($l->first_pt_at))->count();
-        $enrolledCount = $cohortLeads->filter(fn($l) => !is_null($l->enrolled_at))->count();
+        // Enrolled count from lead_enrollments (per-enrollment, not per-lead)
+        $enrolledQuery = LeadEnrollment::whereIn('lead_id', $cohortLeads->pluck('id'))
+            ->whereBetween('joined_at', [$startDate, $endDate]);
+        $enrolledCount = $enrolledQuery->count();
         $lostCount = $cohortLeads->filter(fn($l) => !is_null($l->lost_at))->count();
 
         // 3. Final Unified Collection for the Table (Events that happened this month)

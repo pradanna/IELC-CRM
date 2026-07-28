@@ -197,16 +197,28 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
         // Implementation of calculateRemainingMeetings from useLeadPlotting
         const calculateRemaining = (startDate, endDate, scheduleDays, joinDateStr) => {
             if (!startDate || !endDate || !scheduleDays || !joinDateStr) return 0;
-            const joinDate = new Date(joinDateStr);
+            const rawJoinDate = new Date(joinDateStr);
+            const day = rawJoinDate.getDay();
+            const diffToMonday = day === 0 ? -6 : 1 - day;
+            const joinDate = new Date(rawJoinDate);
+            joinDate.setDate(rawJoinDate.getDate() + diffToMonday);
+            joinDate.setHours(0, 0, 0, 0);
+
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
             const end = new Date(endDate);
+            end.setHours(0, 0, 0, 0);
+
             if (joinDate > end) return 0;
 
             let count = 0;
             let current = new Date(joinDate);
             while (current <= end) {
-                const dayName = current.toLocaleDateString('en-US', { weekday: 'long' });
-                if (Array.isArray(scheduleDays) && scheduleDays.includes(dayName)) {
-                    count++;
+                if (current >= start) {
+                    const dayName = current.toLocaleDateString('en-US', { weekday: 'long' });
+                    if (Array.isArray(scheduleDays) && scheduleDays.includes(dayName)) {
+                        count++;
+                    }
                 }
                 current.setDate(current.getDate() + 1);
             }

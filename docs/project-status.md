@@ -108,7 +108,7 @@
 | Migration: students | `2026_04_05_162601_create_students_table.php` | ✅ Done | — |
 | Migration: study_classes | `2026_04_05_162601_create_study_classes_table.php` | ✅ Done | — |
 | Migration: add_type_to_study_classes | `2026_07_21_090000_add_type_to_study_classes_table.php` | ✅ Done | Online / Offline class type |
-| Migration: study_class_student | `2026_04_05_162602_create_study_class_student_table.php` | ✅ Done | Pivot cycle tracking |
+| Migration: lead_enrollments | `2026_07_24_100000_create_lead_enrollments_table.php` | ✅ Done | Unified multi-class enrollment, status, end_date, cycle_number & target calculation |
 | Action: PromoteLeadToStudent | `app/Domains/Academic/Application/Actions/PromoteLeadToStudent.php` | ✅ Done | — |
 | Action: EnrollStudent | `app/Domains/Academic/Application/Actions/EnrollStudent.php` | ✅ Done | — |
 | Action: ResetClassCycle | `app/Domains/Academic/Application/Actions/ResetClassCycle.php` | ✅ Done | — |

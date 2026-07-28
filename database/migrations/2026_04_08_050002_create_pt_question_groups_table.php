@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('pt_question_groups', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('pt_exam_id')->constrained()->cascadeOnDelete();
-            $table->string('instruction');
+            $table->text('instruction');
             $table->string('section_type')->nullable();
             $table->string('audio_path')->nullable();
             $table->string('file_path')->nullable();

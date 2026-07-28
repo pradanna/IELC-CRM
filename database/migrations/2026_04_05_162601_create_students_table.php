@@ -18,6 +18,9 @@ return new class extends Migration
             $table->string('profile_picture')->nullable();
             $table->date('start_join');
             $table->enum('status', ['active', 'stop', 'rejoin'])->default('active');
+            $table->timestamp('stopped_at')->nullable();
+            $table->unsignedInteger('rejoin_count')->default(0);
+            $table->string('loyalty_tier')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
