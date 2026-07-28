@@ -9,25 +9,27 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('lead_enrollments', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('lead_id')->constrained('leads')->cascadeOnDelete();
-            $table->foreignUuid('student_id')->nullable()->constrained('students')->nullOnDelete();
-            $table->foreignUuid('study_class_id')->constrained('study_classes')->cascadeOnDelete();
-            $table->foreignUuid('invoice_id')->nullable()->constrained('invoices')->nullOnDelete();
-            $table->date('joined_at');
-            $table->date('end_date')->nullable();
-            $table->date('stopped_at')->nullable();
-            $table->enum('status', ['active', 'completed', 'stopped'])->default('active');
-            $table->unsignedInteger('cycle_number')->default(1);
-            $table->text('notes')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('lead_enrollments')) {
+            Schema::create('lead_enrollments', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->foreignUuid('lead_id')->constrained('leads')->cascadeOnDelete();
+                $table->foreignUuid('student_id')->nullable()->constrained('students')->nullOnDelete();
+                $table->foreignUuid('study_class_id')->constrained('study_classes')->cascadeOnDelete();
+                $table->foreignUuid('invoice_id')->nullable()->constrained('invoices')->nullOnDelete();
+                $table->date('joined_at');
+                $table->date('end_date')->nullable();
+                $table->date('stopped_at')->nullable();
+                $table->enum('status', ['active', 'completed', 'stopped'])->default('active');
+                $table->unsignedInteger('cycle_number')->default(1);
+                $table->text('notes')->nullable();
+                $table->timestamps();
 
-            $table->index('joined_at');
-            $table->index('end_date');
-            $table->index('status');
-            $table->index(['lead_id', 'joined_at']);
-        });
+                $table->index('joined_at');
+                $table->index('end_date');
+                $table->index('status');
+                $table->index(['lead_id', 'joined_at']);
+            });
+        }
 
         // Backfill: Create lead_enrollment records from existing paid invoices
         $paidInvoices = DB::table('invoices')
