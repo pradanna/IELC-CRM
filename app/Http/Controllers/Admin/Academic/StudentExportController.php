@@ -128,6 +128,12 @@ class StudentExportController extends Controller
             );
         }
 
+        if ($request->filled('grade')) {
+            $g = $request->grade;
+            $appliedFilters['Tingkat Sekolah'] = $g;
+            $query->whereHas('lead', fn ($q) => $q->where('grade', $g));
+        }
+
         if ($request->filled('expiry_status')) {
             $status = $request->expiry_status;
             $expiryLabels = [

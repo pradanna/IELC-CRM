@@ -67,6 +67,13 @@ class StudentController extends Controller
             });
         }
 
+        if ($request->filled('grade')) {
+            $g = $request->input('grade');
+            $query->whereHas('lead', function ($q) use ($g) {
+                $q->where('grade', $g);
+            });
+        }
+
         $sortField = $request->input('sort_field', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
 
@@ -89,14 +96,24 @@ class StudentController extends Controller
             ->orderBy('name')
             ->get();
 
+        $defaultGrades = collect(['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Kuliah', 'Umum']);
+
+        $dbGrades = Lead::whereNotNull('grade')
+            ->where('grade', '!=', '')
+            ->distinct()
+            ->pluck('grade');
+
+        $gradesList = $defaultGrades->merge($dbGrades)->unique()->values();
+
         $allFilters = array_merge(
             $dashboardData['filters'],
-            $request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'sort_field', 'sort_direction'])
+            $request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'grade', 'sort_field', 'sort_direction'])
         );
 
         return Inertia::render('Admin/Academic/Student/Index', array_merge($dashboardData, [
             'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
             'studyClassesList' => $studyClassesList,
+            'gradesList' => $gradesList,
             'filters' => $allFilters,
         ]));
     }

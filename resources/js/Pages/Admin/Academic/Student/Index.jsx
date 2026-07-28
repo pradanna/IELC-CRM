@@ -17,7 +17,7 @@ import { AcademicDashboardContent } from '../Dashboard';
 import Pagination from '@/Components/ui/Pagination';
 import ExportButtons from '@/Components/ui/ExportButtons';
 
-export default function Index({ students, studyClassesList = [], filters, reports }) {
+export default function Index({ students, studyClassesList = [], gradesList = [], filters, reports }) {
     const { 
         search, 
         setSearch, 
@@ -26,6 +26,7 @@ export default function Index({ students, studyClassesList = [], filters, report
         handleFilterStatus, 
         handleFilterCategory,
         handleFilterClass,
+        handleFilterGrade,
         handleSort 
     } = useStudentIndex(filters);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -185,6 +186,19 @@ export default function Index({ students, studyClassesList = [], filters, report
                                         onChange={handleFilterClass}
                                         icon={GraduationCap}
                                         placeholder="Filter Kelas"
+                                    />
+                                </div>
+
+                                <div className="w-full sm:w-36 xl:w-44">
+                                    <PremiumSelect
+                                        options={[
+                                            { value: '', label: 'Semua Tingkat' },
+                                            ...gradesList.map(g => ({ value: g, label: g }))
+                                        ]}
+                                        value={filters.grade || ''}
+                                        onChange={handleFilterGrade}
+                                        icon={Award}
+                                        placeholder="Tingkat Sekolah"
                                     />
                                 </div>
 
