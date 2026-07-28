@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('study_classes', function (Blueprint $table) {
-            $table->string('category')->default('group')->after('type');
-        });
+        if (!Schema::hasColumn('study_classes', 'category')) {
+            Schema::table('study_classes', function (Blueprint $table) {
+                $table->string('category')->default('group')->after('type');
+            });
+        }
     }
 
     /**
