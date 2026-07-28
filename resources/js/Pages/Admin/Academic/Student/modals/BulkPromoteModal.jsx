@@ -18,6 +18,7 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'valid' | 'graduated' | 'level_missing'
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { processing } = useForm();
 
