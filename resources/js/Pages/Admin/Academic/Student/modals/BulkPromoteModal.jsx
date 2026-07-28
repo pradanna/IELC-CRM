@@ -18,8 +18,7 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'valid' | 'graduated' | 'level_missing'
-
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { processing } = useForm();
 
     // Fetch live preview whenever mode / grade changes
@@ -87,6 +86,7 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
     };
 
     const handleExecute = () => {
+        setIsSubmitting(true);
         router.post('/admin/academic/students/bulk-promote', {
             mode,
             from_grade: fromGrade,
@@ -94,8 +94,15 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
             selected_lead_ids: selectedStudentIds,
         }, {
             onSuccess: () => {
+                setIsSubmitting(false);
                 setShowConfirmDialog(false);
                 onClose();
+            },
+            onError: () => {
+                setIsSubmitting(false);
+            },
+            onFinish: () => {
+                setIsSubmitting(false);
             }
         });
     };
@@ -335,23 +342,44 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
                         <div className="flex items-center gap-3 pt-2">
                             <button
                                 type="button"
+                                disabled={isSubmitting || processing}
                                 onClick={() => setShowConfirmDialog(false)}
-                                className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all"
+                                className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-all disabled:opacity-50"
                             >
                                 Batal
                             </button>
 
                             <button
                                 type="button"
-                                disabled={processing}
+                                disabled={isSubmitting || processing}
                                 onClick={handleExecute}
-                                className="flex-1 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                                className="flex-1 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                             >
-                                {processing ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
-                                Ya, Lanjutkan!
+                                {isSubmitting || processing ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin text-white" />
+                                        <span>Memproses...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 size={15} />
+                                        <span>Ya, Lanjutkan!</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Global Processing Backdrop Overlay */}
+            {(isSubmitting || processing) && (
+                <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white animate-in fade-in duration-200">
+                    <div className="p-4 bg-white/10 rounded-full border border-white/20 shadow-2xl mb-4">
+                        <Loader2 size={40} className="animate-spin text-orange-400" />
+                    </div>
+                    <h3 className="text-lg font-black tracking-wide uppercase">Memproses Kenaikan Kelas...</h3>
+                    <p className="text-xs text-orange-200 font-medium mt-1">Mohon tunggu sebentar, memperbarui data siswa di database</p>
                 </div>
             )}
         </>
