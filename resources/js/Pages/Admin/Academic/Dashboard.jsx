@@ -31,6 +31,10 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
     // ── Navigation ───────────────────────────────────────────────
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
+        // Clear stale month filter when going to overall (no month selector there)
+        if (tabId === 'overall' && month && onFilterChange) {
+            onFilterChange({ year, month: null, tab: tabId });
+        }
     };
 
     // ── Export helpers ────────────────────────────────────────────
@@ -342,7 +346,7 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                                 </div>
                                 <span className="text-[10px] font-black text-slate-450 uppercase bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg">Grafik Jenjang</span>
                             </div>
-                            {overall.grade_distribution && overall.grade_distribution.length > 0 ? (
+                            {overall.grade_distribution && overall.grade_distribution.some(g => g.count > 0) ? (
                                 <div className="h-72 w-full">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={overall.grade_distribution} margin={{ top: 20, right: 20, left: -15, bottom: 0 }}>
@@ -359,8 +363,8 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                                     </ResponsiveContainer>
                                 </div>
                             ) : (
-                                <div className="h-48 flex items-center justify-center text-slate-400 text-sm font-bold">
-                                    Tidak ada data jenjang sekolah
+                                <div className="h-48 flex flex-col items-center justify-center text-slate-400 text-xs font-bold gap-2">
+                                    <span>Tidak ada data jenjang sekolah siswa aktif pada periode ini</span>
                                 </div>
                             )}
                         </div>

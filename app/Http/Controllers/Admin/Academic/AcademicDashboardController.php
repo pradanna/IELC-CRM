@@ -57,9 +57,13 @@ class AcademicDashboardController extends Controller
         // 1. OVERALL
         // ═════════════════════════════════════════════════════════
 
-        // Total active students in selected period
+        // ── Overall tab: always use year-only (no month filter) ────────────────
+        // The Overall tab UI does NOT show a month selector, so $month from URL
+        // (possibly a stale param from another tab) must NOT affect these queries.
+
+        // Total active students for the selected year
         $totalActiveQuery = Student::where('status', 'active');
-        $filterByDate($totalActiveQuery, 'start_join', $year, $month);
+        $filterByDate($totalActiveQuery, 'start_join', $year); // NO $month
         $totalActiveStudents = $totalActiveQuery->count();
 
         // New students in target month
@@ -97,22 +101,22 @@ class AcademicDashboardController extends Controller
             }
         }
 
-        // Online vs Offline breakdown for active students
+        // Online vs Offline breakdown – year-only (no month)
         $channelCounts = Student::where('students.status', 'active')
             ->join('leads', 'students.lead_id', '=', 'leads.id')
             ->selectRaw('sum(case when leads.is_online = 1 then 1 else 0 end) as online_count, sum(case when leads.is_online = 0 then 1 else 0 end) as offline_count');
-        $filterByDate($channelCounts, 'students.start_join', $year, $month);
+        $filterByDate($channelCounts, 'students.start_join', $year); // NO $month
         $channelData = $channelCounts->first();
 
         $onlineCount = (int) ($channelData->online_count ?? 0);
         $offlineCount = (int) ($channelData->offline_count ?? 0);
 
-        // Grade distribution for active students in selected period
+        // Grade distribution – year-only (no month)
         $gradeQuery = Student::where('students.status', 'active')
             ->join('leads', 'students.lead_id', '=', 'leads.id')
-            ->selectRaw("COALESCE(leads.grade, 'UMUM') as grade, count(*) as count")
-            ->groupBy('grade');
-        $filterByDate($gradeQuery, 'students.start_join', $year, $month);
+            ->selectRaw("COALESCE(leads.grade, 'UMUM') as raw_grade, leads.school_level as school_level, count(*) as count")
+            ->groupBy('raw_grade', 'school_level');
+        $filterByDate($gradeQuery, 'students.start_join', $year); // NO $month
         $gradeDistributionRaw = $gradeQuery->get();
 
         $categoriesMap = [
@@ -122,20 +126,26 @@ class AcademicDashboardController extends Controller
 
         $overallGradeDistribution = [];
         foreach ($categoriesMap as $dbValue => $label) {
-            $matchingRow = $gradeDistributionRaw->first(fn($item) => strtoupper($item->grade) === $dbValue);
+            $sum = 0;
+            foreach ($gradeDistributionRaw as $item) {
+                $g = strtoupper(trim($item->raw_grade));
+                if ($g === $dbValue || str_starts_with($g, $dbValue)) {
+                    $sum += (int) $item->count;
+                }
+            }
             $overallGradeDistribution[] = [
                 'name'  => $label,
-                'count' => $matchingRow ? (int) $matchingRow->count : 0,
+                'count' => $sum,
             ];
         }
 
-        // Branch distribution
+        // Branch distribution – year-only (no month)
         $branchQuery = Student::where('students.status', 'active')
             ->join('leads', 'students.lead_id', '=', 'leads.id')
             ->join('branches', 'leads.branch_id', '=', 'branches.id')
             ->selectRaw('branches.name as branch_name, count(*) as count')
             ->groupBy('branches.name');
-        $filterByDate($branchQuery, 'students.start_join', $year, $month);
+        $filterByDate($branchQuery, 'students.start_join', $year); // NO $month
         $branchDistribution = $branchQuery->get()->map(fn($item) => [
             'name'  => $item->branch_name,
             'value' => (int) $item->count,
