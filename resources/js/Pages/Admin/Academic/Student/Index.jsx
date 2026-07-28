@@ -249,7 +249,7 @@ export default function Index({ students, studyClassesList = [], gradesList = []
                                     className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs tracking-wider shadow-sm flex items-center gap-2 transition-all hover:shadow-md active:scale-95"
                                 >
                                     <AlertTriangle size={15} />
-                                    <span>KENAIKAN KELAS MASSAL</span>
+                                    <span>KENAIKAN KELAS</span>
                                 </button>
 
                                 <ExportButtons

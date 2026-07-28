@@ -68,12 +68,6 @@ const menuItems = [
         category: "Academic",
         items: [
             {
-                icon: <GraduationCap size={20} />,
-                text: "Academic Dashboard",
-                href: route("admin.academic.index"),
-                name: "admin.academic.index",
-            },
-            {
                 icon: <Users size={20} />,
                 text: "Students",
                 href: route("admin.academic.students.index"),
@@ -140,8 +134,8 @@ const menuItems = [
             {
                 icon: <GraduationCap size={20} />,
                 text: "Academic",
-                href: route("admin.academic.index"),
-                name: "admin.academics.*",
+                href: route("admin.academic.students.index"),
+                name: "admin.academic.students.*",
             },
         ],
     },
