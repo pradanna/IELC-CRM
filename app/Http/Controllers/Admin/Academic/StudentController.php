@@ -89,11 +89,16 @@ class StudentController extends Controller
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('Admin/Academic/Student/Index', array_merge([
+        $allFilters = array_merge(
+            $dashboardData['filters'],
+            $request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'sort_field', 'sort_direction'])
+        );
+
+        return Inertia::render('Admin/Academic/Student/Index', array_merge($dashboardData, [
             'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
             'studyClassesList' => $studyClassesList,
-            'filters' => array_merge($request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'sort_field', 'sort_direction']), $dashboardData['filters']),
-        ], $dashboardData));
+            'filters' => $allFilters,
+        ]));
     }
 
     private function getAcademicDashboardData(Request $request): array

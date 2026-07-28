@@ -19,8 +19,16 @@ class StudentExportController extends Controller
 
         [$headers, $rows, $filename] = $this->buildData($request, $tab);
 
-        if ($tab === 'branch_matrix') {
+        if (in_array($tab, ['overall', 'branch_matrix'])) {
             $content = $this->buildMatrixExcelHtml($rows);
+            return response($content, 200, [
+                'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$filename}.xls\"",
+            ]);
+        }
+
+        if ($tab === 'list') {
+            $content = $this->buildStudentListExcelHtml($headers, $rows);
             return response($content, 200, [
                 'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
                 'Content-Disposition' => "attachment; filename=\"{$filename}.xls\"",
@@ -36,7 +44,7 @@ class StudentExportController extends Controller
     }
 
     /**
-     * Export as print-ready HTML (user can Ctrl+P → Save as PDF).
+     * Export as PDF file download attachment.
      */
     public function exportPdf(Request $request)
     {
@@ -47,15 +55,17 @@ class StudentExportController extends Controller
         $year  = $request->input('year', now()->year);
         $month = $request->input('month');
 
-        if ($tab === 'branch_matrix') {
-            return response()->view('pdf.branch-monthly-matrix', [
+        if (in_array($tab, ['overall', 'branch_matrix'])) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.branch-monthly-matrix', [
                 'matrixData' => $rows,
                 'year'       => $year,
                 'filename'   => $filename,
-            ]);
+            ])->setPaper('a4', 'landscape');
+
+            return $pdf->download("{$filename}.pdf");
         }
 
-        return response()->view('pdf.student-export', [
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.student-export', [
             'title'    => $title,
             'headers'  => $headers,
             'rows'     => $rows,
@@ -63,7 +73,9 @@ class StudentExportController extends Controller
             'year'     => $year,
             'month'    => $month,
             'tab'      => $tab,
-        ]);
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download("{$filename}.pdf");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -73,11 +85,12 @@ class StudentExportController extends Controller
     private function buildData(Request $request, string $tab): array
     {
         return match ($tab) {
-            'overall'       => $this->buildOverall($request),
+            'list'          => $this->buildStudentList($request),
+            'branch_matrix' => $this->buildBranchMatrix($request),
+            'overall'       => $this->buildBranchMatrix($request),
             'join_patterns' => $this->buildJoinPatterns($request),
             'siswa_stop'    => $this->buildSiswaStop($request),
             'grades'        => $this->buildGrades($request),
-            'branch_matrix' => $this->buildBranchMatrix($request),
             default         => $this->buildStudentList($request),
         };
     }
@@ -89,8 +102,11 @@ class StudentExportController extends Controller
         $query = Student::with(['lead.branch', 'studyClasses'])
             ->select('students.*');
 
+        $appliedFilters = [];
+
         if ($request->filled('search')) {
             $s = $request->search;
+            $appliedFilters['Pencarian'] = "\"{$s}\"";
             $query->where(function ($q) use ($s) {
                 $q->whereHas('lead', fn ($lq) =>
                     $lq->where('name', 'like', "%{$s}%")->orWhere('phone', 'like', "%{$s}%")
@@ -98,16 +114,15 @@ class StudentExportController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
         if ($request->filled('class_category')) {
             $cat = strtolower($request->class_category);
+            $appliedFilters['Kategori Kelas'] = strtoupper($cat);
             $query->whereHas('studyClasses', fn ($q) => $q->where('category', $cat));
         }
 
         if ($request->filled('study_class_id')) {
+            $sc = StudyClass::find($request->study_class_id);
+            $appliedFilters['Kelas'] = $sc?->name ?? "ID #{$request->study_class_id}";
             $query->whereHas('studyClasses', fn ($q) =>
                 $q->where('study_classes.id', $request->study_class_id)
             );
@@ -115,6 +130,13 @@ class StudentExportController extends Controller
 
         if ($request->filled('expiry_status')) {
             $status = $request->expiry_status;
+            $expiryLabels = [
+                'expired'       => 'Sudah Expired',
+                'expiring_soon' => 'Expired Dalam 3 Minggu',
+                'not_expired'   => 'Masa Aktif > 3 Minggu',
+            ];
+            $appliedFilters['Masa Aktif'] = $expiryLabels[$status] ?? $status;
+
             if ($status === 'expired') {
                 $query->whereHas('studyClasses', fn ($q) =>
                     $q->where('end_session_date', '<', now()->toDateString())
@@ -130,23 +152,54 @@ class StudentExportController extends Controller
             }
         }
 
-        $students = $query->orderBy('created_at', 'desc')->get();
+        if ($request->filled('status')) {
+            $appliedFilters['Status Siswa'] = strtoupper($request->status);
+            $query->where('status', $request->status);
+        }
 
-        $headers = ['No', 'Student Number', 'Nama', 'Phone', 'Branch', 'Status', 'Kelas Aktif', 'Tgl Join'];
-        $rows = $students->map(function ($s, $i) {
+        $allStudents = $query->orderBy('created_at', 'desc')->get();
+
+        $mapRow = function ($s, $i) {
+            $lead = $s->lead;
+            $fullAddress = collect([
+                $lead?->address,
+                $lead?->city,
+                $lead?->province
+            ])->filter()->implode(', ') ?: '-';
+
             return [
-                $i + 1,
-                $s->student_number ?? '-',
-                $s->lead?->name ?? '-',
-                $s->lead?->phone ?? '-',
-                $s->lead?->branch?->name ?? 'Central',
-                $s->status ?? 'active',
-                $s->studyClasses->pluck('name')->implode(', ') ?: '-',
-                $s->start_join ? \Carbon\Carbon::parse($s->start_join)->format('d M Y') : '-',
+                'no'             => $i + 1,
+                'student_number' => $s->student_number ?? '-',
+                'name'           => $lead?->name ?? '-',
+                'phone'          => $lead?->phone ?? '-',
+                'branch'         => $lead?->branch?->name ?? 'Central',
+                'school'         => $lead?->school ?? '-',
+                'grade'          => $lead?->grade ?? '-',
+                'address'        => $fullAddress,
+                'class'          => $s->studyClasses->pluck('name')->implode(', ') ?: '-',
+                'start_join'     => $s->start_join ? \Carbon\Carbon::parse($s->start_join)->format('d M Y') : '-',
+                'status'         => strtoupper($s->status ?? 'ACTIVE'),
             ];
-        })->toArray();
+        };
 
-        return [$headers, $rows, 'student-list-' . now()->format('Y-m-d'), 'Daftar Siswa'];
+        $activeRows = $allStudents->filter(fn($s) => $s->status !== 'stop')->values()->map($mapRow)->toArray();
+        $stopRows   = $allStudents->filter(fn($s) => $s->status === 'stop')->values()->map($mapRow)->toArray();
+
+        $headers = [
+            'No', 'No. Siswa', 'Nama Siswa', 'No. HP', 'Cabang', 
+            'Sekolah', 'Tingkat/Kelas', 'Alamat Lengkap', 'Kelas Aktif', 'Tanggal Join', 'Status'
+        ];
+
+        return [
+            $headers,
+            [
+                'active'  => $activeRows,
+                'stop'    => $stopRows,
+                'filters' => $appliedFilters,
+            ],
+            'daftar-siswa-lengkap-' . now()->format('Y-m-d'),
+            'Daftar Siswa Lengkap'
+        ];
     }
 
     // ── Overall ──────────────────────────────────────────────────────────────
@@ -526,6 +579,113 @@ class StudentExportController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
+
+    private function buildStudentListExcelHtml(array $headers, array $rowsData): string
+    {
+        $activeRows = $rowsData['active'] ?? [];
+        $stopRows   = $rowsData['stop'] ?? [];
+        $filters    = $rowsData['filters'] ?? [];
+
+        $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        $html .= '<head><meta charset="UTF-8">';
+        $html .= '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>';
+        $html .= '<x:ExcelWorksheet><x:Name>Siswa Aktif</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
+        $html .= '<x:ExcelWorksheet><x:Name>Siswa Stop</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
+        $html .= '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+        $html .= '<style>';
+        $html .= 'body { font-family: Arial, sans-serif; font-size: 11px; }';
+        $html .= 'table { border-collapse: collapse; margin-bottom: 25px; width: 100%; }';
+        $html .= 'th, td { border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 11px; text-align: left; }';
+        $html .= 'th.title-active { background-color: #059669; color: #ffffff; font-size: 14px; font-weight: bold; text-align: left; padding: 10px; border: 1px solid #047857; }';
+        $html .= 'th.header-active { background-color: #10b981; color: #ffffff; font-weight: bold; }';
+        $html .= 'th.title-stop { background-color: #be123c; color: #ffffff; font-size: 14px; font-weight: bold; text-align: left; padding: 10px; border: 1px solid #9f1239; }';
+        $html .= 'th.header-stop { background-color: #f43f5e; color: #ffffff; font-weight: bold; }';
+        $html .= 'tr:nth-child(even) td { background-color: #f8fafc; }';
+        $html .= '.badge-active { color: #047857; font-weight: bold; }';
+        $html .= '.badge-stop { color: #be123c; font-weight: bold; }';
+        $html .= '.filter-box { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 12px; margin-bottom: 20px; font-size: 11px; }';
+        $html .= '</style></head><body>';
+
+        // ── INFORMASI FILTER ──────────────────────────────────────────────────
+        $html .= '<table>';
+        $html .= '<tr><th colspan="' . count($headers) . '" style="background-color: #1e293b; color: #ffffff; font-size: 11px; font-weight: bold;">INFORMASI LAPORAN</th></tr>';
+        $html .= '<tr><td colspan="' . count($headers) . '" style="background-color: #f8fafc; padding: 10px;">';
+        $html .= '<b>Tanggal Eksport:</b> ' . date('d M Y H:i') . '<br/>';
+        if (empty($filters)) {
+            $html .= '<b>FILTER:</b> SEMUA SISWA<br/>';
+        } else {
+            $html .= '<b>FILTER:</b> ';
+            $filterStr = [];
+            foreach ($filters as $key => $val) {
+                $filterStr[] = "{$key}: <b>{$val}</b>";
+            }
+            $html .= implode(' | ', $filterStr) . '<br/>';
+        }
+        $html .= '</td></tr></table><br/>';
+
+        // ── TABLE 1: SISWA AKTIF ──────────────────────────────────────────────
+        $html .= '<table><thead>';
+        $html .= '<tr><th colspan="' . count($headers) . '" class="title-active">DAFTAR SISWA AKTIF (' . count($activeRows) . ' Siswa)</th></tr>';
+        $html .= '<tr>';
+        foreach ($headers as $h) {
+            $html .= '<th class="header-active">' . htmlspecialchars($h) . '</th>';
+        }
+        $html .= '</tr></thead><tbody>';
+
+        if (empty($activeRows)) {
+            $html .= '<tr><td colspan="' . count($headers) . '" style="text-align:center; padding: 15px; color:#94a3b8;">Tidak ada data siswa aktif</td></tr>';
+        } else {
+            foreach ($activeRows as $r) {
+                $html .= '<tr>';
+                $html .= '<td style="text-align:center;">' . $r['no'] . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['student_number']) . '</td>';
+                $html .= '<td><b>' . htmlspecialchars($r['name']) . '</b></td>';
+                $html .= '<td>' . htmlspecialchars($r['phone']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['branch']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['school']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['grade']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['address']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['class']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['start_join']) . '</td>';
+                $html .= '<td class="badge-active">' . htmlspecialchars($r['status']) . '</td>';
+                $html .= '</tr>';
+            }
+        }
+        $html .= '</tbody></table><br/><br/>';
+
+        // ── TABLE 2: SISWA STOP ───────────────────────────────────────────────
+        $html .= '<table><thead>';
+        $html .= '<tr><th colspan="' . count($headers) . '" class="title-stop">DAFTAR SISWA STOP / BERHENTI (' . count($stopRows) . ' Siswa)</th></tr>';
+        $html .= '<tr>';
+        foreach ($headers as $h) {
+            $html .= '<th class="header-stop">' . htmlspecialchars($h) . '</th>';
+        }
+        $html .= '</tr></thead><tbody>';
+
+        if (empty($stopRows)) {
+            $html .= '<tr><td colspan="' . count($headers) . '" style="text-align:center; padding: 15px; color:#94a3b8;">Tidak ada data siswa stop</td></tr>';
+        } else {
+            foreach ($stopRows as $r) {
+                $html .= '<tr>';
+                $html .= '<td style="text-align:center;">' . $r['no'] . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['student_number']) . '</td>';
+                $html .= '<td><b>' . htmlspecialchars($r['name']) . '</b></td>';
+                $html .= '<td>' . htmlspecialchars($r['phone']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['branch']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['school']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['grade']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['address']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['class']) . '</td>';
+                $html .= '<td>' . htmlspecialchars($r['start_join']) . '</td>';
+                $html .= '<td class="badge-stop">' . htmlspecialchars($r['status']) . '</td>';
+                $html .= '</tr>';
+            }
+        }
+        $html .= '</tbody></table>';
+
+        $html .= '</body></html>';
+        return $html;
+    }
 
     private function applyDateFilter($query, string $col, int $year, ?int $month, bool $isSqlite): void
     {

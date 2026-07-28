@@ -36,13 +36,7 @@ export default function ExportButtons({
 
     const handleExcel = () => {
         if (typeof onExcel === 'string') {
-            // CSV downloads — open in same tab so browser triggers download
-            const a = document.createElement('a');
-            a.href = onExcel;
-            a.download = '';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            window.location.href = onExcel;
         } else if (typeof onExcel === 'function') {
             onExcel();
         }

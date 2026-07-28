@@ -6,43 +6,34 @@ export const useStudentIndex = (filters) => {
 
     const handleSearch = (e) => {
         if (e) e.preventDefault();
-        router.get(route('admin.academic.students.index'), { ...filters, search }, { preserveState: true });
+        const params = { ...filters, search, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
     const handleFilterExpiry = (expiryStatus) => {
-        router.get(route('admin.academic.students.index'), 
-            { ...filters, search, expiry_status: expiryStatus }, 
-            { preserveState: true }
-        );
+        const params = { ...filters, search, expiry_status: expiryStatus, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
     const handleFilterStatus = (status) => {
-        router.get(route('admin.academic.students.index'), 
-            { ...filters, search, status: status }, 
-            { preserveState: true }
-        );
+        const params = { ...filters, search, status: status, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
     const handleFilterCategory = (category) => {
-        router.get(route('admin.academic.students.index'), 
-            { ...filters, search, class_category: category }, 
-            { preserveState: true }
-        );
+        const params = { ...filters, search, class_category: category, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
     const handleFilterClass = (classId) => {
-        router.get(route('admin.academic.students.index'), 
-            { ...filters, search, study_class_id: classId }, 
-            { preserveState: true }
-        );
+        const params = { ...filters, search, study_class_id: classId, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
     const handleSort = (field) => {
         const direction = filters.sort_field === field && filters.sort_direction === 'asc' ? 'desc' : 'asc';
-        router.get(route('admin.academic.students.index'), 
-            { ...filters, search, sort_field: field, sort_direction: direction }, 
-            { preserveState: true }
-        );
+        const params = { ...filters, search, sort_field: field, sort_direction: direction, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
     return {

@@ -45,6 +45,17 @@ export default function Index({ students, studyClassesList = [], filters, report
         router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
+    const buildListExportUrl = (format) => {
+        const base = format === 'excel'
+            ? '/admin/academic/students/export/excel'
+            : '/admin/academic/students/export/pdf';
+        const activeParams = Object.fromEntries(
+            Object.entries({ ...filters, search }).filter(([, v]) => v !== null && v !== undefined && v !== '')
+        );
+        const params = new URLSearchParams({ ...activeParams, tab: 'list' });
+        return `${base}?${params.toString()}`;
+    };
+
     const openEditModal = (student, defaultStatus = null) => {
         setSelectedStudent(student);
         setDefaultEditStatus(defaultStatus);
@@ -215,8 +226,8 @@ export default function Index({ students, studyClassesList = [], filters, report
                                 <span>{students.meta?.total || (students.data ? students.data.length : students.length)} Registered Students</span>
                             </div>
                             <ExportButtons
-                                onPdf={`/admin/academic/students/export/pdf?tab=list&${new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([,v]) => v))).toString()}`}
-                                onExcel={`/admin/academic/students/export/excel?tab=list&${new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([,v]) => v))).toString()}`}
+                                onPdf={buildListExportUrl('pdf')}
+                                onExcel={buildListExportUrl('excel')}
                                 label="Daftar Siswa"
                                 size="sm"
                             />

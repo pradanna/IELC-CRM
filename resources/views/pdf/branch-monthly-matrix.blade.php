@@ -109,12 +109,9 @@
 </head>
 <body>
 
-    <div class="no-print">
-        <div>
-            <strong style="font-size: 14px;">Laporan Rekapitulasi Jumlah Siswa Per Cabang ({{ $year }})</strong>
-            <div style="font-size: 11px; color: #64748b;">Dibuat pada {{ date('d M Y H:i') }}</div>
-        </div>
-        <button onclick="window.print()">Cetak / Save as PDF</button>
+    <div style="margin-bottom: 15px;">
+        <strong style="font-size: 14px;">Laporan Rekapitulasi Jumlah Siswa Per Cabang ({{ $year }})</strong>
+        <div style="font-size: 11px; color: #64748b;">Dibuat pada {{ date('d M Y H:i') }}</div>
     </div>
 
     <div class="grid-container">
@@ -190,6 +187,5 @@
             </div>
         @endforeach
     </div>
-
 </body>
 </html>

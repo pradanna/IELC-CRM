@@ -27,7 +27,8 @@ export default function PremiumSelect({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const selectedOption = options.find(opt => String(opt.value) === String(value));
+    const currentValueStr = value !== null && value !== undefined ? String(value).toLowerCase() : '';
+    const selectedOption  = options.find(opt => String(opt.value).toLowerCase() === currentValueStr);
 
     return (
         <div className={`relative group ${className}`} ref={containerRef}>
@@ -59,34 +60,22 @@ export default function PremiumSelect({
                                 No options available
                             </div>
                         ) : (
-                            <>
-                                {/* Placeholder / Clear Option if needed */}
-                                <div 
-                                    onClick={() => { onChange(''); setIsOpen(false); }}
-                                    className={`
-                                        px-4 py-3  rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all
-                                        ${!value ? 'bg-red-50 text-red-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'}
-                                    `}
-                                >
-                                    {placeholder}
-                                </div>
-                                {options.map((option) => {
-                                    const isSelected = String(option.value) === String(value);
-                                    return (
-                                        <div
-                                            key={option.value}
-                                            onClick={() => { onChange(option.value); setIsOpen(false); }}
-                                            className={`
-                                                flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all
-                                                ${isSelected ? 'bg-red-50 text-red-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
-                                            `}
-                                        >
-                                            {option.label}
-                                            {isSelected && <Check size={12} />}
-                                        </div>
-                                    );
-                                })}
-                            </>
+                            options.map((option) => {
+                                const isSelected = String(option.value).toLowerCase() === currentValueStr;
+                                return (
+                                    <div
+                                        key={option.value}
+                                        onClick={() => { onChange(option.value); setIsOpen(false); }}
+                                        className={`
+                                            flex items-center justify-between px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all
+                                            ${isSelected ? 'bg-red-50 text-red-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
+                                        `}
+                                    >
+                                        {option.label}
+                                        {isSelected && <Check size={12} />}
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
                 </div>
