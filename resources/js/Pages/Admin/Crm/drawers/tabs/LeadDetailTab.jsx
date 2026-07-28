@@ -62,7 +62,7 @@ export default function LeadDetailTab({ lead, loading, getPhaseStyle, phases = [
                         <SectionHeader icon={Building2} title="Academic Details" />
                         <div className="">
                             <InfoItem label="School" value={lead?.school || '---'} icon={Building2} />
-                            <InfoItem label="Grade / Level" value={lead?.grade || '---'} icon={Building2} />
+                            <InfoItem label="Grade / Level" value={lead?.full_grade || lead?.grade || '---'} icon={Building2} />
                         </div>
                     </div>
 

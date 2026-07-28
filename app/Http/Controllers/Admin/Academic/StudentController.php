@@ -421,6 +421,39 @@ class StudentController extends Controller
             'students' => StudentResource::collection($students),
         ]);
     }
+
+    public function bulkPromote(Request $request, \App\Domains\Academic\Application\Actions\BulkPromoteStudentsAction $action): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'mode' => 'required|in:auto,auto_detailed,auto_level,custom',
+            'from_grade' => 'nullable|string',
+            'to_grade' => 'nullable|string',
+            'branch_id' => 'nullable|string',
+            'preview_only' => 'nullable|boolean',
+            'selected_lead_ids' => 'nullable|array',
+            'selected_lead_ids.*' => 'string|uuid',
+        ]);
+
+        if (!empty($validated['preview_only'])) {
+            $previewData = $action->preview(
+                $validated['mode'],
+                $validated['from_grade'] ?? null,
+                $validated['to_grade'] ?? null,
+                $validated['branch_id'] ?? null
+            );
+            return response()->json($previewData);
+        }
+
+        $count = $action->execute(
+            $validated['mode'],
+            $validated['from_grade'] ?? null,
+            $validated['to_grade'] ?? null,
+            $validated['branch_id'] ?? null,
+            $validated['selected_lead_ids'] ?? null
+        );
+
+        return redirect()->back()->with('success', "Berhasil menaikkan kelas massal untuk {$count} siswa.");
+    }
 }
 
 

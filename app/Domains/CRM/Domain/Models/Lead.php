@@ -34,6 +34,7 @@ class Lead extends Model
         'birth_date',
         'school',
         'grade',
+        'school_level',
         'branch_id',
         'owner_id',
         'created_by',

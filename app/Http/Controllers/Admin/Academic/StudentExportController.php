@@ -180,7 +180,7 @@ class StudentExportController extends Controller
                 'phone'          => $lead?->phone ?? '-',
                 'branch'         => $lead?->branch?->name ?? 'Central',
                 'school'         => $lead?->school ?? '-',
-                'grade'          => $lead?->grade ?? '-',
+                'grade'          => $lead ? ($lead->school_level ? "{$lead->grade} ({$lead->school_level})" : ($lead->grade ?? '-')) : '-',
                 'address'        => $fullAddress,
                 'class'          => $s->studyClasses->pluck('name')->implode(', ') ?: '-',
                 'start_join'     => $s->start_join ? \Carbon\Carbon::parse($s->start_join)->format('d M Y') : '-',

@@ -20,6 +20,8 @@ class LeadResource extends JsonResource
             'birth_date'     => $this->birth_date ? $this->birth_date->format('Y-m-d') : null,
             'school'         => $this->school,
             'grade'          => $this->grade,
+            'school_level'   => $this->school_level,
+            'full_grade'     => $this->school_level ? "{$this->grade} ({$this->school_level})" : $this->grade,
             'city'           => $this->city,
             'province'       => $this->province,
             'address'        => $this->address,

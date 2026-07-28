@@ -5,7 +5,7 @@ import {
     User, Users, Phone, GraduationCap, Search, 
     Filter, UserCheck, ShieldAlert, Clock,
     Calendar, MapPin, ChevronRight, Package, Award, Edit3,
-    ArrowUpDown, ArrowUp, ArrowDown
+    ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, AlertTriangle
 } from 'lucide-react';
 import TextInput from '@/Components/TextInput';
 import PremiumSelect from '@/Components/PremiumSelect';
@@ -13,6 +13,7 @@ import TableActionDropdown from '@/Components/ui/TableActionDropdown';
 import { useStudentIndex } from './hooks/useStudentIndex';
 import EditStudentModal from './partials/EditStudentModal';
 import StudentDetailModal from './partials/StudentDetailModal';
+import BulkPromoteModal from './modals/BulkPromoteModal';
 import { AcademicDashboardContent } from '../Dashboard';
 import Pagination from '@/Components/ui/Pagination';
 import ExportButtons from '@/Components/ui/ExportButtons';
@@ -31,6 +32,7 @@ export default function Index({ students, studyClassesList = [], gradesList = []
     } = useStudentIndex(filters);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [isBulkPromoteModalOpen, setIsBulkPromoteModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [defaultEditStatus, setDefaultEditStatus] = useState(null);
 
@@ -233,18 +235,30 @@ export default function Index({ students, studyClassesList = [], gradesList = []
                             </div>
                         </div>
 
-                        {/* Export + student count — below filter, right-aligned */}
-                        <div className="flex items-center justify-between px-1">
+                        {/* Export + Bulk Promote + student count */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
                             <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 italic">
                                 <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
                                 <span>{students.meta?.total || (students.data ? students.data.length : students.length)} Registered Students</span>
                             </div>
-                            <ExportButtons
-                                onPdf={buildListExportUrl('pdf')}
-                                onExcel={buildListExportUrl('excel')}
-                                label="Daftar Siswa"
-                                size="sm"
-                            />
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsBulkPromoteModalOpen(true)}
+                                    className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs tracking-wider shadow-sm flex items-center gap-2 transition-all hover:shadow-md active:scale-95"
+                                >
+                                    <AlertTriangle size={15} />
+                                    <span>KENAIKAN KELAS MASSAL</span>
+                                </button>
+
+                                <ExportButtons
+                                    onPdf={buildListExportUrl('pdf')}
+                                    onExcel={buildListExportUrl('excel')}
+                                    label="Daftar Siswa"
+                                    size="sm"
+                                />
+                            </div>
                         </div>
 
                 {/* Main List */}
@@ -484,6 +498,12 @@ export default function Index({ students, studyClassesList = [], gradesList = []
                     student={selectedStudent}
                 />
             )}
+            {/* Bulk Promote Modal */}
+            <BulkPromoteModal
+                isOpen={isBulkPromoteModalOpen}
+                onClose={() => setIsBulkPromoteModalOpen(false)}
+                gradesList={gradesList}
+            />
         </AdminLayout>
     );
 }
