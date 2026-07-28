@@ -97,6 +97,38 @@ class AcademicDashboardController extends Controller
             }
         }
 
+        // Online vs Offline breakdown for active students
+        $channelCounts = Student::where('students.status', 'active')
+            ->join('leads', 'students.lead_id', '=', 'leads.id')
+            ->selectRaw('sum(case when leads.is_online = 1 then 1 else 0 end) as online_count, sum(case when leads.is_online = 0 then 1 else 0 end) as offline_count');
+        $filterByDate($channelCounts, 'students.start_join', $year, $month);
+        $channelData = $channelCounts->first();
+
+        $onlineCount = (int) ($channelData->online_count ?? 0);
+        $offlineCount = (int) ($channelData->offline_count ?? 0);
+
+        // Grade distribution for active students in selected period
+        $gradeQuery = Student::where('students.status', 'active')
+            ->join('leads', 'students.lead_id', '=', 'leads.id')
+            ->selectRaw("COALESCE(leads.grade, 'UMUM') as grade, count(*) as count")
+            ->groupBy('grade');
+        $filterByDate($gradeQuery, 'students.start_join', $year, $month);
+        $gradeDistributionRaw = $gradeQuery->get();
+
+        $categoriesMap = [
+            'PG' => 'PG', 'TK' => 'TK', 'SD' => 'SD',
+            'SMP' => 'SMP', 'SMA' => 'SMA', 'KULIAH' => 'KULIAH', 'UMUM' => 'UMUM',
+        ];
+
+        $overallGradeDistribution = [];
+        foreach ($categoriesMap as $dbValue => $label) {
+            $matchingRow = $gradeDistributionRaw->first(fn($item) => strtoupper($item->grade) === $dbValue);
+            $overallGradeDistribution[] = [
+                'name'  => $label,
+                'count' => $matchingRow ? (int) $matchingRow->count : 0,
+            ];
+        }
+
         // Branch distribution
         $branchQuery = Student::where('students.status', 'active')
             ->join('leads', 'students.lead_id', '=', 'leads.id')
@@ -208,10 +240,13 @@ class AcademicDashboardController extends Controller
             'reports' => [
                 'overall' => [
                     'total_active'       => $totalActiveStudents,
+                    'online_count'       => $onlineCount,
+                    'offline_count'      => $offlineCount,
                     'new_this_month'     => $newStudentsThisMonth,
                     'target_month'       => $targetMonth,
                     'monthly_trend'      => $monthlyTrend,
                     'branch_distribution' => $branchDistribution,
+                    'grade_distribution'  => $overallGradeDistribution,
                 ],
                 'join_patterns' => $joinPatterns,
                 'siswa_stop' => [

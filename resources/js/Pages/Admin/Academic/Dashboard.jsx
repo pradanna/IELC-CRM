@@ -186,8 +186,9 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                             </div>
                         </div>
 
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Stats Cards (4 Columns) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {/* Total Siswa Aktif */}
                             <div className="bg-gradient-to-br from-indigo-50/50 to-indigo-100/20 border border-indigo-100/50 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500">
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
                                 <div className="space-y-3">
@@ -195,7 +196,7 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                                         <Users className="w-5 h-5" />
                                     </div>
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        Total Siswa Aktif {month ? `(${MONTH_NAMES[month-1]} ${year})` : `(${year})`}
+                                        Total Siswa Aktif
                                     </p>
                                     <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
                                         {formatNumber(overall.total_active)}
@@ -204,6 +205,41 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                                 </div>
                             </div>
 
+                            {/* Offline Students */}
+                            <div className="bg-gradient-to-br from-amber-50/50 to-amber-100/20 border border-amber-100/50 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
+                                <div className="space-y-3">
+                                    <div className="w-10 h-10 bg-amber-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-amber-500/20">
+                                        <Building2 className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Siswa Offline (Tatap Muka)</p>
+                                    <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
+                                        {formatNumber(overall.offline_count || 0)}
+                                        <span className="text-xs font-bold text-amber-600 font-extrabold">
+                                            ({overall.total_active > 0 ? Math.round(((overall.offline_count || 0) / overall.total_active) * 100) : 0}%)
+                                        </span>
+                                    </h3>
+                                </div>
+                            </div>
+
+                            {/* Online Students */}
+                            <div className="bg-gradient-to-br from-sky-50/50 to-sky-100/20 border border-sky-100/50 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
+                                <div className="space-y-3">
+                                    <div className="w-10 h-10 bg-sky-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20">
+                                        <Laptop className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-[10px] font-black text-sky-700 uppercase tracking-widest">Siswa Online</p>
+                                    <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
+                                        {formatNumber(overall.online_count || 0)}
+                                        <span className="text-xs font-bold text-sky-600 font-extrabold">
+                                            ({overall.total_active > 0 ? Math.round(((overall.online_count || 0) / overall.total_active) * 100) : 0}%)
+                                        </span>
+                                    </h3>
+                                </div>
+                            </div>
+
+                            {/* Siswa Baru */}
                             <div className="bg-gradient-to-br from-emerald-50/50 to-emerald-100/20 border border-emerald-100/50 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500">
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
                                 <div className="space-y-3">
@@ -216,20 +252,6 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                                     <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
                                         +{formatNumber(overall.new_this_month)}
                                         <span className="text-xs font-bold text-slate-400">terdaftar</span>
-                                    </h3>
-                                </div>
-                            </div>
-
-                            <div className="bg-gradient-to-br from-purple-50/50 to-purple-100/20 border border-purple-100/50 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
-                                <div className="space-y-3">
-                                    <div className="w-10 h-10 bg-purple-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-purple-500/20">
-                                        <Building2 className="w-5 h-5" />
-                                    </div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Branch Coverage</p>
-                                    <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
-                                        {formatNumber(overall.branch_distribution.length)}
-                                        <span className="text-xs font-bold text-slate-400">cabang aktif</span>
                                     </h3>
                                 </div>
                             </div>
@@ -309,6 +331,38 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Grafik Distribusi Tingkat Pendidikan (Siswa by Grades) */}
+                        <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <BookOpen className="w-4 h-4 text-red-500" />
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Distribusi Siswa Menurut Tingkat Pendidikan (Grades)</h4>
+                                </div>
+                                <span className="text-[10px] font-black text-slate-450 uppercase bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg">Grafik Jenjang</span>
+                            </div>
+                            {overall.grade_distribution && overall.grade_distribution.length > 0 ? (
+                                <div className="h-72 w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={overall.grade_distribution} margin={{ top: 20, right: 20, left: -15, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 'bold', fill: '#64748b' }} />
+                                            <YAxis tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                                            <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #f1f5f9', fontFamily: 'sans-serif', fontSize: '12px' }} />
+                                            <Bar dataKey="count" name="Jumlah Siswa" radius={[8, 8, 0, 0]}>
+                                                {overall.grade_distribution.map((entry, index) => (
+                                                    <Cell key={`grade-cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            ) : (
+                                <div className="h-48 flex items-center justify-center text-slate-400 text-sm font-bold">
+                                    Tidak ada data jenjang sekolah
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
