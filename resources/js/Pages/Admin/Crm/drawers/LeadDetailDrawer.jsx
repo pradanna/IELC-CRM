@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw, StickyNote, Loader2 } from 'lucide-react';
+import { X, User, History, MessageSquare, ArrowRight, Edit2, GitBranch, RefreshCw, StickyNote, Loader2, PhoneCall } from 'lucide-react';
 import axios from 'axios';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 import useWhatsapp from '@/Hooks/useWhatsapp';
@@ -12,6 +12,7 @@ import LeadWhatsappTab from './tabs/LeadWhatsappTab';
 import LeadPipelineTab from './tabs/LeadPipelineTab';
 import LeadPendingUpdatesTab from './tabs/LeadPendingUpdatesTab';
 import LeadNotesTab from './tabs/LeadNotesTab';
+import LeadFollowUpLogTab from './tabs/LeadFollowUpLogTab';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 export default function LeadDetailDrawer({ 
     phases = []
@@ -33,7 +34,7 @@ export default function LeadDetailDrawer({
     const [selectedIndex, setSelectedIndex] = useState(0);
     const { getPhaseStyle } = useLeadPhaseStyle();
     
-    // Sync tab index when drawer opens
+    // Sync tab index and reset lead state when drawer opens with a new leadId
     useEffect(() => {
         if (isOpen) {
             setSelectedIndex(tabIndex);
@@ -42,12 +43,15 @@ export default function LeadDetailDrawer({
 
     useEffect(() => {
         if (isOpen && leadId) {
+            setLead(null); // Reset previous lead data so skeleton/loading state shows properly
             fetchLeadDetails();
+        } else if (!isOpen) {
+            setLead(null);
         }
     }, [isOpen, leadId, refreshTrigger]);
 
     const fetchLeadDetails = async (silent = false) => {
-        if (!silent && !lead) {
+        if (!silent) {
             setLoading(true);
         }
         
@@ -58,43 +62,38 @@ export default function LeadDetailDrawer({
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     'Pragma': 'no-cache',
-                    'Expires': '0'
+                    'Expires': '0',
                 }
             });
-            
-            setLead(response.data.lead);
-            setAvailableExams(response.data.availableExams || []);
-            setAvailableClasses(response.data.availableClasses || []);
-            setPriceMasters(response.data.priceMasters || []);
-            
-            if (response.data.chatTemplates) setLocalChatTemplates(response.data.chatTemplates);
-            if (response.data.phases) setLocalPhases(response.data.phases);
-            if (response.data.mediaAssets) setLocalMediaAssets(response.data.mediaAssets);
-            if (response.data.leadTypes) setLocalLeadTypes(response.data.leadTypes);
-            if (response.data.leadSources) setLocalLeadSources(response.data.leadSources);
-            if (response.data.provinces) setLocalProvinces(response.data.provinces);
-
+            const data = response.data;
+            setLead(data.lead);
+            setAvailableExams(data.availableExams || []);
+            setAvailableClasses(data.availableClasses || []);
+            setPriceMasters(data.priceMasters || []);
+            setLocalChatTemplates(data.chatTemplates || []);
+            if (data.phases?.length > 0) setLocalPhases(data.phases);
+            setLocalMediaAssets(data.mediaAssets || []);
+            setLocalLeadTypes(data.leadTypes || []);
+            setLocalLeadSources(data.leadSources || []);
+            setLocalProvinces(data.provinces || []);
         } catch (error) {
             console.error('Error fetching lead details:', error);
-            if (error.response?.status === 404) {
-                alert('Lead not found. It may have been deleted.');
-                closeDrawer();
-            }
         } finally {
             setLoading(false);
         }
     };
 
     const handleUpdatePhase = async (newPhaseId) => {
+        if (updatingPhase) return;
         setUpdatingPhase(true);
         try {
-            const response = await axios.patch(route('admin.crm.leads.update-phase', leadId), {
+            await axios.patch(route('admin.crm.leads.update-phase', leadId), {
                 lead_phase_id: newPhaseId
             });
-            // Update local drawer state immediately from the response
-            setLead(response.data.lead);
+            fetchLeadDetails(true); // Silent refresh local state
         } catch (error) {
-            console.error('Error updating lead phase:', error);
+            console.error('Error updating phase:', error);
+            alert(error.response?.data?.message || 'Failed to update phase.');
         } finally {
             setUpdatingPhase(false);
         }
@@ -117,6 +116,7 @@ export default function LeadDetailDrawer({
         { name: 'Pipeline Progress', icon: GitBranch, component: LeadPipelineTab },
         { name: 'WhatsApp History', icon: MessageSquare, component: LeadWhatsappTab },
         { name: 'Notes', icon: StickyNote, component: LeadNotesTab },
+        { name: 'Follow-Up Log', icon: PhoneCall, component: LeadFollowUpLogTab },
         { name: 'Activity History', icon: History, component: LeadActivityTab },
         ...(lead?.pending_updates ? [{ name: 'Updates', icon: RefreshCw, component: LeadPendingUpdatesTab, badge: true }] : []),
     ];
@@ -149,7 +149,7 @@ export default function LeadDetailDrawer({
                                 leaveFrom="translate-x-0"
                                 leaveTo="translate-x-full"
                             >
-                                <Dialog.Panel className="pointer-events-auto w-screen max-w-5xl">
+                                <Dialog.Panel className="pointer-events-auto w-screen max-w-7xl">
                                     <div className="flex h-full flex-col bg-white shadow-2xl border-l border-slate-100 overflow-hidden">
                                         {/* Header */}
                                         <div className="px-8 py-8 border-b border-slate-50 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-10">
@@ -174,6 +174,7 @@ export default function LeadDetailDrawer({
                                                                  >
                                                                     <Edit2 size={14} />
                                                                 </button>
+
                                                                  <button 
                                                                     onClick={() => {
                                                                         document.dispatchEvent(new CustomEvent('openSendWhatsappModal', { detail: { lead } }));
@@ -275,6 +276,13 @@ export default function LeadDetailDrawer({
                                                 
                                                 <Tab.Panel className="outline-none p-10">
                                                     <LeadNotesTab 
+                                                        lead={lead} 
+                                                        onRefresh={fetchLeadDetails}
+                                                    />
+                                                </Tab.Panel>
+
+                                                <Tab.Panel className="outline-none p-10">
+                                                    <LeadFollowUpLogTab 
                                                         lead={lead} 
                                                         onRefresh={fetchLeadDetails}
                                                     />

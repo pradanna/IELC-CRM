@@ -15,17 +15,28 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
     const calculateRemainingMeetings = (startDate, endDate, scheduleDays, joinDateStr) => {
         if (!startDate || !endDate || !scheduleDays || !joinDateStr) return 0;
         
-        const joinDate = new Date(joinDateStr);
+        const rawJoinDate = new Date(joinDateStr);
+        const day = rawJoinDate.getDay();
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+        const joinDate = new Date(rawJoinDate);
+        joinDate.setDate(rawJoinDate.getDate() + diffToMonday);
+        joinDate.setHours(0, 0, 0, 0);
+
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
         const end = new Date(endDate);
+        end.setHours(0, 0, 0, 0);
         
         if (joinDate > end) return 0;
         
         let count = 0;
         let current = new Date(joinDate);
         while (current <= end) {
-            const dayName = current.toLocaleDateString('en-US', { weekday: 'long' });
-            if (scheduleDays.includes(dayName)) {
-                count++;
+            if (current >= start) {
+                const dayName = current.toLocaleDateString('en-US', { weekday: 'long' });
+                if (scheduleDays.includes(dayName)) {
+                    count++;
+                }
             }
             current.setDate(current.getDate() + 1);
         }
@@ -53,52 +64,16 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
         }
     }, [plottingForm.study_class_id, remainingMeetings]);
 
-    const handleSavePlotting = async (openWaWebFallback) => {
+    const handleSavePlotting = async () => {
         setSavingPlotting(true);
         
-        // 1. Save plotting data first
         try {
             await axios.post(route('admin.crm.leads.plot-class', lead.id), plottingForm);
+            alert('Plotting berhasil disimpan.');
         } catch (err) {
             alert('Gagal menyimpan plotting: ' + (err.response?.data?.message || err.message));
             setSavingPlotting(false);
             return;
-        }
-
-        // 2. If save success, try to send WhatsApp
-        if (selectedClass) {
-            const schedule = (selectedClass.schedule_days || []).join(', ');
-            const start = new Date(selectedClass.start_session_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-            const end = new Date(selectedClass.end_session_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-            
-            const isProRata = remainingMeetings < (selectedClass.total_meetings || 12);
-            const fullPaymentNote = isProRata 
-                ? `\n\n*Note:* Karena Anda bergabung di tengah periode, biaya dihitung untuk sisa ${remainingMeetings} pertemuan saja (tidak perlu membayar full).`
-                : "";
-
-            const message = `Halo *${lead.nickname || lead.name}*,\n\n` +
-                           `Kami telah menjadwalkan kelas untuk Anda di IELC:\n` +
-                           `• *Kelas:* ${selectedClass.name}\n` +
-                           `• *Jadwal:* ${schedule}\n` +
-                           `• *Periode:* ${start} s/d ${end}\n` +
-                           `• *Sisa:* ${remainingMeetings} Pertemuan\n` +
-                           fullPaymentNote + 
-                           `\n\nMohon konfirmasinya ya! Terima kasih! 👋`;
-
-            try {
-                await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { message });
-                alert('Plotting berhasil disimpan dan pemberitahuan WA terkirim.');
-            } catch (err) {
-                console.error('Gagal kirim WA otomatis:', err);
-                const errMsg = err.response?.data?.error || err.message || "Unknown error";
-                if (confirm(`Plotting tersimpan, namun gagal kirim WA otomatis: ${errMsg}\n\nApakah Anda ingin mencoba kirim via WhatsApp Web?`)) {
-                    if (openWaWebFallback) {
-                        openWaWebFallback(message);
-                    }
-                }
-            }
-        } else {
-            alert('Plotting berhasil disimpan.');
         }
 
         onRefresh(true);

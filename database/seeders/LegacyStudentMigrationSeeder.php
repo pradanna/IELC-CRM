@@ -314,7 +314,15 @@ class LegacyStudentMigrationSeeder extends Seeder
 
             // 3. Enroll Student to current Class if active
             if ($currentClass) {
-                $student->studyClasses()->syncWithoutDetaching([$currentClass->id]);
+                $student->studyClasses()->syncWithoutDetaching([
+                    $currentClass->id => [
+                        'lead_id' => $lead->id,
+                        'joined_at' => $joinDate->toDateString(),
+                        'end_date' => $currentClass->end_session_date?->format('Y-m-d'),
+                        'status' => 'active',
+                        'cycle_number' => $currentClass->current_session_number ?? 1,
+                    ]
+                ]);
             }
 
             $importedStudentsCount++;

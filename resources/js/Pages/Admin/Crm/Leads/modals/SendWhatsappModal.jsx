@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, MessageSquare, Phone, Save, Link as LinkIcon, File, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { X, MessageSquare, Phone, Save, Link as LinkIcon, File, Image as ImageIcon, Loader2, Send } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import useWhatsapp from '@/Hooks/useWhatsapp';
 
@@ -98,10 +98,41 @@ export default function SendWhatsappModal({
         return results.slice(0, 5); // Max 5 results as requested
     }, [mediaAssets, debouncedSearch]);
 
-    const handleSend = () => {
+    const [sendingBaileys, setSendingBaileys] = useState(false);
+    const [baileysError, setBaileysError] = useState(null);
+
+    const handleSendWeb = () => {
         if (!lead?.phone) return;
         openWhatsapp(lead.phone, message);
         onClose();
+    };
+
+    const handleSendBaileys = async () => {
+        if (!lead?.phone || !message) return;
+        
+        if (!window.confirm(`Kirim pesan ini langsung ke ${lead.name} (${lead.phone}) via WhatsApp Gateway?`)) {
+            return;
+        }
+
+        setSendingBaileys(true);
+        setBaileysError(null);
+
+        try {
+            const response = await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { message });
+            alert('Pesan WhatsApp berhasil dikirim via Gateway!');
+            onClose();
+            // Trigger refresh if available
+            if (window.location) {
+                const event = new CustomEvent('leadDataRefreshed');
+                document.dispatchEvent(event);
+            }
+        } catch (err) {
+            console.error('Baileys error:', err);
+            const errMsg = err.response?.data?.message || err.message || 'Gagal terhubung ke WhatsApp Gateway.';
+            setBaileysError(errMsg);
+        } finally {
+            setSendingBaileys(false);
+        }
     };
 
     const copyToClipboard = (text, id) => {
@@ -156,7 +187,26 @@ export default function SendWhatsappModal({
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                                <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                                    {/* Error Banner */}
+                                    {baileysError && (
+                                        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 text-red-700 font-bold text-xs">
+                                                <X className="w-4 h-4 bg-red-200 text-red-700 rounded-full p-0.5" />
+                                                <span>Pengiriman via Gateway Gagal:</span>
+                                            </div>
+                                            <p className="text-xs text-red-600 font-medium pl-6">{baileysError}</p>
+                                            <div className="pt-2 flex gap-2">
+                                                <button
+                                                    onClick={handleSendWeb}
+                                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-1.5"
+                                                >
+                                                    <Send size={13} /> Kirim via WhatsApp Web Sebagai Alternatif
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Templates */}
                                     <div>
                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -187,25 +237,45 @@ export default function SendWhatsappModal({
                                             value={message}
                                             onChange={e => setMessage(e.target.value)}
                                             placeholder="Halo kak, berikut informasi..."
-                                            className="w-full flex-1 min-h-[300px] px-6 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] text-sm font-bold text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-green-500/5 focus:border-green-500 transition-all resize-none shadow-inner"
+                                            className="w-full flex-1 min-h-[220px] px-6 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] text-sm font-bold text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-green-500/5 focus:border-green-500 transition-all resize-none shadow-inner"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Actions */}
-                                <div className="px-8 py-6 flex gap-3 border-t border-slate-50 bg-slate-50/20">
+                                <div className="px-8 py-5 flex flex-wrap sm:flex-nowrap gap-3 border-t border-slate-100 bg-slate-50/50">
                                     <button
-                                        type="button" onClick={onClose}
-                                        className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all"
+                                        type="button" 
+                                        onClick={onClose}
+                                        className="py-3.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all"
                                     >
-                                        Close
+                                        Batal
                                     </button>
+                                    
                                     <button
-                                        onClick={handleSend}
-                                        disabled={!message}
-                                        className="flex-[2] py-4 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-200"
+                                        type="button"
+                                        onClick={handleSendWeb}
+                                        disabled={!message || sendingBaileys}
+                                        className="py-3.5 px-5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                                     >
-                                        <Phone size={14} /> Send to WhatsApp
+                                        <Send size={14} /> Kirim via WA Web
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleSendBaileys}
+                                        disabled={!message || sendingBaileys}
+                                        className="flex-1 py-3.5 px-6 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95"
+                                    >
+                                        {sendingBaileys ? (
+                                            <>
+                                                <Loader2 size={14} className="animate-spin" /> Mengirim...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send size={14} /> Kirim Sekarang
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>

@@ -25,6 +25,8 @@ class StudyClass extends Model
         'price_master_id',
         'name',
         'type',
+        'category',
+        'status',
         'start_session_date',
         'end_session_date',
         'total_meetings',
@@ -35,6 +37,8 @@ class StudyClass extends Model
 
     protected $appends = [
         'session_progress',
+        'is_expired',
+        'is_private',
     ];
 
     protected $casts = [
@@ -65,31 +69,10 @@ class StudyClass extends Model
 
     public function students(): BelongsToMany
     {
-        $query = $this->belongsToMany(Student::class, 'study_class_student')
-            ->withPivot('cycle_number');
-
-        if ($this->exists && isset($this->current_session_number)) {
-            return $query->wherePivot('cycle_number', $this->current_session_number);
-        }
-
-        // Detect if we are in a subquery/existence query context (like withCount, has, whereHas)
-        $isSubqueryContext = false;
-        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15) as $trace) {
-            if (isset($trace['function']) && $trace['function'] === 'getRelationWithoutConstraints') {
-                $isSubqueryContext = true;
-                break;
-            }
-        }
-
-        if ($isSubqueryContext) {
-            // No join needed, reference study_classes directly from the outer query
-            return $query->whereColumn('study_class_student.cycle_number', 'study_classes.current_session_number');
-        }
-
-        // Eager loading fallback: join study_classes
-        return $query->join('study_classes as sc_join', 'sc_join.id', '=', 'study_class_student.study_class_id')
-            ->whereColumn('study_class_student.cycle_number', 'sc_join.current_session_number')
-            ->select('students.*');
+        return $this->belongsToMany(Student::class, 'lead_enrollments', 'study_class_id', 'student_id')
+            ->using(\App\Domains\CRM\Domain\Models\LeadEnrollmentPivot::class)
+            ->withPivot(['joined_at', 'end_date', 'status', 'stopped_at'])
+            ->withTimestamps();
     }
 
     /**
@@ -121,6 +104,34 @@ class StudyClass extends Model
 
                 return min($count, (int) $this->total_meetings);
             }
+        );
+    }
+
+    /**
+     * Check if class session cycle has ended/expired.
+     */
+    protected function isExpired(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->end_session_date && $this->end_session_date->endOfDay()->isPast()) {
+                    return true;
+                }
+                if ($this->session_progress >= (int) $this->total_meetings && (int) $this->total_meetings > 0) {
+                    return true;
+                }
+                return false;
+            }
+        );
+    }
+
+    /**
+     * Check if class is a private class.
+     */
+    protected function isPrivate(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->category === 'private'
         );
     }
 }

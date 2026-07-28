@@ -1,7 +1,8 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { User, Phone, MapPin, MessageSquare, GripVertical } from 'lucide-react';
+import { User, Phone, MapPin, MessageSquare, GripVertical, Building2 } from 'lucide-react';
+import useBranchStyle from '@/Hooks/useBranchStyle';
 
 const WhatsAppIcon = ({ size = 12, className = "" }) => (
     <svg 
@@ -118,9 +119,17 @@ export default function KanbanCard({ lead, onClick, isOverlay = false, onWhatsap
                     <Phone size={10} className="text-slate-300 shrink-0" />
                     <span className="truncate">{lead.phone}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
-                    <MapPin size={10} className="text-slate-300 shrink-0" />
-                    <span className="truncate">{lead.branch?.name || 'No Branch'}</span>
+                <div className="flex items-center gap-1.5 text-[10px] font-medium">
+                    {(() => {
+                        const { getBranchStyle } = useBranchStyle();
+                        const branchStyle = getBranchStyle(lead.branch?.name);
+                        return (
+                            <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] border ${branchStyle.bg} ${branchStyle.text} ${branchStyle.border} flex items-center gap-1`}>
+                                <Building2 size={10} className={branchStyle.icon} />
+                                <span className="truncate">{lead.branch?.name || 'No Branch'}</span>
+                            </span>
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -149,7 +158,7 @@ export default function KanbanCard({ lead, onClick, isOverlay = false, onWhatsap
                     </span>
                 ) : lead.lead_phase?.code === 'enrollment' ? (
                     <span className="text-[8px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                        ENROLLED: {lead.formatted_enrolled_at || lead.formatted_at}
+                        ENROLLED{lead.enrollment_count > 0 ? ` (${lead.enrollment_count} Kelas)` : ''}: {lead.formatted_enrolled_at || lead.formatted_at}
                     </span>
                 ) : lead.formatted_last_activity_at ? (
                     <span className="text-[8px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 px-1.5 py-0.5 rounded uppercase tracking-wider">

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignUuid('instructor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignUuid('price_master_id')->nullable()->constrained('price_masters')->nullOnDelete();
             $table->string('name');
+            $table->enum('type', ['online', 'offline'])->default('offline');
             $table->date('start_session_date')->nullable();
             $table->date('end_session_date')->nullable();
             $table->unsignedInteger('total_meetings')->default(12);

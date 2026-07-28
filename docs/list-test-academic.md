@@ -36,7 +36,7 @@ Modul Academic mengelola data siswa aktif (*Students*), kelas belajar (*Study Cl
 - [ ] **Form Pendaftaran Siswa:** Buka detail kelas belajar, pilih opsi "Tambah Siswa" atau "Daftarkan Siswa".
 - [ ] **Pencarian Siswa:** Cari siswa aktif yang belum terdaftar di kelas lain (atau siswa yang bisa di-enroll).
 - [ ] **Simpan Pendaftaran:** Tambahkan siswa tersebut ke kelas.
-    - [ ] Pastikan baris baru terbuat di tabel pivot `study_class_student`.
+    - [ ] Pastikan baris baru terbuat di tabel `lead_enrollments`.
     - [ ] Pastikan nomor siklus terisi (`cycle_number = 1` secara default).
 - [ ] **Tampilan Daftar Kelas Siswa:** Buka profil siswa yang baru didaftarkan, pastikan nama kelas barunya tercantum pada daftar kelas yang ia ikuti.
 
@@ -49,9 +49,9 @@ Fitur ini digunakan saat sebuah periode belajar kelas telah berakhir (misal 12 p
 - [ ] **Aksi Reset Siklus:** Pilih salah satu kelas, klik tombol "Reset Siklus" / "Reset Class Cycle".
 - [ ] **Konfirmasi Aksi:** Pastikan muncul dialog peringatan konfirmasi sebelum reset dijalankan.
 - [ ] **Verifikasi Setelah Reset (Database & Tampilan):**
-    - [ ] **Sesi Pertemuan:** Pastikan `current_session_number` pada kelas tersebut kembali ke angka `1`.
+    - [ ] **Sesi Pertemuan:** Pastikan `current_session_number` pada kelas tersebut bertambah (misal ke `2`).
     - [ ] **Tanggal Sesi Baru:** Pastikan tanggal mulai kelas (`start_session_date`) dan tanggal berakhir (`end_session_date`) bergeser maju otomatis ke periode siklus berikutnya.
-    - [ ] **Siklus Pivot Siswa (cycle_number):** Periksa tabel `study_class_student` untuk siswa-siswa di kelas tersebut. Pastikan nilai `cycle_number` mereka bertambah (misal dari `1` menjadi `2`).
+    - [ ] **Siklus Enrollment Siswa (cycle_number):** Periksa tabel `lead_enrollments` untuk siswa-siswa di kelas tersebut. Pastikan nilai `cycle_number` mereka bertambah (misal dari `1` menjadi `2`).
     - [ ] **Histori Terjaga:** Pastikan data riwayat siklus sebelumnya tidak terhapus (tetap tersimpan di database sebagai arsip rekam jejak akademik siswa).
 
 ---

@@ -53,6 +53,20 @@ class StudentController extends Controller
             $query->where('status', $request->input('status'));
         }
 
+        if ($request->filled('class_category')) {
+            $cat = strtolower($request->input('class_category'));
+            $query->whereHas('studyClasses', function ($q) use ($cat) {
+                $q->where('category', $cat);
+            });
+        }
+
+        if ($request->filled('study_class_id')) {
+            $classId = $request->input('study_class_id');
+            $query->whereHas('studyClasses', function ($q) use ($classId) {
+                $q->where('study_classes.id', $classId);
+            });
+        }
+
         $sortField = $request->input('sort_field', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
 
@@ -70,10 +84,21 @@ class StudentController extends Controller
 
         $dashboardData = $this->getAcademicDashboardData($request);
 
-        return Inertia::render('Admin/Academic/Student/Index', array_merge([
+        $studyClassesList = StudyClass::where('status', 'active')
+            ->select('id', 'name', 'category')
+            ->orderBy('name')
+            ->get();
+
+        $allFilters = array_merge(
+            $dashboardData['filters'],
+            $request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'sort_field', 'sort_direction'])
+        );
+
+        return Inertia::render('Admin/Academic/Student/Index', array_merge($dashboardData, [
             'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
-            'filters' => array_merge($request->only(['search', 'expiry_status', 'status', 'sort_field', 'sort_direction']), $dashboardData['filters']),
-        ], $dashboardData));
+            'studyClassesList' => $studyClassesList,
+            'filters' => $allFilters,
+        ]));
     }
 
     private function getAcademicDashboardData(Request $request): array

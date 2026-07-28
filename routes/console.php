@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 Schedule::command('crm:cleanup-inactive-leads')->daily();
+Schedule::command('academic:snapshot-monthly-students')->monthlyOn(1, '00:01');

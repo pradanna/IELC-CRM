@@ -11,6 +11,7 @@ use App\Domains\Finance\Domain\Models\Invoice;
 use App\Domains\CRM\Domain\Models\Lead;
 use App\Domains\Finance\Domain\Models\PriceMaster;
 use App\Domains\Academic\Domain\Models\StudyClass;
+use App\Domains\Master\Domain\Models\LeadType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -263,9 +264,6 @@ class FinanceController extends Controller
     /**
      * Display financial reports and charts.
      */
-    /**
-     * Display financial reports and charts.
-     */
     public function reports(Request $request): Response
     {
         $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
@@ -273,8 +271,49 @@ class FinanceController extends Controller
         $branchId = $request->input('branch_id');
         $typeFilter = $request->input('type');
         $studyClassIdFilter = $request->input('study_class_id');
+        $priceMasterIdFilter = $request->input('price_master_id');
+        $leadTypeIdFilter = $request->input('lead_type_id');
         $dailyDate = $request->input('daily_date', now()->toDateString());
         $search = $request->input('search');
+
+        // Helper to apply filters to invoice queries
+        $applyFilters = function($query) use ($branchId, $typeFilter, $studyClassIdFilter, $priceMasterIdFilter, $leadTypeIdFilter) {
+            if ($branchId) {
+                $query->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
+            }
+
+            if ($typeFilter) {
+                if ($typeFilter === 'new_join') {
+                    $query->where(fn($q) => $q->where('type', 'new_join')->orWhere(fn($sq) => $sq->whereNull('type')->whereNull('student_id')));
+                } elseif ($typeFilter === 'rejoin') {
+                    $query->where(fn($q) => $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id')));
+                } elseif ($typeFilter === 'placement_test') {
+                    $query->where('type', 'placement_test');
+                } else {
+                    $query->where('type', $typeFilter);
+                }
+            }
+
+            if ($studyClassIdFilter) {
+                $query->where('study_class_id', $studyClassIdFilter);
+            }
+
+            if ($priceMasterIdFilter) {
+                $query->where(function($q) use ($priceMasterIdFilter) {
+                    $q->whereHas('items', fn($iq) => $iq->where('price_master_id', $priceMasterIdFilter))
+                      ->orWhereHas('studyClass', fn($sq) => $sq->where('price_master_id', $priceMasterIdFilter));
+                });
+            }
+
+            if ($leadTypeIdFilter) {
+                $query->where(function($q) use ($leadTypeIdFilter) {
+                    $q->whereHas('lead', fn($lq) => $lq->where('lead_type_id', $leadTypeIdFilter))
+                      ->orWhereHas('student.lead', fn($slq) => $slq->where('lead_type_id', $leadTypeIdFilter));
+                });
+            }
+
+            return $query;
+        };
 
         // Base Query for Paid Invoices within selected filter
         $paidInvoicesQuery = Invoice::where('status', 'paid');
@@ -285,28 +324,8 @@ class FinanceController extends Controller
             $pendingInvoicesQuery->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         }
 
-        if ($branchId) {
-            $paidInvoicesQuery->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-            $pendingInvoicesQuery->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-        }
-
-        if ($typeFilter) {
-            if ($typeFilter === 'new_join') {
-                $paidInvoicesQuery->where(fn($q) => $q->where('type', 'new_join')->orWhere(fn($sq) => $sq->whereNull('type')->whereNull('student_id')));
-                $pendingInvoicesQuery->where(fn($q) => $q->where('type', 'new_join')->orWhere(fn($sq) => $sq->whereNull('type')->whereNull('student_id')));
-            } elseif ($typeFilter === 'rejoin') {
-                $paidInvoicesQuery->where(fn($q) => $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id')));
-                $pendingInvoicesQuery->where(fn($q) => $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id')));
-            } else {
-                $paidInvoicesQuery->where('type', $typeFilter);
-                $pendingInvoicesQuery->where('type', $typeFilter);
-            }
-        }
-
-        if ($studyClassIdFilter) {
-            $paidInvoicesQuery->where('study_class_id', $studyClassIdFilter);
-            $pendingInvoicesQuery->where('study_class_id', $studyClassIdFilter);
-        }
+        $paidInvoicesQuery = $applyFilters($paidInvoicesQuery);
+        $pendingInvoicesQuery = $applyFilters($pendingInvoicesQuery);
 
         $totalRevenue = (int) (clone $paidInvoicesQuery)->sum('total_amount');
         $totalPending = (int) (clone $pendingInvoicesQuery)->sum('total_amount');
@@ -343,6 +362,44 @@ class FinanceController extends Controller
             ->take(5)
             ->values();
 
+        // Revenue by Price Master (Paket Harga)
+        $priceMasterRevenue = (clone $paidInvoicesQuery)
+            ->with(['items.priceMaster', 'studyClass.priceMaster'])
+            ->get()
+            ->flatMap(function ($invoice) {
+                $itemsFound = false;
+                $results = [];
+                foreach ($invoice->items as $item) {
+                    if ($item->price_master_id && $item->priceMaster) {
+                        $itemsFound = true;
+                        $results[] = [
+                            'price_master_id' => $item->price_master_id,
+                            'name' => $item->priceMaster->name,
+                            'amount' => (int) $item->subtotal,
+                        ];
+                    }
+                }
+                if (!$itemsFound && $invoice->studyClass && $invoice->studyClass->priceMaster) {
+                    $results[] = [
+                        'price_master_id' => $invoice->studyClass->priceMaster->id,
+                        'name' => $invoice->studyClass->priceMaster->name,
+                        'amount' => (int) $invoice->total_amount,
+                    ];
+                }
+                return $results;
+            })
+            ->groupBy('price_master_id')
+            ->map(function ($group) {
+                return [
+                    'name' => $group->first()['name'],
+                    'total' => (int) $group->sum('amount'),
+                    'count' => $group->count(),
+                ];
+            })
+            ->values()
+            ->sortByDesc('total')
+            ->values();
+
         // Monthly Trend (Last 6 Months)
         $monthlyTrend = collect();
         for ($i = 5; $i >= 0; $i--) {
@@ -352,9 +409,7 @@ class FinanceController extends Controller
 
             $monthlySumQuery = Invoice::where('status', 'paid')
                 ->whereBetween('paid_at', [$monthStart, $monthEnd]);
-            if ($branchId) {
-                $monthlySumQuery->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-            }
+            $monthlySumQuery = $applyFilters($monthlySumQuery);
 
             $monthlyTrend->push([
                 'month' => $monthLabel,
@@ -366,7 +421,6 @@ class FinanceController extends Controller
         $dailyStart = \Carbon\Carbon::parse($dailyDate)->startOfDay();
         $dailyEnd = \Carbon\Carbon::parse($dailyDate)->endOfDay();
 
-        // Fallback fallback query if paid_at is null: check updated_at or created_at within daily range
         $todayInvoicesQuery = Invoice::where('status', 'paid')
             ->where(function($q) use ($dailyStart, $dailyEnd) {
                 $q->whereBetween('paid_at', [$dailyStart, $dailyEnd])
@@ -374,19 +428,9 @@ class FinanceController extends Controller
                       $sq->whereNull('paid_at')->whereBetween('updated_at', [$dailyStart, $dailyEnd]);
                   });
             })
-            ->with(['lead', 'student.lead', 'studyClass.branch', 'items']);
+            ->with(['lead.leadType', 'student.lead.leadType', 'studyClass.branch', 'items']);
 
-        if ($branchId) {
-            $todayInvoicesQuery->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-        }
-
-        if ($typeFilter) {
-            $todayInvoicesQuery->where('type', $typeFilter);
-        }
-
-        if ($studyClassIdFilter) {
-            $todayInvoicesQuery->where('study_class_id', $studyClassIdFilter);
-        }
+        $todayInvoicesQuery = $applyFilters($todayInvoicesQuery);
 
         if ($search) {
             $todayInvoicesQuery->where(function($q) use ($search) {
@@ -403,9 +447,7 @@ class FinanceController extends Controller
         $mtdStart = now()->startOfMonth();
         $mtdEnd = now()->endOfDay();
         $mtdQuery = Invoice::where('status', 'paid')->whereBetween('paid_at', [$mtdStart, $mtdEnd]);
-        if ($branchId) {
-            $mtdQuery->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-        }
+        $mtdQuery = $applyFilters($mtdQuery);
         $mtdRevenue = (int) $mtdQuery->sum('total_amount');
 
         return Inertia::render('Admin/Finance/Reports/Index', [
@@ -416,11 +458,15 @@ class FinanceController extends Controller
                 'branch_id' => $branchId ?? '',
                 'type' => $typeFilter ?? '',
                 'study_class_id' => $studyClassIdFilter ?? '',
+                'price_master_id' => $priceMasterIdFilter ?? '',
+                'lead_type_id' => $leadTypeIdFilter ?? '',
                 'daily_date' => $dailyDate,
                 'search' => $search ?? '',
             ],
             'branches' => \App\Domains\Master\Domain\Models\Branch::select('id', 'name')->get(),
             'studyClasses' => StudyClass::select('id', 'name', 'branch_id')->get(),
+            'priceMasters' => PriceMaster::select('id', 'name')->orderBy('name')->get(),
+            'leadTypes' => LeadType::select('id', 'name')->orderBy('name')->get(),
             'stats' => [
                 'total_revenue' => $totalRevenue,
                 'total_pending' => $totalPending,
@@ -430,6 +476,7 @@ class FinanceController extends Controller
                 'rejoin_revenue' => $rejoinRevenue,
                 'paket_lanjut_revenue' => $paketLanjutRevenue,
                 'class_revenue' => $classRevenue,
+                'price_master_revenue' => $priceMasterRevenue,
                 'monthly_trend' => $monthlyTrend,
                 'today_revenue' => $todayRevenue,
                 'mtd_revenue' => $mtdRevenue,
@@ -450,6 +497,8 @@ class FinanceController extends Controller
         $branchId = $request->input('branch_id');
         $typeFilter = $request->input('type');
         $studyClassId = $request->input('study_class_id');
+        $priceMasterIdFilter = $request->input('price_master_id');
+        $leadTypeIdFilter = $request->input('lead_type_id');
         $search = $request->input('search');
 
         $branchName = 'Semua Cabang';
@@ -457,6 +506,39 @@ class FinanceController extends Controller
             $branch = \App\Domains\Master\Domain\Models\Branch::find($branchId);
             if ($branch) $branchName = $branch->name;
         }
+
+        $applyFilters = function($query) use ($branchId, $typeFilter, $studyClassId, $priceMasterIdFilter, $leadTypeIdFilter) {
+            if ($branchId) {
+                $query->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
+            }
+            if ($typeFilter) {
+                if ($typeFilter === 'new_join') {
+                    $query->where(fn($q) => $q->where('type', 'new_join')->orWhere(fn($sq) => $sq->whereNull('type')->whereNull('student_id')));
+                } elseif ($typeFilter === 'rejoin') {
+                    $query->where(fn($q) => $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id')));
+                } elseif ($typeFilter === 'placement_test') {
+                    $query->where('type', 'placement_test');
+                } else {
+                    $query->where('type', $typeFilter);
+                }
+            }
+            if ($studyClassId) {
+                $query->where('study_class_id', $studyClassId);
+            }
+            if ($priceMasterIdFilter) {
+                $query->where(function($q) use ($priceMasterIdFilter) {
+                    $q->whereHas('items', fn($iq) => $iq->where('price_master_id', $priceMasterIdFilter))
+                      ->orWhereHas('studyClass', fn($sq) => $sq->where('price_master_id', $priceMasterIdFilter));
+                });
+            }
+            if ($leadTypeIdFilter) {
+                $query->where(function($q) use ($leadTypeIdFilter) {
+                    $q->whereHas('lead', fn($lq) => $lq->where('lead_type_id', $leadTypeIdFilter))
+                      ->orWhereHas('student.lead', fn($slq) => $slq->where('lead_type_id', $leadTypeIdFilter));
+                });
+            }
+            return $query;
+        };
 
         if ($tab === 'daily') {
             $dailyStart = \Carbon\Carbon::parse($dailyDate)->startOfDay();
@@ -471,21 +553,8 @@ class FinanceController extends Controller
                 })
                 ->with(['lead', 'student.lead', 'studyClass.branch', 'items']);
 
-            if ($branchId) {
-                $query->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-            }
-            if ($typeFilter) {
-                if ($typeFilter === 'new_join') {
-                    $query->where(fn($q) => $q->where('type', 'new_join')->orWhere(fn($sq) => $sq->whereNull('type')->whereNull('student_id')));
-                } elseif ($typeFilter === 'rejoin') {
-                    $query->where(fn($q) => $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id')));
-                } elseif ($typeFilter === 'placement_test') {
-                    $query->where('type', 'placement_test');
-                }
-            }
-            if ($studyClassId) {
-                $query->where('study_class_id', $studyClassId);
-            }
+            $query = $applyFilters($query);
+
             if ($search) {
                 $query->where(function($q) use ($search) {
                     $q->where('invoice_number', 'like', "%{$search}%")
@@ -517,23 +586,8 @@ class FinanceController extends Controller
             $pendingInvoicesQuery->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         }
 
-        if ($branchId) {
-            $paidInvoicesQuery->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-            $pendingInvoicesQuery->whereHas('studyClass', fn($q) => $q->where('branch_id', $branchId));
-        }
-
-        if ($typeFilter) {
-            if ($typeFilter === 'new_join') {
-                $paidInvoicesQuery->where(fn($q) => $q->where('type', 'new_join')->orWhere(fn($sq) => $sq->whereNull('type')->whereNull('student_id')));
-            } elseif ($typeFilter === 'rejoin') {
-                $paidInvoicesQuery->where(fn($q) => $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id')));
-            } elseif ($typeFilter === 'placement_test') {
-                $paidInvoicesQuery->where('type', 'placement_test');
-            }
-        }
-        if ($studyClassId) {
-            $paidInvoicesQuery->where('study_class_id', $studyClassId);
-        }
+        $paidInvoicesQuery = $applyFilters($paidInvoicesQuery);
+        $pendingInvoicesQuery = $applyFilters($pendingInvoicesQuery);
 
         $totalRevenue = (int) (clone $paidInvoicesQuery)->sum('total_amount');
         $totalPending = (int) (clone $pendingInvoicesQuery)->sum('total_amount');
@@ -549,19 +603,95 @@ class FinanceController extends Controller
             $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id'));
         })->sum('total_amount');
 
+        $paketLanjutRevenue = (int) (clone $paidInvoicesQuery)->where('type', 'paket_lanjut')->sum('total_amount');
+
+        // Revenue by Price Master (Paket Harga)
+        $priceMasterRevenue = (clone $paidInvoicesQuery)
+            ->with(['items.priceMaster', 'studyClass.priceMaster'])
+            ->get()
+            ->flatMap(function ($invoice) {
+                $itemsFound = false;
+                $results = [];
+                foreach ($invoice->items as $item) {
+                    if ($item->price_master_id && $item->priceMaster) {
+                        $itemsFound = true;
+                        $results[] = [
+                            'name' => $item->priceMaster->name,
+                            'amount' => (int) $item->subtotal,
+                        ];
+                    }
+                }
+                if (!$itemsFound && $invoice->studyClass && $invoice->studyClass->priceMaster) {
+                    $results[] = [
+                        'name' => $invoice->studyClass->priceMaster->name,
+                        'amount' => (int) $invoice->total_amount,
+                    ];
+                }
+                return $results;
+            })
+            ->groupBy('name')
+            ->map(function ($group, $name) {
+                return [
+                    'name' => $name,
+                    'total' => (int) $group->sum('amount'),
+                    'count' => $group->count(),
+                ];
+            })
+            ->values()
+            ->sortByDesc('total')
+            ->values();
+
+        $periodPaidInvoices = (clone $paidInvoicesQuery)
+            ->with(['lead.leadType', 'student.lead.leadType', 'studyClass.branch', 'items'])
+            ->latest('paid_at')
+            ->get();
+
         $todayStart = now()->startOfDay();
         $todayEnd = now()->endOfDay();
-        $todayPaidInvoices = Invoice::where('status', 'paid')
-            ->whereBetween('paid_at', [$todayStart, $todayEnd])
-            ->with(['lead', 'student.lead', 'studyClass.branch'])
-            ->latest('paid_at')->get();
+        $todayPaidInvoices = $applyFilters(
+            Invoice::where('status', 'paid')
+                ->whereBetween('paid_at', [$todayStart, $todayEnd])
+                ->with(['lead', 'student.lead', 'studyClass.branch'])
+        )->latest('paid_at')->get();
         $todayRevenue = (int) $todayPaidInvoices->sum('total_amount');
 
         $mtdStart = now()->startOfMonth();
         $mtdEnd = now()->endOfDay();
-        $mtdRevenue = (int) Invoice::where('status', 'paid')->whereBetween('paid_at', [$mtdStart, $mtdEnd])->sum('total_amount');
+        $mtdRevenue = (int) $applyFilters(
+            Invoice::where('status', 'paid')->whereBetween('paid_at', [$mtdStart, $mtdEnd])
+        )->sum('total_amount');
 
         $periodLabel = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') . ' - ' . \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y');
+
+        // Resolve filter labels
+        $className = 'Semua Kelas';
+        if ($studyClassId) {
+            $sc = StudyClass::find($studyClassId);
+            if ($sc) $className = $sc->name;
+        }
+
+        $priceMasterName = 'Semua Paket';
+        if ($priceMasterIdFilter) {
+            $pm = PriceMaster::find($priceMasterIdFilter);
+            if ($pm) $priceMasterName = $pm->name;
+        }
+
+        $leadTypeName = 'Semua Type Lead';
+        if ($leadTypeIdFilter) {
+            $lt = \App\Domains\Master\Domain\Models\LeadType::find($leadTypeIdFilter);
+            if ($lt) $leadTypeName = $lt->name;
+        }
+
+        $typeName = 'Semua Tipe';
+        if ($typeFilter) {
+            $typeNameMap = [
+                'new_join' => 'New Join',
+                'rejoin' => 'Rejoin',
+                'paket_lanjut' => 'Paket Lanjut',
+                'placement_test' => 'Placement Test',
+            ];
+            $typeName = $typeNameMap[$typeFilter] ?? $typeFilter;
+        }
 
         $stats = [
             'total_revenue' => $totalRevenue,
@@ -570,12 +700,17 @@ class FinanceController extends Controller
             'average_order_value' => $averageOrderValue,
             'new_join_revenue' => $newJoinRevenue,
             'rejoin_revenue' => $rejoinRevenue,
+            'paket_lanjut_revenue' => $paketLanjutRevenue,
+            'price_master_revenue' => $priceMasterRevenue,
             'today_revenue' => $todayRevenue,
             'mtd_revenue' => $mtdRevenue,
             'today_invoices' => $todayPaidInvoices,
+            'period_invoices' => $periodPaidInvoices,
         ];
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.financial-report', compact('stats', 'branchName', 'periodLabel'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.financial-report', compact(
+            'stats', 'branchName', 'periodLabel', 'className', 'priceMasterName', 'leadTypeName', 'typeName'
+        ));
         return $pdf->stream("Laporan-Keuangan-Summary-{$startDate}-to-{$endDate}.pdf");
     }
 
@@ -591,10 +726,12 @@ class FinanceController extends Controller
         $branchId = $request->input('branch_id');
         $typeFilter = $request->input('type');
         $studyClassId = $request->input('study_class_id');
+        $priceMasterIdFilter = $request->input('price_master_id');
+        $leadTypeIdFilter = $request->input('lead_type_id');
         $search = $request->input('search');
 
         $query = Invoice::where('status', 'paid')
-            ->with(['lead', 'student.lead', 'studyClass.branch']);
+            ->with(['lead.leadType', 'student.lead.leadType', 'studyClass.branch']);
 
         if ($tab === 'daily') {
             $dailyStart = \Carbon\Carbon::parse($dailyDate)->startOfDay();
@@ -622,11 +759,27 @@ class FinanceController extends Controller
                 $query->where(fn($q) => $q->where('type', 'rejoin')->orWhere(fn($sq) => $sq->whereNull('type')->whereNotNull('student_id')));
             } elseif ($typeFilter === 'placement_test') {
                 $query->where('type', 'placement_test');
+            } else {
+                $query->where('type', $typeFilter);
             }
         }
 
         if ($studyClassId) {
             $query->where('study_class_id', $studyClassId);
+        }
+
+        if ($priceMasterIdFilter) {
+            $query->where(function($q) use ($priceMasterIdFilter) {
+                $q->whereHas('items', fn($iq) => $iq->where('price_master_id', $priceMasterIdFilter))
+                  ->orWhereHas('studyClass', fn($sq) => $sq->where('price_master_id', $priceMasterIdFilter));
+            });
+        }
+
+        if ($leadTypeIdFilter) {
+            $query->where(function($q) use ($leadTypeIdFilter) {
+                $q->whereHas('lead', fn($lq) => $lq->where('lead_type_id', $leadTypeIdFilter))
+                  ->orWhereHas('student.lead', fn($slq) => $slq->where('lead_type_id', $leadTypeIdFilter));
+            });
         }
 
         if ($tab === 'daily' && $search) {
@@ -651,10 +804,11 @@ class FinanceController extends Controller
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($file, ['No. Invoice', 'Tanggal Bayar', 'Tipe', 'Nama Pelanggan', 'No. HP', 'Kelas / Produk', 'Cabang', 'Diskon', 'Total Bayar']);
+            fputcsv($file, ['No. Invoice', 'Tanggal Bayar', 'Tipe', 'Nama Pelanggan', 'Type Lead', 'No. HP', 'Kelas / Produk', 'Cabang', 'Diskon', 'Total Bayar']);
 
             foreach ($invoices as $inv) {
                 $customerName = $inv->lead->name ?? ($inv->student->lead->name ?? 'Unknown');
+                $leadTypeName = $inv->lead->leadType->name ?? ($inv->student->lead->leadType->name ?? '-');
                 $phoneRaw = $inv->lead->phone ?? ($inv->student->lead->phone ?? '-');
                 // Format phone number with leading single quote or non-breaking prefix so Excel treats it as text, preventing scientific notation
                 $phone = ($phoneRaw !== '-' && !empty($phoneRaw)) ? "'" . $phoneRaw : '-';
@@ -671,6 +825,7 @@ class FinanceController extends Controller
                     $formattedDate,
                     $typeLabel,
                     $customerName,
+                    $leadTypeName,
                     $phone,
                     $className,
                     $branchName,

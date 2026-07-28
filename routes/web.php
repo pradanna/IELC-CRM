@@ -125,6 +125,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::delete('study-classes/{study_class}/unenroll/{student}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'unenroll'])->name('study-classes.unenroll');
 
         Route::get('students/search', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'search'])->name('students.search');
+        Route::get('students/export/excel', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportExcel'])->name('students.export.excel');
+        Route::get('students/export/pdf', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportPdf'])->name('students.export.pdf');
         Route::resource('students', \App\Http\Controllers\Admin\Academic\StudentController::class);
         Route::post('leads/{lead}/promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'promoteFromLead'])->name('students.promote');
     });

@@ -29,6 +29,7 @@ class LeadResource extends JsonResource
             'pending_updates' => $this->pending_updates,
             'guardian_data'   => $this->guardian_data,
             'plotting'       => $this->plotting,
+            'follow_up_count' => (int) ($this->follow_up_count ?? 0),
             'lead_notes'     => $this->whenLoaded('notes', fn() => 
                 $this->notes->map(fn($n) => [
                     'id'         => $n->id,
@@ -39,6 +40,20 @@ class LeadResource extends JsonResource
                     ],
                     'created_at' => $n->created_at->toISOString(),
                     'human_at'   => $n->created_at->diffForHumans(),
+                ])
+            ),
+            'lead_activities' => $this->whenLoaded('activities', fn() => 
+                $this->activities->sortByDesc('created_at')->values()->map(fn($a) => [
+                    'id'          => $a->id,
+                    'type'        => $a->type,
+                    'description' => $a->description,
+                    'user'        => [
+                        'id'   => $a->user?->id,
+                        'name' => $a->user?->name,
+                    ],
+                    'created_at'  => $a->created_at->toISOString(),
+                    'formatted_at' => $a->created_at->format('d M Y, H:i'),
+                    'human_at'    => $a->created_at->diffForHumans(),
                 ])
             ),
             
@@ -79,6 +94,7 @@ class LeadResource extends JsonResource
                 'id'         => $this->leadPhase->id,
                 'name'       => $this->leadPhase->name,
                 'code'       => $this->leadPhase->code,
+                'status'     => $this->leadPhase->status,
             ]),
             
             'guardians'      => $this->whenLoaded('guardians'),
@@ -130,6 +146,27 @@ class LeadResource extends JsonResource
                     'name' => $sc->name,
                 ]),
             ]),
+
+            'enrollments' => $this->whenLoaded('enrollments', fn() => 
+                $this->enrollments->map(fn($e) => [
+                    'id'              => $e->id,
+                    'study_class_id'  => $e->study_class_id,
+                    'study_class'     => $e->studyClass ? [
+                        'id'   => $e->studyClass->id,
+                        'name' => $e->studyClass->name,
+                    ] : null,
+                    'invoice_id'      => $e->invoice_id,
+                    'invoice_number'  => $e->invoice?->invoice_number,
+                    'joined_at'       => $e->joined_at ? $e->joined_at->format('Y-m-d') : null,
+                    'formatted_joined_at' => $e->joined_at ? $e->joined_at->format('d M Y') : null,
+                    'end_date'        => $e->end_date ? $e->end_date->format('Y-m-d') : null,
+                    'formatted_end_date' => $e->end_date ? $e->end_date->format('d M Y') : null,
+                    'stopped_at'      => $e->stopped_at ? $e->stopped_at->format('Y-m-d') : null,
+                    'status'          => $e->status ?? 'active',
+                    'cycle_number'    => $e->cycle_number ?? 1,
+                ])
+            ),
+            'enrollment_count' => $this->whenLoaded('enrollments', fn() => $this->enrollments->count(), $this->enrollments_count ?? 0),
 
             'chat_logs' => $this->whenLoaded('chatLogs', fn() => 
                 $this->chatLogs->map(fn($log) => [

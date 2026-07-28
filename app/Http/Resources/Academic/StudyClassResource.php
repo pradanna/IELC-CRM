@@ -15,6 +15,8 @@ class StudyClassResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'type' => $this->type ?? 'offline',
+            'category' => $this->category ?? ($this->is_private ? 'private' : 'group'),
+            'status' => $this->status ?? 'active',
             'branch_id' => $this->branch_id,
             'instructor_id' => $this->instructor_id,
             'price_master_id' => $this->price_master_id,
@@ -25,6 +27,8 @@ class StudyClassResource extends JsonResource
             'meetings_per_week' => $this->meetings_per_week,
             'current_session_number' => $this->current_session_number,
             'session_progress' => $this->session_progress,
+            'is_expired' => (bool) $this->is_expired,
+            'is_private' => (bool) $this->is_private,
             'schedule_days' => $this->schedule_days,
             'students_count' => $this->whenCounted('students'),
 

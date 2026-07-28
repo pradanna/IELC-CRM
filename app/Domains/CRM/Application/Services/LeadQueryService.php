@@ -14,11 +14,16 @@ class LeadQueryService
      */
     public function getPaginatedLeads(Request $request, int $perPage = 10): LengthAwarePaginator
     {
-        $query = Lead::with(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase']);
+        $query = Lead::with(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase'])
+            ->withCount('enrollments');
 
         // Handle Filters
         if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
+            if ($request->branch_id === 'unassigned') {
+                $query->whereNull('branch_id');
+            } else {
+                $query->where('branch_id', $request->branch_id);
+            }
         }
         
         if ($request->filled('lead_phase_id')) {

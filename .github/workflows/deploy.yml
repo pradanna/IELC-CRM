@@ -1,13 +1,13 @@
-name: Deploy to Production
+name: Deploy Staging to VPS
 
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   deploy:
-    name: Deploying to VPS
+    name: Deploying Develop Branch to Staging VPS
     runs-on: ubuntu-latest
 
     steps:
@@ -21,14 +21,31 @@ jobs:
           script: |
             cd /home/pradana/IELC-CRM
             
-            # 1. Pull perubahan terbaru dari branch main
-            git pull origin main
+            # Simpan commit hash sebelum pull
+            OLD_COMMIT=$(git rev-parse HEAD)
             
-            # 2. Install & Build Frontend assets
-            npm install
-            npm run build
+            # 1. Pull perubahan terbaru dari branch develop
+            git pull origin develop
             
-            # 3. Optimasi Laravel (opsional, aman dijalankan)
+            # 2. Cek apakah ada perubahan pada file frontend (.jsx, .js, .css, dll)
+            CHANGED_FRONTEND_FILES=$(git diff --name-only $OLD_COMMIT HEAD | grep -E '\.(jsx|js|ts|tsx|vue|css|scss|html)|package-lock\.json|package\.json|vite\.config\.js' || true)
+            
+            if [ -n "$CHANGED_FRONTEND_FILES" ]; then
+              echo "=> Perubahan frontend dideteksi. Menjalankan npm build..."
+              
+              # Cek jika package.json ikut berubah, jalankan npm install
+              CHANGED_PACKAGE=$(git diff --name-only $OLD_COMMIT HEAD | grep -E 'package-lock\.json|package\.json' || true)
+              if [ -n "$CHANGED_PACKAGE" ]; then
+                echo "=> package.json berubah. Running npm install..."
+                npm install
+              fi
+              
+              npm run build
+            else
+              echo "=> Tidak ada perubahan pada file frontend. Skipping npm build."
+            fi
+            
+            # 3. Optimasi Laravel
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache

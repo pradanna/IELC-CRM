@@ -28,7 +28,7 @@ class PromoteLeadToStudent
         $enrollmentPhase = \App\Domains\Master\Domain\Models\LeadPhase::where('code', 'enrollment')->first();
         $lead->update([
             'lead_phase_id' => $enrollmentPhase?->id,
-            'enrolled_at' => now(),
+            'enrolled_at' => $startJoin,
         ]);
 
         // Clear dashboard cache

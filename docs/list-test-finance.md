@@ -70,7 +70,5 @@ Ini adalah alur integrasi krusial yang menyatukan modul CRM, Finance, dan Academ
         - [ ] Lead tersebut kini tercatat sebagai siswa aktif baru di tabel `students`.
         - [ ] Memiliki nomor induk siswa (`student_number`) yang dibuat unik otomatis.
         - [ ] Tanggal bergabung (`start_join`) terisi hari ini, dan status siswa adalah `active`.
-    - [ ] **3. Pendaftaran Kelas (Action: EnrollStudent):**
-        - [ ] Siswa baru tersebut otomatis terdaftar ke dalam kelas belajar (`study_classes`) yang sebelumnya dipilih pada invoice.
-        - [ ] Terbuat record baru di tabel pivot `study_class_student` dengan siklus nomor `cycle_number = 1`.
+        - [ ] Terbuat record baru di tabel `lead_enrollments` dengan status `active`, tanggal `joined_at`, dan siklus nomor `cycle_number = 1`.
 - [ ] **Perubahan Status di Tampilan:** Muat ulang halaman detail lead tersebut. Pastikan lead tersebut status fasenya sudah berpindah ke fase `enrollment` (atau disesuaikan dengan alur bisnis yang disepakati).

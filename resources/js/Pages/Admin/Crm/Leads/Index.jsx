@@ -7,7 +7,7 @@ import LeadTable from './partials/LeadTable';
 import DeleteLeadModal from './modals/DeleteLeadModal';
 import { useLeadIndex } from './hooks/useLeadIndex';
 
-export default function Index({ leads, filters, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
+export default function Index({ leads, filters, branches, phases, sources, infoSources, types, provinces, chatTemplates, mediaAssets }) {
     const {
         isSuperadmin,
         deletingLead,
@@ -31,6 +31,7 @@ export default function Index({ leads, filters, branches, phases, sources, types
                     branches={branches}
                     phases={phases}
                     sources={sources}
+                    infoSources={infoSources}
                     types={types}
                     provinces={provinces}
                 >

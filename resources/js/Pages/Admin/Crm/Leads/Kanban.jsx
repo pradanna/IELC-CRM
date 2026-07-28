@@ -11,7 +11,7 @@ import useLeadKanban from './hooks/useLeadKanban';
 import KanbanColumn from './partials/KanbanColumn';
 import KanbanCard from './partials/KanbanCard';
 
-export default function Kanban({ auth, kanbanData, filters, branches, phases, sources, types, provinces, chatTemplates, mediaAssets }) {
+export default function Kanban({ auth, kanbanData, filters, branches, phases, sources, infoSources, types, provinces, chatTemplates, mediaAssets }) {
     const {
         boardData,
         activeLead,
@@ -36,12 +36,12 @@ export default function Kanban({ auth, kanbanData, filters, branches, phases, so
 
     return (
         <AuthenticatedLayout>
-            <Head title="CRM Board" />
+            <Head title="CRM Kanban Board" />
 
             {/* Custom styled scrollbar for Kanban - Mac Style */}
             <style dangerouslySetInnerHTML={{__html: `
                 .scrollbar-kanban::-webkit-scrollbar {
-                    height: 10px;
+                    height: 8px;
                 }
                 .scrollbar-kanban::-webkit-scrollbar-track {
                     background: transparent;
@@ -62,6 +62,7 @@ export default function Kanban({ auth, kanbanData, filters, branches, phases, so
                     branches={branches}
                     phases={phases}
                     sources={sources}
+                    infoSources={infoSources}
                     types={types}
                     provinces={provinces}
                 >

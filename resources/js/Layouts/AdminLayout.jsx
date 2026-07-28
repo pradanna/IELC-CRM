@@ -24,7 +24,6 @@ import Toast from "@/Components/ui/Toast";
 import NotificationToast from "@/Components/ui/NotificationToast";
 import useWhatsappNotification from "@/Hooks/useWhatsappNotification";
 import LeadDetailDrawer from "@/Pages/Admin/Crm/drawers/LeadDetailDrawer";
-import SendWhatsappModal from "@/Pages/Admin/Crm/Leads/modals/SendWhatsappModal";
 
 // IELC Logo
 const logoUrl = "/assets/images/local/IELC-Logo.webp";
@@ -302,7 +301,6 @@ export default function AdminLayout({ children }) {
                 <div className="p-4">{children}</div>
             </main>
             <LeadDetailDrawer />
-            <SendWhatsappModal />
         </div>
     );
 }

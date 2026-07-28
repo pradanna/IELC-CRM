@@ -4,40 +4,47 @@ import { Head, router } from '@inertiajs/react';
 import { 
     TrendingUp, DollarSign, Clock, Tag, Search,
     Percent, BarChart3, Users, BookOpen, AlertCircle,
-    Calendar, Filter, CalendarDays, Eye, FileText, Download, FileSpreadsheet, RotateCcw
+    Calendar, Filter, CalendarDays, Eye, RotateCcw
 } from 'lucide-react';
 import { 
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+    AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, 
     Tooltip, ResponsiveContainer
 } from 'recharts';
-import Button from '@/Components/ui/Button';
 import SearchInput from '@/Components/ui/SearchInput';
 import StatusBadge from '@/Components/ui/StatusBadge';
 import DataTable from '@/Components/ui/DataTable';
 import InvoiceDetailModal from '../Invoices/modals/InvoiceDetailModal';
+import ExportButtons from '@/Components/ui/ExportButtons';
 
-export default function Index({ stats, filters = {}, branches = [], studyClasses = [] }) {
+export default function Index({ stats, filters = {}, branches = [], studyClasses = [], priceMasters = [], leadTypes = [] }) {
     const [activeTab, setActiveTab] = useState(filters.tab || 'summary'); // 'summary' | 'daily'
     const [startDate, setStartDate] = useState(filters.start_date || '');
     const [endDate, setEndDate] = useState(filters.end_date || '');
     const [branchId, setBranchId] = useState(filters.branch_id || '');
     const [typeFilter, setTypeFilter] = useState(filters.type || '');
     const [studyClassId, setStudyClassId] = useState(filters.study_class_id || '');
+    const [priceMasterId, setPriceMasterId] = useState(filters.price_master_id || '');
+    const [leadTypeId, setLeadTypeId] = useState(filters.lead_type_id || '');
     const [dailyDate, setDailyDate] = useState(filters.daily_date || new Date().toISOString().split('T')[0]);
     const [search, setSearch] = useState(filters.search || '');
     const [selectedInvoice, setSelectedInvoice] = useState(null);
 
-    const handleFilter = () => {
-        router.get(route('admin.finance.reports.index'), {
+    const applyFilter = (overrides = {}) => {
+        const params = {
             tab: activeTab,
             start_date: startDate,
             end_date: endDate,
             branch_id: branchId,
             type: typeFilter,
             study_class_id: studyClassId,
+            price_master_id: priceMasterId,
+            lead_type_id: leadTypeId,
             daily_date: dailyDate,
             search: search,
-        }, {
+            ...overrides
+        };
+
+        router.get(route('admin.finance.reports.index'), params, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -49,9 +56,11 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
         setBranchId('');
         setTypeFilter('');
         setStudyClassId('');
+        setPriceMasterId('');
+        setLeadTypeId('');
         setDailyDate(new Date().toISOString().split('T')[0]);
         setSearch('');
-        router.get(route('admin.finance.reports.index'));
+        router.get(route('admin.finance.reports.index'), { tab: activeTab }, { preserveState: true, preserveScroll: true });
     };
 
     const handleExportPdf = () => {
@@ -63,6 +72,8 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
             branch_id: branchId,
             type: typeFilter,
             study_class_id: studyClassId,
+            price_master_id: priceMasterId,
+            lead_type_id: leadTypeId,
             search: search,
         });
         window.open(url, '_blank');
@@ -77,6 +88,8 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
             branch_id: branchId,
             type: typeFilter,
             study_class_id: studyClassId,
+            price_master_id: priceMasterId,
+            lead_type_id: leadTypeId,
             search: search,
         });
         window.open(url, '_blank');
@@ -143,10 +156,18 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
             render: (row) => {
                 const name = row.lead?.name || row.student?.lead?.name || 'Unknown';
                 const phone = row.lead?.phone || row.student?.lead?.phone || '-';
+                const leadTypeName = row.lead?.lead_type?.name || row.student?.lead?.lead_type?.name || null;
                 return (
                     <div>
                         <div className="font-bold text-slate-900">{name}</div>
-                        <div className="text-[11px] text-slate-400 font-medium">{phone}</div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium mt-0.5">
+                            <span>{phone}</span>
+                            {leadTypeName && (
+                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 font-bold rounded text-[9px] uppercase tracking-wider">
+                                    {leadTypeName}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 );
             }
@@ -203,24 +224,11 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <Button
-                            onClick={handleExportPdf}
-                            variant="primary"
-                            icon={FileText}
-                            className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase rounded-full shadow-lg shadow-red-600/20 px-5 py-2.5"
-                        >
-                            Export PDF ({activeTab === 'daily' ? 'Harian' : 'Ringkasan'})
-                        </Button>
-                        <Button
-                            onClick={handleExportExcel}
-                            variant="secondary"
-                            icon={FileSpreadsheet}
-                            className="!bg-emerald-600 hover:!bg-emerald-700 text-white text-xs font-bold uppercase rounded-full shadow-lg shadow-emerald-600/20 px-5 py-2.5"
-                        >
-                            Export Excel ({activeTab === 'daily' ? 'Harian' : 'Ringkasan'})
-                        </Button>
-                    </div>
+                    <ExportButtons
+                        onPdf={handleExportPdf}
+                        onExcel={handleExportExcel}
+                        label={activeTab === 'daily' ? 'Harian' : 'Ringkasan'}
+                    />
                 </div>
 
                 {/* Tab Navigation */}
@@ -228,7 +236,10 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                     <nav className="-mb-px flex space-x-8">
                         <button
                             type="button"
-                            onClick={() => setActiveTab('summary')}
+                            onClick={() => {
+                                setActiveTab('summary');
+                                applyFilter({ tab: 'summary' });
+                            }}
                             className={`pb-4 px-1 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
                                 activeTab === 'summary'
                                     ? 'border-red-600 text-red-600'
@@ -240,7 +251,10 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                         </button>
                         <button
                             type="button"
-                            onClick={() => setActiveTab('daily')}
+                            onClick={() => {
+                                setActiveTab('daily');
+                                applyFilter({ tab: 'daily' });
+                            }}
                             className={`pb-4 px-1 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
                                 activeTab === 'daily'
                                     ? 'border-red-600 text-red-600'
@@ -254,14 +268,8 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                 </div>
 
                 {/* Filter Bar with Generous Padding & Integrated Search Input */}
-                <div className="bg-white px-6 py-5 rounded-3xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* Filter Badge Label */}
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-100/80 border border-slate-200/80 rounded-full text-slate-700 text-xs font-black uppercase tracking-wider shrink-0">
-                            <Filter size={14} className="text-red-600" />
-                            <span>Dashboard Filters</span>
-                        </div>
-
+                <div className="bg-white px-6 py-4 rounded-3xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5 flex-1">
                         {/* Direct Native Clean Search Input in Filter Bar */}
                         <div className="relative">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -269,52 +277,60 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                                 type="text"
                                 placeholder="Cari invoice / nama..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
-                                className="bg-white border border-slate-200 rounded-full pl-9 pr-4 py-2 text-xs font-bold text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs w-44 md:w-56"
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    applyFilter({ search: e.target.value });
+                                }}
+                                className="bg-white border border-slate-200 rounded-full pl-9 pr-4 py-2 text-xs font-bold text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs w-44 md:w-52"
                             />
                         </div>
 
                         {/* Date Inputs */}
                         {activeTab === 'summary' ? (
-                            <>
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-full px-4 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs"
-                                        title="Tanggal Mulai"
-                                    />
-                                </div>
-                                <span className="text-slate-300 text-xs font-bold">-</span>
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-full px-4 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs"
-                                        title="Tanggal Selesai"
-                                    />
-                                </div>
-                            </>
-                        ) : (
-                            <div className="relative">
+                            <div className="flex items-center gap-1.5">
                                 <input
                                     type="date"
-                                    value={dailyDate}
-                                    onChange={(e) => setDailyDate(e.target.value)}
-                                    className="bg-white border border-slate-200 rounded-full px-4 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs"
-                                    title="Pilih Tanggal Harian"
+                                    value={startDate}
+                                    onChange={(e) => {
+                                        setStartDate(e.target.value);
+                                        applyFilter({ start_date: e.target.value });
+                                    }}
+                                    className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs"
+                                    title="Tanggal Mulai"
+                                />
+                                <span className="text-slate-300 text-xs font-bold">-</span>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => {
+                                        setEndDate(e.target.value);
+                                        applyFilter({ end_date: e.target.value });
+                                    }}
+                                    className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs"
+                                    title="Tanggal Selesai"
                                 />
                             </div>
+                        ) : (
+                            <input
+                                type="date"
+                                value={dailyDate}
+                                onChange={(e) => {
+                                    setDailyDate(e.target.value);
+                                    applyFilter({ daily_date: e.target.value });
+                                }}
+                                className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs"
+                                title="Pilih Tanggal Harian"
+                            />
                         )}
 
                         {/* Branch Select */}
                         <select
                             value={branchId}
-                            onChange={(e) => setBranchId(e.target.value)}
-                            className="bg-white border border-slate-200 rounded-full px-4 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8"
+                            onChange={(e) => {
+                                setBranchId(e.target.value);
+                                applyFilter({ branch_id: e.target.value });
+                            }}
+                            className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8"
                         >
                             <option value="">Semua Cabang</option>
                             {branches.map((b) => (
@@ -325,8 +341,11 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                         {/* Type Select */}
                         <select
                             value={typeFilter}
-                            onChange={(e) => setTypeFilter(e.target.value)}
-                            className="bg-white border border-slate-200 rounded-full px-4 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8"
+                            onChange={(e) => {
+                                setTypeFilter(e.target.value);
+                                applyFilter({ type: e.target.value });
+                            }}
+                            className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8"
                         >
                             <option value="">Semua Tipe</option>
                             <option value="new_join">New Join</option>
@@ -338,8 +357,11 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                         {/* Class Select */}
                         <select
                             value={studyClassId}
-                            onChange={(e) => setStudyClassId(e.target.value)}
-                            className="bg-white border border-slate-200 rounded-full px-4 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8 max-w-[180px] truncate"
+                            onChange={(e) => {
+                                setStudyClassId(e.target.value);
+                                applyFilter({ study_class_id: e.target.value });
+                            }}
+                            className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8 max-w-[150px] truncate"
                         >
                             <option value="">Semua Kelas</option>
                             {filteredClasses.map((cls) => (
@@ -347,21 +369,42 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                             ))}
                         </select>
 
-                        {/* Apply Button */}
-                        <Button
-                            onClick={handleFilter}
-                            variant="primary"
-                            className="!py-2 !px-6 bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider !rounded-full shadow-md shadow-red-600/10"
+                        {/* Price Master Select */}
+                        <select
+                            value={priceMasterId}
+                            onChange={(e) => {
+                                setPriceMasterId(e.target.value);
+                                applyFilter({ price_master_id: e.target.value });
+                            }}
+                            className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8 max-w-[160px] truncate"
                         >
-                            Terapkan
-                        </Button>
+                            <option value="">Semua Paket Harga</option>
+                            {priceMasters.map((pm) => (
+                                <option key={pm.id} value={pm.id}>{pm.name}</option>
+                            ))}
+                        </select>
+
+                        {/* Type Lead Select */}
+                        <select
+                            value={leadTypeId}
+                            onChange={(e) => {
+                                setLeadTypeId(e.target.value);
+                                applyFilter({ lead_type_id: e.target.value });
+                            }}
+                            className="bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all shadow-xs pr-8 max-w-[150px] truncate"
+                        >
+                            <option value="">Semua Type Lead</option>
+                            {leadTypes.map((lt) => (
+                                <option key={lt.id} value={lt.id}>{lt.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Right-aligned Clear All / Reset Button */}
                     <button
                         type="button"
                         onClick={handleReset}
-                        className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-red-600 uppercase tracking-widest transition-colors shrink-0 ml-auto"
+                        className="px-3.5 py-2 text-xs font-bold text-slate-400 hover:text-red-600 uppercase tracking-widest transition-colors shrink-0 ml-auto"
                     >
                         Clear All
                     </button>
@@ -448,56 +491,111 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                            {/* Left Column: Monthly Trend Graph */}
-                            <div className="lg:col-span-8 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Tren Pendapatan Bulanan</h3>
-                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">Pendapatan lunas 6 bulan terakhir</p>
+                            {/* Left Column: Monthly Trend Graph & Price Master Graph */}
+                            <div className="lg:col-span-8 space-y-8">
+                                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Tren Pendapatan Bulanan</h3>
+                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">Pendapatan lunas 6 bulan terakhir</p>
+                                        </div>
+                                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                                            <TrendingUp size={18} />
+                                        </div>
                                     </div>
-                                    <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                                        <TrendingUp size={18} />
+
+                                    <div className="h-[280px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={stats.monthly_trend}>
+                                                <defs>
+                                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                                <XAxis 
+                                                    dataKey="month" 
+                                                    stroke="#94a3b8" 
+                                                    fontSize={10} 
+                                                    fontWeight="bold"
+                                                    tickLine={false}
+                                                />
+                                                <YAxis 
+                                                    stroke="#94a3b8" 
+                                                    fontSize={10} 
+                                                    fontWeight="bold"
+                                                    tickLine={false}
+                                                    tickFormatter={(value) => `Rp ${value >= 1000000 ? (value / 1000000).toFixed(1) + 'M' : (value / 1000).toFixed(0) + 'K'}`}
+                                                />
+                                                <Tooltip 
+                                                    formatter={(value) => [formatCurrency(value), 'Pendapatan']}
+                                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                                                />
+                                                <Area 
+                                                    type="monotone" 
+                                                    dataKey="total" 
+                                                    stroke="#10b981" 
+                                                    strokeWidth={3}
+                                                    fillOpacity={1} 
+                                                    fill="url(#colorRevenue)" 
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
                                     </div>
                                 </div>
 
-                                <div className="h-[300px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={stats.monthly_trend}>
-                                            <defs>
-                                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                                            <XAxis 
-                                                dataKey="month" 
-                                                stroke="#94a3b8" 
-                                                fontSize={10} 
-                                                fontWeight="bold"
-                                                tickLine={false}
-                                            />
-                                            <YAxis 
-                                                stroke="#94a3b8" 
-                                                fontSize={10} 
-                                                fontWeight="bold"
-                                                tickLine={false}
-                                                tickFormatter={(value) => `Rp ${value / 1000000}M`}
-                                            />
-                                            <Tooltip 
-                                                formatter={(value) => [formatCurrency(value), 'Pendapatan']}
-                                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                                            />
-                                            <Area 
-                                                type="monotone" 
-                                                dataKey="total" 
-                                                stroke="#10b981" 
-                                                strokeWidth={3}
-                                                fillOpacity={1} 
-                                                fill="url(#colorRevenue)" 
-                                            />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
+                                {/* Grafik Pendapatan Berdasarkan Paket Harga */}
+                                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Pendapatan Berdasarkan Paket Harga</h3>
+                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">Perbandingan omset transaksi lunas per paket harga</p>
+                                        </div>
+                                        <div className="p-2 bg-red-50 text-red-600 rounded-xl">
+                                            <BarChart3 size={18} />
+                                        </div>
+                                    </div>
+
+                                    {stats.price_master_revenue?.length > 0 ? (
+                                        <div className="h-[280px]">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={stats.price_master_revenue} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                                                    <XAxis 
+                                                        dataKey="name" 
+                                                        stroke="#94a3b8" 
+                                                        fontSize={10} 
+                                                        fontWeight="bold"
+                                                        tickLine={false}
+                                                        interval={0}
+                                                        angle={-15}
+                                                        textAnchor="end"
+                                                    />
+                                                    <YAxis 
+                                                        stroke="#94a3b8" 
+                                                        fontSize={10} 
+                                                        fontWeight="bold"
+                                                        tickLine={false}
+                                                        tickFormatter={(val) => `Rp ${val >= 1000000 ? (val / 1000000).toFixed(1) + 'M' : (val / 1000).toFixed(0) + 'K'}`}
+                                                    />
+                                                    <Tooltip 
+                                                        formatter={(val, name, item) => [formatCurrency(val), `Total (${item.payload.count} invoice)`]}
+                                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                                                    />
+                                                    <Bar dataKey="total" radius={[8, 8, 0, 0]} barSize={36}>
+                                                        {stats.price_master_revenue.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={['#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'][index % 6]} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    ) : (
+                                        <div className="h-[180px] flex items-center justify-center text-xs text-slate-400 font-bold italic">
+                                            Belum ada data transaksi paket harga terfilter
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

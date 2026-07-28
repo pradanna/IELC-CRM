@@ -79,6 +79,7 @@ export default function LeadDetailTab({ lead, loading, getPhaseStyle, phases = [
                         <div className="">
                             <InfoItem label="Lead Source" value={lead?.lead_source?.name || '---'} icon={LinkIcon} />
                             <InfoItem label="Lead Type" value={lead?.lead_type?.name || '---'} icon={LinkIcon} />
+                            <InfoItem label="Sumber Informasi (Info Source)" value={lead?.info_source?.name || '---'} icon={LinkIcon} />
                         </div>
                     </div>
                 </div>
