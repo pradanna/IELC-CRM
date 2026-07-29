@@ -44,9 +44,13 @@ class FinanceController extends Controller
     /**
      * Mark an invoice as paid and trigger student promotion/enrollment.
      */
-    public function pay(Invoice $invoice, ProcessInvoicePayment $action): RedirectResponse
+    public function pay(Request $request, Invoice $invoice, ProcessInvoicePayment $action): RedirectResponse
     {
-        $action->handle($invoice);
+        $validated = $request->validate([
+            'payment_method' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $action->handle($invoice, $validated['payment_method'] ?? null);
 
         return redirect()->back()->with('success', "Invoice {$invoice->invoice_number} paid. Student promoted and enrolled.");
     }

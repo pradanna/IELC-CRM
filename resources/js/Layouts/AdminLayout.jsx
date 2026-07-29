@@ -62,6 +62,12 @@ const menuItems = [
                 href: route("admin.crm.reports.index"),
                 name: "admin.crm.reports.*",
             },
+            {
+                icon: <Headset size={20} />,
+                text: "WhatsApp Inbox",
+                href: route("admin.whatsapp.inbox"),
+                name: "admin.whatsapp.inbox",
+            },
         ],
     },
     {

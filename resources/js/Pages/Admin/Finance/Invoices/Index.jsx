@@ -28,6 +28,7 @@ import TextInput from '@/Components/TextInput';
 import DatePicker from '@/Components/form/DatePicker';
 import TableActionDropdown from '@/Components/ui/TableActionDropdown';
 import InvoiceDetailModal from './modals/InvoiceDetailModal';
+import PayInvoiceModal from '../modals/PayInvoiceModal';
 import PlotAndInvoiceModal from '../modals/PlotAndInvoiceModal';
 
 export default function InvoiceIndex({ auth, invoices, filters, summary = {}, classes = [], priceMasters = [] }) {
@@ -164,10 +165,32 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
         }).format(amount);
     };
 
-    const handlePayInvoice = (invoiceId) => {
-        if (confirm('Tandai invoice ini sebagai lunas? Langkah ini secara otomatis akan mempromosikan lead menjadi siswa aktif dan mendaftarkannya ke kelas.')) {
-            router.post(route('admin.finance.invoices.pay', invoiceId));
+    const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+    const [selectedInvoiceToPay, setSelectedInvoiceToPay] = useState(null);
+
+    const handleOpenPayModal = (inv) => {
+        let invoiceObj = inv;
+        if (typeof inv === 'string' || typeof inv === 'number') {
+            invoiceObj = invoices.data?.find(i => i.id === inv) || selectedInvoice;
         }
+        setSelectedInvoiceToPay(invoiceObj);
+        setIsPayModalOpen(true);
+    };
+
+    const handleConfirmPay = (paymentMethod, callback) => {
+        if (!selectedInvoiceToPay) return;
+        router.post(
+            route('admin.finance.invoices.pay', selectedInvoiceToPay.id),
+            { payment_method: paymentMethod },
+            {
+                onFinish: () => {
+                    if (callback) callback();
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                    setIsDetailModalOpen(false);
+                },
+            }
+        );
     };
 
     const handleShowDetails = (invoice) => {
@@ -436,15 +459,22 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                                             </div>
                                         </TD>
                                         <TD>
-                                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] border ${
-                                                invoice.status === 'paid' 
-                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' 
-                                                : invoice.status === 'cancelled'
-                                                ? 'bg-red-50 text-red-600 border-red-100'
-                                                : 'bg-amber-50 text-amber-600 border-amber-100'
-                                            }`}>
-                                                {invoice.status}
-                                            </span>
+                                            <div className="flex flex-col items-start gap-1">
+                                                <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] border ${
+                                                    invoice.status === 'paid' 
+                                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm' 
+                                                    : invoice.status === 'cancelled'
+                                                    ? 'bg-red-50 text-red-600 border-red-100'
+                                                    : 'bg-amber-50 text-amber-600 border-amber-100'
+                                                }`}>
+                                                    {invoice.status}
+                                                </span>
+                                                {invoice.status === 'paid' && invoice.payment_method && (
+                                                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-100 uppercase">
+                                                        {invoice.payment_method}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </TD>
                                         <TD className="text-right">
                                             <TableActionDropdown align="right">
@@ -480,8 +510,8 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                                                                 const type = invoice.student ? 'student' : 'lead';
                                                                 setSelectedInvoice(invoice);
                                                                 if (entity) {
-                                                                    setSelectedPlotEntity(entity);
                                                                     setPlotEntityType(type);
+                                                                    setSelectedPlotEntity(entity);
                                                                     setIsPlotModalOpen(true);
                                                                 } else {
                                                                     handleShowDetails(invoice);
@@ -492,7 +522,7 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                                                             Edit Invoice
                                                         </TableActionDropdown.Item>
                                                         <TableActionDropdown.Item 
-                                                            onClick={() => handlePayInvoice(invoice.id)}
+                                                            onClick={() => handleOpenPayModal(invoice)}
                                                             icon={CheckCircle}
                                                         >
                                                             Terima Pembayaran
@@ -536,7 +566,7 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                 isOpen={isDetailModalOpen}
                 onClose={() => setIsDetailModalOpen(false)}
                 invoice={selectedInvoice}
-                onPay={handlePayInvoice}
+                onPay={handleOpenPayModal}
             />
 
             <PlotAndInvoiceModal 
@@ -550,6 +580,17 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                 targetInvoice={selectedInvoice}
                 classes={classes}
                 priceMasters={priceMasters}
+            />
+
+            <PayInvoiceModal
+                isOpen={isPayModalOpen}
+                onClose={() => {
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                }}
+                onConfirm={handleConfirmPay}
+                invoiceNumber={selectedInvoiceToPay?.invoice_number}
+                totalAmount={selectedInvoiceToPay?.total_amount}
             />
         </AuthenticatedLayout>
     );

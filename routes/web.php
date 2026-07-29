@@ -25,6 +25,10 @@ Route::get('/', function () {
 // Webhook WhatsApp (Public)
 Route::post('/webhook/whatsapp/inbound', [WhatsappWebhookController::class, 'handleIncomingMessage'])->name('webhooks.whatsapp.inbound');
 
+// Meta WA Official Webhook (Public)
+Route::get('/webhook/whatsapp/official', [\App\Http\Controllers\Webhooks\WhatsappOfficialWebhookController::class, 'verify'])->name('webhooks.whatsapp.official.verify');
+Route::post('/webhook/whatsapp/official', [\App\Http\Controllers\Webhooks\WhatsappOfficialWebhookController::class, 'handle'])->name('webhooks.whatsapp.official.handle');
+
 // Public Placement Test
 Route::get('/placement-test/{token}', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'show'])->name('public.placement-test.show');
 Route::post('/placement-test/{token}/start', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'start'])->name('public.placement-test.start');
@@ -200,8 +204,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/master/media-assets', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'store'])->name('master.media-assets.store');
     Route::delete('/master/media-assets/{mediaAsset}', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'destroy'])->name('master.media-assets.destroy');
     
-    // WhatsApp Proxy
+    // WhatsApp Proxy & Inbox
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+        Route::get('/inbox', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'index'])->name('inbox');
+        Route::get('/official/conversations', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialConversations'])->name('official.conversations');
+        Route::get('/official/templates', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialTemplates'])->name('official.templates');
+        Route::post('/official/send', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'sendOfficialMessage'])->name('official.send');
+        Route::get('/baileys/conversations/{branch}', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getBaileysConversations'])->name('baileys.conversations');
+        Route::get('/history-chat', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getChatHistory'])->name('chat-history');
+
         Route::get('/', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('index');
         Route::get('/status/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
         Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');

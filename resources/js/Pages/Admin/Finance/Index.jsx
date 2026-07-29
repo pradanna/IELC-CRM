@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import PlotAndInvoiceModal from './modals/PlotAndInvoiceModal';
+import PayInvoiceModal from './modals/PayInvoiceModal';
 import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 import Button from '@/Components/ui/Button';
@@ -34,16 +35,33 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
         );
     }, [placementTestLeads, search]);
 
+    const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+    const [selectedInvoiceToPay, setSelectedInvoiceToPay] = useState(null);
+
     const openPlotModal = (entity, type = 'lead') => {
         setSelectedEntity(entity);
         setEntityType(type);
         setIsPlotModalOpen(true);
     };
 
-    const handlePayInvoice = (invoiceId) => {
-        if (confirm('Tandai invoice ini sebagai lunas?')) {
-            router.post(route('admin.finance.invoices.pay', invoiceId));
-        }
+    const handleOpenPayModal = (invoice) => {
+        setSelectedInvoiceToPay(invoice);
+        setIsPayModalOpen(true);
+    };
+
+    const handleConfirmPay = (paymentMethod, callback) => {
+        if (!selectedInvoiceToPay) return;
+        router.post(
+            route('admin.finance.invoices.pay', selectedInvoiceToPay.id),
+            { payment_method: paymentMethod },
+            {
+                onFinish: () => {
+                    if (callback) callback();
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                },
+            }
+        );
     };
     
     const handleSendInvoiceWA = async (invoice) => {
@@ -626,7 +644,7 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
 
                                         {invoice.status === 'pending' && (
                                             <Button 
-                                                onClick={() => handlePayInvoice(invoice.id)}
+                                                onClick={() => handleOpenPayModal(invoice)}
                                                 variant="primary"
                                                 icon={CheckCircle2}
                                                 className="flex-[2] py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/10 transition-all active:scale-95"
@@ -636,9 +654,14 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                                         )}
                                         
                                         {invoice.status === 'paid' && (
-                                            <div className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                                                <CheckCircle className="w-3 h-3" />
-                                                <span className="text-[8px] font-black uppercase tracking-widest">Tagihan Terbayarkan</span>
+                                            <div className="flex-[2] flex flex-col items-center justify-center gap-0.5 px-3 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                                                <div className="flex items-center gap-1.5">
+                                                    <CheckCircle className="w-3 h-3" />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Tagihan Terbayarkan</span>
+                                                </div>
+                                                {invoice.payment_method && (
+                                                    <span className="text-[7px] font-bold text-emerald-700 uppercase">{invoice.payment_method}</span>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -657,6 +680,16 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                 student={entityType === 'student' ? selectedEntity : null}
                 classes={classes}
                 priceMasters={priceMasters}
+            />
+            <PayInvoiceModal
+                isOpen={isPayModalOpen}
+                onClose={() => {
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                }}
+                onConfirm={handleConfirmPay}
+                invoiceNumber={selectedInvoiceToPay?.invoice_number}
+                totalAmount={selectedInvoiceToPay?.total_amount}
             />
         </AuthenticatedLayout>
     );
