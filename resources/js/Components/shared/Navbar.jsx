@@ -80,15 +80,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
                                             role="menuitem"
                                             tabIndex="-1"
                                         >
-                                            Your Profile
-                                        </Link>
-                                        <Link
-                                            href="#" // Replace with settings route
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            role="menuitem"
-                                            tabIndex="-1"
-                                        >
-                                            Settings
+                                            Profil Saya
                                         </Link>
                                         <Link
                                             href={route("logout")}
@@ -98,7 +90,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
                                             role="menuitem"
                                             tabIndex="-1"
                                         >
-                                            Sign out
+                                            Keluar
                                         </Link>
                                     </div>
                                 </div>

@@ -101,10 +101,26 @@ class AcademicDashboardController extends Controller
             }
         }
 
-        // Online vs Offline breakdown – year-only (no month)
+        // Online vs Offline breakdown derived from active enrolled class type (fallback to leads.is_online if no class enrolled yet)
         $channelCounts = Student::where('students.status', 'active')
-            ->join('leads', 'students.lead_id', '=', 'leads.id')
-            ->selectRaw('sum(case when leads.is_online = 1 then 1 else 0 end) as online_count, sum(case when leads.is_online = 0 then 1 else 0 end) as offline_count');
+            ->leftJoin('lead_enrollments', function ($join) {
+                $join->on('students.id', '=', 'lead_enrollments.student_id')
+                     ->where('lead_enrollments.status', '=', 'active');
+            })
+            ->leftJoin('study_classes', 'lead_enrollments.study_class_id', '=', 'study_classes.id')
+            ->leftJoin('leads', 'students.lead_id', '=', 'leads.id')
+            ->selectRaw("
+                sum(case 
+                    when study_classes.type = 'online' then 1 
+                    when study_classes.type is null and leads.is_online = 1 then 1 
+                    else 0 
+                end) as online_count,
+                sum(case 
+                    when study_classes.type = 'offline' then 1 
+                    when study_classes.type is null and (leads.is_online = 0 or leads.is_online is null) then 1 
+                    else 0 
+                end) as offline_count
+            ");
         $filterByDate($channelCounts, 'students.start_join', $year); // NO $month
         $channelData = $channelCounts->first();
 
@@ -161,7 +177,7 @@ class AcademicDashboardController extends Controller
             ->selectRaw("
                 COALESCE(lead_types.name, 'Lainnya') as program_name,
                 sum(case when leads.is_online = 1 then 1 else 0 end) as online_count,
-                sum(case when leads.is_online = 0 then 1 else 0 end) as offline_count,
+                sum(case when leads.is_online = 0 or leads.is_online is null then 1 else 0 end) as offline_count,
                 count(*) as total_count
             ")
             ->groupBy('program_name');
