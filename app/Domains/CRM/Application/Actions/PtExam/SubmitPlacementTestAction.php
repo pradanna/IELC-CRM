@@ -105,11 +105,15 @@ class SubmitPlacementTestAction
                 'recipient_ids' => $recipients->pluck('id')->toArray(),
             ]);
 
+            $targetLink = $session->lead_id 
+                ? route('admin.crm.leads.kanban', ['open_lead' => $session->lead_id]) 
+                : route('admin.placement-tests.index', ['session' => $session->id]);
+
             Notification::send($recipients, new SystemNotification(
                 "Placement Test Selesai",
                 "Lead {$session->lead?->name} baru saja menyelesaikan placement test {$exam->title}.",
                 "success",
-                route('admin.placement-tests.index', ['session' => $session->id])
+                $targetLink
             ));
         });
     }

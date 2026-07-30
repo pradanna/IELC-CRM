@@ -41,11 +41,11 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                 <Menu.Items className="absolute right-0 mt-3 w-80 sm:w-96 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-gray-100">
                     <div className="px-4 py-3 bg-white border-b border-gray-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-sm font-bold text-emerald-900">WhatsApp Messages</h3>
+                            <h3 className="text-sm font-bold text-emerald-900">Pesan WhatsApp</h3>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                                 <span className="text-[10px] font-medium text-gray-400 uppercase tracking-tight">
-                                    Real-time WA Active
+                                    Real-time WA Aktif
                                 </span>
                             </div>
                         </div>
@@ -65,7 +65,7 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
-                                                        {n.lead?.name || 'Incoming Message'}
+                                                        {n.lead?.name || 'Pesan Masuk'}
                                                     </p>
                                                     <button 
                                                         onClick={(e) => {
@@ -88,7 +88,7 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                                                         onClick={(e) => handleReply(e, n)}
                                                         className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition-all"
                                                     >
-                                                        Reply Now <ExternalLink size={10} />
+                                                        Balas Sekarang <ExternalLink size={10} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -101,8 +101,8 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                                 <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-200 mb-3">
                                     <Inbox size={24} />
                                 </div>
-                                <p className="text-sm font-semibold text-gray-900">No new messages</p>
-                                <p className="text-xs text-gray-500 mt-1">Waiting for incoming WhatsApp messages...</p>
+                                <p className="text-sm font-semibold text-gray-900">Belum ada pesan baru</p>
+                                <p className="text-xs text-gray-500 mt-1">Menunggu pesan WhatsApp masuk...</p>
                             </div>
                         )}
                     </div>
