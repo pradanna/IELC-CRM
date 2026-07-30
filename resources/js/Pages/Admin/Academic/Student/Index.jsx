@@ -18,7 +18,7 @@ import { AcademicDashboardContent } from '../Dashboard';
 import Pagination from '@/Components/ui/Pagination';
 import ExportButtons from '@/Components/ui/ExportButtons';
 
-export default function Index({ students, studyClassesList = [], gradesList = [], filters, reports }) {
+export default function Index({ students, studyClassesList = [], priceMastersList = [], gradesList = [], filters, reports }) {
     const { 
         search, 
         setSearch, 
@@ -27,6 +27,7 @@ export default function Index({ students, studyClassesList = [], gradesList = []
         handleFilterStatus, 
         handleFilterCategory,
         handleFilterClass,
+        handleFilterPriceMaster,
         handleFilterGrade,
         handleSort 
     } = useStudentIndex(filters);
@@ -188,6 +189,19 @@ export default function Index({ students, studyClassesList = [], gradesList = []
                                         onChange={handleFilterClass}
                                         icon={GraduationCap}
                                         placeholder="Filter Kelas"
+                                    />
+                                </div>
+
+                                <div className="w-full sm:w-36 xl:w-44">
+                                    <PremiumSelect
+                                        options={[
+                                            { value: '', label: 'Master Harga' },
+                                            ...priceMastersList.map(p => ({ value: p.id, label: p.name }))
+                                        ]}
+                                        value={filters.price_master_id || ''}
+                                        onChange={handleFilterPriceMaster}
+                                        icon={Package}
+                                        placeholder="Master Harga"
                                     />
                                 </div>
 

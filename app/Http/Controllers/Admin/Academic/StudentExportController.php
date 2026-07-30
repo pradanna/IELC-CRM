@@ -274,13 +274,27 @@ class StudentExportController extends Controller
         $isSqlite = \DB::connection()->getDriverName() === 'sqlite';
 
         $query = Student::where('students.status', 'active')
-            ->join('leads', 'students.lead_id', '=', 'leads.id')
+            ->leftJoin('lead_enrollments', function ($join) {
+                $join->on('students.id', '=', 'lead_enrollments.student_id')
+                     ->where('lead_enrollments.status', '=', 'active');
+            })
+            ->leftJoin('study_classes', 'lead_enrollments.study_class_id', '=', 'study_classes.id')
+            ->leftJoin('price_masters', 'study_classes.price_master_id', '=', 'price_masters.id')
+            ->leftJoin('leads', 'students.lead_id', '=', 'leads.id')
             ->leftJoin('lead_types', 'leads.lead_type_id', '=', 'lead_types.id')
             ->selectRaw("
-                COALESCE(lead_types.name, 'Lainnya') as program_name,
-                sum(case when leads.is_online = 1 then 1 else 0 end) as online_count,
-                sum(case when leads.is_online = 0 then 1 else 0 end) as offline_count,
-                count(*) as total_count
+                COALESCE(price_masters.name, lead_types.name, 'Umum / Group') as program_name,
+                sum(case 
+                    when study_classes.type = 'online' then 1 
+                    when study_classes.type is null and leads.is_online = 1 then 1 
+                    else 0 
+                end) as online_count,
+                sum(case 
+                    when study_classes.type = 'offline' then 1 
+                    when study_classes.type is null and (leads.is_online = 0 or leads.is_online is null) then 1 
+                    else 0 
+                end) as offline_count,
+                count(distinct students.id) as total_count
             ")
             ->groupBy('program_name');
 
@@ -478,7 +492,7 @@ class StudentExportController extends Controller
 
                 // ── 2. Current Month (or Past Month without Snapshot): Live Calculation ─
                 $students = Student::whereHas('lead', fn($q) => $q->where('branch_id', $branch->id))
-                    ->with(['studyClasses', 'lead.leadType'])
+                    ->with(['studyClasses.priceMaster', 'lead.leadType'])
                     ->where(function($q) use ($monthEnd) {
                         $q->where(function($sq) use ($monthEnd) {
                             $sq->whereNotNull('start_join')
@@ -506,9 +520,10 @@ class StudentExportController extends Controller
                         continue;
                     }
 
+                    $priceMasterNames = $student->studyClasses->pluck('priceMaster.name')->filter();
                     $classNames = $student->studyClasses->pluck('name')->merge(
                         $student->studyClasses->pluck('category')
-                    )->merge([$student->lead?->leadType?->name])->filter()->implode(' ');
+                    )->merge($priceMasterNames)->merge([$student->lead?->leadType?->name])->filter()->implode(' ');
 
                     $upperNames = strtoupper($classNames);
 
@@ -516,7 +531,7 @@ class StudentExportController extends Controller
                         $ieltsCount++;
                     } elseif (str_contains($upperNames, 'TOEFL')) {
                         $toeflCount++;
-                    } elseif (str_contains($upperNames, 'PRIVATE') || str_contains($upperNames, '& CO')) {
+                    } elseif (str_contains($upperNames, 'PRIVATE') || str_contains($upperNames, '& CO') || str_contains($upperNames, 'PRIVAT')) {
                         $privateCount++;
                     } else {
                         $groupCount++;

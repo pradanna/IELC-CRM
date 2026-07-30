@@ -172,13 +172,27 @@ class AcademicDashboardController extends Controller
         // ═════════════════════════════════════════════════════════
 
         $joinQuery = Student::where('students.status', 'active')
-            ->join('leads', 'students.lead_id', '=', 'leads.id')
+            ->leftJoin('lead_enrollments', function ($join) {
+                $join->on('students.id', '=', 'lead_enrollments.student_id')
+                     ->where('lead_enrollments.status', '=', 'active');
+            })
+            ->leftJoin('study_classes', 'lead_enrollments.study_class_id', '=', 'study_classes.id')
+            ->leftJoin('price_masters', 'study_classes.price_master_id', '=', 'price_masters.id')
+            ->leftJoin('leads', 'students.lead_id', '=', 'leads.id')
             ->leftJoin('lead_types', 'leads.lead_type_id', '=', 'lead_types.id')
             ->selectRaw("
-                COALESCE(lead_types.name, 'Lainnya') as program_name,
-                sum(case when leads.is_online = 1 then 1 else 0 end) as online_count,
-                sum(case when leads.is_online = 0 or leads.is_online is null then 1 else 0 end) as offline_count,
-                count(*) as total_count
+                COALESCE(price_masters.name, lead_types.name, 'Umum / Group') as program_name,
+                sum(case 
+                    when study_classes.type = 'online' then 1 
+                    when study_classes.type is null and leads.is_online = 1 then 1 
+                    else 0 
+                end) as online_count,
+                sum(case 
+                    when study_classes.type = 'offline' then 1 
+                    when study_classes.type is null and (leads.is_online = 0 or leads.is_online is null) then 1 
+                    else 0 
+                end) as offline_count,
+                count(distinct students.id) as total_count
             ")
             ->groupBy('program_name');
         $filterByDate($joinQuery, 'students.start_join', $year, $month);

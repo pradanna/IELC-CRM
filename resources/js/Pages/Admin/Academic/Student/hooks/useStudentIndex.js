@@ -35,6 +35,11 @@ export const useStudentIndex = (filters) => {
         router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
+    const handleFilterPriceMaster = (priceMasterId) => {
+        const params = { ...filters, search, price_master_id: priceMasterId, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
+    };
+
     const handleSort = (field) => {
         const direction = filters.sort_field === field && filters.sort_direction === 'asc' ? 'desc' : 'asc';
         const params = { ...filters, search, sort_field: field, sort_direction: direction, mainTab: 'list' };
@@ -49,6 +54,7 @@ export const useStudentIndex = (filters) => {
         handleFilterStatus,
         handleFilterCategory,
         handleFilterClass,
+        handleFilterPriceMaster,
         handleFilterGrade,
         handleSort
     };
