@@ -4,7 +4,7 @@ import { Head, router } from '@inertiajs/react';
 import { 
     GraduationCap, Users, BookOpen, Laptop,
     Activity, TrendingUp, Calendar, Building2, 
-    ShieldAlert, Filter, ChevronDown, X
+    ShieldAlert, Filter, ChevronDown, X, MapPin
 } from 'lucide-react';
 import { 
     ResponsiveContainer, AreaChart, Area,
@@ -12,6 +12,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend 
 } from 'recharts';
 import ExportButtons from '@/Components/ui/ExportButtons';
+import ExportDropdown from '@/Components/ui/ExportDropdown';
 
 const MONTH_NAMES = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -22,7 +23,7 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
     const [activeTab, setActiveTab] = useState(filters?.tab || 'overall');
 
     const { overall, join_patterns, siswa_stop, grades } = reports;
-    const { year, month, available_years } = filters;
+    const { year, month, mode, branch_id, available_years, available_branches } = filters;
 
     const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#3b82f6'];
 
@@ -31,9 +32,9 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
     // ── Navigation ───────────────────────────────────────────────
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
-        // Clear stale month filter when going to overall (no month selector there)
-        if (tabId === 'overall' && month && onFilterChange) {
-            onFilterChange({ year, month: null, tab: tabId });
+        // Clear stale month/mode/branch filter when going to overall
+        if (tabId === 'overall' && (month || mode || branch_id) && onFilterChange) {
+            onFilterChange({ year, month: null, mode: null, branch_id: null, tab: tabId });
         }
     };
 
@@ -44,6 +45,8 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
             : '/admin/academic/students/export/pdf';
         const params = new URLSearchParams({ tab, year });
         if (month) params.set('month', month);
+        if (mode) params.set('mode', mode);
+        if (branch_id) params.set('branch_id', branch_id);
         return `${base}?${params.toString()}`;
     };
 
@@ -51,6 +54,8 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
         const params = {
             year: newFilters.year !== undefined ? newFilters.year : year,
             month: newFilters.month !== undefined ? newFilters.month : month,
+            mode: newFilters.mode !== undefined ? newFilters.mode : mode,
+            branch_id: newFilters.branch_id !== undefined ? newFilters.branch_id : branch_id,
             tab: activeTab,
         };
         // Remove empty values
@@ -63,7 +68,7 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
     };
 
     // ── Filter Bar Sub-component ─────────────────────────────────
-    const FilterBar = ({ showMonth = true }) => (
+    const FilterBar = ({ showMonth = true, showMode = false, showBranch = true }) => (
         <div className="flex items-center gap-3 flex-wrap bg-slate-50/80 border border-slate-200/50 backdrop-blur-md rounded-2xl px-5 py-3">
             <div className="flex items-center gap-2 mr-1">
                 <Filter className="w-4 h-4 text-slate-400" />
@@ -103,23 +108,70 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 </div>
             )}
 
+            {/* Mode Selector (On Campus / Online) */}
+            {showMode && (
+                <div className="relative flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl px-3.5 py-2 hover:border-emerald-300 hover:shadow-sm transition-all duration-200 group">
+                    <Laptop className="w-3.5 h-3.5 text-emerald-500" />
+                    <select
+                        value={mode || ''}
+                        onChange={(e) => handleFilterChange({ mode: e.target.value || null })}
+                        className="text-xs font-bold text-slate-700 bg-transparent border-none outline-none cursor-pointer pr-5 appearance-none"
+                    >
+                        <option value="">Semua Mode</option>
+                        <option value="offline">On Campus</option>
+                        <option value="online">Online</option>
+                    </select>
+                    <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 pointer-events-none" />
+                </div>
+            )}
+
+            {/* Branch Selector */}
+            {showBranch && available_branches?.length > 0 && (
+                <div className="relative flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl px-3.5 py-2 hover:border-amber-300 hover:shadow-sm transition-all duration-200 group">
+                    <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                    <select
+                        value={branch_id ? String(branch_id) : ''}
+                        onChange={(e) => handleFilterChange({ branch_id: e.target.value || null })}
+                        className="text-xs font-bold text-slate-700 bg-transparent border-none outline-none cursor-pointer pr-5 appearance-none"
+                    >
+                        <option value="">Semua Cabang</option>
+                        {available_branches.map(b => (
+                            <option key={b.id} value={String(b.id)}>{b.name}</option>
+                        ))}
+                    </select>
+                    <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 pointer-events-none" />
+                </div>
+            )}
+
             {/* Active filters indicator + Reset */}
-            {month && (
+            {(month || mode || branch_id) && (
                 <button
-                    onClick={() => handleFilterChange({ month: null })}
+                    onClick={() => handleFilterChange({ month: null, mode: null, branch_id: null })}
                     className="flex items-center gap-1.5 text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-600 transition-colors bg-red-50 border border-red-100 rounded-xl px-3 py-2"
                 >
                     <X className="w-3 h-3" />
-                    Reset Bulan
+                    Reset Filter
                 </button>
             )}
 
             {/* Filter summary badge */}
-            <div className="ml-auto text-[10px] font-bold text-slate-400">
-                {month
-                    ? `${MONTH_NAMES[month - 1]} ${year}`
-                    : `Tahun ${year}`
-                }
+            <div className="ml-auto text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                {branch_id && (
+                    <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-extrabold uppercase">
+                        {available_branches?.find(b => String(b.id) === String(branch_id))?.name || 'Cabang'}
+                    </span>
+                )}
+                {mode && (
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-extrabold uppercase">
+                        {mode === 'offline' ? 'On Campus' : 'Online'}
+                    </span>
+                )}
+                <span>
+                    {month
+                        ? `${MONTH_NAMES[month - 1]} ${year}`
+                        : `Tahun ${year}`
+                    }
+                </span>
             </div>
         </div>
     );
@@ -374,111 +426,309 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 {/* ═══════════════════════════════════════════════════
                     TAB: POLA JOIN
                 ═══════════════════════════════════════════════════ */}
-                {activeTab === 'join_patterns' && (
-                    <div className="space-y-8 animate-fadeIn">
-                        <div className="space-y-3">
-                            <FilterBar showMonth={true} />
-                            <div className="flex justify-end">
-                                <ExportButtons
-                                    onPdf={buildExportUrl('pdf', 'join_patterns')}
-                                    onExcel={buildExportUrl('excel', 'join_patterns')}
-                                    label="Pola Join"
-                                    size="sm"
-                                />
-                            </div>
-                        </div>
+                {activeTab === 'join_patterns' && (() => {
+                    const { months = [], package_list = [], totals = {} } = join_patterns || {};
+                    const hasData = package_list.length > 0;
 
-                        {join_patterns.length > 0 ? (
-                            <>
-                                {/* Chart & Summary */}
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                    <div className="lg:col-span-8 bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm space-y-4">
-                                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Online vs Offline per Tipe Program</h4>
-                                        <div className="h-96 w-full">
+                    // Summary chart data: total per package (campus + online)
+                    const summaryChartData = package_list.map((pkg) => ({
+                        program: pkg,
+                        'ON CAMPUS': totals[pkg]?.offline ?? 0,
+                        'ONLINE':   totals[pkg]?.online  ?? 0,
+                    }));
+
+                    // Grand totals (Siswa In)
+                    const grandOffline = package_list.reduce((s, p) => s + (totals[p]?.offline ?? 0), 0);
+                    const grandOnline  = package_list.reduce((s, p) => s + (totals[p]?.online  ?? 0), 0);
+
+                    // Siswa Out totals
+                    const stoppedTotals = join_patterns?.stopped_totals || { online: 0, offline: 0 };
+
+                    // Active months only (has any data)
+                    const activeMonths = months.filter(m =>
+                        package_list.some(p => (m.packages[p]?.offline ?? 0) + (m.packages[p]?.online ?? 0) > 0)
+                        || (m.stopped?.offline ?? 0) + (m.stopped?.online ?? 0) > 0
+                    );
+
+                    // Average (based on active months count)
+                    const avgCount = activeMonths.length || 1;
+
+                    return (
+                        <div className="space-y-8 animate-fadeIn">
+                            <div className="space-y-3">
+                                <FilterBar showMonth={true} showMode={true} />
+                                <div className="flex items-center justify-end">
+                                    <ExportDropdown buildExportUrl={buildExportUrl} />
+                                </div>
+                            </div>
+
+                            {hasData ? (
+                                <>
+                                    {/* Summary Chart */}
+                                    <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm space-y-4">
+                                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                                            ON CAMPUS vs ONLINE per Paket Harga — {month ? `${MONTH_NAMES[month - 1]} ${year}` : year}
+                                        </h4>
+                                        <div className="h-72 w-full">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={join_patterns} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                                                <BarChart data={summaryChartData} margin={{ top: 10, right: 10, left: -15, bottom: 40 }}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                                                    <XAxis dataKey="program" tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                                                    <XAxis
+                                                        dataKey="program"
+                                                        tick={{ fontSize: 9, fontWeight: 'bold', fill: '#94a3b8' }}
+                                                        angle={-25}
+                                                        textAnchor="end"
+                                                        interval={0}
+                                                    />
                                                     <YAxis tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
-                                                    <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #f1f5f9' }} />
+                                                    <Tooltip contentStyle={{ borderRadius: '16px', border: '1px solid #f1f5f9', fontSize: '11px' }} />
                                                     <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} />
-                                                    <Bar dataKey="offline" name="Offline Learning" fill="#10b981" radius={[4, 4, 0, 0]} />
-                                                    <Bar dataKey="online" name="Online Learning" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="ON CAMPUS" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="ONLINE"   fill="#6366f1" radius={[4, 4, 0, 0]} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         </div>
                                     </div>
 
-                                    <div className="lg:col-span-4 bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm space-y-6">
-                                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Rasio Ringkasan</h4>
-                                        <div className="space-y-4">
-                                            {join_patterns.map((item) => {
-                                                const offlinePct = item.total > 0 ? Math.round((item.offline / item.total) * 100) : 0;
-                                                const onlinePct = item.total > 0 ? Math.round((item.online / item.total) * 100) : 0;
-                                                return (
-                                                    <div key={item.program} className="space-y-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                                        <div className="flex justify-between items-center text-xs">
-                                                            <span className="font-black text-slate-800 uppercase tracking-wider">{item.program}</span>
-                                                            <span className="font-bold text-slate-400">{item.total} Total</span>
-                                                        </div>
-                                                        <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex">
-                                                            <div className="bg-emerald-500 h-full" style={{ width: `${offlinePct}%` }} title={`Offline: ${offlinePct}%`} />
-                                                            <div className="bg-indigo-500 h-full" style={{ width: `${onlinePct}%` }} title={`Online: ${onlinePct}%`} />
-                                                        </div>
-                                                        <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                                            <span className="text-emerald-600">{offlinePct}% Offline ({item.offline})</span>
-                                                            <span className="text-indigo-600">{onlinePct}% Online ({item.online})</span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                    {/* Pivot Table */}
+                                    <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                                            <div>
+                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                                                    Data Siswa In & Out — Pola Join {month ? `(Bulan ${MONTH_NAMES[month - 1]})` : 'per Bulan'}
+                                                </h4>
+                                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                                    Per paket harga × mode belajar (ON CAMPUS / ONLINE)
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+                                                    <span className="text-emerald-700">ON CAMPUS</span>
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-full bg-indigo-500 inline-block" />
+                                                    <span className="text-indigo-700">ONLINE</span>
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-full bg-rose-500 inline-block" />
+                                                    <span className="text-rose-700">SISWA OUT</span>
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                {/* Data Table */}
-                                <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-                                    <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Tabel Data Pola Join</h4>
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr className="bg-slate-50">
-                                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tipe Program</th>
-                                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Offline</th>
-                                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Online</th>
-                                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Total</th>
-                                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Rasio (Offline : Online)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-50">
-                                                {join_patterns.map((row) => (
-                                                    <tr key={row.program} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="px-8 py-4 font-black text-slate-800 uppercase tracking-wider text-xs">{row.program}</td>
-                                                        <td className="px-8 py-4 text-center text-xs font-bold text-slate-650">{row.offline}</td>
-                                                        <td className="px-8 py-4 text-center text-xs font-bold text-slate-650">{row.online}</td>
-                                                        <td className="px-8 py-4 text-center text-xs font-black text-slate-900">{row.total}</td>
-                                                        <td className="px-8 py-4 text-right text-xs font-black text-indigo-600">
-                                                            {row.total > 0 ? `${Math.round((row.offline/row.total)*100)}%` : '0%'} : {row.total > 0 ? `${Math.round((row.online/row.total)*100)}%` : '0%'}
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse" style={{ minWidth: `${240 + package_list.length * 160}px` }}>
+                                                <thead>
+                                                    {/* Row 1: Package names & Siswa Out & Total */}
+                                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                                        <th
+                                                            rowSpan={2}
+                                                            className="sticky left-0 z-10 bg-slate-50 px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] border-r border-slate-200 min-w-[120px]"
+                                                        >
+                                                            Bulan
+                                                        </th>
+                                                        {package_list.map((pkg) => (
+                                                            <th
+                                                                key={pkg}
+                                                                colSpan={2}
+                                                                className="px-4 py-3 text-[9px] font-black text-slate-600 uppercase tracking-[0.15em] text-center border-r border-slate-200 whitespace-nowrap"
+                                                            >
+                                                                {pkg}
+                                                            </th>
+                                                        ))}
+                                                        {/* Siswa Out Column */}
+                                                        <th
+                                                            colSpan={2}
+                                                            className="px-4 py-3 text-[9px] font-black text-rose-800 uppercase tracking-[0.15em] text-center bg-rose-50 border-r border-slate-200"
+                                                        >
+                                                            Siswa Out
+                                                        </th>
+                                                        {/* Total Column */}
+                                                        <th
+                                                            colSpan={2}
+                                                            className="px-4 py-3 text-[9px] font-black text-slate-900 uppercase tracking-[0.15em] text-center bg-slate-100 border-r border-slate-200"
+                                                        >
+                                                            Siswa In
+                                                        </th>
+                                                        {/* Total Students (Snapshot) Column */}
+                                                        <th
+                                                            rowSpan={2}
+                                                            className="px-6 py-3 text-[9px] font-black text-slate-900 uppercase tracking-[0.15em] text-center bg-indigo-50 border-l border-slate-300 min-w-[110px]"
+                                                        >
+                                                            Total Students
+                                                        </th>
+                                                    </tr>
+                                                    {/* Row 2: ON CAMPUS / ONLINE sub-headers */}
+                                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                                        {package_list.map((pkg) => (
+                                                            <>
+                                                                <th key={`${pkg}-campus`} className="px-4 py-2 text-[9px] font-black text-emerald-600 uppercase tracking-wider text-center border-r border-slate-100 whitespace-nowrap">
+                                                                    ON CAMPUS
+                                                                </th>
+                                                                <th key={`${pkg}-online`} className="px-4 py-2 text-[9px] font-black text-indigo-500 uppercase tracking-wider text-center border-r border-slate-200 whitespace-nowrap">
+                                                                    ONLINE
+                                                                </th>
+                                                            </>
+                                                        ))}
+                                                        {/* Siswa Out sub-headers */}
+                                                        <th className="px-4 py-2 text-[9px] font-black text-rose-600 uppercase tracking-wider text-center bg-rose-50 border-r border-slate-100 whitespace-nowrap">
+                                                            ON CAMPUS
+                                                        </th>
+                                                        <th className="px-4 py-2 text-[9px] font-black text-rose-500 uppercase tracking-wider text-center bg-rose-50 border-r border-slate-200 whitespace-nowrap">
+                                                            ONLINE
+                                                        </th>
+                                                        {/* Total sub-headers */}
+                                                        <th className="px-4 py-2 text-[9px] font-black text-emerald-600 uppercase tracking-wider text-center bg-slate-100 whitespace-nowrap">
+                                                            ON CAMPUS
+                                                        </th>
+                                                        <th className="px-4 py-2 text-[9px] font-black text-indigo-500 uppercase tracking-wider text-center bg-slate-100 whitespace-nowrap">
+                                                            ONLINE
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {(month ? months.filter(m => m.month === parseInt(month)) : months).map((row) => {
+                                                        const rowOffline = package_list.reduce((s, p) => s + (row.packages[p]?.offline ?? 0), 0);
+                                                        const rowOnline  = package_list.reduce((s, p) => s + (row.packages[p]?.online  ?? 0), 0);
+                                                        const stoppedOff = row.stopped?.offline ?? 0;
+                                                        const stoppedOn  = row.stopped?.online  ?? 0;
+                                                        const totStudents = row.total_students ?? 0;
+
+                                                        const isActiveMonth = rowOffline + rowOnline > 0 || stoppedOff + stoppedOn > 0 || totStudents > 0;
+                                                        return (
+                                                            <tr
+                                                                key={row.month}
+                                                                className={`hover:bg-slate-50/60 transition-colors ${!isActiveMonth ? 'opacity-40' : ''}`}
+                                                            >
+                                                                <td className="sticky left-0 z-10 bg-white px-6 py-3 text-xs font-black text-slate-800 uppercase tracking-wider border-r border-slate-100 whitespace-nowrap">
+                                                                    {row.label}
+                                                                </td>
+                                                                {package_list.map((pkg) => {
+                                                                    const campus = row.packages[pkg]?.offline ?? 0;
+                                                                    const online = row.packages[pkg]?.online  ?? 0;
+                                                                    return (
+                                                                        <>
+                                                                            <td key={`${pkg}-c`} className={`px-4 py-3 text-center text-xs font-bold border-r border-slate-50 ${campus > 0 ? 'text-emerald-700' : 'text-slate-300'}`}>
+                                                                                {campus}
+                                                                            </td>
+                                                                            <td key={`${pkg}-o`} className={`px-4 py-3 text-center text-xs font-bold border-r border-slate-200 ${online > 0 ? 'text-indigo-600' : 'text-slate-300'}`}>
+                                                                                {online}
+                                                                            </td>
+                                                                        </>
+                                                                    );
+                                                                })}
+                                                                {/* Siswa Out Cells */}
+                                                                <td className={`px-4 py-3 text-center text-xs font-bold bg-rose-50/40 border-r border-slate-50 ${stoppedOff > 0 ? 'text-rose-700' : 'text-slate-300'}`}>
+                                                                    {stoppedOff}
+                                                                </td>
+                                                                <td className={`px-4 py-3 text-center text-xs font-bold bg-rose-50/40 border-r border-slate-200 ${stoppedOn > 0 ? 'text-rose-600' : 'text-slate-300'}`}>
+                                                                    {stoppedOn}
+                                                                </td>
+                                                                {/* Total Cells */}
+                                                                <td className={`px-4 py-3 text-center text-xs font-black bg-emerald-50/40 ${rowOffline > 0 ? 'text-emerald-800' : 'text-slate-300'}`}>
+                                                                    {rowOffline}
+                                                                </td>
+                                                                <td className={`px-4 py-3 text-center text-xs font-black bg-indigo-50/40 border-r border-slate-200 ${rowOnline > 0 ? 'text-indigo-800' : 'text-slate-300'}`}>
+                                                                    {rowOnline}
+                                                                </td>
+                                                                {/* Total Students Cell (from branch_monthly_student_snapshots) */}
+                                                                <td className={`px-6 py-3 text-center text-xs font-black bg-indigo-50/60 border-l border-slate-200 ${totStudents > 0 ? 'text-indigo-900' : 'text-slate-300'}`}>
+                                                                    {totStudents}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+
+                                                {/* Total Row */}
+                                                <tfoot>
+                                                    <tr className="bg-slate-800 border-t-2 border-slate-300">
+                                                        <td className="sticky left-0 z-10 bg-slate-800 px-6 py-4 text-[10px] font-black text-white uppercase tracking-[0.2em] border-r border-slate-600">
+                                                            Total
+                                                        </td>
+                                                        {package_list.map((pkg) => (
+                                                            <>
+                                                                <td key={`tot-${pkg}-c`} className="px-4 py-4 text-center text-xs font-black text-emerald-300 border-r border-slate-700">
+                                                                    {totals[pkg]?.offline ?? 0}
+                                                                </td>
+                                                                <td key={`tot-${pkg}-o`} className="px-4 py-4 text-center text-xs font-black text-indigo-300 border-r border-slate-600">
+                                                                    {totals[pkg]?.online ?? 0}
+                                                                </td>
+                                                            </>
+                                                        ))}
+                                                        {/* Siswa Out Totals */}
+                                                        <td className="px-4 py-4 text-center text-xs font-black text-rose-300 bg-rose-900/30 border-r border-slate-700">
+                                                            {stoppedTotals.offline}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-xs font-black text-rose-300 bg-rose-900/30 border-r border-slate-600">
+                                                            {stoppedTotals.online}
+                                                        </td>
+                                                        {/* Total In */}
+                                                        <td className="px-4 py-4 text-center text-xs font-black text-emerald-200 bg-emerald-900/30">
+                                                            {grandOffline}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-xs font-black text-indigo-200 bg-indigo-900/30 border-r border-slate-600">
+                                                            {grandOnline}
+                                                        </td>
+                                                        {/* Total Students Sum */}
+                                                        <td className="px-6 py-4 text-center text-xs font-black text-amber-300 bg-indigo-950/60 border-l border-slate-600">
+                                                            {months.reduce((sum, m) => sum + (m.total_students ?? 0), 0)}
                                                         </td>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+
+                                                    {/* Average Row */}
+                                                    <tr className="bg-slate-700 border-t border-slate-600">
+                                                        <td className="sticky left-0 z-10 bg-slate-700 px-6 py-3 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] border-r border-slate-600">
+                                                            Avg / Bulan
+                                                        </td>
+                                                        {package_list.map((pkg) => (
+                                                            <>
+                                                                <td key={`avg-${pkg}-c`} className="px-4 py-3 text-center text-[10px] font-black text-emerald-400 border-r border-slate-700">
+                                                                    {Math.round((totals[pkg]?.offline ?? 0) / avgCount)}
+                                                                </td>
+                                                                <td key={`avg-${pkg}-o`} className="px-4 py-3 text-center text-[10px] font-black text-indigo-400 border-r border-slate-600">
+                                                                    {Math.round((totals[pkg]?.online ?? 0) / avgCount)}
+                                                                </td>
+                                                            </>
+                                                        ))}
+                                                        {/* Siswa Out Averages */}
+                                                        <td className="px-4 py-3 text-center text-[10px] font-black text-rose-300 bg-rose-900/20 border-r border-slate-700">
+                                                            {Math.round((stoppedTotals.offline) / avgCount)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center text-[10px] font-black text-rose-300 bg-rose-900/20 border-r border-slate-600">
+                                                            {Math.round((stoppedTotals.online) / avgCount)}
+                                                        </td>
+                                                        {/* Total Averages */}
+                                                        <td className="px-4 py-3 text-center text-[10px] font-black text-emerald-300 bg-emerald-900/20">
+                                                            {Math.round(grandOffline / avgCount)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center text-[10px] font-black text-indigo-300 bg-indigo-900/20 border-r border-slate-600">
+                                                            {Math.round(grandOnline / avgCount)}
+                                                        </td>
+                                                        {/* Total Students Average */}
+                                                        <td className="px-6 py-3 text-center text-[10px] font-black text-amber-300 bg-indigo-950/40 border-l border-slate-600">
+                                                            {Math.round(months.reduce((sum, m) => sum + (m.total_students ?? 0), 0) / avgCount)}
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
                                     </div>
+                                </>
+                            ) : (
+                                <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-16 flex flex-col items-center justify-center text-center gap-4">
+                                    <Laptop className="w-12 h-12 text-slate-300" />
+                                    <p className="text-sm font-bold text-slate-400">
+                                        Tidak ada data pola join untuk tahun {year}
+                                    </p>
                                 </div>
-                            </>
-                        ) : (
-                            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-16 flex flex-col items-center justify-center text-center gap-4">
-                                <Laptop className="w-12 h-12 text-slate-300" />
-                                <p className="text-sm font-bold text-slate-400">
-                                    Tidak ada data pola join untuk {month ? `${MONTH_NAMES[month - 1]} ${year}` : `tahun ${year}`}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            )}
+                        </div>
+                    );
+                })()}
+
+
 
                 {/* ═══════════════════════════════════════════════════
                     TAB: SISWA STOP
@@ -487,13 +737,8 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                     <div className="space-y-8 animate-fadeIn">
                         <div className="space-y-3">
                             <FilterBar showMonth={true} />
-                            <div className="flex justify-end">
-                                <ExportButtons
-                                    onPdf={buildExportUrl('pdf', 'siswa_stop')}
-                                    onExcel={buildExportUrl('excel', 'siswa_stop')}
-                                    label="Siswa Stop"
-                                    size="sm"
-                                />
+                            <div className="flex items-center justify-end">
+                                <ExportDropdown buildExportUrl={buildExportUrl} type="stop" />
                             </div>
                         </div>
 

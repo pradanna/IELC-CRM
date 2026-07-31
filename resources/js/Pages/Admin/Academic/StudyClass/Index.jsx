@@ -11,7 +11,7 @@ import TextInput from '@/Components/TextInput';
 import { useStudyClassIndex } from './hooks/useStudyClassIndex';
 import Pagination from '@/Components/ui/Pagination';
 
-export default function Index({ classes, branches, instructors, priceMasters, filters }) {
+export default function Index({ classes, branches, instructors, priceMasters, leadTypes = [], filters }) {
     const {
         // State
         isModalOpen,
@@ -202,6 +202,7 @@ export default function Index({ classes, branches, instructors, priceMasters, fi
                 branches={branches}
                 instructors={instructors}
                 priceMasters={priceMasters}
+                leadTypes={leadTypes}
             />
 
             <ClassStudentDrawer 

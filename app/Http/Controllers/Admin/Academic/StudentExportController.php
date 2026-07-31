@@ -17,6 +17,43 @@ class StudentExportController extends Controller
     {
         $tab = $request->input('tab', 'list');
 
+        if ($tab === 'join_patterns') {
+            $pivotData = $this->buildJoinPatternsPivot($request);
+            $content = view('pdf.join-pattern-export', $pivotData)->render();
+            return response($content, 200, [
+                'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$pivotData['filename']}.xls\"",
+            ]);
+        }
+
+        if ($tab === 'join_invoices') {
+            $invoiceData = $this->buildJoinInvoicesData($request);
+            $content = view('pdf.join-invoices-export', $invoiceData)->render();
+            return response($content, 200, [
+                'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$invoiceData['filename']}.xls\"",
+            ]);
+        }
+
+        if ($tab === 'join_grades') {
+            $gradeData = $this->buildJoinGradesData($request);
+            $content = view('pdf.join-grades-export', $gradeData)->render();
+            return response($content, 200, [
+                'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$gradeData['filename']}.xls\"",
+            ]);
+        }
+
+        if (in_array($tab, ['siswa_stop_packages', 'siswa_stop_programs', 'siswa_stop_grades'])) {
+            $groupType = str_replace('siswa_stop_', '', $tab);
+            $stopData = $this->buildSiswaStopPivotData($request, $groupType);
+            $content = view('pdf.siswa-stop-export', $stopData)->render();
+            return response($content, 200, [
+                'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$stopData['filename']}.xls\"",
+            ]);
+        }
+
         [$headers, $rows, $filename] = $this->buildData($request, $tab);
 
         if (in_array($tab, ['overall', 'branch_matrix'])) {
@@ -49,6 +86,35 @@ class StudentExportController extends Controller
     public function exportPdf(Request $request)
     {
         $tab = $request->input('tab', 'list');
+
+        if ($tab === 'join_patterns') {
+            $pivotData = $this->buildJoinPatternsPivot($request);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.join-pattern-export', $pivotData)
+                ->setPaper('a4', 'landscape');
+            return $pdf->download("{$pivotData['filename']}.pdf");
+        }
+
+        if ($tab === 'join_invoices') {
+            $invoiceData = $this->buildJoinInvoicesData($request);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.join-invoices-export', $invoiceData)
+                ->setPaper('a4', 'landscape');
+            return $pdf->download("{$invoiceData['filename']}.pdf");
+        }
+
+        if ($tab === 'join_grades') {
+            $gradeData = $this->buildJoinGradesData($request);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.join-grades-export', $gradeData)
+                ->setPaper('a4', 'landscape');
+            return $pdf->download("{$gradeData['filename']}.pdf");
+        }
+
+        if (in_array($tab, ['siswa_stop_packages', 'siswa_stop_programs', 'siswa_stop_grades'])) {
+            $groupType = str_replace('siswa_stop_', '', $tab);
+            $stopData = $this->buildSiswaStopPivotData($request, $groupType);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.siswa-stop-export', $stopData)
+                ->setPaper('a4', 'landscape');
+            return $pdf->download("{$stopData['filename']}.pdf");
+        }
 
         [$headers, $rows, $filename, $title] = $this->buildData($request, $tab);
 
@@ -266,57 +332,586 @@ class StudentExportController extends Controller
 
     // ── Join Patterns ────────────────────────────────────────────────────────
 
-    private function buildJoinPatterns(Request $request): array
+    private function buildJoinPatternsPivot(Request $request): array
     {
-        $year  = (int) $request->input('year', now()->year);
-        $month = $request->input('month') ? (int) $request->input('month') : null;
+        $year       = (int) $request->input('year', now()->year);
+        $month      = $request->input('month') ? (int) $request->input('month') : null;
+        $modeFilter = $request->input('mode');
+        $branchId   = $request->input('branch_id') ?: null;
+
+        $branchName = null;
+        if ($branchId) {
+            $branchName = \DB::table('branches')->where('id', $branchId)->value('name');
+        }
 
         $isSqlite = \DB::connection()->getDriverName() === 'sqlite';
 
-        $query = Student::where('students.status', 'active')
-            ->leftJoin('lead_enrollments', function ($join) {
-                $join->on('students.id', '=', 'lead_enrollments.student_id')
-                     ->where('lead_enrollments.status', '=', 'active');
-            })
-            ->leftJoin('study_classes', 'lead_enrollments.study_class_id', '=', 'study_classes.id')
-            ->leftJoin('price_masters', 'study_classes.price_master_id', '=', 'price_masters.id')
-            ->leftJoin('leads', 'students.lead_id', '=', 'leads.id')
-            ->leftJoin('lead_types', 'leads.lead_type_id', '=', 'lead_types.id')
+        $monthExpr = $isSqlite
+            ? "CAST(strftime('%m', le.joined_at) AS INTEGER)"
+            : "MONTH(le.joined_at)";
+
+        $yearExprLE = $isSqlite
+            ? "CAST(strftime('%Y', le.joined_at) AS INTEGER)"
+            : "YEAR(le.joined_at)";
+
+        $joinQueryBuilder = \DB::table('lead_enrollments as le')
+            ->join('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->join('price_masters as pm', 'sc.price_master_id', '=', 'pm.id')
+            ->leftJoin('leads as l', 'le.lead_id', '=', 'l.id')
             ->selectRaw("
-                COALESCE(price_masters.name, lead_types.name, 'Umum / Group') as program_name,
-                sum(case 
-                    when study_classes.type = 'online' then 1 
-                    when study_classes.type is null and leads.is_online = 1 then 1 
-                    else 0 
-                end) as online_count,
-                sum(case 
-                    when study_classes.type = 'offline' then 1 
-                    when study_classes.type is null and (leads.is_online = 0 or leads.is_online is null) then 1 
-                    else 0 
-                end) as offline_count,
-                count(distinct students.id) as total_count
+                {$monthExpr}   AS month_num,
+                pm.name        AS package_name,
+                sc.type        AS delivery_mode,
+                COUNT(le.id)   AS student_count
             ")
-            ->groupBy('program_name');
+            ->whereRaw("{$yearExprLE} = ?", [$year]);
 
-        $this->applyDateFilter($query, 'students.start_join', $year, $month, $isSqlite);
+        if ($month) {
+            $joinQueryBuilder->whereRaw("{$monthExpr} = ?", [$month]);
+        }
 
-        $data = $query->get();
+        if ($modeFilter && in_array($modeFilter, ['online', 'offline'])) {
+            $joinQueryBuilder->where('sc.type', '=', $modeFilter);
+        }
 
-        $headers = ['Tipe Program', 'Offline', 'Online', 'Total', 'Rasio Offline %', 'Rasio Online %'];
-        $rows    = $data->map(fn ($r) => [
-            $r->program_name,
-            (int) $r->offline_count,
-            (int) $r->online_count,
-            (int) $r->total_count,
-            $r->total_count > 0 ? round(($r->offline_count / $r->total_count) * 100, 1) . '%' : '0%',
-            $r->total_count > 0 ? round(($r->online_count  / $r->total_count) * 100, 1) . '%' : '0%',
-        ])->toArray();
+        if ($branchId) {
+            $joinQueryBuilder->where('l.branch_id', '=', $branchId);
+        }
+
+        $rawJoinRows = $joinQueryBuilder
+            ->groupByRaw("{$monthExpr}, pm.name, sc.type")
+            ->orderByRaw("{$monthExpr}")
+            ->get();
+
+        $allPackages = $rawJoinRows->pluck('package_name')->unique()->sort()->values()->toArray();
+
+        $pivotMap = [];
+        foreach ($rawJoinRows as $row) {
+            $m = (int) $row->month_num;
+            $p = $row->package_name;
+            $mode = $row->delivery_mode;
+            if (!isset($pivotMap[$m])) {
+                $pivotMap[$m] = [];
+            }
+            if (!isset($pivotMap[$m][$p])) {
+                $pivotMap[$m][$p] = ['online' => 0, 'offline' => 0];
+            }
+            $pivotMap[$m][$p][$mode] = (int) $row->student_count;
+        }
+
+        $monthLabels = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        $pivotMonths = [];
+        foreach ($monthLabels as $num => $label) {
+            $packages = [];
+            foreach ($allPackages as $pkg) {
+                $packages[$pkg] = $pivotMap[$num][$pkg] ?? ['online' => 0, 'offline' => 0];
+            }
+            $pivotMonths[] = [
+                'month'    => $num,
+                'label'    => $label,
+                'packages' => $packages,
+            ];
+        }
+
+        $totals = [];
+        foreach ($allPackages as $pkg) {
+            $totals[$pkg] = ['online' => 0, 'offline' => 0];
+        }
+        foreach ($rawJoinRows as $row) {
+            $p = $row->package_name;
+            $mode = $row->delivery_mode;
+            $totals[$p][$mode] = ($totals[$p][$mode] ?? 0) + (int) $row->student_count;
+        }
+
+        // Siswa Out (Stopped Students) per month & mode
+        $monthExprStopped = $isSqlite
+            ? "CAST(strftime('%m', s.stopped_at) AS INTEGER)"
+            : "MONTH(s.stopped_at)";
+
+        $yearExprStopped = $isSqlite
+            ? "CAST(strftime('%Y', s.stopped_at) AS INTEGER)"
+            : "YEAR(s.stopped_at)";
+
+        $stoppedQueryBuilder = \DB::table('students as s')
+            ->leftJoin('lead_enrollments as le', 's.id', '=', 'le.student_id')
+            ->leftJoin('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->leftJoin('leads as l', 's.lead_id', '=', 'l.id')
+            ->selectRaw("
+                {$monthExprStopped} AS month_num,
+                SUM(CASE WHEN sc.type = 'online' OR (sc.type IS NULL AND l.is_online = 1) THEN 1 ELSE 0 END) AS online_count,
+                SUM(CASE WHEN sc.type = 'offline' OR (sc.type IS NULL AND (l.is_online = 0 OR l.is_online IS NULL)) THEN 1 ELSE 0 END) AS offline_count
+            ")
+            ->where('s.status', 'stop')
+            ->whereNotNull('s.stopped_at')
+            ->whereRaw("{$yearExprStopped} = ?", [$year]);
+
+        if ($month) {
+            $stoppedQueryBuilder->whereRaw("{$monthExprStopped} = ?", [$month]);
+        }
+
+        if ($branchId) {
+            $stoppedQueryBuilder->where('l.branch_id', '=', $branchId);
+        }
+
+        $rawStoppedRows = $stoppedQueryBuilder
+            ->groupByRaw("{$monthExprStopped}")
+            ->get();
+
+        $stoppedByMonth = [];
+        $stoppedTotals = ['online' => 0, 'offline' => 0];
+
+        foreach ($rawStoppedRows as $r) {
+            $mNum = (int) $r->month_num;
+            $on = (int) $r->online_count;
+            $off = (int) $r->offline_count;
+            $stoppedByMonth[$mNum] = ['online' => $on, 'offline' => $off];
+            $stoppedTotals['online'] += $on;
+            $stoppedTotals['offline'] += $off;
+        }
+
+        // Monthly student snapshots count (Total Students)
+        $snapshotQuery = \DB::table('branch_monthly_student_snapshots')
+            ->selectRaw("month, SUM(total_students_count) as total_students")
+            ->where('year', $year);
+
+        if ($branchId) {
+            $snapshotQuery->where('branch_id', '=', $branchId);
+        }
+
+        $monthlySnapshots = $snapshotQuery
+            ->groupBy('month')
+            ->get()
+            ->keyBy('month');
+
+        $currentYear = (int) now()->year;
+        $currentMonth = (int) now()->month;
+
+        $realtimeQuery = \DB::table('lead_enrollments as le')
+            ->leftJoin('leads as l', 'le.lead_id', '=', 'l.id')
+            ->where('le.status', 'active');
+
+        if ($branchId) {
+            $realtimeQuery->where('l.branch_id', '=', $branchId);
+        }
+
+        $realtimeActiveEnrollmentsCount = $realtimeQuery->count();
+
+        foreach ($pivotMonths as &$pmItem) {
+            $mNum = $pmItem['month'];
+            $pmItem['stopped'] = $stoppedByMonth[$mNum] ?? ['online' => 0, 'offline' => 0];
+            
+            $snap = $monthlySnapshots->get($mNum);
+            if ($year === $currentYear && $mNum === $currentMonth) {
+                $pmItem['total_students'] = $realtimeActiveEnrollmentsCount;
+            } elseif ($snap && (int) $snap->total_students > 0) {
+                $pmItem['total_students'] = (int) $snap->total_students;
+            } else {
+                $pmItem['total_students'] = 0;
+            }
+        }
+        unset($pmItem);
+
+        if ($month) {
+            $pivotMonths = array_values(array_filter($pivotMonths, fn($m) => $m['month'] === $month));
+        }
 
         return [
-            $headers,
-            $rows,
-            "pola-join-{$year}" . ($month ? "-bulan{$month}" : ''),
-            "Pola Join Online/Offline {$year}",
+            'title'         => "Pola Join Siswa {$year}" . ($branchName ? " ({$branchName})" : '') . ($month ? " Bulan {$month}" : ''),
+            'filename'      => "pola-join-{$year}" . ($branchId ? "-branch{$branchId}" : '') . ($month ? "-bulan{$month}" : ''),
+            'year'          => $year,
+            'month'         => $month,
+            'modeFilter'    => $modeFilter,
+            'branchName'    => $branchName,
+            'packageList'   => $allPackages,
+            'months'        => $pivotMonths,
+            'totals'        => $totals,
+            'stoppedTotals' => $stoppedTotals,
+        ];
+    }
+
+    private function buildJoinInvoicesData(Request $request): array
+    {
+        $year       = (int) $request->input('year', now()->year);
+        $month      = $request->input('month') ? (int) $request->input('month') : null;
+        $modeFilter = $request->input('mode');
+        $branchId   = $request->input('branch_id') ?: null;
+
+        $branchName = null;
+        if ($branchId) {
+            $branchName = \DB::table('branches')->where('id', $branchId)->value('name');
+        }
+
+        $isSqlite = \DB::connection()->getDriverName() === 'sqlite';
+
+        $monthExpr = $isSqlite
+            ? "CAST(strftime('%m', le.joined_at) AS INTEGER)"
+            : "MONTH(le.joined_at)";
+
+        $yearExprLE = $isSqlite
+            ? "CAST(strftime('%Y', le.joined_at) AS INTEGER)"
+            : "YEAR(le.joined_at)";
+
+        $query = \DB::table('lead_enrollments as le')
+            ->join('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->join('price_masters as pm', 'sc.price_master_id', '=', 'pm.id')
+            ->leftJoin('leads as l', 'le.lead_id', '=', 'l.id')
+            ->leftJoin('invoices as inv', function ($join) {
+                $join->on('le.student_id', '=', 'inv.student_id')
+                     ->on('le.study_class_id', '=', 'inv.study_class_id');
+            })
+            ->selectRaw("
+                {$monthExpr} AS month_num,
+                pm.name      AS package_name,
+                sc.type      AS delivery_mode,
+                COALESCE(inv.type, 'new_join') AS inv_type,
+                COUNT(le.id) AS student_count
+            ")
+            ->whereRaw("{$yearExprLE} = ?", [$year]);
+
+        if ($month) {
+            $query->whereRaw("{$monthExpr} = ?", [$month]);
+        }
+
+        if ($modeFilter && in_array($modeFilter, ['online', 'offline'])) {
+            $query->where('sc.type', '=', $modeFilter);
+        }
+
+        if ($branchId) {
+            $query->where('l.branch_id', '=', $branchId);
+        }
+
+        $rawRows = $query
+            ->groupByRaw("{$monthExpr}, pm.name, sc.type, COALESCE(inv.type, 'new_join')")
+            ->get();
+
+        $allPackages = $rawRows->pluck('package_name')->unique()->sort()->values()->toArray();
+
+        // Build structure: month -> mode ('offline'/'online') -> package -> { new, extend }
+        $pivotOffline = [];
+        $pivotOnline  = [];
+        $totalsOffline = [];
+        $totalsOnline  = [];
+
+        foreach ($allPackages as $pkg) {
+            $totalsOffline[$pkg] = ['new' => 0, 'extend' => 0];
+            $totalsOnline[$pkg]  = ['new' => 0, 'extend' => 0];
+        }
+
+        foreach ($rawRows as $r) {
+            $mNum = (int) $r->month_num;
+            $pkg  = $r->package_name;
+            $mode = $r->delivery_mode ?: 'offline';
+            $tRaw = strtolower($r->inv_type ?? 'new_join');
+
+            $category = 'new';
+            if (str_contains($tRaw, 'lanjut') || str_contains($tRaw, 'extend') || str_contains($tRaw, 'continue') || str_contains($tRaw, 'rejoin') || str_contains($tRaw, 'renewal')) {
+                $category = 'extend';
+            }
+
+            $cnt = (int) $r->student_count;
+
+            if ($mode === 'online') {
+                if (!isset($pivotOnline[$mNum][$pkg])) $pivotOnline[$mNum][$pkg] = ['new' => 0, 'extend' => 0];
+                $pivotOnline[$mNum][$pkg][$category] = ($pivotOnline[$mNum][$pkg][$category] ?? 0) + $cnt;
+                $totalsOnline[$pkg][$category] += $cnt;
+            } else {
+                if (!isset($pivotOffline[$mNum][$pkg])) $pivotOffline[$mNum][$pkg] = ['new' => 0, 'extend' => 0];
+                $pivotOffline[$mNum][$pkg][$category] = ($pivotOffline[$mNum][$pkg][$category] ?? 0) + $cnt;
+                $totalsOffline[$pkg][$category] += $cnt;
+            }
+        }
+
+        $monthLabels = [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'Sept', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+        ];
+
+        $pivotMonths = [];
+        foreach ($monthLabels as $num => $label) {
+            $pkgsOff = [];
+            $pkgsOn  = [];
+            foreach ($allPackages as $pkg) {
+                $pkgsOff[$pkg] = $pivotOffline[$num][$pkg] ?? ['new' => 0, 'extend' => 0];
+                $pkgsOn[$pkg]  = $pivotOnline[$num][$pkg]  ?? ['new' => 0, 'extend' => 0];
+            }
+            $pivotMonths[] = [
+                'month'            => $num,
+                'label'            => $label,
+                'packages_offline' => $pkgsOff,
+                'packages_online'  => $pkgsOn,
+            ];
+        }
+
+        if ($month) {
+            $pivotMonths = array_values(array_filter($pivotMonths, fn($m) => $m['month'] === $month));
+        }
+
+        return [
+            'title'          => "Pola Join New & Extend {$year}" . ($branchName ? " ({$branchName})" : '') . ($month ? " Bulan {$month}" : ''),
+            'filename'       => "pola-join-new-extend-{$year}" . ($branchId ? "-branch{$branchId}" : '') . ($month ? "-bulan{$month}" : ''),
+            'year'           => $year,
+            'month'          => $month,
+            'modeFilter'     => $modeFilter,
+            'branchName'     => $branchName,
+            'packageList'    => $allPackages,
+            'months'         => $pivotMonths,
+            'totals_offline' => $totalsOffline,
+            'totals_online'  => $totalsOnline,
+        ];
+    }
+
+    private function buildJoinGradesData(Request $request): array
+    {
+        $year       = (int) $request->input('year', now()->year);
+        $month      = $request->input('month') ? (int) $request->input('month') : null;
+        $modeFilter = $request->input('mode');
+        $branchId   = $request->input('branch_id') ?: null;
+
+        $branchName = null;
+        if ($branchId) {
+            $branchName = \DB::table('branches')->where('id', $branchId)->value('name');
+        }
+
+        $isSqlite = \DB::connection()->getDriverName() === 'sqlite';
+
+        $monthExpr = $isSqlite
+            ? "CAST(strftime('%m', le.joined_at) AS INTEGER)"
+            : "MONTH(le.joined_at)";
+
+        $yearExprLE = $isSqlite
+            ? "CAST(strftime('%Y', le.joined_at) AS INTEGER)"
+            : "YEAR(le.joined_at)";
+
+        $query = \DB::table('lead_enrollments as le')
+            ->join('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->leftJoin('leads as l', 'le.lead_id', '=', 'l.id')
+            ->selectRaw("
+                {$monthExpr} AS month_num,
+                COALESCE(NULLIF(l.grade, ''), 'Tidak Terdefinisi') AS grade_name,
+                sc.type AS delivery_mode,
+                COUNT(le.id) AS student_count
+            ")
+            ->whereRaw("{$yearExprLE} = ?", [$year]);
+
+        if ($month) {
+            $query->whereRaw("{$monthExpr} = ?", [$month]);
+        }
+
+        if ($modeFilter && in_array($modeFilter, ['online', 'offline'])) {
+            $query->where('sc.type', '=', $modeFilter);
+        }
+
+        if ($branchId) {
+            $query->where('l.branch_id', '=', $branchId);
+        }
+
+        $rawRows = $query
+            ->groupByRaw("{$monthExpr}, COALESCE(NULLIF(l.grade, ''), 'Tidak Terdefinisi'), sc.type")
+            ->get();
+
+        $defaultGrades = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Kuliah', 'Umum', 'Tidak Terdefinisi'];
+        $dbGrades = $rawRows->pluck('grade_name')->unique()->toArray();
+        $allGrades = array_values(array_unique(array_merge($defaultGrades, $dbGrades)));
+
+        $pivotOffline  = [];
+        $pivotOnline   = [];
+        $totalsOffline = array_fill_keys($allGrades, 0);
+        $totalsOnline  = array_fill_keys($allGrades, 0);
+
+        foreach ($rawRows as $r) {
+            $mNum  = (int) $r->month_num;
+            $grade = $r->grade_name;
+            $mode  = $r->delivery_mode ?: 'offline';
+            $cnt   = (int) $r->student_count;
+
+            if ($mode === 'online') {
+                $pivotOnline[$mNum][$grade] = ($pivotOnline[$mNum][$grade] ?? 0) + $cnt;
+                $totalsOnline[$grade] = ($totalsOnline[$grade] ?? 0) + $cnt;
+            } else {
+                $pivotOffline[$mNum][$grade] = ($pivotOffline[$mNum][$grade] ?? 0) + $cnt;
+                $totalsOffline[$grade] = ($totalsOffline[$grade] ?? 0) + $cnt;
+            }
+        }
+
+        $monthLabels = [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'Sept', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+        ];
+
+        $pivotMonths = [];
+        foreach ($monthLabels as $num => $label) {
+            $grOff = [];
+            $grOn  = [];
+            foreach ($allGrades as $g) {
+                $grOff[$g] = $pivotOffline[$num][$g] ?? 0;
+                $grOn[$g]  = $pivotOnline[$num][$g]  ?? 0;
+            }
+            $pivotMonths[] = [
+                'month'          => $num,
+                'label'          => $label,
+                'grades_offline' => $grOff,
+                'grades_online'  => $grOn,
+            ];
+        }
+
+        if ($month) {
+            $pivotMonths = array_values(array_filter($pivotMonths, fn($m) => $m['month'] === $month));
+        }
+
+        return [
+            'title'          => "Pola Join Based on Grades {$year}" . ($branchName ? " ({$branchName})" : '') . ($month ? " Bulan {$month}" : ''),
+            'filename'       => "pola-join-grades-{$year}" . ($branchId ? "-branch{$branchId}" : '') . ($month ? "-bulan{$month}" : ''),
+            'year'           => $year,
+            'month'          => $month,
+            'modeFilter'     => $modeFilter,
+            'branchName'     => $branchName,
+            'gradeList'      => $allGrades,
+            'months'         => $pivotMonths,
+            'totals_offline' => $totalsOffline,
+            'totals_online'  => $totalsOnline,
+        ];
+    }
+
+    private function buildSiswaStopPivotData(Request $request, string $groupByType): array
+    {
+        $year       = (int) $request->input('year', now()->year);
+        $month      = $request->input('month') ? (int) $request->input('month') : null;
+        $modeFilter = $request->input('mode');
+        $branchId   = $request->input('branch_id') ?: null;
+
+        $branchName = null;
+        if ($branchId) {
+            $branchName = \DB::table('branches')->where('id', $branchId)->value('name');
+        }
+
+        $isSqlite = \DB::connection()->getDriverName() === 'sqlite';
+        $monthExpr = $isSqlite
+            ? "CAST(strftime('%m', s.stopped_at) AS INTEGER)"
+            : "MONTH(s.stopped_at)";
+
+        $yearExprStop = $isSqlite
+            ? "CAST(strftime('%Y', s.stopped_at) AS INTEGER)"
+            : "YEAR(s.stopped_at)";
+
+        $query = \DB::table('students as s')
+            ->leftJoin('leads as l', 's.lead_id', '=', 'l.id')
+            ->leftJoin('lead_enrollments as le', function ($join) {
+                $join->on('s.id', '=', 'le.student_id')
+                     ->whereRaw('(le.joined_at <= s.stopped_at OR s.stopped_at IS NULL)');
+            })
+            ->leftJoin('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->leftJoin('price_masters as pm', 'sc.price_master_id', '=', 'pm.id')
+            ->leftJoin('lead_types as lt', 'l.lead_type_id', '=', 'lt.id')
+            ->where('s.status', '=', 'stop')
+            ->whereNotNull('s.stopped_at')
+            ->whereRaw("{$yearExprStop} = ?", [$year]);
+
+        if ($month) {
+            $query->whereRaw("{$monthExpr} = ?", [$month]);
+        }
+
+        if ($modeFilter && in_array($modeFilter, ['online', 'offline'])) {
+            $query->where('sc.type', '=', $modeFilter);
+        }
+
+        if ($branchId) {
+            $query->where('l.branch_id', '=', $branchId);
+        }
+
+        $colExpr = "COALESCE(NULLIF(pm.name, ''), 'Tidak Terdefinisi')";
+        $subTitle = "Based on Paket Harga";
+        $dbPriceMasters = \DB::table('price_masters')->orderBy('name')->pluck('name')->toArray();
+        $defaultCols = array_values(array_unique(array_merge($dbPriceMasters, ['Tidak Terdefinisi'])));
+
+        if ($groupByType === 'programs') {
+            $colExpr = "COALESCE(NULLIF(sc.category, ''), COALESCE(NULLIF(lt.name, ''), 'Tidak Terdefinisi'))";
+            $subTitle = "Based on Program / Lead Type";
+            $dbLeadTypes = \DB::table('lead_types')->orderBy('name')->pluck('name')->toArray();
+            $dbClassCategories = \DB::table('study_classes')->whereNotNull('category')->where('category', '!=', '')->pluck('category')->toArray();
+            $defaultCols = array_values(array_unique(array_merge($dbLeadTypes, $dbClassCategories, ['Tidak Terdefinisi'])));
+        } elseif ($groupByType === 'grades') {
+            $colExpr = "COALESCE(NULLIF(l.grade, ''), 'Tidak Terdefinisi')";
+            $subTitle = "Based on Grades (Tingkat Pendidikan)";
+            $defaultCols = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Kuliah', 'Umum', 'Tidak Terdefinisi'];
+        }
+
+        $query->selectRaw("
+            {$monthExpr} AS month_num,
+            {$colExpr}   AS col_name,
+            sc.type      AS delivery_mode,
+            COUNT(DISTINCT s.id) AS stop_count
+        ")->groupByRaw("{$monthExpr}, {$colExpr}, sc.type");
+
+        $rawRows = $query->get();
+
+        $dbCols = $rawRows->pluck('col_name')->filter()->unique()->toArray();
+        $allCols = array_values(array_unique(array_merge($defaultCols, $dbCols)));
+
+        $pivotOffline  = [];
+        $pivotOnline   = [];
+        $totalsOffline = array_fill_keys($allCols, 0);
+        $totalsOnline  = array_fill_keys($allCols, 0);
+
+        foreach ($rawRows as $r) {
+            $mNum = (int) $r->month_num;
+            $col  = $r->col_name ?: 'Umum';
+            $mode = $r->delivery_mode ?: 'offline';
+            $cnt  = (int) $r->stop_count;
+
+            if ($mode === 'online') {
+                $pivotOnline[$mNum][$col] = ($pivotOnline[$mNum][$col] ?? 0) + $cnt;
+                $totalsOnline[$col] = ($totalsOnline[$col] ?? 0) + $cnt;
+            } else {
+                $pivotOffline[$mNum][$col] = ($pivotOffline[$mNum][$col] ?? 0) + $cnt;
+                $totalsOffline[$col] = ($totalsOffline[$col] ?? 0) + $cnt;
+            }
+        }
+
+        $monthLabels = [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'Sept', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
+        ];
+
+        $pivotMonths = [];
+        foreach ($monthLabels as $num => $label) {
+            $off = [];
+            $on  = [];
+            foreach ($allCols as $c) {
+                $off[$c] = $pivotOffline[$num][$c] ?? 0;
+                $on[$c]  = $pivotOnline[$num][$c]  ?? 0;
+            }
+            $pivotMonths[] = [
+                'month'   => $num,
+                'label'   => $label,
+                'offline' => $off,
+                'online'  => $on,
+            ];
+        }
+
+        if ($month) {
+            $pivotMonths = array_values(array_filter($pivotMonths, fn($m) => $m['month'] === $month));
+        }
+
+        return [
+            'title'          => "Laporan Siswa Stop {$year}" . ($branchName ? " ({$branchName})" : '') . ($month ? " Bulan {$month}" : ''),
+            'subTitle'       => $subTitle,
+            'filename'       => "siswa-stop-{$groupByType}-{$year}" . ($branchId ? "-branch{$branchId}" : '') . ($month ? "-bulan{$month}" : ''),
+            'year'           => $year,
+            'month'          => $month,
+            'modeFilter'     => $modeFilter,
+            'branchName'     => $branchName,
+            'columns'        => $allCols,
+            'months'         => $pivotMonths,
+            'totals_offline' => $totalsOffline,
+            'totals_online'  => $totalsOnline,
         ];
     }
 

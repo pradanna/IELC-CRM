@@ -15,7 +15,7 @@ class StudyClassResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'type' => $this->type ?? 'offline',
-            'category' => $this->category ?? ($this->is_private ? 'private' : 'group'),
+            'category' => $this->category ?? 'KIDS',
             'status' => $this->status ?? 'active',
             'branch_id' => $this->branch_id,
             'instructor_id' => $this->instructor_id,
