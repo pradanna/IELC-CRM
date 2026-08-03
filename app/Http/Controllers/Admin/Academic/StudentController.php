@@ -107,7 +107,7 @@ class StudentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $defaultGrades = collect(['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Kuliah', 'Umum']);
+        $defaultGrades = collect(['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum']);
 
         $dbGrades = Lead::whereNotNull('grade')
             ->where('grade', '!=', '')

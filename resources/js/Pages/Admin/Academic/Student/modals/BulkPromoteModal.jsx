@@ -168,7 +168,7 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
                                                 { value: 'SD 1', label: 'SD 1' },
                                                 { value: 'SMP 7', label: 'SMP 7' },
                                                 { value: 'SMA 10', label: 'SMA 10' },
-                                                { value: 'Kuliah / Umum', label: 'Kuliah / Umum' }
+                                                { value: 'Umum', label: 'Umum' }
                                             ]}
                                             value={toGrade}
                                             onChange={setToGrade}
@@ -204,7 +204,7 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
                                 >
                                     <option value="all">Semua Status</option>
                                     <option value="valid">✅ Valid (Naik Kelas)</option>
-                                    <option value="graduated">🎓 Lulusan (SMA 12 ➔ Kuliah)</option>
+                                    <option value="graduated">🎓 Lulusan (SMA 12 ➔ Umum)</option>
                                     <option value="level_missing">⚠️ Detail Kelas Kosong</option>
                                 </select>
                             </div>

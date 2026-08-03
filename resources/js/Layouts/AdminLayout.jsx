@@ -131,18 +131,6 @@ const menuItems = [
                 href: route("admin.master.index"),
                 name: "admin.master.index",
             },
-            // {
-            //     icon: <LayoutDashboard size={20} />,
-            //     text: "Schedule",
-            //     href: route("admin.schedules.index"),
-            //     name: "admin.schedules.*",
-            // },
-            {
-                icon: <GraduationCap size={20} />,
-                text: "Academic",
-                href: route("admin.academic.students.index"),
-                name: "admin.academic.students.*",
-            },
         ],
     },
     {

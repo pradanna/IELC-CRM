@@ -715,7 +715,7 @@ class StudentExportController extends Controller
             ->groupByRaw("{$monthExpr}, COALESCE(NULLIF(l.grade, ''), 'Tidak Terdefinisi'), sc.type")
             ->get();
 
-        $defaultGrades = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Kuliah', 'Umum', 'Tidak Terdefinisi'];
+        $defaultGrades = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum', 'Tidak Terdefinisi'];
         $dbGrades = $rawRows->pluck('grade_name')->unique()->toArray();
         $allGrades = array_values(array_unique(array_merge($defaultGrades, $dbGrades)));
 
@@ -839,7 +839,7 @@ class StudentExportController extends Controller
         } elseif ($groupByType === 'grades') {
             $colExpr = "COALESCE(NULLIF(l.grade, ''), 'Tidak Terdefinisi')";
             $subTitle = "Based on Grades (Tingkat Pendidikan)";
-            $defaultCols = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Kuliah', 'Umum', 'Tidak Terdefinisi'];
+            $defaultCols = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum', 'Tidak Terdefinisi'];
         }
 
         $query->selectRaw("

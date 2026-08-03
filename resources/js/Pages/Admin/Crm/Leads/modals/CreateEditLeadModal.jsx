@@ -265,7 +265,6 @@ export default function CreateEditLeadModal({
         { value: 'SD', label: 'SD' },
         { value: 'SMP', label: 'SMP' },
         { value: 'SMA', label: 'SMA / SMK' },
-        { value: 'KULIAH', label: 'Kuliah / Mahasiswa' },
         { value: 'UMUM', label: 'Umum / Profesional' },
     ];
 

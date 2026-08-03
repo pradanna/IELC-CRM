@@ -22,7 +22,7 @@ class BulkPromoteStudentsAction
         'SMP 9'       => ['grade' => 'SMA', 'school_level' => 'Kelas 10'],
         'SMA 10'      => ['grade' => 'SMA', 'school_level' => 'Kelas 11'],
         'SMA 11'      => ['grade' => 'SMA', 'school_level' => 'Kelas 12'],
-        'SMA 12'      => ['grade' => 'KULIAH', 'school_level' => null],
+        'SMA 12'      => ['grade' => 'UMUM', 'school_level' => null],
     ];
 
     private array $autoLevelMap = [
@@ -31,7 +31,7 @@ class BulkPromoteStudentsAction
         'Paud'        => ['grade' => 'SD', 'school_level' => null],
         'SD'          => ['grade' => 'SMP', 'school_level' => null],
         'SMP'         => ['grade' => 'SMA', 'school_level' => null],
-        'SMA'         => ['grade' => 'KULIAH', 'school_level' => null],
+        'SMA'         => ['grade' => 'UMUM', 'school_level' => null],
     ];
 
     public function calculateNext(string $grade, ?string $schoolLevel, string $mode, ?string $customTarget = null): ?array
