@@ -10,7 +10,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE lead_enrollments MODIFY COLUMN status ENUM('active', 'completed', 'stopped', 'pending_invoice', 'pending_payment') NOT NULL DEFAULT 'active'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE lead_enrollments MODIFY COLUMN status ENUM('active', 'completed', 'stopped', 'pending_invoice', 'pending_payment') NOT NULL DEFAULT 'active'");
+        }
     }
 
     /**
@@ -18,6 +20,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE lead_enrollments MODIFY COLUMN status ENUM('active', 'completed', 'stopped') NOT NULL DEFAULT 'active'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE lead_enrollments MODIFY COLUMN status ENUM('active', 'completed', 'stopped') NOT NULL DEFAULT 'active'");
+        }
     }
 };

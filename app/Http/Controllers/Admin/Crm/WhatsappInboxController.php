@@ -42,11 +42,29 @@ class WhatsappInboxController extends Controller
     {
         $leads = Lead::whereNotNull('phone')
             ->where('phone', '!=', '')
+            ->with(['chatLogs' => function ($query) {
+                $query->where('channel', 'official')->latest();
+            }])
             ->latest('updated_at')
-            ->take(30)
-            ->get(['id', 'name', 'phone', 'lead_phase_id', 'updated_at']);
+            ->get(['id', 'name', 'phone', 'lead_phase_id', 'updated_at', 'created_at']);
 
-        $contacts = $leads->map(function ($lead) {
+        // Filter contacts that have valid WhatsApp phone number (minimum 8 digits)
+        $validLeads = $leads->filter(function ($lead) {
+            $digits = preg_replace('/[^0-9]/', '', $lead->phone);
+            return strlen($digits) >= 8;
+        });
+
+        $contacts = $validLeads->map(function ($lead) {
+            $latestLog = $lead->chatLogs->first();
+            $lastTime = $latestLog ? $latestLog->created_at : ($lead->updated_at ?? $lead->created_at);
+            
+            $formattedTime = '';
+            if ($lastTime) {
+                $formattedTime = $lastTime->isToday() 
+                    ? $lastTime->format('H:i') 
+                    : $lastTime->format('d M H:i');
+            }
+
             return [
                 'id' => 'official_' . $lead->id,
                 'name' => $lead->name ?? 'Lead #' . $lead->id,
@@ -54,12 +72,15 @@ class WhatsappInboxController extends Controller
                 'type' => 'lead',
                 'crm_id' => $lead->id,
                 'avatar' => null,
-                'last_message' => 'Pesan terkirim via Official Meta API',
-                'last_message_time' => $lead->updated_at ? $lead->updated_at->format('H:i') : date('H:i'),
+                'last_message' => $latestLog ? $latestLog->message : 'Kontak WhatsApp CRM',
+                'last_message_time' => $formattedTime ?: date('H:i'),
+                'sort_timestamp' => $lastTime ? $lastTime->timestamp : 0,
                 'unread_count' => 0,
                 'channel' => 'official',
             ];
-        });
+        })
+        ->sortByDesc('sort_timestamp')
+        ->values();
 
         return response()->json([
             'status' => 'success',
@@ -72,35 +93,89 @@ class WhatsappInboxController extends Controller
      */
     public function getBaileysConversations(string $branchCode, Request $request): JsonResponse
     {
-        $students = Student::whereNotNull('phone')
-            ->where('phone', '!=', '')
-            ->latest('updated_at')
-            ->take(30)
-            ->get(['id', 'name', 'phone', 'status', 'updated_at']);
+        $branch = Branch::where('code', strtolower($branchCode))
+            ->orWhere('code', strtoupper($branchCode))
+            ->first();
 
-        // Fallback to Leads if no students found
-        if ($students->isEmpty()) {
-            $students = Lead::whereNotNull('phone')
-                ->where('phone', '!=', '')
-                ->latest('updated_at')
-                ->take(30)
-                ->get(['id', 'name', 'phone', 'updated_at']);
+        // 1. Fetch Students with WhatsApp phone
+        $studentsQuery = Student::whereNotNull('phone')
+            ->where('phone', '!=', '');
+
+        if ($branch) {
+            $studentsQuery->whereHas('lead', function ($q) use ($branch) {
+                $q->where('branch_id', $branch->id);
+            });
         }
 
-        $contacts = $students->map(function ($student) {
-            return [
-                'id' => 'baileys_' . $student->id,
-                'name' => $student->name ?? 'Kontak #' . $student->id,
-                'phone' => $student->phone,
-                'type' => 'student',
-                'crm_id' => $student->id,
-                'avatar' => null,
-                'last_message' => 'Pesan terkirim via Baileys Gateway',
-                'last_message_time' => $student->updated_at ? $student->updated_at->format('H:i') : date('H:i'),
-                'unread_count' => 0,
-                'channel' => 'baileys',
-            ];
-        });
+        $students = $studentsQuery->with(['lead.chatLogs' => function ($q) {
+            $q->where('channel', 'baileys')->latest();
+        }])->get(['id', 'lead_id', 'name', 'phone', 'status', 'updated_at', 'created_at']);
+
+        // 2. Fetch Leads with WhatsApp phone for this branch
+        $leadsQuery = Lead::whereNotNull('phone')
+            ->where('phone', '!=', '');
+
+        if ($branch) {
+            $leadsQuery->where('branch_id', $branch->id);
+        }
+
+        $leads = $leadsQuery->with(['chatLogs' => function ($q) {
+            $q->where('channel', 'baileys')->latest();
+        }])->get(['id', 'name', 'phone', 'updated_at', 'created_at']);
+
+        // Combine and filter valid WhatsApp numbers (minimum 8 digits)
+        $allItems = collect();
+
+        foreach ($students as $student) {
+            $digits = preg_replace('/[^0-9]/', '', $student->phone);
+            if (strlen($digits) >= 8) {
+                $latestLog = $student->lead?->chatLogs?->first();
+                $lastTime = $latestLog ? $latestLog->created_at : ($student->updated_at ?? $student->created_at);
+
+                $formattedTime = $lastTime ? ($lastTime->isToday() ? $lastTime->format('H:i') : $lastTime->format('d M H:i')) : date('H:i');
+
+                $allItems->push([
+                    'id' => 'baileys_stu_' . $student->id,
+                    'name' => $student->name ?? 'Student #' . $student->id,
+                    'phone' => $student->phone,
+                    'type' => 'student',
+                    'crm_id' => $student->id,
+                    'avatar' => null,
+                    'last_message' => $latestLog ? $latestLog->message : 'Siswa Aktif WhatsApp',
+                    'last_message_time' => $formattedTime,
+                    'sort_timestamp' => $lastTime ? $lastTime->timestamp : 0,
+                    'unread_count' => 0,
+                    'channel' => 'baileys',
+                ]);
+            }
+        }
+
+        foreach ($leads as $lead) {
+            $digits = preg_replace('/[^0-9]/', '', $lead->phone);
+            if (strlen($digits) >= 8) {
+                $latestLog = $lead->chatLogs?->first();
+                $lastTime = $latestLog ? $latestLog->created_at : ($lead->updated_at ?? $lead->created_at);
+
+                $formattedTime = $lastTime ? ($lastTime->isToday() ? $lastTime->format('H:i') : $lastTime->format('d M H:i')) : date('H:i');
+
+                $allItems->push([
+                    'id' => 'baileys_lead_' . $lead->id,
+                    'name' => $lead->name ?? 'Lead #' . $lead->id,
+                    'phone' => $lead->phone,
+                    'type' => 'lead',
+                    'crm_id' => $lead->id,
+                    'avatar' => null,
+                    'last_message' => $latestLog ? $latestLog->message : 'Lead Baru WhatsApp',
+                    'last_message_time' => $formattedTime,
+                    'sort_timestamp' => $lastTime ? $lastTime->timestamp : 0,
+                    'unread_count' => 0,
+                    'channel' => 'baileys',
+                ]);
+            }
+        }
+
+        // Sort descending by sort_timestamp (newest first)
+        $contacts = $allItems->sortByDesc('sort_timestamp')->values();
 
         return response()->json([
             'status' => 'success',
