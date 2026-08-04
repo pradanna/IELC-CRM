@@ -92,7 +92,8 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
             header: 'Actions',
             className: 'text-right',
             render: (row, index) => {
-                const isNearBottom = index >= filteredPriceMasters.length - 2 && filteredPriceMasters.length > 2;
+                const total = filteredPriceMasters.length;
+                const isNearBottom = total > 1 && index >= total - (total <= 2 ? 1 : 2);
                 return (
                     <div className="flex justify-end">
                         <TableActionDropdown align={isNearBottom ? "top-right" : "right"}>

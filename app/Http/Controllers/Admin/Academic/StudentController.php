@@ -21,7 +21,16 @@ class StudentController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Student::with(['lead.branch', 'studyClasses']);
+        $query = Student::with([
+            'lead.branch', 
+            'lead.leadSource', 
+            'lead.infoSource', 
+            'lead.leadType', 
+            'lead.guardians', 
+            'lead.enrollments.studyClass', 
+            'studyClasses',
+            'progressReports',
+        ]);
 
         if ($request->filled('search')) {
             $query->whereHas('lead', function ($q) use ($request) {
@@ -666,6 +675,30 @@ class StudentController extends Controller
         );
 
         return redirect()->back()->with('success', "Berhasil menaikkan kelas massal untuk {$count} siswa.");
+    }
+
+    public function storeProgressReport(
+        \App\Http\Requests\Academic\StoreStudentProgressReportRequest $request,
+        Student $student,
+        \App\Domains\Academic\Application\Actions\StoreStudentProgressReport $action
+    ): RedirectResponse {
+        $action->handle($student, $request->validated(), $request->file('file'));
+
+        return redirect()->back()->with('success', 'Progress report berhasil ditambahkan.');
+    }
+
+    public function destroyProgressReport(
+        Student $student,
+        \App\Domains\Academic\Domain\Models\StudentProgressReport $report,
+        \App\Domains\Academic\Application\Actions\DeleteStudentProgressReport $action
+    ): RedirectResponse {
+        if ($report->student_id !== $student->id) {
+            abort(404);
+        }
+
+        $action->handle($report);
+
+        return redirect()->back()->with('success', 'Progress report berhasil dihapus.');
     }
 }
 

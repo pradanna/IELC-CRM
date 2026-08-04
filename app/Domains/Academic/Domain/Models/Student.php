@@ -51,5 +51,10 @@ class Student extends Model
     {
         return $this->hasMany(StudentLoyaltyReward::class);
     }
+
+    public function progressReports(): HasMany
+    {
+        return $this->hasMany(StudentProgressReport::class)->latest();
+    }
 }
 

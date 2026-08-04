@@ -389,7 +389,9 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                         </THead>
                         <TBody>
                             {invoices.data.length > 0 ? (
-                                invoices.data.map((invoice) => {
+                                invoices.data.map((invoice, index) => {
+                                    const total = invoices.data.length;
+                                    const isNearBottom = total > 1 && index >= total - (total <= 2 ? 1 : 2);
                                     let typeBadgeLabel = 'New Join';
                                     let typeBadgeStyle = 'bg-emerald-50 text-emerald-600 border-emerald-100';
 
@@ -477,7 +479,7 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                                             </div>
                                         </TD>
                                         <TD className="text-right">
-                                            <TableActionDropdown align="right">
+                                            <TableActionDropdown align={isNearBottom ? "top-right" : "right"}>
                                                 <TableActionDropdown.Item 
                                                     onClick={() => handleShowDetails(invoice)}
                                                     icon={FileText}
