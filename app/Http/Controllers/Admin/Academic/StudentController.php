@@ -600,28 +600,44 @@ class StudentController extends Controller
     /**
      * Update the specified student's status, notes, and join date.
      */
-    public function update(Request $request, Student $student): RedirectResponse
+    public function update(Request $request, Student $student)
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:active,stop',
-            'notes' => 'nullable|string',
-            'start_join' => 'required|date',
+            'status'     => 'nullable|string|in:active,stop',
+            'notes'      => 'nullable|string|max:5000',
+            'start_join' => 'nullable|date',
         ]);
 
-        $oldStatus = $student->status;
+        $updates = [];
 
-        if ($validated['status'] === 'stop' && $oldStatus !== 'stop') {
-            $student->stopped_at = now();
-        } elseif ($validated['status'] === 'active' && $oldStatus !== 'active') {
-            $student->stopped_at = null;
+        if (array_key_exists('status', $validated)) {
+            $oldStatus = $student->status;
+            if ($validated['status'] === 'stop' && $oldStatus !== 'stop') {
+                $updates['stopped_at'] = now();
+            } elseif ($validated['status'] === 'active' && $oldStatus !== 'active') {
+                $updates['stopped_at'] = null;
+            }
+            $updates['status'] = $validated['status'];
         }
 
-        $student->update([
-            'status' => $validated['status'],
-            'notes' => $validated['notes'],
-            'start_join' => $validated['start_join'],
-            'stopped_at' => $student->stopped_at,
-        ]);
+        if (array_key_exists('notes', $validated)) {
+            $updates['notes'] = $validated['notes'];
+        }
+
+        if (array_key_exists('start_join', $validated)) {
+            $updates['start_join'] = $validated['start_join'];
+        }
+
+        if (!empty($updates)) {
+            $student->update($updates);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Detail siswa berhasil diperbarui.',
+                'student' => $student->refresh(),
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Student details updated successfully.');
     }
@@ -700,6 +716,27 @@ class StudentController extends Controller
 
         return redirect()->back()->with('success', 'Progress report berhasil dihapus.');
     }
+
+    public function uploadProfilePicture(Request $request, Student $student): JsonResponse
+    {
+        $request->validate([
+            'profile_picture' => ['required', 'image', 'max:51200'],
+        ]);
+
+        if ($request->hasFile('profile_picture')) {
+            // Delete old picture if exists
+            if ($student->profile_picture && \Illuminate\Support\Facades\Storage::disk('public')->exists($student->profile_picture)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($student->profile_picture);
+            }
+
+            $path = $request->file('profile_picture')->store('student-profiles', 'public');
+            $student->update(['profile_picture' => $path]);
+        }
+
+        return response()->json([
+            'message'             => 'Foto profil siswa berhasil diperbarui.',
+            'profile_picture'     => $student->profile_picture,
+            'profile_picture_url' => asset('storage/' . $student->profile_picture),
+        ]);
+    }
 }
-
-

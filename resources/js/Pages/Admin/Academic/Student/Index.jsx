@@ -302,8 +302,8 @@ export default function Index({ students, studyClassesList = [], priceMastersLis
                                                             <div className="flex items-center gap-5">
                                                                 <div className="relative">
                                                                     <div className="w-14 h-14 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center border-2 border-white shadow-sm overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                                                                        {student.profile_picture ? (
-                                                                            <img src={student.profile_picture} alt="" className="w-full h-full object-cover" />
+                                                                        {student.profile_picture_url || student.profile_picture ? (
+                                                                            <img src={student.profile_picture_url || student.profile_picture} alt="" className="w-full h-full object-cover" />
                                                                         ) : (
                                                                             <User className="w-7 h-7 text-slate-400" />
                                                                         )}
