@@ -269,7 +269,7 @@ class FetchCrmDashboardData
             $enrollmentTrend = [];
             $daysInMonth = $trendStartDate->daysInMonth;
             
-            $achievedQuery = LeadEnrollment::with(['studyClass', 'lead'])
+            $achievedQuery = LeadEnrollment::with(['studyClass.branch', 'lead.branch'])
                 ->whereBetween('joined_at', [$trendStartDate, $trendEndDate]);
 
             if ($branchId) {
@@ -278,25 +278,29 @@ class FetchCrmDashboardData
 
             $enrollmentsList = $achievedQuery->get();
 
-            $dailyOfflineCounts = [];
+            $dailySoloCounts = [];
+            $dailySemarangCounts = [];
             $dailyOnlineCounts = [];
             $dailyTotalCounts = [];
 
             foreach ($enrollmentsList as $e) {
                 $day = (int) \Carbon\Carbon::parse($e->joined_at)->format('j');
                 
-                $isOnline = false;
-                if ($e->studyClass) {
-                    $isOnline = ($e->studyClass->type === 'online');
-                } elseif ($e->lead) {
-                    $isOnline = (bool) $e->lead->is_online;
+                $isOnline = ($e->studyClass?->type === 'online' || (bool) $e->lead?->is_online);
+                $branchCode = $e->lead?->branch?->code ?? $e->studyClass?->branch?->code;
+                $branchName = $e->lead?->branch?->name ?? $e->studyClass?->branch?->name;
+                $isSemarang = ($branchCode === 'SMG' || strcasecmp($branchName ?? '', 'Semarang') === 0);
+
+                if ($isSemarang) {
+                    $dailySemarangCounts[$day] = ($dailySemarangCounts[$day] ?? 0) + 1;
+                } else {
+                    $dailySoloCounts[$day] = ($dailySoloCounts[$day] ?? 0) + 1;
                 }
-                
+
                 if ($isOnline) {
                     $dailyOnlineCounts[$day] = ($dailyOnlineCounts[$day] ?? 0) + 1;
-                } else {
-                    $dailyOfflineCounts[$day] = ($dailyOfflineCounts[$day] ?? 0) + 1;
                 }
+
                 $dailyTotalCounts[$day] = ($dailyTotalCounts[$day] ?? 0) + 1;
             }
 
@@ -312,19 +316,23 @@ class FetchCrmDashboardData
             $todayDay = $isCurrentMonthYear ? (int)$today->day : null;
 
             $cumulativeTotal = 0;
-            $cumulativeOffline = 0;
+            $cumulativeSolo = 0;
+            $cumulativeSemarang = 0;
             $cumulativeOnline = 0;
 
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $cumulativeTotal += $dailyTotalCounts[$i] ?? 0;
-                $cumulativeOffline += $dailyOfflineCounts[$i] ?? 0;
+                $cumulativeSolo += $dailySoloCounts[$i] ?? 0;
+                $cumulativeSemarang += $dailySemarangCounts[$i] ?? 0;
                 $cumulativeOnline += $dailyOnlineCounts[$i] ?? 0;
 
                 $enrollmentTrend[] = [
                     'label' => $i,
                     'enrolled' => $cumulativeTotal,
-                    'enrolled_offline' => $cumulativeOffline,
+                    'enrolled_solo' => $cumulativeSolo,
+                    'enrolled_semarang' => $cumulativeSemarang,
                     'enrolled_online' => $cumulativeOnline,
+                    'enrolled_offline' => $cumulativeSolo + $cumulativeSemarang,
                     'target' => $monthlyGoal,
                     'is_today' => ($i === $todayDay),
                 ];

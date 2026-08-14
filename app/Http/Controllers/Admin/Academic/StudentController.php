@@ -185,15 +185,13 @@ class StudentController extends Controller
         // 1. OVERALL
         // ═════════════════════════════════════════════════════════
 
-        // Total active students in selected period
-        $totalActiveQuery = Student::where('status', 'active');
-        $filterByDate($totalActiveQuery, 'start_join', $year, $month);
-        $totalActiveStudents = $totalActiveQuery->count();
+        // Total active students across all years
+        $totalActiveStudents = Student::where('status', 'active')->count();
 
-        // New students in target month
+        // New students joined in target month/year
         $targetMonth = $month ?? (int) now()->month;
         $newStudentsQuery = Student::where('status', 'active');
-        $filterByDate($newStudentsQuery, 'created_at', $year, $targetMonth);
+        $filterByDate($newStudentsQuery, 'start_join', $year, $targetMonth);
         $newStudentsThisMonth = $newStudentsQuery->count();
 
         // Monthly trend (full year – ignores month filter for the chart)
@@ -225,13 +223,12 @@ class StudentController extends Controller
             }
         }
 
-        // Branch distribution
+        // Branch distribution across all active students
         $branchQuery = Student::where('students.status', 'active')
             ->join('leads', 'students.lead_id', '=', 'leads.id')
             ->join('branches', 'leads.branch_id', '=', 'branches.id')
             ->selectRaw('branches.name as branch_name, count(*) as count')
             ->groupBy('branches.name');
-        $filterByDate($branchQuery, 'students.start_join', $year, $month);
         $branchDistribution = $branchQuery->get()->map(fn($item) => [
             'name'  => $item->branch_name,
             'value' => (int) $item->count,
@@ -478,7 +475,7 @@ class StudentController extends Controller
         $gradeDistributionRaw = $gradeQuery->get();
 
         $gradeGroups = [
-            'PG' => 0, 'TK' => 0, 'SD' => 0, 'SMP' => 0, 'SMA' => 0, 'KULIAH' => 0, 'UMUM' => 0
+            'PG' => 0, 'TK' => 0, 'SD' => 0, 'SMP' => 0, 'SMA' => 0, 'UMUM' => 0
         ];
 
         foreach ($gradeDistributionRaw as $item) {
@@ -493,8 +490,6 @@ class StudentController extends Controller
                 $gradeGroups['SMP'] += $item->count;
             } elseif (str_contains($rawGrade, 'SMA') || str_contains($rawGrade, 'SMK') || str_contains($rawGrade, 'SLTA')) {
                 $gradeGroups['SMA'] += $item->count;
-            } elseif (str_contains($rawGrade, 'KULIAH') || str_contains($rawGrade, 'UNIV') || str_contains($rawGrade, 'MHS')) {
-                $gradeGroups['KULIAH'] += $item->count;
             } else {
                 $gradeGroups['UMUM'] += $item->count;
             }
@@ -508,7 +503,7 @@ class StudentController extends Controller
             ];
         }
 
-        // Online vs Offline breakdown derived from active enrolled class type (fallback to leads.is_online if no class enrolled yet)
+        // Online vs Offline breakdown across all active students
         $channelCounts = Student::where('students.status', 'active')
             ->leftJoin('lead_enrollments', function ($join) {
                 $join->on('students.id', '=', 'lead_enrollments.student_id')
@@ -525,10 +520,10 @@ class StudentController extends Controller
                 sum(case 
                     when study_classes.type = 'offline' then 1 
                     when study_classes.type is null and (leads.is_online = 0 or leads.is_online is null) then 1 
+                    when study_classes.type is not null and study_classes.type != 'online' then 1
                     else 0 
                 end) as offline_count
             ");
-        $filterByDate($channelCounts, 'students.start_join', $year); // NO $month
         $channelData = $channelCounts->first();
 
         $onlineCount = (int) ($channelData->online_count ?? 0);

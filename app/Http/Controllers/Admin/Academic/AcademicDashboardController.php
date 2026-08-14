@@ -61,15 +61,13 @@ class AcademicDashboardController extends Controller
         // The Overall tab UI does NOT show a month selector, so $month from URL
         // (possibly a stale param from another tab) must NOT affect these queries.
 
-        // Total active students for the selected year
-        $totalActiveQuery = Student::where('status', 'active');
-        $filterByDate($totalActiveQuery, 'start_join', $year); // NO $month
-        $totalActiveStudents = $totalActiveQuery->count();
+        // Total active students (all active students across all years)
+        $totalActiveStudents = Student::where('status', 'active')->count();
 
-        // New students in target month
+        // New students joined in target month/year
         $targetMonth = $month ?? (int) now()->month;
         $newStudentsQuery = Student::where('status', 'active');
-        $filterByDate($newStudentsQuery, 'created_at', $year, $targetMonth);
+        $filterByDate($newStudentsQuery, 'start_join', $year, $targetMonth);
         $newStudentsThisMonth = $newStudentsQuery->count();
 
         // Monthly trend (full year – ignores month filter for the chart)
@@ -118,10 +116,10 @@ class AcademicDashboardController extends Controller
                 sum(case 
                     when study_classes.type = 'offline' then 1 
                     when study_classes.type is null and (leads.is_online = 0 or leads.is_online is null) then 1 
+                    when study_classes.type is not null and study_classes.type != 'online' then 1
                     else 0 
                 end) as offline_count
             ");
-        $filterByDate($channelCounts, 'students.start_join', $year); // NO $month
         $channelData = $channelCounts->first();
 
         $onlineCount = (int) ($channelData->online_count ?? 0);
@@ -137,7 +135,7 @@ class AcademicDashboardController extends Controller
 
         $categoriesMap = [
             'PG' => 'PG', 'TK' => 'TK', 'SD' => 'SD',
-            'SMP' => 'SMP', 'SMA' => 'SMA', 'KULIAH' => 'KULIAH', 'UMUM' => 'UMUM',
+            'SMP' => 'SMP', 'SMA' => 'SMA', 'UMUM' => 'UMUM',
         ];
 
         $overallGradeDistribution = [];
@@ -155,13 +153,12 @@ class AcademicDashboardController extends Controller
             ];
         }
 
-        // Branch distribution – year-only (no month)
+        // Branch distribution across all active students
         $branchQuery = Student::where('students.status', 'active')
             ->join('leads', 'students.lead_id', '=', 'leads.id')
             ->join('branches', 'leads.branch_id', '=', 'branches.id')
             ->selectRaw('branches.name as branch_name, count(*) as count')
             ->groupBy('branches.name');
-        $filterByDate($branchQuery, 'students.start_join', $year); // NO $month
         $branchDistribution = $branchQuery->get()->map(fn($item) => [
             'name'  => $item->branch_name,
             'value' => (int) $item->count,
@@ -415,7 +412,7 @@ class AcademicDashboardController extends Controller
 
         $categoriesMap = [
             'PG' => 'PG', 'TK' => 'TK', 'SD' => 'SD',
-            'SMP' => 'SMP', 'SMA' => 'SMA', 'KULIAH' => 'KULIAH', 'UMUM' => 'UMUM',
+            'SMP' => 'SMP', 'SMA' => 'SMA', 'UMUM' => 'UMUM',
         ];
 
         $gradeDistribution = [];
