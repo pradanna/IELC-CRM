@@ -77,9 +77,45 @@ class StudentController extends Controller
         }
 
         if ($request->filled('grade')) {
-            $g = $request->input('grade');
+            $g = trim($request->input('grade'));
             $query->whereHas('lead', function ($q) use ($g) {
-                $q->where('grade', $g);
+                if ($g === 'SD') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'SD')
+                           ->orWhere('grade', 'like', 'SD%')
+                           ->orWhere('grade', 'like', 'D %');
+                    });
+                } elseif ($g === 'SMP') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'SMP')
+                           ->orWhere('grade', 'like', 'SMP%');
+                    });
+                } elseif ($g === 'SMA / SMK' || $g === 'SMA' || $g === 'SMK') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'SMA / SMK')
+                           ->orWhere('grade', 'like', 'SMA%')
+                           ->orWhere('grade', 'like', 'SMK%')
+                           ->orWhere('grade', '10th')
+                           ->orWhere('grade', 'XI')
+                           ->orWhere('grade', 'XII');
+                    });
+                } elseif ($g === 'TK / Paud' || $g === 'TK' || $g === 'Paud') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'TK / Paud')
+                           ->orWhere('grade', 'like', 'TK%')
+                           ->orWhere('grade', 'like', 'Paud%')
+                           ->orWhere('grade', 'like', 'PG%');
+                    });
+                } elseif ($g === 'Umum') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'Umum')
+                           ->orWhere('grade', 'like', 'Umum%')
+                           ->orWhere('grade', 'like', 'Mahasiswa%')
+                           ->orWhere('grade', 'like', 'Dewasa%');
+                    });
+                } else {
+                    $q->where('grade', $g);
+                }
             });
         }
 
@@ -116,14 +152,7 @@ class StudentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $defaultGrades = collect(['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum']);
-
-        $dbGrades = Lead::whereNotNull('grade')
-            ->where('grade', '!=', '')
-            ->distinct()
-            ->pluck('grade');
-
-        $gradesList = $defaultGrades->merge($dbGrades)->unique()->values();
+        $gradesList = collect(['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum']);
 
         $allFilters = array_merge(
             $dashboardData['filters'],

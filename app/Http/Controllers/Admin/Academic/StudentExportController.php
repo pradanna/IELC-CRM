@@ -195,9 +195,47 @@ class StudentExportController extends Controller
         }
 
         if ($request->filled('grade')) {
-            $g = $request->grade;
+            $g = trim($request->grade);
             $appliedFilters['Tingkat Sekolah'] = $g;
-            $query->whereHas('lead', fn ($q) => $q->where('grade', $g));
+            $query->whereHas('lead', function ($q) use ($g) {
+                if ($g === 'SD') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'SD')
+                           ->orWhere('grade', 'like', 'SD%')
+                           ->orWhere('grade', 'like', 'D %');
+                    });
+                } elseif ($g === 'SMP') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'SMP')
+                           ->orWhere('grade', 'like', 'SMP%');
+                    });
+                } elseif ($g === 'SMA / SMK' || $g === 'SMA' || $g === 'SMK') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'SMA / SMK')
+                           ->orWhere('grade', 'like', 'SMA%')
+                           ->orWhere('grade', 'like', 'SMK%')
+                           ->orWhere('grade', '10th')
+                           ->orWhere('grade', 'XI')
+                           ->orWhere('grade', 'XII');
+                    });
+                } elseif ($g === 'TK / Paud' || $g === 'TK' || $g === 'Paud') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'TK / Paud')
+                           ->orWhere('grade', 'like', 'TK%')
+                           ->orWhere('grade', 'like', 'Paud%')
+                           ->orWhere('grade', 'like', 'PG%');
+                    });
+                } elseif ($g === 'Umum') {
+                    $q->where(function ($sq) {
+                        $sq->where('grade', 'Umum')
+                           ->orWhere('grade', 'like', 'Umum%')
+                           ->orWhere('grade', 'like', 'Mahasiswa%')
+                           ->orWhere('grade', 'like', 'Dewasa%');
+                    });
+                } else {
+                    $q->where('grade', $g);
+                }
+            });
         }
 
         if ($request->filled('expiry_status')) {
