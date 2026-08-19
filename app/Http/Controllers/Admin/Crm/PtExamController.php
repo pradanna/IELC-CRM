@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Domains\CRM\Application\Actions\PtExam\CreatePtExamAction;
-use App\Domains\CRM\Application\Actions\PtExam\DeletePtExamAction;
-use App\Domains\CRM\Application\Actions\PtExam\UpdatePtExamAction;
+use App\Domains\Academic\Application\Actions\PtExam\CreatePtExamAction;
+use App\Domains\Academic\Application\Actions\PtExam\DeletePtExamAction;
+use App\Domains\Academic\Application\Actions\PtExam\UpdatePtExamAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PtExam\StorePtExamRequest;
 use App\Http\Resources\Crm\PtExam\PtExamResource;

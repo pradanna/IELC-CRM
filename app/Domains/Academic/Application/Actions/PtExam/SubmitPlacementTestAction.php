@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\CRM\Application\Actions\PtExam;
+namespace App\Domains\Academic\Application\Actions\PtExam;
 
 use App\Domains\Academic\Domain\Models\PtAnswer;
 use App\Domains\Academic\Domain\Models\PtSession;
@@ -8,6 +8,7 @@ use App\Domains\Shared\Domain\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class SubmitPlacementTestAction
@@ -18,8 +19,8 @@ class SubmitPlacementTestAction
             $totalScore = 0;
             $hasManualGrading = false;
             $exam = $session->ptExam->load(['questions.options', 'ptQuestionGroups.questions.options']);
-            
-            // Map questions for efficient lookup 
+
+            // Map questions for efficient lookup
             $allQuestions = collect();
             foreach ($exam->questions as $q) $allQuestions->push($q);
             foreach ($exam->ptQuestionGroups as $group) {
@@ -45,11 +46,11 @@ class SubmitPlacementTestAction
                 if ($question->type === 'mcq') {
                     $selectedOption = $question->options->firstWhere('id', $value);
                     $isCorrect = $selectedOption?->is_correct ?? false;
-                    
+
                     if ($isCorrect) {
                         $totalScore += $question->points;
                     }
-                    
+
                     $answerData['pt_question_option_id'] = $value;
                     $answerData['is_correct'] = $isCorrect;
                 } elseif ($question->type === 'text') {
@@ -95,7 +96,7 @@ class SubmitPlacementTestAction
 
             $recipients = $superadmins->merge($branchFrontdesk)->merge($owner)->unique('id');
 
-            \Illuminate\Support\Facades\Log::info("PT Notification Debug:", [
+            Log::info("PT Notification Debug:", [
                 'session_id' => $session->id,
                 'lead_branch_id' => $session->lead?->branch_id,
                 'superadmin_count' => $superadmins->count(),
@@ -105,8 +106,8 @@ class SubmitPlacementTestAction
                 'recipient_ids' => $recipients->pluck('id')->toArray(),
             ]);
 
-            $targetLink = $session->lead_id 
-                ? route('admin.crm.leads.kanban', ['open_lead' => $session->lead_id]) 
+            $targetLink = $session->lead_id
+                ? route('admin.crm.leads.kanban', ['open_lead' => $session->lead_id])
                 : route('admin.placement-tests.index', ['session' => $session->id]);
 
             Notification::send($recipients, new SystemNotification(
@@ -118,6 +119,3 @@ class SubmitPlacementTestAction
         });
     }
 }
-
-
-

@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             PriceMasterSeeder::class,
             StudyClassSeeder::class,
             DataSiswaSeeder::class,
+            BranchMonthlyStudentSnapshotSeeder::class,
         ]);
 
         if (app()->environment('local', 'testing')) {

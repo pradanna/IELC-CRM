@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Domains\CRM\Application\Actions\PtExam;
+namespace App\Domains\Academic\Application\Actions\PtExam;
 
 use App\Domains\Academic\Domain\Models\PtSession;
+use App\Domains\CRM\Domain\Models\Lead;
 use Illuminate\Support\Str;
 
 class CreatePtSessionAction
@@ -17,7 +18,7 @@ class CreatePtSessionAction
         $session = PtSession::create($data);
 
         // Update Lead Milestone
-        $lead = \App\Domains\CRM\Domain\Models\Lead::find($data['lead_id']);
+        $lead = Lead::find($data['lead_id']);
         if ($lead && is_null($lead->first_pt_at)) {
             $lead->update(['first_pt_at' => now()]);
         }
@@ -25,6 +26,3 @@ class CreatePtSessionAction
         return $session;
     }
 }
-
-
-

@@ -4,9 +4,6 @@ namespace App\Domains\CRM\Domain\Models;
 
 use App\Domains\Master\Domain\Models\Branch;
 use App\Domains\Shared\Domain\Models\User;
-use App\Domains\Academic\Domain\Models\Student;
-use App\Domains\Academic\Domain\Models\PtSession;
-use App\Domains\Finance\Domain\Models\Invoice;
 use App\Domains\Master\Domain\Models\LeadType;
 use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\Master\Domain\Models\LeadSource;
@@ -131,7 +128,7 @@ class Lead extends Model
 
     public function student(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->hasOne(Student::class);
+        return $this->hasOne(\App\Domains\Academic\Domain\Models\Student::class);
     }
  
     public function tasks(): HasMany
@@ -158,7 +155,7 @@ class Lead extends Model
 
     public function ptSessions(): HasMany
     {
-        return $this->hasMany(PtSession::class);
+        return $this->hasMany(\App\Domains\Academic\Domain\Models\PtSession::class);
     }
 
     public function consultations(): HasMany
@@ -168,7 +165,7 @@ class Lead extends Model
 
     public function invoices(): HasMany
     {
-        return $this->hasMany(Invoice::class);
+        return $this->hasMany(\App\Domains\Finance\Domain\Models\Invoice::class);
     }
 
     public function enrollments(): HasMany

@@ -8,12 +8,11 @@ use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\CRM\Domain\Models\Task;
 use App\Domains\CRM\Domain\Models\MonthlyTarget;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class FetchCrmDashboardData
 {
-    public function handle(array $filters = []): array
+    public function handle(array $filters = [], ?string $userId = null, ?string $userRole = null): array
     {
         $now = \Carbon\Carbon::now();
         $month = isset($filters['month']) && $filters['month'] !== '' ? (int)$filters['month'] : null;
@@ -25,20 +24,13 @@ class FetchCrmDashboardData
         // For trend line and targets, if no filter is active, default to current month
         $trendMonth = $month ?? (int)$now->month;
         $trendYear = $year ?? (int)$now->year;
-
-        $userId = Auth::id();
-        $userRole = Auth::user()->roles->first()?->name;
         
-        // Use a versioned key to mimic tag-based flushing if the store doesn't support tags
-        $version = \Illuminate\Support\Facades\Cache::get('crm_dashboard_version', 1);
-        $cacheKey = "crm_dashboard_v{$version}_" . ($year ?? 'all') . "_" . ($month ?? 'all') . "_" . ($branchId ?? 'all') . "_user_{$userId}";
+        $startDateObj = $isFiltered ? \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth() : null;
+        $endDateObj = $isFiltered ? $startDateObj->copy()->endOfMonth() : null;
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function() use ($now, $month, $year, $trendMonth, $trendYear, $isFiltered, $branchId, $userRole, $userId) {
-            $startDateObj = $isFiltered ? \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth() : null;
-            $endDateObj = $isFiltered ? $startDateObj->copy()->endOfMonth() : null;
+        $trendStartDate = \Carbon\Carbon::createFromDate($trendYear, $trendMonth, 1)->startOfMonth();
+        $trendEndDate = $trendStartDate->copy()->endOfMonth();
 
-            $trendStartDate = \Carbon\Carbon::createFromDate($trendYear, $trendMonth, 1)->startOfMonth();
-            $trendEndDate = $trendStartDate->copy()->endOfMonth();
 
             // Helper to apply role-based filtering
             $applyRoleFilter = function ($query) use ($userRole, $userId) {
@@ -353,7 +345,6 @@ class FetchCrmDashboardData
                 ],
                 'success_rates' => $this->calculateSuccessRates($startDateObj, $endDateObj, $branchId, $applyRoleFilter, $isFiltered),
             ];
-        });
     }
 
     private function calculateSuccessRates($startDate, $endDate, $branchId, $applyRoleFilter, $isFiltered): array

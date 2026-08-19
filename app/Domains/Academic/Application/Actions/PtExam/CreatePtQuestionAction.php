@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Domains\CRM\Application\Actions\PtExam;
+namespace App\Domains\Academic\Application\Actions\PtExam;
 
 use App\Domains\Academic\Domain\Models\PtQuestion;
 use App\Domains\Academic\Domain\Models\PtQuestionOption;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class CreatePtQuestionAction
 {
@@ -51,10 +50,7 @@ class CreatePtQuestionAction
     {
         $maxGroup = DB::table('pt_question_groups')->where('pt_exam_id', $examId)->max('position') ?? 0;
         $maxQuestion = DB::table('pt_questions')->where('pt_exam_id', $examId)->whereNull('pt_question_group_id')->max('position') ?? 0;
-        
+
         return max($maxGroup, $maxQuestion) + 1;
     }
 }
-
-
-

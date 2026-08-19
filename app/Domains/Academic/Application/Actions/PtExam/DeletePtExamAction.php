@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\CRM\Application\Actions\PtExam;
+namespace App\Domains\Academic\Application\Actions\PtExam;
 
 use App\Domains\Academic\Domain\Models\PtExam;
 
@@ -11,6 +11,3 @@ class DeletePtExamAction
         return $ptExam->delete();
     }
 }
-
-
-
