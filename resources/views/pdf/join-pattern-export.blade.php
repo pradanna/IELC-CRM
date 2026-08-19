@@ -206,7 +206,7 @@
                     <td style="color: #fca5a5;">{{ $stoppedTotals['online']  ?? 0 }}</td>
                     <td style="color: #6ee7b7;">{{ $grandOffline }}</td>
                     <td style="color: #a5b4fc;">{{ $grandOnline }}</td>
-                    <td style="color: #fef08a; font-weight: bold;">{{ $totSnapshotsSum }}</td>
+                    <td style="color: #94a3b8; font-weight: bold;">-</td>
                 </tr>
                 <!-- Average Row -->
                 <tr class="avg-row">

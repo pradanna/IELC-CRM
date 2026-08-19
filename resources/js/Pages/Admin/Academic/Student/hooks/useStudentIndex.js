@@ -40,6 +40,16 @@ export const useStudentIndex = (filters) => {
         router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
     };
 
+    const handleFilterBranch = (branchId) => {
+        const params = { ...filters, search, branch_id: branchId, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleFilterLoyaltyTier = (tier) => {
+        const params = { ...filters, search, loyalty_tier: tier, mainTab: 'list' };
+        router.get('/admin/academic/students', params, { preserveState: true, preserveScroll: true });
+    };
+
     const handleSort = (field) => {
         const direction = filters.sort_field === field && filters.sort_direction === 'asc' ? 'desc' : 'asc';
         const params = { ...filters, search, sort_field: field, sort_direction: direction, mainTab: 'list' };
@@ -56,6 +66,8 @@ export const useStudentIndex = (filters) => {
         handleFilterClass,
         handleFilterPriceMaster,
         handleFilterGrade,
+        handleFilterBranch,
+        handleFilterLoyaltyTier,
         handleSort
     };
 };

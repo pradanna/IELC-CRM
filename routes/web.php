@@ -137,6 +137,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('students/{student}/progress-reports', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'storeProgressReport'])->name('students.progress-reports.store');
         Route::delete('students/{student}/progress-reports/{report}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'destroyProgressReport'])->name('students.progress-reports.destroy');
         Route::post('students/{student}/upload-photo', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'uploadProfilePicture'])->name('students.upload-photo');
+        Route::post('students/{student}/transfer-class', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'transferClass'])->name('students.transfer-class');
         Route::resource('students', \App\Http\Controllers\Admin\Academic\StudentController::class);
         Route::post('leads/{lead}/promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'promoteFromLead'])->name('students.promote');
     });

@@ -44,7 +44,7 @@ class DataSiswaSoloSeeder extends Seeder
         $studyClasses = StudyClass::where('branch_id', $branchId)->get();
         $studyClassMap = [];
         foreach ($studyClasses as $sc) {
-            $normalized = $this->normalizeName($sc->name);
+            $normalized = $this->normalizeClassName($sc->name);
             $studyClassMap[$normalized] = $sc;
         }
 
@@ -53,6 +53,9 @@ class DataSiswaSoloSeeder extends Seeder
 
         // 2. Seed Stopped Students
         $this->seedStoppedStudents($branchId, $leadPhaseId, $leadTypeId, $leadSourceId, $adminId, $studyClassMap);
+
+        // 3. Sync Package Count & Historical Cycles (Data Prospective Paket)
+        $this->seedPackageHistory($branchId, $adminId, $studyClassMap);
     }
 
     private function seedActiveStudents($branchId, $leadPhaseId, $leadTypeId, $leadSourceId, $adminId, array &$studyClassMap): void
@@ -145,6 +148,7 @@ class DataSiswaSoloSeeder extends Seeder
                     'phone' => $phone ?: null,
                     'email' => $email ?: null,
                     'birth_date' => $birthDate?->toDateString(),
+                    'nik' => $nik ?: null,
                     'school' => $school ?: null,
                     'grade' => $grade ?: null,
                     'city' => $city ?: null,
@@ -163,6 +167,7 @@ class DataSiswaSoloSeeder extends Seeder
                     'phone' => $phone ?: $lead->phone,
                     'email' => $email ?: $lead->email,
                     'birth_date' => $birthDate?->toDateString() ?: $lead->birth_date,
+                    'nik' => $nik ?: $lead->nik,
                     'school' => $school ?: $lead->school,
                     'grade' => $grade ?: $lead->grade,
                     'city' => $city ?: $lead->city,
@@ -211,13 +216,12 @@ class DataSiswaSoloSeeder extends Seeder
                     'student_number' => $studentNumber,
                     'start_join' => $joinDate->toDateString(),
                     'status' => 'active',
-                    'notes' => !empty($nik) ? "NIK: {$nik}" : null,
+                    'notes' => null,
                 ]);
             } else {
                 $student->update([
                     'start_join' => $joinDate->toDateString(),
                     'status' => 'active',
-                    'notes' => !empty($nik) ? "NIK: {$nik}" : $student->notes,
                 ]);
             }
 
@@ -333,6 +337,7 @@ class DataSiswaSoloSeeder extends Seeder
                     'phone' => $phone ?: null,
                     'email' => $email ?: null,
                     'birth_date' => $birthDate?->toDateString(),
+                    'nik' => $nik ?: null,
                     'school' => $school ?: null,
                     'grade' => $grade ?: null,
                     'city' => $city ?: null,
@@ -387,7 +392,7 @@ class DataSiswaSoloSeeder extends Seeder
                     'start_join' => $joinDate->toDateString(),
                     'status' => 'stop',
                     'stopped_at' => $stopDate->toDateString(),
-                    'notes' => !empty($nik) ? "NIK: {$nik}" : null,
+                    'notes' => null,
                 ]);
             } else {
                 $student->update([
@@ -430,12 +435,13 @@ class DataSiswaSoloSeeder extends Seeder
             return null;
         }
 
-        $normalized = $this->normalizeName($className);
+        $cleanName = $this->cleanClassName($className);
+        $normalized = $this->normalizeClassName($cleanName);
         $matchedClass = $studyClassMap[$normalized] ?? null;
 
         if (!$matchedClass) {
             foreach ($studyClassMap as $key => $sc) {
-                if (str_contains($key, $normalized) || str_contains($normalized, $key)) {
+                if ($key === $normalized || str_contains($key, $normalized) || str_contains($normalized, $key)) {
                     $matchedClass = $sc;
                     break;
                 }
@@ -444,7 +450,7 @@ class DataSiswaSoloSeeder extends Seeder
 
         if (!$matchedClass) {
             $matchedClass = StudyClass::firstOrCreate(
-                ['name' => $className, 'branch_id' => $branchId],
+                ['name' => $cleanName, 'branch_id' => $branchId],
                 [
                     'type' => $isOnline ? 'online' : 'offline',
                     'status' => 'active',
@@ -580,6 +586,198 @@ class DataSiswaSoloSeeder extends Seeder
         }
 
         return $phone;
+    }
+
+    private function seedPackageHistory(string $branchId, string $adminId, array &$studyClassMap): void
+    {
+        $possiblePaths = [
+            base_path('docs/initiate data/solo/data-prospective-paket-solo.csv'),
+            base_path('docs/initiate data/solo/data-prospective-paket.csv'),
+        ];
+
+        $filePath = null;
+        foreach ($possiblePaths as $path) {
+            if (file_exists($path)) {
+                $filePath = $path;
+                break;
+            }
+        }
+
+        if (!$filePath) {
+            return;
+        }
+
+        $this->command->info("Membaca data paket siswa Solo dari: {$filePath}");
+        $file = fopen($filePath, 'r');
+        if (!$file) return;
+
+        // Skip potential top banner headers
+        $headerFound = false;
+        $syncCount = 0;
+
+        while (($row = fgetcsv($file, 4000, ',')) !== false) {
+            if (empty(array_filter($row, fn($v) => trim($v) !== ''))) {
+                continue;
+            }
+
+            // Check header row (contains Name and Banyak/Paket)
+            $rowStr = implode(' ', $row);
+            if (stripos($rowStr, 'Name') !== false && stripos($rowStr, 'Paket') !== false) {
+                $headerFound = true;
+                continue;
+            }
+            if (!$headerFound && (stripos($rowStr, 'Banyak') !== false || stripos($rowStr, 'NO') !== false)) {
+                $headerFound = true;
+                continue;
+            }
+
+            $studentName = isset($row[1]) ? trim($row[1]) : '';
+            if (empty($studentName) || stripos($studentName, 'Name') !== false || is_numeric($studentName)) {
+                continue;
+            }
+
+            $rawLevel = isset($row[2]) ? trim($row[2]) : '';
+            $rawClass = isset($row[3]) ? trim($row[3]) : '';
+            $rawSchool = isset($row[4]) ? trim($row[4]) : '';
+            $rawPaket = isset($row[5]) ? trim($row[5]) : '';
+            $rawJoinDate = isset($row[6]) ? trim($row[6]) : '';
+            $rawMomPhone = isset($row[10]) ? $this->cleanPhoneNumber(trim($row[10])) : '';
+            $rawDadPhone = isset($row[13]) ? $this->cleanPhoneNumber(trim($row[13])) : '';
+            $rawBirthDate = isset($row[15]) ? trim($row[15]) : '';
+            $rawAddress = isset($row[16]) ? trim($row[16]) : '';
+
+            // Extract numeric cycle/paket count
+            $packageCount = 1;
+            if (preg_match('/(\d+)/', $rawPaket, $m)) {
+                $packageCount = (int) $m[1];
+            } elseif (preg_match('/Paket\s*(\d+)/i', $rawLevel, $m)) {
+                $packageCount = (int) $m[1];
+            }
+
+            // Clean student name variations like "Name/Nickname", "Name (Nickname)", or trailing initials like "Hilda Abigail P" -> "Hilda Abigail"
+            $cleanedName = preg_replace('/\s*[\/\(].*$/', '', $studentName);
+            $cleanedName = preg_replace('/\s+[A-Za-z]\.?$/', '', $cleanedName); // remove single letter initial at end
+            $cleanedName = trim($cleanedName);
+
+            // Find matching lead strictly by Name (exact or normalized)
+            $lead = Lead::where('branch_id', $branchId)
+                ->where('name', $studentName)
+                ->first();
+
+            if (!$lead && !empty($cleanedName)) {
+                $lead = Lead::where('branch_id', $branchId)
+                    ->where('name', $cleanedName)
+                    ->first();
+            }
+
+            if (!$lead) {
+                // Try fuzzy/normalized and typo-tolerant matching against all leads in this branch
+                $normName = $this->normalizeName($studentName);
+                $normCleaned = $this->normalizeName($cleanedName);
+                $candidates = Lead::where('branch_id', $branchId)->get();
+                $bestScore = 0;
+                $bestLead = null;
+
+                foreach ($candidates as $cand) {
+                    $candNorm = $this->normalizeName($cand->name);
+                    $candNormCleaned = $this->normalizeName(preg_replace('/\s+[A-Za-z]\.?$/', '', $cand->name));
+
+                    // 1. Exact match (full or cleaned name)
+                    if ($candNorm === $normName || $candNorm === $normCleaned || $candNormCleaned === $normCleaned) {
+                        $bestLead = $cand;
+                        break;
+                    }
+
+                    // 2. Substring / Prefix match (e.g., "Callysta Maharani" vs "Callysta Maharani Wibowo")
+                    if (strlen($candNorm) >= 5 && strlen($normCleaned) >= 5) {
+                        if (str_starts_with($candNorm, $normCleaned) || str_starts_with($normCleaned, $candNorm)) {
+                            $bestLead = $cand;
+                            break;
+                        }
+                    }
+
+                    // 3. Typo-tolerant similarity (e.g., "Daud Haleluya" vs "Daud Halleluya", "James Pranata Setiadi" vs "James Pranata Setiady")
+                    similar_text($normCleaned, $candNorm, $percent);
+                    $lev = levenshtein($normCleaned, $candNorm);
+                    if (($percent >= 85 && strlen($normCleaned) >= 6) || ($lev <= 2 && strlen($normCleaned) >= 8)) {
+                        if ($percent > $bestScore) {
+                            $bestScore = $percent;
+                            $bestLead = $cand;
+                        }
+                    }
+                }
+
+                if ($bestLead) {
+                    $lead = $bestLead;
+                }
+            }
+
+            if ($lead) {
+                $student = $lead->student;
+                $joinDate = $this->parseDate($rawJoinDate);
+
+                // Update lead birth date / address if currently empty
+                $leadUpdates = [];
+                if (empty($lead->birth_date) && !empty($rawBirthDate)) {
+                    $parsedBday = $this->parseDate($rawBirthDate);
+                    if ($parsedBday) $leadUpdates['birth_date'] = $parsedBday->toDateString();
+                }
+                if (empty($lead->address) && !empty($rawAddress)) {
+                    $leadUpdates['address'] = $rawAddress;
+                }
+                if (empty($lead->school) && !empty($rawSchool) && $rawSchool !== '-') {
+                    $leadUpdates['school'] = $rawSchool;
+                }
+                if (!empty($leadUpdates)) {
+                    $lead->update($leadUpdates);
+                }
+
+                // Update Student rejoin_count & loyalty_tier
+                if ($student) {
+                    $newRejoinCount = max($student->rejoin_count ?? 0, $packageCount);
+                    $studentUpdates = ['rejoin_count' => $newRejoinCount];
+                    if ($joinDate && (empty($student->start_join) || $joinDate->lessThan($student->start_join))) {
+                        $studentUpdates['start_join'] = $joinDate->toDateString();
+                    }
+
+                    // Compute matching loyalty tier
+                    $matchingSetting = \App\Domains\Finance\Domain\Models\LoyaltySetting::where('min_rejoin_count', '<=', $newRejoinCount)
+                        ->orderBy('min_rejoin_count', 'desc')
+                        ->first();
+                    if ($matchingSetting) {
+                        $studentUpdates['loyalty_tier'] = $matchingSetting->tier_name;
+                    }
+
+                    $student->update($studentUpdates);
+                }
+
+                // Update Lead Enrollment Cycle Number
+                $enrollment = LeadEnrollment::where('lead_id', $lead->id)->first();
+                if ($enrollment) {
+                    $enrollment->update([
+                        'cycle_number' => max($enrollment->cycle_number ?? 1, $packageCount),
+                        'joined_at' => $joinDate ? $joinDate->toDateString() : $enrollment->joined_at,
+                    ]);
+                    $syncCount++;
+                }
+            }
+        }
+
+        fclose($file);
+        $this->command->info("Berhasil menyinkronkan data siklus paket untuk {$syncCount} siswa Solo.");
+    }
+
+    private function cleanClassName(string $name): string
+    {
+        $clean = preg_replace('/\s*\((offline|online|on campus|off line|on line)\)/i', '', $name);
+        $clean = preg_replace('/\s+/', ' ', $clean);
+        return trim($clean);
+    }
+
+    private function normalizeClassName(string $name): string
+    {
+        $clean = $this->cleanClassName($name);
+        return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $clean));
     }
 
     private function normalizeName(string $name): string

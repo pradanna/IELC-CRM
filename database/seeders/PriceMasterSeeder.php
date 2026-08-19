@@ -14,7 +14,7 @@ class PriceMasterSeeder extends Seeder
     {
         $packages = [
             [
-                'name' => 'Group Class (Anak / Remaja / Dewasa) - 3 Bulan',
+                'name' => 'Group',
                 'price_per_session' => 137500,
             ],
             [
@@ -22,7 +22,7 @@ class PriceMasterSeeder extends Seeder
                 'price_per_session' => 41667,
             ],
             [
-                'name' => 'Private Class (Anak / Remaja / Dewasa)',
+                'name' => 'Private',
                 'price_per_session' => 400000,
             ],
             [

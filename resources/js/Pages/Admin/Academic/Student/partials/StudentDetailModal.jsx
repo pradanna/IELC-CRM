@@ -34,7 +34,8 @@ import {
     Loader2,
     Camera,
     Pencil,
-    Maximize2
+    Maximize2,
+    ArrowRightLeft
 } from 'lucide-react';
 import Button from '@/Components/ui/Button';
 
@@ -162,7 +163,7 @@ function StudentProfilePhoto({ student, lead }) {
                 }}
                 disabled={isUploadingPhoto}
                 title="Unggah / Ganti Foto Siswa"
-                className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center justify-center border-2 border-slate-900 shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center border-2 border-slate-900 shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer disabled:opacity-50"
             >
                 <Pencil size={11} />
             </button>
@@ -281,7 +282,7 @@ function StudentNotesSection({ student }) {
     );
 }
 
-export default function StudentDetailModal({ show, onClose, student }) {
+export default function StudentDetailModal({ show, onClose, student, onTransferClass }) {
     if (!student) return null;
 
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'progress_reports'
@@ -535,6 +536,13 @@ export default function StudentDetailModal({ show, onClose, student }) {
                                                         </div>
 
                                                         <div className="space-y-1">
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">NIK (No. KTP/KK)</p>
+                                                            <p className="text-xs font-extrabold text-slate-800 font-mono">
+                                                                {lead.nik || student.notes?.match(/NIK:\s*(\d+)/i)?.[1] || '-'}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-1">
                                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">No. Telepon / WA</p>
                                                             <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
                                                                 <Phone size={12} className="text-slate-400 shrink-0" />
@@ -698,6 +706,17 @@ export default function StudentDetailModal({ show, onClose, student }) {
                                                                         </div>
 
                                                                         <div className="flex items-center gap-2 self-start sm:self-center">
+                                                                            {onTransferClass && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => onTransferClass(student, cls.id)}
+                                                                                    className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs"
+                                                                                    title="Pindahkan siswa dari kelas ini ke kelas lain"
+                                                                                >
+                                                                                    <ArrowRightLeft size={11} />
+                                                                                    <span>Pindah Kelas</span>
+                                                                                </button>
+                                                                            )}
                                                                             {warning && (
                                                                                 <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
                                                                                     warning.type === 'rose' 

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin\Academic;
 use App\Domains\Academic\Application\Actions\EnrollStudent;
 use App\Domains\Academic\Application\Actions\FetchAcademicDashboardData;
 use App\Domains\Academic\Application\Actions\PromoteLeadToStudent;
+use App\Domains\Academic\Application\Actions\TransferStudentClass;
 use App\Domains\Academic\Application\Actions\UnenrollStudent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Academic\EnrollStudentRequest;
+use App\Http\Requests\Admin\Academic\TransferStudentClassRequest;
 use App\Domains\CRM\Domain\Models\Lead;
 use App\Domains\Academic\Domain\Models\Student;
 use App\Domains\Academic\Domain\Models\StudyClass;
@@ -59,8 +61,20 @@ class StudentController extends Controller
             }
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+        $statusFilter = $request->input('status', 'active');
+        if ($statusFilter !== 'all' && $statusFilter !== '') {
+            $query->where('status', $statusFilter);
+        }
+
+        if ($request->filled('loyalty_tier')) {
+            $tier = $request->input('loyalty_tier');
+            if ($tier === 'none') {
+                $query->where(function ($q) {
+                    $q->whereNull('loyalty_tier')->orWhere('loyalty_tier', '');
+                });
+            } else {
+                $query->where('loyalty_tier', $tier);
+            }
         }
 
         if ($request->filled('class_category')) {
@@ -78,9 +92,63 @@ class StudentController extends Controller
         }
 
         if ($request->filled('grade')) {
-            $g = $request->input('grade');
-            $query->whereHas('lead', function ($q) use ($g) {
-                $q->where('grade', $g);
+            $g = trim($request->input('grade'));
+            $gUpper = strtoupper($g);
+            $query->whereHas('lead', function ($q) use ($g, $gUpper) {
+                if (in_array($gUpper, ['TK / PAUD', 'TK', 'PAUD'])) {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', '%TK%')
+                            ->orWhere('grade', 'like', '%PAUD%')
+                            ->orWhere('grade', 'like', '%PLAYGROUP%')
+                            ->orWhere('grade', 'like', '%KB%')
+                            ->orWhere('school_level', 'like', '%TK%')
+                            ->orWhere('school_level', 'like', '%PAUD%');
+                    });
+                } elseif ($gUpper === 'SD') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SD%')
+                            ->orWhere('grade', 'like', '% SD%')
+                            ->orWhere('school_level', 'SD')
+                            ->orWhere('grade', 'like', 'Kelas 1%')
+                            ->orWhere('grade', 'like', 'Kelas 2%')
+                            ->orWhere('grade', 'like', 'Kelas 3%')
+                            ->orWhere('grade', 'like', 'Kelas 4%')
+                            ->orWhere('grade', 'like', 'Kelas 5%')
+                            ->orWhere('grade', 'like', 'Kelas 6%');
+                    });
+                } elseif ($gUpper === 'SMP') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SMP%')
+                            ->orWhere('grade', 'like', '% SMP%')
+                            ->orWhere('school_level', 'SMP')
+                            ->orWhere('grade', 'like', 'Kelas 7%')
+                            ->orWhere('grade', 'like', 'Kelas 8%')
+                            ->orWhere('grade', 'like', 'Kelas 9%');
+                    });
+                } elseif (in_array($gUpper, ['SMA / SMK', 'SMA', 'SMK'])) {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SMA%')
+                            ->orWhere('grade', 'like', 'SMK%')
+                            ->orWhere('grade', 'like', '% SMA%')
+                            ->orWhere('grade', 'like', '% SMK%')
+                            ->orWhere('school_level', 'SMA')
+                            ->orWhere('school_level', 'SMK')
+                            ->orWhere('grade', 'like', 'Kelas 10%')
+                            ->orWhere('grade', 'like', 'Kelas 11%')
+                            ->orWhere('grade', 'like', 'Kelas 12%');
+                    });
+                } elseif ($gUpper === 'UMUM') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', '%UMUM%')
+                            ->orWhere('grade', 'like', '%KULIAH%')
+                            ->orWhere('grade', 'like', '%KERJA%')
+                            ->orWhere('school_level', 'UMUM')
+                            ->orWhere('school_level', 'Kuliah')
+                            ->orWhere('school_level', 'Kerja');
+                    });
+                } else {
+                    $q->where('grade', $g);
+                }
             });
         }
 
@@ -88,6 +156,13 @@ class StudentController extends Controller
             $pmId = $request->input('price_master_id');
             $query->whereHas('studyClasses', function ($q) use ($pmId) {
                 $q->where('price_master_id', $pmId);
+            });
+        }
+
+        if ($request->filled('branch_id')) {
+            $bId = $request->input('branch_id');
+            $query->whereHas('lead', function ($q) use ($bId) {
+                $q->where('branch_id', $bId);
             });
         }
 
@@ -117,25 +192,37 @@ class StudentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $defaultGrades = collect(['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum']);
-
         $dbGrades = Lead::whereNotNull('grade')
             ->where('grade', '!=', '')
             ->distinct()
-            ->pluck('grade');
+            ->pluck('grade')
+            ->sort()
+            ->values();
 
-        $gradesList = $defaultGrades->merge($dbGrades)->unique()->values();
+        $gradesList = collect([
+            'TK / PAUD',
+            'SD',
+            'SMP',
+            'SMA / SMK',
+            'Umum',
+        ])->merge($dbGrades)->unique()->values();
 
         $allFilters = array_merge(
+            ['status' => $statusFilter],
             $dashboardData['filters'],
-            array_filter($request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'price_master_id', 'grade', 'sort_field', 'sort_direction', 'branch_id', 'mode']), fn($v) => !is_null($v) && $v !== '')
+            array_filter($request->only(['search', 'expiry_status', 'status', 'loyalty_tier', 'class_category', 'study_class_id', 'price_master_id', 'grade', 'sort_field', 'sort_direction', 'branch_id', 'mode']), fn($v) => !is_null($v) && $v !== '')
         );
+
+        $branchesList = \Illuminate\Support\Facades\DB::table('branches')->select('id', 'name')->orderBy('name')->get();
+        $loyaltyTiersList = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'asc')->pluck('tier_name')->unique()->values();
 
         return Inertia::render('Admin/Academic/Student/Index', array_merge($dashboardData, [
             'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
             'studyClassesList' => $studyClassesList,
             'priceMastersList' => $priceMastersList,
             'gradesList' => $gradesList,
+            'branchesList' => $branchesList,
+            'loyaltyTiersList' => $loyaltyTiersList,
             'filters' => $allFilters,
         ]));
     }
@@ -194,14 +281,31 @@ class StudentController extends Controller
             $oldStatus = $student->status;
             if ($validated['status'] === 'stop' && $oldStatus !== 'stop') {
                 $updates['stopped_at'] = now();
+                \App\Domains\CRM\Domain\Models\LeadEnrollment::where('student_id', $student->id)
+                    ->where('status', 'active')
+                    ->update([
+                        'status' => 'stopped',
+                        'stopped_at' => now()->toDateString(),
+                        'notes' => $validated['notes'] ?? $student->notes,
+                    ]);
             } elseif ($validated['status'] === 'active' && $oldStatus !== 'active') {
                 $updates['stopped_at'] = null;
+                \App\Domains\CRM\Domain\Models\LeadEnrollment::where('student_id', $student->id)
+                    ->where('status', 'stopped')
+                    ->update([
+                        'status' => 'active',
+                        'stopped_at' => null,
+                    ]);
             }
             $updates['status'] = $validated['status'];
         }
 
         if (array_key_exists('notes', $validated)) {
             $updates['notes'] = $validated['notes'];
+            if ($student->status === 'stop') {
+                \App\Domains\CRM\Domain\Models\LeadEnrollment::where('student_id', $student->id)
+                    ->update(['notes' => $validated['notes']]);
+            }
         }
 
         if (array_key_exists('start_join', $validated)) {
@@ -318,5 +422,23 @@ class StudentController extends Controller
             'profile_picture'     => $student->profile_picture,
             'profile_picture_url' => asset('storage/' . $student->profile_picture),
         ]);
+    }
+
+    public function transferClass(
+        TransferStudentClassRequest $request,
+        Student $student,
+        TransferStudentClass $action
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        $action->handle(
+            student: $student,
+            fromClassId: $validated['from_study_class_id'],
+            toClassId: $validated['to_study_class_id'],
+            effectiveDate: $validated['effective_date'] ?? null,
+            reason: $validated['reason'] ?? null
+        );
+
+        return redirect()->back()->with('success', 'Siswa berhasil dipindahkan ke kelas baru.');
     }
 }

@@ -39,6 +39,7 @@ export default function LeadDetailTab({ lead, loading, getPhaseStyle, phases = [
                         <SectionHeader icon={User} title="Contact Information" />
                         <div className="">
                             <InfoItem label="Full Name" value={lead?.name} icon={User} />
+                            <InfoItem label="NIK (No. KTP/KK)" value={lead?.nik || '---'} icon={User} />
                             <InfoItem label="Nickname" value={lead?.nickname || '---'} icon={User} />
                             <InfoItem label="Gender" value={lead?.gender === 'L' ? 'Laki-laki' : (lead?.gender === 'P' ? 'Perempuan' : '---')} icon={User} />
                             <InfoItem label="WhatsApp/Phone" value={lead?.phone} icon={Phone} />

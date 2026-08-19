@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Crm\PtExam;
 
-use App\Domains\CRM\Application\Actions\PtExam\SubmitPlacementTestAction;
+use App\Domains\Academic\Application\Actions\PtExam\SubmitPlacementTestAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PtExam\SubmitPlacementTestRequest;
 use App\Http\Resources\Crm\PtExam\PtExamPublicResource;

@@ -85,26 +85,44 @@ class StudentExportController extends Controller
      */
     public function exportPdf(Request $request)
     {
+        ini_set('memory_limit', '1024M');
+        ini_set('max_execution_time', '300');
+
         $tab = $request->input('tab', 'list');
 
         if ($tab === 'join_patterns') {
             $pivotData = $this->buildJoinPatternsPivot($request);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.join-pattern-export', $pivotData)
-                ->setPaper('a4', 'landscape');
+                ->setPaper('a4', 'landscape')
+                ->setOptions([
+                    'isHtml5ParserEnabled' => false,
+                    'isPhpEnabled' => true,
+                    'enable_font_subsetting' => false,
+                ]);
             return $pdf->download("{$pivotData['filename']}.pdf");
         }
 
         if ($tab === 'join_invoices') {
             $invoiceData = $this->buildJoinInvoicesData($request);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.join-invoices-export', $invoiceData)
-                ->setPaper('a4', 'landscape');
+                ->setPaper('a4', 'landscape')
+                ->setOptions([
+                    'isHtml5ParserEnabled' => false,
+                    'isPhpEnabled' => true,
+                    'enable_font_subsetting' => false,
+                ]);
             return $pdf->download("{$invoiceData['filename']}.pdf");
         }
 
         if ($tab === 'join_grades') {
             $gradeData = $this->buildJoinGradesData($request);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.join-grades-export', $gradeData)
-                ->setPaper('a4', 'landscape');
+                ->setPaper('a4', 'landscape')
+                ->setOptions([
+                    'isHtml5ParserEnabled' => false,
+                    'isPhpEnabled' => true,
+                    'enable_font_subsetting' => false,
+                ]);
             return $pdf->download("{$gradeData['filename']}.pdf");
         }
 
@@ -112,7 +130,12 @@ class StudentExportController extends Controller
             $groupType = str_replace('siswa_stop_', '', $tab);
             $stopData = $this->buildSiswaStopPivotData($request, $groupType);
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.siswa-stop-export', $stopData)
-                ->setPaper('a4', 'landscape');
+                ->setPaper('a4', 'landscape')
+                ->setOptions([
+                    'isHtml5ParserEnabled' => false,
+                    'isPhpEnabled' => true,
+                    'enable_font_subsetting' => false,
+                ]);
             return $pdf->download("{$stopData['filename']}.pdf");
         }
 
@@ -126,7 +149,12 @@ class StudentExportController extends Controller
                 'matrixData' => $rows,
                 'year'       => $year,
                 'filename'   => $filename,
-            ])->setPaper('a4', 'landscape');
+            ])->setPaper('a4', 'landscape')
+              ->setOptions([
+                  'isHtml5ParserEnabled' => false,
+                  'isPhpEnabled' => true,
+                  'enable_font_subsetting' => false,
+              ]);
 
             return $pdf->download("{$filename}.pdf");
         }
@@ -139,7 +167,12 @@ class StudentExportController extends Controller
             'year'     => $year,
             'month'    => $month,
             'tab'      => $tab,
-        ])->setPaper('a4', 'landscape');
+        ])->setPaper('a4', 'landscape')
+          ->setOptions([
+              'isHtml5ParserEnabled' => false,
+              'isPhpEnabled' => true,
+              'enable_font_subsetting' => false,
+          ]);
 
         return $pdf->download("{$filename}.pdf");
     }
@@ -155,9 +188,10 @@ class StudentExportController extends Controller
             'branch_matrix' => $this->buildBranchMatrix($request),
             'overall'       => $this->buildBranchMatrix($request),
             'join_patterns' => $this->buildJoinPatterns($request),
-            'siswa_stop'    => $this->buildSiswaStop($request),
-            'grades'        => $this->buildGrades($request),
-            default         => $this->buildStudentList($request),
+            'siswa_stop'      => $this->buildSiswaStop($request),
+            'class_transfers' => $this->buildClassTransfers($request),
+            'grades'          => $this->buildGrades($request),
+            default           => $this->buildStudentList($request),
         };
     }
 
@@ -169,6 +203,19 @@ class StudentExportController extends Controller
             ->select('students.*');
 
         $appliedFilters = [];
+
+        if ($request->filled('loyalty_tier')) {
+            $tier = $request->loyalty_tier;
+            if ($tier === 'none') {
+                $appliedFilters['Loyalty Tier'] = 'Tanpa Tier';
+                $query->where(function ($q) {
+                    $q->whereNull('loyalty_tier')->orWhere('loyalty_tier', '');
+                });
+            } else {
+                $appliedFilters['Loyalty Tier'] = strtoupper($tier);
+                $query->where('loyalty_tier', $tier);
+            }
+        }
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -195,9 +242,72 @@ class StudentExportController extends Controller
         }
 
         if ($request->filled('grade')) {
-            $g = $request->grade;
+            $g = trim($request->grade);
+            $gUpper = strtoupper($g);
             $appliedFilters['Tingkat Sekolah'] = $g;
-            $query->whereHas('lead', fn ($q) => $q->where('grade', $g));
+            $query->whereHas('lead', function ($q) use ($g, $gUpper) {
+                if (in_array($gUpper, ['TK / PAUD', 'TK', 'PAUD'])) {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', '%TK%')
+                            ->orWhere('grade', 'like', '%PAUD%')
+                            ->orWhere('grade', 'like', '%PLAYGROUP%')
+                            ->orWhere('grade', 'like', '%KB%')
+                            ->orWhere('school_level', 'like', '%TK%')
+                            ->orWhere('school_level', 'like', '%PAUD%');
+                    });
+                } elseif ($gUpper === 'SD') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SD%')
+                            ->orWhere('grade', 'like', '% SD%')
+                            ->orWhere('school_level', 'SD')
+                            ->orWhere('grade', 'like', 'Kelas 1%')
+                            ->orWhere('grade', 'like', 'Kelas 2%')
+                            ->orWhere('grade', 'like', 'Kelas 3%')
+                            ->orWhere('grade', 'like', 'Kelas 4%')
+                            ->orWhere('grade', 'like', 'Kelas 5%')
+                            ->orWhere('grade', 'like', 'Kelas 6%');
+                    });
+                } elseif ($gUpper === 'SMP') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SMP%')
+                            ->orWhere('grade', 'like', '% SMP%')
+                            ->orWhere('school_level', 'SMP')
+                            ->orWhere('grade', 'like', 'Kelas 7%')
+                            ->orWhere('grade', 'like', 'Kelas 8%')
+                            ->orWhere('grade', 'like', 'Kelas 9%');
+                    });
+                } elseif (in_array($gUpper, ['SMA / SMK', 'SMA', 'SMK'])) {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SMA%')
+                            ->orWhere('grade', 'like', 'SMK%')
+                            ->orWhere('grade', 'like', '% SMA%')
+                            ->orWhere('grade', 'like', '% SMK%')
+                            ->orWhere('school_level', 'SMA')
+                            ->orWhere('school_level', 'SMK')
+                            ->orWhere('grade', 'like', 'Kelas 10%')
+                            ->orWhere('grade', 'like', 'Kelas 11%')
+                            ->orWhere('grade', 'like', 'Kelas 12%');
+                    });
+                } elseif ($gUpper === 'UMUM') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', '%UMUM%')
+                            ->orWhere('grade', 'like', '%KULIAH%')
+                            ->orWhere('grade', 'like', '%KERJA%')
+                            ->orWhere('school_level', 'UMUM')
+                            ->orWhere('school_level', 'Kuliah')
+                            ->orWhere('school_level', 'Kerja');
+                    });
+                } else {
+                    $q->where('grade', $g);
+                }
+            });
+        }
+
+        if ($request->filled('branch_id')) {
+            $bId = $request->branch_id;
+            $branchName = \DB::table('branches')->where('id', $bId)->value('name');
+            $appliedFilters['Cabang'] = $branchName ?? "ID #{$bId}";
+            $query->whereHas('lead', fn ($q) => $q->where('branch_id', $bId));
         }
 
         if ($request->filled('expiry_status')) {
@@ -224,9 +334,10 @@ class StudentExportController extends Controller
             }
         }
 
-        if ($request->filled('status')) {
-            $appliedFilters['Status Siswa'] = strtoupper($request->status);
-            $query->where('status', $request->status);
+        $statusFilter = $request->input('status', 'active');
+        if ($statusFilter !== 'all' && $statusFilter !== '') {
+            $appliedFilters['Status Siswa'] = strtoupper($statusFilter);
+            $query->where('status', $statusFilter);
         }
 
         $allStudents = $query->orderBy('created_at', 'desc')->get();
@@ -715,9 +826,7 @@ class StudentExportController extends Controller
             ->groupByRaw("{$monthExpr}, COALESCE(NULLIF(l.grade, ''), 'Tidak Terdefinisi'), sc.type")
             ->get();
 
-        $defaultGrades = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum', 'Tidak Terdefinisi'];
-        $dbGrades = $rawRows->pluck('grade_name')->unique()->toArray();
-        $allGrades = array_values(array_unique(array_merge($defaultGrades, $dbGrades)));
+        $allGrades = ['TK / PAUD', 'SD', 'SMP', 'SMA / SMK', 'Mahasiswa', 'Umum', 'Tidak Terdefinisi'];
 
         $pivotOffline  = [];
         $pivotOnline   = [];
@@ -726,7 +835,7 @@ class StudentExportController extends Controller
 
         foreach ($rawRows as $r) {
             $mNum  = (int) $r->month_num;
-            $grade = $r->grade_name;
+            $grade = $this->normalizeGradeCategory($r->grade_name);
             $mode  = $r->delivery_mode ?: 'offline';
             $cnt   = (int) $r->student_count;
 
@@ -839,7 +948,7 @@ class StudentExportController extends Controller
         } elseif ($groupByType === 'grades') {
             $colExpr = "COALESCE(NULLIF(l.grade, ''), 'Tidak Terdefinisi')";
             $subTitle = "Based on Grades (Tingkat Pendidikan)";
-            $defaultCols = ['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum', 'Tidak Terdefinisi'];
+            $defaultCols = ['TK / PAUD', 'SD', 'SMP', 'SMA / SMK', 'Mahasiswa', 'Umum', 'Tidak Terdefinisi'];
         }
 
         $query->selectRaw("
@@ -851,8 +960,9 @@ class StudentExportController extends Controller
 
         $rawRows = $query->get();
 
-        $dbCols = $rawRows->pluck('col_name')->filter()->unique()->toArray();
-        $allCols = array_values(array_unique(array_merge($defaultCols, $dbCols)));
+        $allCols = $groupByType === 'grades'
+            ? ['TK / PAUD', 'SD', 'SMP', 'SMA / SMK', 'Mahasiswa', 'Umum', 'Tidak Terdefinisi']
+            : array_values(array_unique(array_merge($defaultCols, $rawRows->pluck('col_name')->filter()->unique()->toArray())));
 
         $pivotOffline  = [];
         $pivotOnline   = [];
@@ -861,7 +971,7 @@ class StudentExportController extends Controller
 
         foreach ($rawRows as $r) {
             $mNum = (int) $r->month_num;
-            $col  = $r->col_name ?: 'Umum';
+            $col  = $groupByType === 'grades' ? $this->normalizeGradeCategory($r->col_name) : ($r->col_name ?: 'Tidak Terdefinisi');
             $mode = $r->delivery_mode ?: 'offline';
             $cnt  = (int) $r->stop_count;
 
@@ -1010,10 +1120,36 @@ class StudentExportController extends Controller
         ];
 
         $matrixData = [];
+        $targetList = [];
 
         foreach ($branches as $branch) {
+            if (strtoupper($branch->code ?? $branch->name) === 'SOLO' || str_contains(strtoupper($branch->name), 'SOLO')) {
+                $targetList[] = [
+                    'branch'     => $branch,
+                    'title_name' => 'SOLO (ON CAMPUS / OFFLINE)',
+                    'mode'       => 'offline',
+                ];
+                $targetList[] = [
+                    'branch'     => $branch,
+                    'title_name' => 'SOLO (ONLINE)',
+                    'mode'       => 'online',
+                ];
+            } else {
+                $targetList[] = [
+                    'branch'     => $branch,
+                    'title_name' => strtoupper($branch->name),
+                    'mode'       => null,
+                ];
+            }
+        }
+
+        foreach ($targetList as $item) {
+            $branch = $item['branch'];
+            $titleName = $item['title_name'];
+            $modeFilter = $item['mode'];
+
             $branchData = [
-                'branch_name' => $branch->name,
+                'branch_name' => $titleName,
                 'year' => $year,
                 'months' => [],
                 'totals' => [
@@ -1033,18 +1169,18 @@ class StudentExportController extends Controller
                 $monthStart = \Carbon\Carbon::create($year, $m, 1)->startOfMonth();
                 $monthEnd = \Carbon\Carbon::create($year, $m, 1)->endOfMonth();
 
-                // If this is a future month in the current year, set to null/empty (or 0)
+                // If this is a future month in the current year, set to null/empty
                 $isFutureMonth = ($year == $now->year && $m > $now->month) || ($year > $now->year);
 
                 if ($isFutureMonth) {
                     $branchData['months'][$m] = [
                         'month_name'     => $monthNames[$m],
-                        'group'          => 0,
-                        'private'        => 0,
-                        'ielts'          => 0,
-                        'toefl'          => 0,
-                        'total_active'   => 0,
-                        'inactive'       => 0,
+                        'group'          => '',
+                        'private'        => '',
+                        'ielts'          => '',
+                        'toefl'          => '',
+                        'total_active'   => '',
+                        'inactive'       => '',
                         'total_students' => 0,
                         'is_empty'       => true,
                     ];
@@ -1054,14 +1190,15 @@ class StudentExportController extends Controller
                 $monthsCounted++;
                 $isPastMonth = ($year < $now->year) || ($year == $now->year && $m < $now->month);
 
-                // ── 1. Past Month: Try loading from frozen DB Snapshot ─────
+                // ── 1. Past Month: Load from frozen DB Snapshot if available ─────
                 if ($isPastMonth) {
-                    $snapshot = \App\Domains\Academic\Domain\Models\BranchMonthlyStudentSnapshot::where('branch_id', $branch->id)
+                    $snapshotQuery = \App\Domains\Academic\Domain\Models\BranchMonthlyStudentSnapshot::where('branch_id', $branch->id)
                         ->where('year', $year)
-                        ->where('month', $m)
-                        ->first();
+                        ->where('month', $m);
 
-                    if ($snapshot) {
+                    $snapshot = $snapshotQuery->first();
+
+                    if ($snapshot && (int) $snapshot->total_students_count > 0) {
                         $branchData['months'][$m] = [
                             'month_name'     => $monthNames[$m],
                             'group'          => $snapshot->group_count,
@@ -1081,76 +1218,92 @@ class StudentExportController extends Controller
                         $branchData['totals']['total_active']   += $snapshot->total_active_count;
                         $branchData['totals']['inactive']       += $snapshot->inactive_count;
                         $branchData['totals']['total_students'] += $snapshot->total_students_count;
-                        continue;
+                    } else {
+                        // Previous months before system go-live are clean empty
+                        $branchData['months'][$m] = [
+                            'month_name'     => $monthNames[$m],
+                            'group'          => '-',
+                            'private'        => '-',
+                            'ielts'          => '-',
+                            'toefl'          => '-',
+                            'total_active'   => '-',
+                            'inactive'       => '-',
+                            'total_students' => '-',
+                            'is_empty'       => true,
+                        ];
                     }
+                    continue;
                 }
 
-                // ── 2. Current Month (or Past Month without Snapshot): Live Calculation ─
-                $students = Student::whereHas('lead', fn($q) => $q->where('branch_id', $branch->id))
-                    ->with(['studyClasses.priceMaster', 'lead.leadType'])
-                    ->where(function($q) use ($monthEnd) {
-                        $q->where(function($sq) use ($monthEnd) {
-                            $sq->whereNotNull('start_join')
-                              ->where('start_join', '<=', $monthEnd);
-                        })->orWhere(function($sq) use ($monthEnd) {
-                            $sq->whereNull('start_join')
-                              ->where('created_at', '<=', $monthEnd);
-                        });
-                    })
-                    ->where(function($q) use ($monthStart) {
-                        $q->whereNull('stopped_at')
-                          ->orWhere('stopped_at', '>=', $monthStart);
-                    })
-                    ->get();
+                // ── 2. Current Month: Live Calculation from Real DB Data ─────────
+                $activeEnrollmentsQuery = \DB::table('lead_enrollments as le')
+                    ->join('students as s', 'le.student_id', '=', 's.id')
+                    ->join('leads as l', 's.lead_id', '=', 'l.id')
+                    ->leftJoin('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+                    ->leftJoin('price_masters as pm', 'sc.price_master_id', '=', 'pm.id')
+                    ->where('l.branch_id', $branch->id)
+                    ->where('s.status', 'active')
+                    ->where('le.status', 'active');
+
+                if ($modeFilter === 'online') {
+                    $activeEnrollmentsQuery->where(function($q) {
+                        $q->where('sc.type', 'online')
+                          ->orWhere(fn($sq) => $sq->whereNull('sc.type')->where('l.is_online', 1));
+                    });
+                } elseif ($modeFilter === 'offline') {
+                    $activeEnrollmentsQuery->where(function($q) {
+                        $q->where(fn($sq) => $sq->whereNotNull('sc.type')->where('sc.type', '!=', 'online'))
+                          ->orWhere(fn($sq) => $sq->whereNull('sc.type')->where(fn($ssq) => $ssq->where('l.is_online', 0)->orWhereNull('l.is_online')));
+                    });
+                }
+
+                $activeEnrollments = $activeEnrollmentsQuery->select([
+                    's.id as student_id',
+                    'sc.name as class_name',
+                    'sc.category as class_category',
+                    'sc.type as delivery_type',
+                    'pm.name as package_name',
+                ])->get();
 
                 $groupCount = 0;
                 $privateCount = 0;
                 $ieltsCount = 0;
                 $toeflCount = 0;
-                $inactiveCount = 0;
 
-                foreach ($students as $student) {
-                    if ($student->status === 'stop' && $student->stopped_at && $student->stopped_at->isBefore($monthEnd)) {
-                        $inactiveCount++;
-                        continue;
-                    }
+                $uniqueStudentIds = [];
 
-                    $priceMasterNames = $student->studyClasses->pluck('priceMaster.name')->filter();
-                    $classNames = $student->studyClasses->pluck('name')->merge(
-                        $student->studyClasses->pluck('category')
-                    )->merge($priceMasterNames)->merge([$student->lead?->leadType?->name])->filter()->implode(' ');
+                foreach ($activeEnrollments as $enr) {
+                    $uniqueStudentIds[$enr->student_id] = true;
+                    $classNameUpper = strtoupper(($enr->class_name ?? '') . ' ' . ($enr->package_name ?? '') . ' ' . ($enr->class_category ?? ''));
 
-                    $upperNames = strtoupper($classNames);
-
-                    if (str_contains($upperNames, 'IELTS')) {
+                    if (str_contains($classNameUpper, 'IELTS')) {
                         $ieltsCount++;
-                    } elseif (str_contains($upperNames, 'TOEFL')) {
+                    } elseif (str_contains($classNameUpper, 'TOEFL')) {
                         $toeflCount++;
-                    } elseif (str_contains($upperNames, 'PRIVATE') || str_contains($upperNames, '& CO') || str_contains($upperNames, 'PRIVAT')) {
+                    } elseif (str_contains($classNameUpper, 'GROUP') || str_contains($classNameUpper, '& CO') || str_contains($classNameUpper, '&CO')) {
+                        $groupCount++;
+                    } elseif (str_contains($classNameUpper, 'PRIVATE') || str_contains($classNameUpper, 'PRIVAT')) {
                         $privateCount++;
                     } else {
                         $groupCount++;
                     }
                 }
 
-                $totalActive = $groupCount + $privateCount + $ieltsCount + $toeflCount;
-                $totalStudents = $totalActive + $inactiveCount;
+                $totalActive = count($uniqueStudentIds);
 
-                // Auto-freeze snapshot if it's a past month
-                if ($isPastMonth) {
-                    \App\Domains\Academic\Domain\Models\BranchMonthlyStudentSnapshot::updateOrCreate(
-                        ['branch_id' => $branch->id, 'year' => $year, 'month' => $m],
-                        [
-                            'group_count'          => $groupCount,
-                            'private_count'        => $privateCount,
-                            'ielts_count'          => $ieltsCount,
-                            'toefl_count'          => $toeflCount,
-                            'total_active_count'   => $totalActive,
-                            'inactive_count'       => $inactiveCount,
-                            'total_students_count' => $totalStudents,
-                        ]
-                    );
+                $inactiveQuery = Student::whereHas('lead', fn($q) => $q->where('branch_id', $branch->id))
+                    ->where('status', 'stop')
+                    ->whereYear('stopped_at', $year)
+                    ->whereMonth('stopped_at', $m);
+
+                if ($modeFilter === 'online') {
+                    $inactiveQuery->whereHas('lead', fn($q) => $q->where('is_online', 1));
+                } elseif ($modeFilter === 'offline') {
+                    $inactiveQuery->whereHas('lead', fn($q) => $q->where('is_online', 0)->orWhereNull('is_online'));
                 }
+
+                $inactiveCount = $inactiveQuery->count();
+                $totalStudents = $totalActive + $inactiveCount;
 
                 $branchData['months'][$m] = [
                     'month_name'     => $monthNames[$m],
@@ -1173,7 +1326,7 @@ class StudentExportController extends Controller
                 $branchData['totals']['total_students'] += $totalStudents;
             }
 
-            // Calculate averages based on elapsed months count (e.g. 5 if current month is May)
+            // Calculate averages based on elapsed months count
             $divisor = max(1, $monthsCounted);
             foreach ($branchData['totals'] as $key => $sum) {
                 $branchData['averages'][$key] = (int) round($sum / $divisor);
@@ -1182,11 +1335,11 @@ class StudentExportController extends Controller
             $matrixData[] = $branchData;
         }
 
-        $headers = ['Month', 'Group', 'Private', 'IELTS', 'TOEFL', 'Total', 'In Active', 'Total Students'];
-        
+        $headers = ['Month', 'Group', 'Private', 'IELTS', 'TOEFL', 'In Active', 'Total', 'Total Student Active'];
+
         return [
             $headers,
-            $matrixData, // passes full matrix struct
+            $matrixData,
             "student-numbers-matrix-{$year}",
             "Student Numbers Campus {$year}",
         ];
@@ -1502,15 +1655,6 @@ class StudentExportController extends Controller
                 fputcsv($handle, $row);
             }
 
-            // Totals Row
-            $t1 = $b1['totals'];
-            $totRow = ["", "Total", $t1['group'], $t1['private'], $t1['ielts'], $t1['toefl'], $t1['total_active'], $t1['inactive'], $t1['total_students'], ""];
-            if ($b2) {
-                $t2 = $b2['totals'];
-                $totRow = array_merge($totRow, ["Total", $t2['group'], $t2['private'], $t2['ielts'], $t2['toefl'], $t2['total_active'], $t2['inactive'], $t2['total_students']]);
-            }
-            fputcsv($handle, $totRow);
-
             // Averages Row
             $a1 = $b1['averages'];
             $avgRow = ["", "Average", $a1['group'], $a1['private'], $a1['ielts'], $a1['toefl'], $a1['total_active'], $a1['inactive'], $a1['total_students'], ""];
@@ -1544,5 +1688,148 @@ class StudentExportController extends Controller
         $csv = stream_get_contents($handle);
         fclose($handle);
         return $csv;
+    }
+
+    // ── Class Transfers ─────────────────────────────────────────────────────
+
+    private function buildClassTransfers(Request $request): array
+    {
+        $year     = $request->input('year', now()->year);
+        $month    = $request->input('month');
+        $branchId = $request->input('branch_id');
+        $isSqlite = \Illuminate\Support\Facades\DB::getDriverName() === 'sqlite';
+
+        $query = \Illuminate\Support\Facades\DB::table('activity_log')
+            ->join('students', 'activity_log.subject_id', '=', 'students.id')
+            ->join('leads', 'students.lead_id', '=', 'leads.id')
+            ->leftJoin('branches', 'leads.branch_id', '=', 'branches.id')
+            ->leftJoin('users', 'activity_log.causer_id', '=', 'users.id')
+            ->leftJoin('superadmins', 'users.id', '=', 'superadmins.user_id')
+            ->leftJoin('frontdesks', 'users.id', '=', 'frontdesks.user_id')
+            ->leftJoin('marketing', 'users.id', '=', 'marketing.user_id')
+            ->leftJoin('finance', 'users.id', '=', 'finance.user_id')
+            ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
+            ->where(function ($q) {
+                $q->where('activity_log.description', 'like', '%dipindahkan dari kelas%')
+                  ->orWhere('activity_log.properties', 'like', '%from_class_name%');
+            })
+            ->select([
+                'activity_log.id',
+                'activity_log.created_at',
+                'activity_log.properties',
+                'activity_log.description',
+                \Illuminate\Support\Facades\DB::raw('COALESCE(superadmins.name, frontdesks.name, marketing.name, finance.name, teachers.name, users.email, "Admin") as causer_name'),
+                'students.student_number',
+                'leads.name as student_name',
+                'leads.phone as student_phone',
+                'leads.school as student_school',
+                'leads.grade as student_grade',
+                'branches.name as branch_name',
+            ]);
+
+        if ($branchId) {
+            $query->where('leads.branch_id', $branchId);
+        }
+
+        if ($year) {
+            if ($isSqlite) {
+                $query->whereRaw("cast(strftime('%Y', activity_log.created_at) as integer) = ?", [$year]);
+            } else {
+                $query->whereYear('activity_log.created_at', $year);
+            }
+        }
+
+        if ($month) {
+            if ($isSqlite) {
+                $query->whereRaw("cast(strftime('%m', activity_log.created_at) as integer) = ?", [$month]);
+            } else {
+                $query->whereMonth('activity_log.created_at', $month);
+            }
+        }
+
+        $records = $query->orderBy('activity_log.created_at', 'desc')->get();
+
+        $headers = [
+            'No',
+            'No. Siswa',
+            'Nama Siswa',
+            'Cabang',
+            'No. HP',
+            'Kelas Asal',
+            'Kelas Tujuan Baru',
+            'Tgl Efektif',
+            'Alasan / Catatan',
+            'Diproses Oleh',
+            'Waktu Pencatatan',
+        ];
+
+        $rows = [];
+        $no = 1;
+        foreach ($records as $r) {
+            $props = json_decode($r->properties ?? '{}', true) ?: [];
+            $fromClassName = $props['from_class_name'] ?? '-';
+            $toClassName = $props['to_class_name'] ?? '-';
+            $reason = $props['reason'] ?? '-';
+            $effectiveDate = $props['effective_date'] ?? null;
+
+            if ($fromClassName === '-' && preg_match("/dipindahkan dari kelas '([^']+)' ke '([^']+)'/i", $r->description, $m)) {
+                $fromClassName = $m[1] ?? '-';
+                $toClassName = $m[2] ?? '-';
+            }
+
+            $rows[] = [
+                $no++,
+                $r->student_number ?? '-',
+                $r->student_name,
+                $r->branch_name ?? 'Central',
+                $r->student_phone ?? '-',
+                $fromClassName,
+                $toClassName,
+                $effectiveDate ? \Carbon\Carbon::parse($effectiveDate)->format('d/m/Y') : \Carbon\Carbon::parse($r->created_at)->format('d/m/Y'),
+                $reason ?: '-',
+                $r->causer_name ?? 'Admin',
+                \Carbon\Carbon::parse($r->created_at)->format('d/m/Y H:i'),
+            ];
+        }
+
+        $filename = "laporan_pindah_kelas_{$year}" . ($month ? "_{$month}" : '');
+        $title    = "Laporan Riwayat Perpindahan Kelas Siswa — Tahun {$year}" . ($month ? " Bulan {$month}" : '');
+
+        return [$headers, $rows, $filename, $title];
+    }
+
+    private function normalizeGradeCategory(?string $rawGrade): string
+    {
+        if (empty($rawGrade) || in_array(trim($rawGrade), ['-', '–', '—', 'none', 'null', 'Tidak Terdefinisi'])) {
+            return 'Tidak Terdefinisi';
+        }
+
+        $upper = strtoupper(trim($rawGrade));
+
+        if (str_contains($upper, 'TK') || str_contains($upper, 'PAUD') || str_contains($upper, 'PG') || str_contains($upper, 'PLAYGROUP') || str_contains($upper, 'KB') || str_contains($upper, 'KINDERGARTEN')) {
+            return 'TK / PAUD';
+        }
+
+        if (str_contains($upper, 'SMA') || str_contains($upper, 'SMK') || str_contains($upper, 'SLTA') || str_contains($upper, 'SENIOR') || str_contains($upper, 'ALIYAH') || str_contains($upper, 'XI') || str_contains($upper, 'XII') || str_contains($upper, '10TH') || preg_match('/\b(SMA|SMK)\s*[1-3]/i', $upper)) {
+            return 'SMA / SMK';
+        }
+
+        if (str_contains($upper, 'SMP') || str_contains($upper, 'JUNIOR') || str_contains($upper, 'MTS') || preg_match('/\bSMP\s*[1-3]/i', $upper)) {
+            return 'SMP';
+        }
+
+        if (str_contains($upper, 'SD') || preg_match('/^(SD|D)\s*[1-6]/i', $upper) || str_contains($upper, 'PRIMARY') || str_contains($upper, 'ELEMENTARY')) {
+            return 'SD';
+        }
+
+        if (str_contains($upper, 'MAHASISWA') || str_contains($upper, 'KULIAH') || str_contains($upper, 'UNIV') || str_contains($upper, 'KAMPUS') || str_contains($upper, 'COLLEGE')) {
+            return 'Mahasiswa';
+        }
+
+        if (str_contains($upper, 'UMUM') || str_contains($upper, 'DEWASA') || str_contains($upper, 'KERJA') || str_contains($upper, 'KARYAWAN') || str_contains($upper, 'PROFESIONAL')) {
+            return 'Umum';
+        }
+
+        return 'Umum';
     }
 }

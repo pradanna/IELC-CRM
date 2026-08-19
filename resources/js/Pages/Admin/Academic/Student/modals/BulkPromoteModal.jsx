@@ -138,8 +138,8 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
                             <Sparkles size={18} className="text-amber-600 shrink-0 mt-0.5" />
                             <div>
                                 <span className="font-bold block mb-0.5">Mode Kenaikan Kelas Berurutan:</span>
-                                Menaikkan 1 tingkat kelas secara otomatis (<strong className="text-amber-900 font-extrabold">SD 1 ➔ SD 2</strong>, <strong className="text-amber-900 font-extrabold">SD 6 ➔ SMP 7</strong>, <strong className="text-amber-900 font-extrabold">SMP 9 ➔ SMA 10</strong>).
-                                Siswa SMA Kelas 12 akan otomatis diset lulus ke <strong className="text-amber-900 font-extrabold">KULIAH</strong>.
+                                Menaikkan 1 tingkat kelas secara otomatis (<strong className="text-amber-900 font-extrabold">SD 1 ➔ SD 2</strong>, <strong className="text-amber-900 font-extrabold">SD 6 ➔ SMP 1</strong>, <strong className="text-amber-900 font-extrabold">SMP 3 ➔ SMA 1</strong>).
+                                Siswa SMA Kelas 12 / SMA 3 akan otomatis diset lulus ke <strong className="text-amber-900 font-extrabold">UMUM</strong>.
                             </div>
                         </div>
 

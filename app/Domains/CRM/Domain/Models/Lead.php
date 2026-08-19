@@ -29,6 +29,7 @@ class Lead extends Model
         'phone',
         'email',
         'birth_date',
+        'nik',
         'school',
         'grade',
         'school_level',

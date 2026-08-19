@@ -89,7 +89,20 @@ class StudyClassSeeder extends Seeder
             // 2. Type: Jika ada (Online) atau ON -> online, selain itu -> offline
             $type = ((str_contains($nameLower, 'online') || preg_match('/\b(on)\b/i', $rawName)) && !str_contains($nameLower, 'off')) ? 'online' : 'offline';
 
-            // 3. Total Pertemuan
+            // 3. Clean Class Name: hilangkan akhiran (Offline), (Online), (On Campus) agar nama kelas murni & tidak duplikat
+            $cleanName = trim(preg_replace('/\s*\((offline|online|on campus|off line|on line)\)/i', '', $rawName));
+            $cleanName = preg_replace('/\s+/', ' ', $cleanName);
+
+            if (empty($cleanName)) {
+                continue;
+            }
+
+            if (isset($seenClasses[$cleanName])) {
+                continue;
+            }
+            $seenClasses[$cleanName] = true;
+
+            // 4. Total Pertemuan
             $totalMeetings = 24; // default untuk kelas group 3 bulan
             if (preg_match('/(\d+)\s*(session|sesi|hours)/i', $rawName, $m)) {
                 $totalMeetings = (int) $m[1];
@@ -97,12 +110,12 @@ class StudyClassSeeder extends Seeder
                 $totalMeetings = (int) $m[1];
             }
 
-            // 4. Penentuan Master Harga (price_master_id)
+            // 5. Penentuan Master Harga (price_master_id)
             $priceMaster = $this->resolvePriceMaster($rawName, $category, $totalMeetings, $priceMasters);
 
             StudyClass::updateOrCreate(
                 [
-                    'name' => $rawName,
+                    'name' => $cleanName,
                     'branch_id' => $soloBranch->id,
                 ],
                 [
@@ -163,11 +176,6 @@ class StudyClassSeeder extends Seeder
                 continue;
             }
 
-            if (isset($seenClasses[$rawName])) {
-                continue;
-            }
-            $seenClasses[$rawName] = true;
-
             $day1 = isset($row[2]) ? trim($row[2]) : '';
             $day2 = isset($row[3]) ? trim($row[3]) : '';
             $scheduleDays = $this->parseScheduleDays($day1, $day2);
@@ -182,7 +190,20 @@ class StudyClassSeeder extends Seeder
             // 2. Type: Jika ada (Online) atau ON -> online, selain itu -> offline
             $type = ((str_contains($nameLower, 'online') || preg_match('/\b(on)\b/i', $rawName)) && !str_contains($nameLower, 'off')) ? 'online' : 'offline';
 
-            // 3. Total Pertemuan
+            // 3. Clean Class Name: hilangkan akhiran (Offline), (Online), (On Campus) agar nama kelas murni & tidak duplikat
+            $cleanName = trim(preg_replace('/\s*\((offline|online|on campus|off line|on line)\)/i', '', $rawName));
+            $cleanName = preg_replace('/\s+/', ' ', $cleanName);
+
+            if (empty($cleanName)) {
+                continue;
+            }
+
+            if (isset($seenClasses[$cleanName])) {
+                continue;
+            }
+            $seenClasses[$cleanName] = true;
+
+            // 4. Total Pertemuan
             $totalMeetings = 24; // default untuk kelas group 3 bulan
             if (preg_match('/(\d+)\s*(session|sesi|hours)/i', $rawName, $m)) {
                 $totalMeetings = (int) $m[1];
@@ -190,12 +211,12 @@ class StudyClassSeeder extends Seeder
                 $totalMeetings = (int) $m[1];
             }
 
-            // 4. Penentuan Master Harga (price_master_id)
+            // 5. Penentuan Master Harga (price_master_id)
             $priceMaster = $this->resolvePriceMaster($rawName, $category, $totalMeetings, $priceMasters);
 
             StudyClass::updateOrCreate(
                 [
-                    'name' => $rawName,
+                    'name' => $cleanName,
                     'branch_id' => $semarangBranch->id,
                 ],
                 [
@@ -225,7 +246,7 @@ class StudyClassSeeder extends Seeder
         $priceMasterName = null;
 
         if ($category === 'group') {
-            $priceMasterName = 'Group Class (Anak / Remaja / Dewasa) - 3 Bulan';
+            $priceMasterName = 'Group';
         } elseif (str_contains($nameLower, 'ielts')) {
             if ($totalMeetings >= 40) {
                 $priceMasterName = 'IELTS Prep - Master / Ultimate (40 Sesi)';
@@ -249,7 +270,7 @@ class StudyClassSeeder extends Seeder
                 $priceMasterName = 'TOEFL Prep - Express / Basic (5 Sesi)';
             }
         } else {
-            $priceMasterName = 'Private Class (Anak / Remaja / Dewasa)';
+            $priceMasterName = 'Private';
         }
 
         return $priceMasters->get($priceMasterName);
