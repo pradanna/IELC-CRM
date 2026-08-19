@@ -4,21 +4,25 @@ import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
 import { CreditCard, CheckCircle2, X } from 'lucide-react';
 
-export default function PayInvoiceModal({ isOpen, onClose, onConfirm, invoiceNumber, totalAmount }) {
-    const [paymentMethod, setPaymentMethod] = useState('Transfer BCA');
-    const [customMethod, setCustomMethod] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-
-    const defaultMethods = [
-        'Transfer BCA',
-        'Transfer Mandiri',
-        'Transfer BRI',
-        'Transfer BNI',
+export default function PayInvoiceModal({ isOpen, onClose, onConfirm, invoiceNumber, totalAmount, paymentAccounts = [] }) {
+    const defaultFallback = [
         'Cash / Tunai',
+        'Bank BCA',
+        'Bank Mandiri',
+        'Bank BNI',
+        'Bank BRI',
         'QRIS',
-        'EDC / Kartu',
+        'Mesin EDC / Kartu',
         'Lainnya',
     ];
+
+    const availableMethods = paymentAccounts.length > 0 
+        ? [...paymentAccounts.map(a => a.name), 'Lainnya']
+        : defaultFallback;
+
+    const [paymentMethod, setPaymentMethod] = useState(availableMethods[0] || 'Bank BCA');
+    const [customMethod, setCustomMethod] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     const formatCurrency = (amount) => {
         if (!amount) return 'Rp 0';
@@ -80,7 +84,7 @@ export default function PayInvoiceModal({ isOpen, onClose, onConfirm, invoiceNum
                             Pilih Metode Pembayaran <span className="text-red-500">*</span>
                         </label>
                         <div className="grid grid-cols-2 gap-2 mb-3">
-                            {defaultMethods.map((method) => (
+                            {availableMethods.map((method) => (
                                 <button
                                     key={method}
                                     type="button"

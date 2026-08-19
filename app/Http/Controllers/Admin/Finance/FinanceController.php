@@ -166,6 +166,7 @@ class FinanceController extends Controller
                 'registration_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('registration_fee', 25000),
                 'placement_test_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('placement_test_fee', 100000),
             ],
+            'paymentAccounts' => \App\Domains\Finance\Domain\Models\PaymentAccount::where('is_active', true)->orderBy('type')->orderBy('name')->get(),
         ]);
     }
 
@@ -454,6 +455,21 @@ class FinanceController extends Controller
         $mtdQuery = $applyFilters($mtdQuery);
         $mtdRevenue = (int) $mtdQuery->sum('total_amount');
 
+        // Revenue by Payment Method (Kas & Bank / Akun Pembayaran)
+        $paymentMethodRevenue = (clone $paidInvoicesQuery)
+            ->whereNotNull('payment_method')
+            ->selectRaw('payment_method, sum(total_amount) as total, count(*) as count')
+            ->groupBy('payment_method')
+            ->orderByDesc('total')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'payment_method' => $item->payment_method,
+                    'total'          => (int) $item->total,
+                    'count'          => (int) $item->count,
+                ];
+            });
+
         return Inertia::render('Admin/Finance/Reports/Index', [
             'filters' => [
                 'tab' => $request->input('tab', 'summary'),
@@ -471,6 +487,7 @@ class FinanceController extends Controller
             'studyClasses' => StudyClass::select('id', 'name', 'branch_id')->get(),
             'priceMasters' => PriceMaster::select('id', 'name')->orderBy('name')->get(),
             'leadTypes' => LeadType::select('id', 'name')->orderBy('name')->get(),
+            'paymentAccounts' => \App\Domains\Finance\Domain\Models\PaymentAccount::where('is_active', true)->orderBy('type')->orderBy('name')->get(),
             'stats' => [
                 'total_revenue' => $totalRevenue,
                 'total_pending' => $totalPending,
@@ -481,6 +498,7 @@ class FinanceController extends Controller
                 'paket_lanjut_revenue' => $paketLanjutRevenue,
                 'class_revenue' => $classRevenue,
                 'price_master_revenue' => $priceMasterRevenue,
+                'payment_method_revenue' => $paymentMethodRevenue,
                 'monthly_trend' => $monthlyTrend,
                 'today_revenue' => $todayRevenue,
                 'mtd_revenue' => $mtdRevenue,
@@ -697,6 +715,21 @@ class FinanceController extends Controller
             $typeName = $typeNameMap[$typeFilter] ?? $typeFilter;
         }
 
+        // Revenue by Payment Method (Kas & Bank / Akun Pembayaran)
+        $paymentMethodRevenue = (clone $paidInvoicesQuery)
+            ->whereNotNull('payment_method')
+            ->selectRaw('payment_method, sum(total_amount) as total, count(*) as count')
+            ->groupBy('payment_method')
+            ->orderByDesc('total')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'payment_method' => $item->payment_method,
+                    'total'          => (int) $item->total,
+                    'count'          => (int) $item->count,
+                ];
+            });
+
         $stats = [
             'total_revenue' => $totalRevenue,
             'total_pending' => $totalPending,
@@ -706,6 +739,7 @@ class FinanceController extends Controller
             'rejoin_revenue' => $rejoinRevenue,
             'paket_lanjut_revenue' => $paketLanjutRevenue,
             'price_master_revenue' => $priceMasterRevenue,
+            'payment_method_revenue' => $paymentMethodRevenue,
             'today_revenue' => $todayRevenue,
             'mtd_revenue' => $mtdRevenue,
             'today_invoices' => $todayPaidInvoices,
@@ -808,7 +842,7 @@ class FinanceController extends Controller
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($file, ['No. Invoice', 'Tanggal Bayar', 'Tipe', 'Nama Pelanggan', 'Type Lead', 'No. HP', 'Kelas / Produk', 'Cabang', 'Diskon', 'Total Bayar']);
+            fputcsv($file, ['No. Invoice', 'Tanggal Bayar', 'Tipe', 'Nama Pelanggan', 'Type Lead', 'No. HP', 'Kelas / Produk', 'Cabang', 'Metode Bayar', 'Diskon', 'Total Bayar']);
 
             foreach ($invoices as $inv) {
                 $customerName = $inv->lead->name ?? ($inv->student->lead->name ?? 'Unknown');
@@ -820,24 +854,23 @@ class FinanceController extends Controller
                 $branchName = $inv->studyClass->branch->name ?? '-';
                 $className = $inv->studyClass->name ?? 'Manual Item';
                 $typeLabel = $inv->type === 'new_join' ? 'New Join' : ($inv->type === 'rejoin' ? 'Rejoin' : ($inv->type === 'paket_lanjut' ? 'Paket Lanjut' : 'Placement Test'));
-
-                $paidDateRaw = $inv->paid_at ?? $inv->updated_at;
-                $formattedDate = $paidDateRaw ? \Carbon\Carbon::parse($paidDateRaw)->format('Y-m-d') : '-';
+                $paymentMethod = $inv->payment_method ?: '-';
+                $paidDate = $inv->paid_at ? \Carbon\Carbon::parse($inv->paid_at)->format('Y-m-d H:i') : ($inv->updated_at ? \Carbon\Carbon::parse($inv->updated_at)->format('Y-m-d H:i') : '-');
 
                 fputcsv($file, [
                     $inv->invoice_number,
-                    $formattedDate,
+                    $paidDate,
                     $typeLabel,
                     $customerName,
                     $leadTypeName,
                     $phone,
                     $className,
                     $branchName,
+                    $paymentMethod,
                     $inv->discount_amount,
-                    $inv->total_amount,
+                    $inv->total_amount
                 ]);
             }
-
             fclose($file);
         };
 

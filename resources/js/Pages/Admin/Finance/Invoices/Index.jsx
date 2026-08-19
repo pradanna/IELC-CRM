@@ -31,7 +31,7 @@ import InvoiceDetailModal from './modals/InvoiceDetailModal';
 import PayInvoiceModal from '../modals/PayInvoiceModal';
 import PlotAndInvoiceModal from '../modals/PlotAndInvoiceModal';
 
-export default function InvoiceIndex({ auth, invoices, filters, summary = {}, classes = [], priceMasters = [] }) {
+export default function InvoiceIndex({ auth, invoices, filters, summary = {}, classes = [], priceMasters = [], paymentAccounts = [] }) {
     const getStartOfMonth = () => {
         const d = new Date();
         const y = d.getFullYear();
@@ -593,6 +593,7 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
                 onConfirm={handleConfirmPay}
                 invoiceNumber={selectedInvoiceToPay?.invoice_number}
                 totalAmount={selectedInvoiceToPay?.total_amount}
+                paymentAccounts={paymentAccounts}
             />
         </AuthenticatedLayout>
     );
