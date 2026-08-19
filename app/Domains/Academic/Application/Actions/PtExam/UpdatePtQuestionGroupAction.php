@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\CRM\Application\Actions\PtExam;
+namespace App\Domains\Academic\Application\Actions\PtExam;
 
 use App\Domains\Academic\Domain\Models\PtQuestionGroup;
 use Illuminate\Support\Facades\Storage;
@@ -34,6 +34,3 @@ class UpdatePtQuestionGroupAction
         return $group;
     }
 }
-
-
-

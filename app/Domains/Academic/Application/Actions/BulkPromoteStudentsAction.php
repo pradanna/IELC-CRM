@@ -38,32 +38,77 @@ class BulkPromoteStudentsAction
     {
         $trimmedGrade = trim($grade);
         $trimmedLevel = $schoolLevel ? trim($schoolLevel) : null;
+        $combined = trim("{$trimmedGrade} {$trimmedLevel}");
 
         if ($mode === 'custom' && $customTarget) {
             return $this->parseGradeString($customTarget);
         }
 
-        if ($mode === 'auto_detailed') {
-            // Check specific school_level if present (e.g. grade="SD", school_level="Kelas 1" => "SD 1")
-            $fullKey = null;
-            if ($trimmedLevel && preg_match('/Kelas\s*(\d+)/i', $trimmedLevel, $m)) {
-                $fullKey = "{$trimmedGrade} {$m[1]}";
-            } else {
-                $fullKey = $trimmedGrade;
+        if ($mode === 'auto_detailed' || $mode === 'auto' || $mode === 'auto_level') {
+            // 1. Check TK / Playgroup / Paud
+            if (preg_match('/^(TK|PAUD|PLAYGROUP|KB)/i', $trimmedGrade) || preg_match('/^(TK|PAUD|PLAYGROUP|KB)/i', $combined)) {
+                if (preg_match('/(TK\s*B|KB\s*B|PAUD\s*B)/i', $combined)) {
+                    return ['grade' => 'SD 1', 'school_level' => 'Kelas 1'];
+                }
+                if (preg_match('/(TK\s*A|KB\s*A|PAUD\s*A)/i', $combined)) {
+                    return ['grade' => 'TK B', 'school_level' => 'TK B'];
+                }
+                return ['grade' => 'SD 1', 'school_level' => 'Kelas 1'];
             }
 
-            if (isset($this->autoDetailedMap[$fullKey])) {
-                return $this->autoDetailedMap[$fullKey];
+            // 2. Check SD (SD 1 - SD 6 or SD Kelas 1 - 6)
+            if (preg_match('/(?:SD|Kelas)\s*(\d+)/i', $combined, $m) || preg_match('/^SD\s*(\d+)$/i', $trimmedGrade, $m)) {
+                $sdNum = (int) $m[1];
+                if ($sdNum >= 1 && $sdNum < 6) {
+                    $nextNum = $sdNum + 1;
+                    return ['grade' => "SD {$nextNum}", 'school_level' => "Kelas {$nextNum}"];
+                } elseif ($sdNum === 6) {
+                    return ['grade' => 'SMP 1', 'school_level' => 'Kelas 7'];
+                }
             }
 
-            if (isset($this->autoDetailedMap[$trimmedGrade])) {
-                return $this->autoDetailedMap[$trimmedGrade];
+            // SD without number
+            if (strcasecmp($trimmedGrade, 'SD') === 0 || strcasecmp($combined, 'SD') === 0) {
+                return ['grade' => 'SMP 1', 'school_level' => 'Kelas 7'];
             }
-        }
 
-        if ($mode === 'auto_level') {
-            if (isset($this->autoLevelMap[$trimmedGrade])) {
-                return $this->autoLevelMap[$trimmedGrade];
+            // 3. Check SMP (SMP 1 - 3 or SMP 7 - 9 or Kelas 7 - 9)
+            if (preg_match('/(?:SMP|Kelas)\s*(\d+)/i', $combined, $m) || preg_match('/^SMP\s*(\d+)$/i', $trimmedGrade, $m)) {
+                $smpNum = (int) $m[1];
+                if ($smpNum === 1 || $smpNum === 7) {
+                    return ['grade' => 'SMP 2', 'school_level' => 'Kelas 8'];
+                } elseif ($smpNum === 2 || $smpNum === 8) {
+                    return ['grade' => 'SMP 3', 'school_level' => 'Kelas 9'];
+                } elseif ($smpNum === 3 || $smpNum === 9) {
+                    return ['grade' => 'SMA 1', 'school_level' => 'Kelas 10'];
+                }
+            }
+
+            // SMP without number
+            if (strcasecmp($trimmedGrade, 'SMP') === 0 || strcasecmp($combined, 'SMP') === 0) {
+                return ['grade' => 'SMA 1', 'school_level' => 'Kelas 10'];
+            }
+
+            // 4. Check SMA / SMK (SMA 1 - 3 or SMA 10 - 12 or Kelas 10 - 12)
+            if (preg_match('/(?:SMA|SMK|Kelas)\s*(\d+)/i', $combined, $m) || preg_match('/^(?:SMA|SMK)\s*(\d+)$/i', $trimmedGrade, $m)) {
+                $smaNum = (int) $m[1];
+                if ($smaNum === 1 || $smaNum === 10) {
+                    return ['grade' => 'SMA 2', 'school_level' => 'Kelas 11'];
+                } elseif ($smaNum === 2 || $smaNum === 11) {
+                    return ['grade' => 'SMA 3', 'school_level' => 'Kelas 12'];
+                } elseif ($smaNum === 3 || $smaNum === 12) {
+                    return ['grade' => 'UMUM', 'school_level' => null];
+                }
+            }
+
+            // SMA without number
+            if (strcasecmp($trimmedGrade, 'SMA') === 0 || strcasecmp($trimmedGrade, 'SMK') === 0 || strcasecmp($combined, 'SMA') === 0) {
+                return ['grade' => 'UMUM', 'school_level' => null];
+            }
+
+            // 5. Kuliah / Kerja / Umum
+            if (preg_match('/(KULIAH|MAHASISWA|UNIVERSITAS)/i', $combined)) {
+                return ['grade' => 'UMUM', 'school_level' => null];
             }
         }
 
@@ -79,10 +124,7 @@ class BulkPromoteStudentsAction
         if (preg_match('/^(SD|SMP|SMA)$/i', $targetStr)) {
             return ['grade' => strtoupper($targetStr), 'school_level' => null];
         }
-        if (stripos($targetStr, 'Kuliah') !== false) {
-            return ['grade' => 'KULIAH', 'school_level' => null];
-        }
-        if (stripos($targetStr, 'Umum') !== false) {
+        if (stripos($targetStr, 'Kuliah') !== false || stripos($targetStr, 'Umum') !== false) {
             return ['grade' => 'UMUM', 'school_level' => null];
         }
         return ['grade' => $targetStr, 'school_level' => null];
@@ -146,9 +188,9 @@ class BulkPromoteStudentsAction
                 $nextFull = $next['school_level'] ? "{$next['grade']} ({$next['school_level']})" : $next['grade'];
 
                 $statusLabel = 'valid';
-                if ($next['grade'] === 'KULIAH' || $next['grade'] === 'UMUM') {
+                if ($next['grade'] === 'UMUM') {
                     $statusLabel = 'graduated';
-                } elseif (!$currentLevel && $mode === 'auto_detailed') {
+                } elseif (in_array(strtoupper($currentGrade), ['SD', 'SMP', 'SMA']) && !$currentLevel) {
                     $statusLabel = 'level_missing';
                 }
 

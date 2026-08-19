@@ -25,19 +25,15 @@ class DatabaseSeeder extends Seeder
             RoleAndPermissionSeeder::class,
             UserSeeder::class,
             MonthlyTargetSeeder::class,
-            LeadSeeder::class,
             TaskSeeder::class,
             ChatTemplateSeeder::class,
             PtExamSeeder::class,
             IeltsPtExamSeeder::class,
             LoyaltySettingSeeder::class,
             PaymentAccountSeeder::class,
+            PriceMasterSeeder::class,
+            StudyClassSeeder::class,
+            DataSiswaSeeder::class,
         ]);
-
-        if (app()->environment('local', 'testing')) {
-            $this->call([
-                ExampleStudyClassSeeder::class,
-            ]);
-        }
     }
 }

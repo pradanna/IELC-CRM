@@ -21,6 +21,8 @@ class StudentResource extends JsonResource
             'start_join' => $this->start_join ? $this->start_join->format('Y-m-d') : null,
             'rejoin_count' => $this->rejoin_count,
             'loyalty_tier' => $this->loyalty_tier,
+            'profile_picture' => $this->profile_picture,
+            'profile_picture_url' => $this->profile_picture ? asset('storage/' . $this->profile_picture) : null,
             
             // Relationships
             'lead' => new LeadResource($this->whenLoaded('lead')),

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Domains\CRM\Application\Actions\PtExam\CreatePtQuestionGroupAction;
-use App\Domains\CRM\Application\Actions\PtExam\UpdatePtQuestionGroupAction;
+use App\Domains\Academic\Application\Actions\PtExam\CreatePtQuestionGroupAction;
+use App\Domains\Academic\Application\Actions\PtExam\UpdatePtQuestionGroupAction;
 use App\Http\Controllers\Controller;
 use App\Domains\Academic\Domain\Models\PtExam;
 use App\Domains\Academic\Domain\Models\PtQuestionGroup;

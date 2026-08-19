@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\CRM\Application\Actions\PtExam;
+namespace App\Domains\Academic\Application\Actions\PtExam;
 
 use App\Domains\Academic\Domain\Models\PtQuestion;
 use App\Domains\Academic\Domain\Models\PtQuestionOption;
@@ -28,7 +28,6 @@ class UpdatePtQuestionAction
             $question->update($questionData);
 
             if ($questionData['type'] === 'mcq' && isset($data['options']) && is_array($data['options'])) {
-                // Simplest is to delete and recreate for this specific structure
                 $question->options()->delete();
                 foreach ($data['options'] as $index => $optionText) {
                     PtQuestionOption::create([
@@ -45,6 +44,3 @@ class UpdatePtQuestionAction
         });
     }
 }
-
-
-

@@ -100,6 +100,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/crm/leads/{lead}/send-template', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendTemplate'])->name('crm.leads.send-template');
     Route::post('/crm/leads/{lead}/send-whatsapp', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendMessage'])->name('crm.leads.send-whatsapp');
     Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
+    Route::post('/crm/leads/{lead}/add-enrollment', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'addEnrollment'])->name('crm.leads.add-enrollment');
+
     Route::post('/crm/leads', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'store'])->name('crm.leads.store');
     Route::get('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'index'])->name('crm.settings.index');
     Route::put('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'update'])->name('crm.settings.update');
@@ -134,6 +136,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('students/bulk-promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
         Route::post('students/{student}/progress-reports', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'storeProgressReport'])->name('students.progress-reports.store');
         Route::delete('students/{student}/progress-reports/{report}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'destroyProgressReport'])->name('students.progress-reports.destroy');
+        Route::post('students/{student}/upload-photo', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'uploadProfilePicture'])->name('students.upload-photo');
+        Route::post('students/{student}/transfer-class', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'transferClass'])->name('students.transfer-class');
         Route::resource('students', \App\Http\Controllers\Admin\Academic\StudentController::class);
         Route::post('leads/{lead}/promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'promoteFromLead'])->name('students.promote');
     });
