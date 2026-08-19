@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pt_question_groups', function (Blueprint $table) {
-            $table->text('instruction')->change();
+        Schema::table('leads', function (Blueprint $table) {
+            $table->string('school_level')->nullable()->after('grade');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pt_question_groups', function (Blueprint $table) {
-            $table->string('instruction')->change();
+        Schema::table('leads', function (Blueprint $table) {
+            $table->dropColumn('school_level');
         });
     }
 };

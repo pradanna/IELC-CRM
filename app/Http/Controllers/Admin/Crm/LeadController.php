@@ -53,8 +53,12 @@ use Inertia\Response;
 
 class LeadController extends Controller
 {
-    public function index(Request $request, LeadQueryService $service): Response
+    public function index(Request $request, LeadQueryService $service): Response|RedirectResponse
     {
+        if (auth()->user()?->hasRole('finance')) {
+            return redirect()->route('admin.finance.dashboard');
+        }
+
         $leads = $service->getPaginatedLeads($request);
 
         return Inertia::render('Admin/Crm/Leads/Index', [
@@ -88,7 +92,7 @@ class LeadController extends Controller
 
             return response()->json([
                 'lead' => new LeadResource($lead->load([
-                    'branch', 'owner', 'leadSource', 'leadType', 'leadPhase', 
+                    'branch', 'owner', 'leadSource', 'infoSource', 'leadType', 'leadPhase', 
                     'guardians', 'leadRelationships.relatedLead', 
                     'ptSessions.ptExam',
                     'consultations.consultant',
@@ -96,6 +100,8 @@ class LeadController extends Controller
                     'student.studyClasses',
                     'chatLogs.sender',
                     'notes.user',
+                    'activities.user',
+                    'enrollments.studyClass', 'enrollments.invoice',
                 ])),
                 'availableExams' => PtExamResource::collection(\App\Domains\Academic\Domain\Models\PtExam::where('is_active', true)->get()),
                 'availableClasses' => StudyClassResource::collection($availableClasses),
@@ -376,7 +382,8 @@ class LeadController extends Controller
     public function kanban(Request $request): Response
     {
         $phases = LeadPhase::orderBy('created_at', 'asc')->get();
-        $leadsQuery = Lead::with(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase']);
+        $leadsQuery = Lead::with(['branch', 'owner', 'leadSource', 'leadType', 'leadPhase'])
+            ->withCount('enrollments');
 
         if ($request->filled('branch_id')) {
             $leadsQuery->where('branch_id', $request->branch_id);

@@ -22,6 +22,7 @@ class UpdateLead
                 'birth_date' => $data['birth_date'] ?? null,
                 'school' => $data['school'] ?? null,
                 'grade' => $data['grade'] ?? null,
+                'school_level' => $data['school_level'] ?? null,
                 'branch_id' => $data['branch_id'],
                 'lead_source_id' => $data['lead_source_id'] ?? null,
                 'info_source_id' => $data['info_source_id'] ?? null,

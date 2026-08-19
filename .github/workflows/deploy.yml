@@ -1,0 +1,53 @@
+name: Deploy Staging to VPS
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    name: Deploying Develop Branch to Staging VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Executing remote SSH commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          timeout: 10m
+          command_timeout: 15m
+          script: |
+            cd /home/pradana/IELC-CRM
+            
+            # Simpan commit hash sebelum pull
+            OLD_COMMIT=$(git rev-parse HEAD)
+            
+            # 1. Pull perubahan terbaru dari branch develop
+            git pull origin develop
+            
+            # 2. Cek apakah ada perubahan pada file frontend (.jsx, .js, .css, dll)
+            CHANGED_FRONTEND_FILES=$(git diff --name-only $OLD_COMMIT HEAD | grep -E '\.(jsx|js|ts|tsx|vue|css|scss|html)|package-lock\.json|package\.json|vite\.config\.js' || true)
+            
+            if [ -n "$CHANGED_FRONTEND_FILES" ]; then
+              echo "=> Perubahan frontend dideteksi. Menjalankan npm build..."
+              
+              # Cek jika package.json ikut berubah, jalankan npm install
+              CHANGED_PACKAGE=$(git diff --name-only $OLD_COMMIT HEAD | grep -E 'package-lock\.json|package\.json' || true)
+              if [ -n "$CHANGED_PACKAGE" ]; then
+                echo "=> package.json berubah. Running npm install..."
+                npm install
+              fi
+              
+              npm run build
+            else
+              echo "=> Tidak ada perubahan pada file frontend. Skipping npm build."
+            fi
+            
+            # 3. Optimasi Laravel
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache

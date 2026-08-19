@@ -51,7 +51,7 @@ class AppServiceProvider extends ServiceProvider
         );
         \Illuminate\Support\Facades\Event::listen(
             \App\Domains\Finance\Domain\Events\InvoicePaid::class,
-            \App\Domains\Academic\Application\Listeners\EnrollStudentOnInvoicePaid::class
+            \App\Domains\CRM\Application\Listeners\CreateLeadEnrollmentOnInvoicePaid::class
         );
         \Illuminate\Support\Facades\Event::listen(
             \App\Domains\Finance\Domain\Events\InvoicePaid::class,

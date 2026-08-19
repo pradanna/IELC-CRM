@@ -13,9 +13,12 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { X, GraduationCap, MapPin, Users, Calendar, Hash, Zap } from 'lucide-react';
 
-export default function CreateEditClassModal({ isOpen, onClose, studyClass = null, branches = [], instructors = [], priceMasters = [] }) {
+export default function CreateEditClassModal({ isOpen, onClose, studyClass = null, branches = [], instructors = [], priceMasters = [], leadTypes = [] }) {
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
+        type: 'offline',
+        category: '',
+        status: 'active',
         branch_id: '',
         instructor_id: '',
         price_master_id: '',
@@ -29,6 +32,32 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
 
     // Automate calculations
     useClassScheduleCalculation(data, setData);
+
+    const categoryOptions = useMemo(() => {
+        if (leadTypes && leadTypes.length > 0) {
+            return leadTypes.map(lt => ({
+                value: lt.name,
+                label: lt.name,
+            }));
+        }
+        return [
+            { value: 'Kids', label: 'Kids' },
+            { value: 'Teens', label: 'Teens' },
+            { value: 'Adult', label: 'Adult' },
+            { value: 'IELTS', label: 'IELTS' },
+            { value: 'TOEFL', label: 'TOEFL' },
+        ];
+    }, [leadTypes]);
+
+    const typeOptions = [
+        { value: 'offline', label: 'Offline' },
+        { value: 'online', label: 'Online' },
+    ];
+
+    const statusOptions = [
+        { value: 'active', label: 'Aktif' },
+        { value: 'inactive', label: 'Tidak Aktif' },
+    ];
 
     const dayOptions = [
         { value: 'Monday', label: 'Monday' },
@@ -44,6 +73,9 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
         if (studyClass) {
             setData({
                 name: studyClass.name || '',
+                type: studyClass.type || 'offline',
+                category: studyClass.category || '',
+                status: studyClass.status || 'active',
                 branch_id: studyClass.branch_id || '',
                 instructor_id: studyClass.instructor_id || '',
                 price_master_id: studyClass.price_master_id || '',
@@ -127,7 +159,29 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                             />
                         </PremiumFormGroup>
 
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <PremiumFormGroup label="Program Kelas" error={errors.category} required>
+                                <PremiumSearchableSelect
+                                    options={categoryOptions}
+                                    value={data.category}
+                                    onChange={(val) => setData('category', val)}
+                                    placeholder="Pilih Program Kelas"
+                                    icon={Users}
+                                    error={errors.category}
+                                />
+                            </PremiumFormGroup>
+
+                            <PremiumFormGroup label="Jenis Kelas" error={errors.type} required>
+                                <PremiumSearchableSelect
+                                    options={typeOptions}
+                                    value={data.type}
+                                    onChange={(val) => setData('type', val)}
+                                    placeholder="Pilih Jenis Kelas"
+                                    icon={GraduationCap}
+                                    error={errors.type}
+                                />
+                            </PremiumFormGroup>
+
                             <PremiumFormGroup label="Center Location" error={errors.branch_id} required>
                                 <PremiumSearchableSelect
                                     options={branchOptions}

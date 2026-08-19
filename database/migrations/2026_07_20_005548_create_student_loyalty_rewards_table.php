@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignUuid('student_id')->constrained('students')->cascadeOnDelete();
             $table->string('tier_name');
             $table->string('voucher_name');
+            $table->unsignedBigInteger('discount_amount')->default(0);
             $table->unsignedInteger('cafe_points')->default(0);
             $table->boolean('is_used')->default(false);
             $table->timestamp('used_at')->nullable();

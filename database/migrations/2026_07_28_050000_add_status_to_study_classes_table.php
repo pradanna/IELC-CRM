@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('leads', function (Blueprint $table) {
-            $table->foreignUuid('branch_id')->nullable()->change();
-        });
+        if (!Schema::hasColumn('study_classes', 'status')) {
+            Schema::table('study_classes', function (Blueprint $table) {
+                $table->string('status')->default('active')->after('type');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('leads', function (Blueprint $table) {
-            $table->foreignUuid('branch_id')->nullable(false)->change();
+        Schema::table('study_classes', function (Blueprint $table) {
+            $table->dropColumn('status');
         });
     }
 };

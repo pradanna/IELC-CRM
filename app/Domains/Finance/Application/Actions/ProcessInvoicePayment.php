@@ -11,10 +11,14 @@ class ProcessInvoicePayment
     /**
      * Process an invoice payment, promoting the lead to student if necessary.
      */
-    public function handle(Invoice $invoice): void
+    public function handle(Invoice $invoice, ?string $paymentMethod = null): void
     {
-        DB::transaction(function () use ($invoice) {
-            $invoice->update(['status' => 'paid']);
+        DB::transaction(function () use ($invoice, $paymentMethod) {
+            $invoice->update([
+                'status' => 'paid',
+                'payment_method' => $paymentMethod ?? $invoice->payment_method,
+                'paid_at' => now(),
+            ]);
 
             // Update student status if applicable
             if ($invoice->student_id) {

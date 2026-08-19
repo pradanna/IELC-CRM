@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('study_class_student', function (Blueprint $table) {
-            $table->id();
-            $table->foreignUuid('study_class_id')->constrained('study_classes')->cascadeOnDelete();
+        Schema::create('student_progress_reports', function (Blueprint $table) {
+            $table->uuid('id')->primary();
             $table->foreignUuid('student_id')->constrained('students')->cascadeOnDelete();
-            $table->unsignedInteger('cycle_number')->default(1);
+            $table->string('title');
+            $table->string('file_path');
+            $table->string('file_name');
+            $table->string('file_type')->default('file');
+            $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-
-            $table->index(['study_class_id', 'student_id', 'cycle_number'], 'idx_study_class_student_cycle');
+            $table->softDeletes();
         });
     }
 
@@ -27,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('study_class_student');
+        Schema::dropIfExists('student_progress_reports');
     }
 };

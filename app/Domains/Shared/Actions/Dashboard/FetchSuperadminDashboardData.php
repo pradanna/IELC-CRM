@@ -4,6 +4,7 @@ namespace App\Domains\Shared\Actions\Dashboard;
 
 use App\Domains\Master\Domain\Models\Branch;
 use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\CRM\Domain\Models\LeadEnrollment;
 use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\Master\Domain\Models\LeadSource;
 use App\Domains\CRM\Domain\Models\MonthlyTarget;
@@ -40,11 +41,8 @@ class FetchSuperadminDashboardData
                 ->where('month', $now->month)
                 ->first();
 
-            $enrollmentPhase = LeadPhase::where('code', 'enrollment')->first();
-            
-            $actual = Lead::where('branch_id', $branch->id)
-                ->where('lead_phase_id', $enrollmentPhase?->id)
-                ->whereBetween('enrolled_at', [$startOfMonth, $endOfMonth])
+            $actual = LeadEnrollment::whereBetween('joined_at', [$startOfMonth, $endOfMonth])
+                ->whereHas('lead', fn($q) => $q->where('branch_id', $branch->id))
                 ->count();
 
             $targetValue = $target?->target_enrolled ?? 0;

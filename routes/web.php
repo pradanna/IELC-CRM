@@ -25,6 +25,10 @@ Route::get('/', function () {
 // Webhook WhatsApp (Public)
 Route::post('/webhook/whatsapp/inbound', [WhatsappWebhookController::class, 'handleIncomingMessage'])->name('webhooks.whatsapp.inbound');
 
+// Meta WA Official Webhook (Public)
+Route::get('/webhook/whatsapp/official', [\App\Http\Controllers\Webhooks\WhatsappOfficialWebhookController::class, 'verify'])->name('webhooks.whatsapp.official.verify');
+Route::post('/webhook/whatsapp/official', [\App\Http\Controllers\Webhooks\WhatsappOfficialWebhookController::class, 'handle'])->name('webhooks.whatsapp.official.handle');
+
 // Public Placement Test
 Route::get('/placement-test/{token}', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'show'])->name('public.placement-test.show');
 Route::post('/placement-test/{token}/start', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'start'])->name('public.placement-test.start');
@@ -125,6 +129,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::delete('study-classes/{study_class}/unenroll/{student}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'unenroll'])->name('study-classes.unenroll');
 
         Route::get('students/search', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'search'])->name('students.search');
+        Route::get('students/export/excel', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportExcel'])->name('students.export.excel');
+        Route::get('students/export/pdf', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportPdf'])->name('students.export.pdf');
+        Route::post('students/bulk-promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
+        Route::post('students/{student}/progress-reports', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'storeProgressReport'])->name('students.progress-reports.store');
+        Route::delete('students/{student}/progress-reports/{report}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'destroyProgressReport'])->name('students.progress-reports.destroy');
         Route::resource('students', \App\Http\Controllers\Admin\Academic\StudentController::class);
         Route::post('leads/{lead}/promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'promoteFromLead'])->name('students.promote');
     });
@@ -135,10 +144,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/invoices', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'invoices'])->name('invoices.index');
         Route::post('/invoices/generate', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'generate'])->name('invoices.generate');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'pay'])->name('invoices.pay');
+        Route::post('/invoices/{invoice}/cancel', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'cancel'])->name('invoices.cancel');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'download'])->name('invoices.download');
         Route::post('/classes/{studyClass}/bulk-invoice', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'bulkInvoice'])->name('classes.bulk-invoice');
         Route::get('/reports', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'reports'])->name('reports.index');
+        Route::get('/reports/export-pdf', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'exportReportsPdf'])->name('reports.export-pdf');
+        Route::get('/reports/export-excel', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'exportReportsExcel'])->name('reports.export-excel');
         
+        Route::post('price-masters/initial-fees', [\App\Http\Controllers\Admin\Finance\PriceMasterController::class, 'updateInitialFees'])->name('price-masters.initial-fees');
         Route::resource('price-masters', \App\Http\Controllers\Admin\Finance\PriceMasterController::class);
         Route::post('loyalty-settings/sibling', [\App\Http\Controllers\Admin\Finance\LoyaltySettingsController::class, 'updateSiblingSettings'])->name('loyalty-settings.sibling');
         Route::resource('loyalty-settings', \App\Http\Controllers\Admin\Finance\LoyaltySettingsController::class);
@@ -193,8 +206,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/master/media-assets', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'store'])->name('master.media-assets.store');
     Route::delete('/master/media-assets/{mediaAsset}', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'destroy'])->name('master.media-assets.destroy');
     
-    // WhatsApp Proxy
+    // WhatsApp Proxy & Inbox
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
+        Route::get('/inbox', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'index'])->name('inbox');
+        Route::get('/official/conversations', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialConversations'])->name('official.conversations');
+        Route::get('/official/templates', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialTemplates'])->name('official.templates');
+        Route::post('/official/send', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'sendOfficialMessage'])->name('official.send');
+        Route::get('/baileys/conversations/{branch}', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getBaileysConversations'])->name('baileys.conversations');
+        Route::get('/history-chat', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getChatHistory'])->name('chat-history');
+
         Route::get('/', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('index');
         Route::get('/status/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
         Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');

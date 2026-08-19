@@ -29,7 +29,6 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
         { value: 'SD', label: 'SD' },
         { value: 'SMP', label: 'SMP' },
         { value: 'SMA', label: 'SMA' },
-        { value: 'KULIAH', label: 'Kuliah' },
         { value: 'UMUM', label: 'Umum' },
     ];
 

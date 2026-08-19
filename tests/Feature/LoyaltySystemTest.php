@@ -366,7 +366,7 @@ class LoyaltySystemTest extends TestCase
         
         // Assert invoice got Rp 150,000 sibling discount (10% of 1,500,000)
         $this->assertEquals(150000, $invoice->discount_amount);
-        $this->assertStringContainsString('Diskon Sibling (10%): Rp 150.000', $invoice->notes);
+        $this->assertStringContainsString('Diskon Sibling (10%): Rp 150.000', $invoice->discount_breakdown);
     }
 
     public function test_admin_can_access_finance_reports(): void

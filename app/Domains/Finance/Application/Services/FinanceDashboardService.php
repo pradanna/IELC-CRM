@@ -20,12 +20,27 @@ class FinanceDashboardService
         $invoicePhase = LeadPhase::where('code', 'invoice')->first();
         $invoicePhaseId = $invoicePhase?->id ?? 'non-existent-id';
 
-        $leadsForInvoicing = Lead::where('lead_phase_id', $invoicePhaseId)
+        $ptPhaseIds = LeadPhase::where(function($q) {
+            $q->whereIn('code', ['placement-test', 'placement_test', 'pt'])
+              ->orWhere('name', 'like', '%placement%');
+        })->pluck('id');
+
+        $placementTestLeads = Lead::whereIn('lead_phase_id', $ptPhaseIds)
             ->whereDoesntHave('student')
-            ->with(['leadType', 'branch'])
+            ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads'])
             ->withCount(['invoices as pending_invoices_count' => function($q) {
                 $q->whereNull('student_id')
-                  ->whereNotIn('status', ['cancelled']);
+                  ->where('status', 'pending');
+            }])
+            ->latest()
+            ->get();
+
+        $leadsForInvoicing = Lead::where('lead_phase_id', $invoicePhaseId)
+            ->whereDoesntHave('student')
+            ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads'])
+            ->withCount(['invoices as pending_invoices_count' => function($q) {
+                $q->whereNull('student_id')
+                  ->where('status', 'pending');
             }])
             ->latest()
             ->get();
@@ -55,6 +70,7 @@ class FinanceDashboardService
 
         return [
             'leads' => $leadsForInvoicing,
+            'placementTestLeads' => $placementTestLeads,
             'rejoinStudents' => $rejoinStudents,
             'paketLanjutStudents' => $paketLanjutStudents,
             'expiringClasses' => StudyClassResource::collection(
@@ -63,6 +79,10 @@ class FinanceDashboardService
                     ->withCount(['invoices as pending_bulk_invoices_count' => function($q) {
                         $q->whereNotNull('student_id')
                           ->whereNotIn('status', ['cancelled']);
+                    }])
+                    ->withCount(['invoices as paid_bulk_invoices_count' => function($q) {
+                        $q->whereNotNull('student_id')
+                          ->where('status', 'paid');
                     }])
                     ->latest()
                     ->get()
@@ -73,6 +93,10 @@ class FinanceDashboardService
             'siblingSettings' => [
                 'use_sibling_discount' => filter_var(\App\Domains\Finance\Domain\Models\FinanceSetting::get('use_sibling_discount', '0'), FILTER_VALIDATE_BOOLEAN),
                 'sibling_discount_percent' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('sibling_discount_percent', '0'),
+            ],
+            'initialFeeSettings' => [
+                'registration_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('registration_fee', 25000),
+                'placement_test_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('placement_test_fee', 100000),
             ],
             'recentInvoices' => Invoice::with(['lead', 'student', 'studyClass'])->latest()->limit(10)->get(),
         ];

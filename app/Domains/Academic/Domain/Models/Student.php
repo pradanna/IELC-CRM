@@ -3,6 +3,7 @@
 namespace App\Domains\Academic\Domain\Models;
 
 use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\CRM\Domain\Models\LeadEnrollmentPivot;
 use App\Domains\Finance\Domain\Models\StudentLoyaltyReward;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -40,12 +41,20 @@ class Student extends Model
 
     public function studyClasses(): BelongsToMany
     {
-        return $this->belongsToMany(StudyClass::class, 'study_class_student');
+        return $this->belongsToMany(StudyClass::class, 'lead_enrollments', 'student_id', 'study_class_id')
+            ->using(LeadEnrollmentPivot::class)
+            ->withPivot(['joined_at', 'end_date', 'status', 'stopped_at'])
+            ->withTimestamps();
     }
 
     public function loyaltyRewards(): HasMany
     {
         return $this->hasMany(StudentLoyaltyReward::class);
+    }
+
+    public function progressReports(): HasMany
+    {
+        return $this->hasMany(StudentProgressReport::class)->latest();
     }
 }
 

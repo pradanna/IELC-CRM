@@ -14,6 +14,7 @@ class RecordLeadFollowUpRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'type' => 'nullable|string|in:whatsapp,phone,sms,offline_chat,other',
             'message' => 'nullable|string',
         ];
     }

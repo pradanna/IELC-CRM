@@ -4,6 +4,9 @@ import { Plus, Search, Globe, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 import CreateEditLeadModal from '../Leads/modals/CreateEditLeadModal';
+import SendWhatsappModal from '../Leads/modals/SendWhatsappModal';
+import RecordFollowUpModal from '../Leads/modals/RecordFollowUpModal';
+import LeadDetailDrawer from '../drawers/LeadDetailDrawer';
 
 export default function CrmLayout({ children, onSelectLead, ...customProps }) {
     const { url, props: pageProps } = usePage();
@@ -61,8 +64,14 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Handle edit event and click outside
+    // Handle URL parameters for open_lead/id, edit event, and click outside
     React.useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openLeadId = urlParams.get('open_lead') || urlParams.get('id');
+        if (openLeadId) {
+            openDrawer(openLeadId, 0);
+        }
+
         const handleEdit = (e) => {
             setEditingLead(e.detail.lead);
             setIsLeadModalOpen(true);
@@ -142,7 +151,7 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => searchQuery.length >= 2 && setShowDropdown(true)}
-                                placeholder="Search everything... (Enter to filter)" 
+                                placeholder="Search lead by name or phone..." 
                                 onKeyDown={handleKeyDown}
                                 className="pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm shadow-sm focus:ring-4 focus:ring-red-500/5 focus:border-red-500 w-full transition-all"
                             />
@@ -257,6 +266,11 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
                 types={types}
                 provinces={provinces}
             />
+
+            <SendWhatsappModal />
+            <RecordFollowUpModal onSuccess={() => {
+                router.reload({ preserveScroll: true, preserveState: true });
+            }} />
         </div>
 
     );

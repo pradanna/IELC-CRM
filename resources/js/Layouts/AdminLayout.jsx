@@ -24,7 +24,6 @@ import Toast from "@/Components/ui/Toast";
 import NotificationToast from "@/Components/ui/NotificationToast";
 import useWhatsappNotification from "@/Hooks/useWhatsappNotification";
 import LeadDetailDrawer from "@/Pages/Admin/Crm/drawers/LeadDetailDrawer";
-import SendWhatsappModal from "@/Pages/Admin/Crm/Leads/modals/SendWhatsappModal";
 
 // IELC Logo
 const logoUrl = "/assets/images/local/IELC-Logo.webp";
@@ -53,21 +52,27 @@ const menuItems = [
             },
             {
                 icon: <FileText size={20} />,
+                text: "Placement Tests",
+                href: route("admin.placement-tests.index"),
+                name: "admin.placement-tests.*",
+            },
+            {
+                icon: <FileText size={20} />,
                 text: "CRM Reports",
                 href: route("admin.crm.reports.index"),
                 name: "admin.crm.reports.*",
+            },
+            {
+                icon: <Headset size={20} />,
+                text: "WhatsApp Inbox",
+                href: route("admin.whatsapp.inbox"),
+                name: "admin.whatsapp.inbox",
             },
         ],
     },
     {
         category: "Academic",
         items: [
-            {
-                icon: <GraduationCap size={20} />,
-                text: "Academic Dashboard",
-                href: route("admin.academic.index"),
-                name: "admin.academic.index",
-            },
             {
                 icon: <Users size={20} />,
                 text: "Students",
@@ -126,18 +131,6 @@ const menuItems = [
                 href: route("admin.master.index"),
                 name: "admin.master.index",
             },
-            // {
-            //     icon: <LayoutDashboard size={20} />,
-            //     text: "Schedule",
-            //     href: route("admin.schedules.index"),
-            //     name: "admin.schedules.*",
-            // },
-            {
-                icon: <GraduationCap size={20} />,
-                text: "Academic",
-                href: route("admin.academic.index"),
-                name: "admin.academics.*",
-            },
         ],
     },
     {
@@ -193,7 +186,7 @@ export default function AdminLayout({ children }) {
         if (isSuperAdmin) return true;
         
         if (isFrontdesk) {
-            return ['Main', 'Management', 'Users'].includes(group.category);
+            return ['CRM & Leads', 'Academic', 'Management', 'Users'].includes(group.category);
         }
 
         if (isFinance) {
@@ -216,7 +209,7 @@ export default function AdminLayout({ children }) {
             ...group,
             items: group.items.filter(item => {
                 if (isFrontdesk) {
-                    const allowed = ['Dashboard', 'Crm', 'Placement Test', 'Master', 'Class', 'Students', 'Academic'];
+                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'Academic Dashboard', 'Students', 'Study Classes', 'Master', 'Academic'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
@@ -296,7 +289,6 @@ export default function AdminLayout({ children }) {
                 <div className="p-4">{children}</div>
             </main>
             <LeadDetailDrawer />
-            <SendWhatsappModal />
         </div>
     );
 }

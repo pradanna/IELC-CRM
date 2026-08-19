@@ -21,6 +21,9 @@ Modul Finance menangani penentuan harga penawaran (*Price Master*), pembuatan ta
     - [ ] **Dari Master Harga:** Pilih item dari master harga. Pastikan kolom deskripsi dan harga satuan otomatis terisi sesuai database.
     - [ ] **Input Manual:** Tambahkan baris baru dan isi nama item serta harga secara manual (tanpa memilih Price Master). Pastikan sistem mengizinkannya (untuk biaya tambahan khusus).
 - [ ] **Kalkulasi Subtotal:** Ubah kuantitas (*quantity*) pada baris item (misal: qty 2, harga satuan Rp 150.000). Pastikan subtotal otomatis terhitung Rp 300.000.
+- [ ] **Diskon Otomatis Sibling:** Pilih Lead yang memiliki relasi saudara (*sibling*). Pastikan diskon 10% terhitung otomatis dan tertera pada ringkasan modal.
+- [ ] **Invoice Placement Test Mandiri:** Buat invoice tanpa memilih kelas (*study_class_id* dikosongkan). Pastikan sistem memproses tanpa error dan item `Placement Test Fee` terisi otomatis saat dibuat dari Tab Placement Test.
+- [ ] **Pembatalan Otomatis Re-Invoice:** Terbitkan invoice baru untuk Lead/Student yang masih memiliki invoice `pending`. Pastikan invoice lama otomatis berubah statusnya menjadi `cancelled` dengan badge berwarna merah.
 - [ ] **Kalkulasi Total Tagihan:** Tambahkan beberapa item. Pastikan total keseluruhan (*total_amount*) adalah jumlah dari semua subtotal secara tepat.
 - [ ] **Simpan Tagihan:** Simpan invoice.
     - [ ] Pastikan tersimpan di tabel `invoices` dan `invoiced_items`.
@@ -29,10 +32,13 @@ Modul Finance menangani penentuan harga penawaran (*Price Master*), pembuatan ta
 
 ---
 
-## 🔎 3. Tampilan Daftar & Filter Invoice
+## 🔎 3. Tampilan Daftar, Magic Link & Filter Invoice
 
 - [ ] **Pencarian:** Cari invoice berdasarkan nomor invoice (`invoice_number`) atau nama lead/siswa. Pastikan data yang cocok tampil.
-- [ ] **Filter Status:** Saring berdasarkan status: `pending`, `paid`, atau `cancelled`. Pastikan filter bekerja dengan benar.
+- [ ] **Filter Status:** Saring berdasarkan status: `pending`, `paid`, atau `cancelled`. Pastikan status `cancelled` tampil dengan badge merah (`bg-red-50 text-red-600`).
+- [ ] **Filter Tipe Invoice:** Filter berdasarkan `Semua Tipe`, `New Join`, `Paket Lanjut`, `Rejoin`, dan `Placement Test`. Pastikan hasil pencarian sesuai kriteria.
+- [ ] **Magic Link & WhatsApp Sharing:** Klik "Copy Magic Link" atau "Kirim via WhatsApp". Pastikan link mengarah ke URL publik `/invoice/{id}` dan pesan WhatsApp terformat dengan rapi.
+- [ ] **Tab Placement Test Billing Center:** Buka Tab Placement Test di Billing Center. Pastikan seluruh Lead di fase `placement-test` tampil dan tombol aksinya dinamai "Generate Invoice".
 - [ ] **Filter Branch:** Saring invoice per cabang (untuk user Superadmin). Pastikan hanya menampilkan invoice milik cabang terpilih.
 - [ ] **Hak Akses Peran (Role RBAC):**
     - [ ] Login sebagai `marketing`. Pastikan memiliki akses penuh untuk melihat, membuat, dan memproses pembayaran invoice.
@@ -64,7 +70,5 @@ Ini adalah alur integrasi krusial yang menyatukan modul CRM, Finance, dan Academ
         - [ ] Lead tersebut kini tercatat sebagai siswa aktif baru di tabel `students`.
         - [ ] Memiliki nomor induk siswa (`student_number`) yang dibuat unik otomatis.
         - [ ] Tanggal bergabung (`start_join`) terisi hari ini, dan status siswa adalah `active`.
-    - [ ] **3. Pendaftaran Kelas (Action: EnrollStudent):**
-        - [ ] Siswa baru tersebut otomatis terdaftar ke dalam kelas belajar (`study_classes`) yang sebelumnya dipilih pada invoice.
-        - [ ] Terbuat record baru di tabel pivot `study_class_student` dengan siklus nomor `cycle_number = 1`.
+        - [ ] Terbuat record baru di tabel `lead_enrollments` dengan status `active`, tanggal `joined_at`, dan siklus nomor `cycle_number = 1`.
 - [ ] **Perubahan Status di Tampilan:** Muat ulang halaman detail lead tersebut. Pastikan lead tersebut status fasenya sudah berpindah ke fase `enrollment` (atau disesuaikan dengan alur bisnis yang disepakati).

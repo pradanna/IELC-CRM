@@ -73,7 +73,7 @@ Database dirancang dengan integritas relasional berbasis UUID. Berikut adalah ke
     *   `price_masters` (Katalog harga per sesi)
     *   `invoices` & `invoiced_items` (Tagihan & item rincian)
     *   `students` (Data siswa aktif)
-    *   `study_classes` & `study_class_student` (Kelas & data siswa yang terdaftar di dalamnya)
+    *   `study_classes` & `lead_enrollments` (Kelas & pendaftaran resmi siswa ke kelas beserta status keaktifan)
 
 ---
 

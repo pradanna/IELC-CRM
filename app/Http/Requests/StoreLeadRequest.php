@@ -41,6 +41,12 @@ class StoreLeadRequest extends FormRequest
             'guardians.*.phone' => 'required|string|max:20',
             'guardians.*.occupation' => 'nullable|string|max:255',
             'guardians.*.is_main_contact' => 'nullable|boolean',
+
+            // Relationships Validation
+            'relationships'                       => 'nullable|array',
+            'relationships.*.related_lead_id'     => 'required|exists:leads,id',
+            'relationships.*.type'                => 'nullable|string',
+            'relationships.*.is_main_contact'     => 'nullable|boolean',
         ];
     }
 }

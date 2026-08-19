@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('info_sources', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('name');
-            $table->string('code')->unique();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('info_sources')) {
+            Schema::create('info_sources', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->string('code')->unique();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

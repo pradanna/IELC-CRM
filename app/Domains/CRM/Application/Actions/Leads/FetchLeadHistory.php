@@ -32,7 +32,7 @@ class FetchLeadHistory
         // Pre-load lookup maps so we don't N+1 query inside the loop
         $lookups = $this->buildLookupMaps();
 
-        return $lead->activities()
+        return \Spatie\Activitylog\Models\Activity::forSubject($lead)
             ->with('causer')
             ->latest()
             ->paginate(10)

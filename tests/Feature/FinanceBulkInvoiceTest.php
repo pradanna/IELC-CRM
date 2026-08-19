@@ -68,7 +68,11 @@ class FinanceBulkInvoiceTest extends TestCase
         ]);
 
         // Enroll Student
-        $student->studyClasses()->attach($studyClass->id, ['cycle_number' => 1]);
+        $student->studyClasses()->attach($studyClass->id, [
+            'lead_id' => $lead->id,
+            'joined_at' => Carbon::now()->subMonths(1)->toDateString(),
+            'status' => 'active',
+        ]);
 
         // 5. Fire request as finance user
         $response = $this->actingAs($user)

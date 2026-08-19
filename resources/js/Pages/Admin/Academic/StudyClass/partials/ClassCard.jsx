@@ -1,11 +1,17 @@
 import React from 'react';
-import { Calendar, User, MapPin, Play, Edit2, Trash2, Users } from 'lucide-react';
+import { Calendar, User, MapPin, RotateCw, Edit2, Users, Power } from 'lucide-react';
 
-export default function ClassCard({ studyClass, onEdit, onDelete, onIncrement, onManageStudents, onResetCycle }) {
+export default function ClassCard({ studyClass, onEdit, onDelete, onIncrement, onManageStudents, onResetCycle, onToggleStatus }) {
     const progress = Math.min(100, Math.round((studyClass.session_progress / studyClass.total_meetings) * 100));
+    const isActive = (studyClass.status || 'active') === 'active';
+    const cardBgStyle = !isActive 
+        ? 'border-slate-200 bg-slate-50/50 opacity-75' 
+        : studyClass.is_private
+            ? 'border-orange-200/90 bg-gradient-to-br from-orange-50/30 via-white to-orange-50/10 shadow-orange-900/5 hover:border-orange-300'
+            : 'border-slate-200 bg-white hover:border-slate-300';
     
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col h-full">
+        <div className={`rounded-2xl border ${cardBgStyle} shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col h-full`}>
             <div className="p-5 flex-1 flex flex-col gap-5">
                 {/* Header */}
                 <div className="flex justify-between items-start gap-4">
@@ -13,6 +19,32 @@ export default function ClassCard({ studyClass, onEdit, onDelete, onIncrement, o
                         <div className="flex flex-wrap items-center gap-2">
                              <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded">
                                 Cycle #{studyClass.current_session_number}
+                            </span>
+                            <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded border ${
+                                isActive 
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                            }`}>
+                                {isActive ? 'Aktif' : 'Tidak Aktif'}
+                            </span>
+                            <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded border ${
+                                studyClass.is_private
+                                    ? 'bg-orange-50 text-orange-700 border-orange-200'
+                                    : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            }`}>
+                                {studyClass.is_private ? 'Private' : 'Group'}
+                            </span>
+                            {studyClass.is_expired && (
+                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-black uppercase tracking-widest rounded">
+                                    Habis Sesi / Expired
+                                </span>
+                            )}
+                            <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded ${
+                                studyClass.type === 'online' 
+                                    ? 'bg-sky-50 text-sky-600 border border-sky-200' 
+                                    : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            }`}>
+                                {studyClass.type || 'offline'}
                             </span>
                             {studyClass.schedule_days && (
                                 <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase rounded">
@@ -26,14 +58,22 @@ export default function ClassCard({ studyClass, onEdit, onDelete, onIncrement, o
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => onResetCycle(studyClass)} className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors group relative" title="Reset Cycle">
-                            <Play className="w-4 h-4 rotate-90" />
+                        <button 
+                            onClick={() => onToggleStatus && onToggleStatus(studyClass)} 
+                            className={`p-1.5 rounded-lg transition-colors group relative ${
+                                isActive 
+                                    ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700' 
+                                    : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700'
+                            }`} 
+                            title={isActive ? "Nonaktifkan Kelas" : "Aktifkan Kelas"}
+                        >
+                            <Power className="w-4 h-4" />
                         </button>
-                        <button onClick={() => onEdit(studyClass)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <button onClick={() => onResetCycle(studyClass)} className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors group relative" title="Mulai Sesi / Siklus Baru">
+                            <RotateCw className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => onEdit(studyClass)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Class">
                             <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => onDelete(studyClass)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4" />
                         </button>
                     </div>
                 </div>

@@ -21,7 +21,16 @@ class StudentController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Student::with(['lead.branch', 'studyClasses']);
+        $query = Student::with([
+            'lead.branch', 
+            'lead.leadSource', 
+            'lead.infoSource', 
+            'lead.leadType', 
+            'lead.guardians', 
+            'lead.enrollments.studyClass', 
+            'studyClasses',
+            'progressReports',
+        ]);
 
         if ($request->filled('search')) {
             $query->whereHas('lead', function ($q) use ($request) {
@@ -53,6 +62,34 @@ class StudentController extends Controller
             $query->where('status', $request->input('status'));
         }
 
+        if ($request->filled('class_category')) {
+            $cat = strtolower($request->input('class_category'));
+            $query->whereHas('studyClasses', function ($q) use ($cat) {
+                $q->where('category', $cat);
+            });
+        }
+
+        if ($request->filled('study_class_id')) {
+            $classId = $request->input('study_class_id');
+            $query->whereHas('studyClasses', function ($q) use ($classId) {
+                $q->where('study_classes.id', $classId);
+            });
+        }
+
+        if ($request->filled('grade')) {
+            $g = $request->input('grade');
+            $query->whereHas('lead', function ($q) use ($g) {
+                $q->where('grade', $g);
+            });
+        }
+
+        if ($request->filled('price_master_id')) {
+            $pmId = $request->input('price_master_id');
+            $query->whereHas('studyClasses', function ($q) use ($pmId) {
+                $q->where('price_master_id', $pmId);
+            });
+        }
+
         $sortField = $request->input('sort_field', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
 
@@ -70,10 +107,36 @@ class StudentController extends Controller
 
         $dashboardData = $this->getAcademicDashboardData($request);
 
-        return Inertia::render('Admin/Academic/Student/Index', array_merge([
+        $studyClassesList = StudyClass::where('status', 'active')
+            ->select('id', 'name', 'category')
+            ->orderBy('name')
+            ->get();
+
+        $priceMastersList = \App\Domains\Finance\Domain\Models\PriceMaster::select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        $defaultGrades = collect(['TK / Paud', 'SD', 'SMP', 'SMA / SMK', 'Umum']);
+
+        $dbGrades = Lead::whereNotNull('grade')
+            ->where('grade', '!=', '')
+            ->distinct()
+            ->pluck('grade');
+
+        $gradesList = $defaultGrades->merge($dbGrades)->unique()->values();
+
+        $allFilters = array_merge(
+            $dashboardData['filters'],
+            array_filter($request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'price_master_id', 'grade', 'sort_field', 'sort_direction', 'branch_id', 'mode']), fn($v) => !is_null($v) && $v !== '')
+        );
+
+        return Inertia::render('Admin/Academic/Student/Index', array_merge($dashboardData, [
             'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
-            'filters' => array_merge($request->only(['search', 'expiry_status', 'status', 'sort_field', 'sort_direction']), $dashboardData['filters']),
-        ], $dashboardData));
+            'studyClassesList' => $studyClassesList,
+            'priceMastersList' => $priceMastersList,
+            'gradesList' => $gradesList,
+            'filters' => $allFilters,
+        ]));
     }
 
     private function getAcademicDashboardData(Request $request): array
@@ -178,23 +241,192 @@ class StudentController extends Controller
         // 2. POLA JOIN
         // ═════════════════════════════════════════════════════════
 
-        $joinQuery = Student::where('students.status', 'active')
-            ->join('leads', 'students.lead_id', '=', 'leads.id')
-            ->leftJoin('lead_types', 'leads.lead_type_id', '=', 'lead_types.id')
+        $modeFilter = $request->input('mode'); // 'offline', 'online', or null
+        $branchId   = $request->input('branch_id') ?: null;
+        $availableBranches = \DB::table('branches')->select('id', 'name')->orderBy('name')->get();
+
+        $monthExpr = $isSqlite
+            ? "CAST(strftime('%m', le.joined_at) AS INTEGER)"
+            : "MONTH(le.joined_at)";
+
+        $yearExprLE = $isSqlite
+            ? "CAST(strftime('%Y', le.joined_at) AS INTEGER)"
+            : "YEAR(le.joined_at)";
+
+        $joinQueryBuilder = \DB::table('lead_enrollments as le')
+            ->join('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->join('price_masters as pm', 'sc.price_master_id', '=', 'pm.id')
+            ->leftJoin('leads as l', 'le.lead_id', '=', 'l.id')
             ->selectRaw("
-                COALESCE(lead_types.name, 'Lainnya') as program_name,
-                sum(case when leads.is_online = 1 then 1 else 0 end) as online_count,
-                sum(case when leads.is_online = 0 then 1 else 0 end) as offline_count,
-                count(*) as total_count
+                {$monthExpr}   AS month_num,
+                pm.name        AS package_name,
+                sc.type        AS delivery_mode,
+                COUNT(le.id)   AS student_count
             ")
-            ->groupBy('program_name');
-        $filterByDate($joinQuery, 'students.start_join', $year, $month);
-        $joinPatterns = $joinQuery->get()->map(fn($item) => [
-            'program' => $item->program_name,
-            'online'  => (int) $item->online_count,
-            'offline' => (int) $item->offline_count,
-            'total'   => (int) $item->total_count,
-        ]);
+            ->whereRaw("{$yearExprLE} = ?", [$year]);
+
+        if ($month) {
+            $joinQueryBuilder->whereRaw("{$monthExpr} = ?", [$month]);
+        }
+
+        if ($modeFilter && in_array($modeFilter, ['online', 'offline'])) {
+            $joinQueryBuilder->where('sc.type', '=', $modeFilter);
+        }
+
+        if ($branchId) {
+            $joinQueryBuilder->where('l.branch_id', '=', $branchId);
+        }
+
+        $rawJoinRows = $joinQueryBuilder
+            ->groupByRaw("{$monthExpr}, pm.name, sc.type")
+            ->orderByRaw("{$monthExpr}")
+            ->get();
+
+        // Collect all unique package names (sorted)
+        $allPackages = $rawJoinRows->pluck('package_name')->unique()->sort()->values()->toArray();
+
+        // Build pivot: month_num → package_name → { online, offline }
+        $pivotMap = [];
+        foreach ($rawJoinRows as $row) {
+            $m = (int) $row->month_num;
+            $p = $row->package_name;
+            $mode = $row->delivery_mode; // 'online' or 'offline'
+            if (!isset($pivotMap[$m])) {
+                $pivotMap[$m] = [];
+            }
+            if (!isset($pivotMap[$m][$p])) {
+                $pivotMap[$m][$p] = ['online' => 0, 'offline' => 0];
+            }
+            $pivotMap[$m][$p][$mode] = (int) $row->student_count;
+        }
+
+        // Build months array (all 12 months)
+        $monthLabels = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        $pivotMonths = [];
+        foreach ($monthLabels as $num => $label) {
+            $packages = [];
+            foreach ($allPackages as $pkg) {
+                $packages[$pkg] = $pivotMap[$num][$pkg] ?? ['online' => 0, 'offline' => 0];
+            }
+            $pivotMonths[] = [
+                'month'    => $num,
+                'label'    => $label,
+                'packages' => $packages,
+            ];
+        }
+
+        // Build totals per package
+        $totals = [];
+        foreach ($allPackages as $pkg) {
+            $totals[$pkg] = ['online' => 0, 'offline' => 0];
+        }
+        foreach ($rawJoinRows as $row) {
+            $p = $row->package_name;
+            $mode = $row->delivery_mode;
+            $totals[$p][$mode] = ($totals[$p][$mode] ?? 0) + (int) $row->student_count;
+        }
+
+        // Siswa Out (Stopped Students) per month & mode
+        $monthExprStopped = $isSqlite
+            ? "CAST(strftime('%m', s.stopped_at) AS INTEGER)"
+            : "MONTH(s.stopped_at)";
+
+        $yearExprStopped = $isSqlite
+            ? "CAST(strftime('%Y', s.stopped_at) AS INTEGER)"
+            : "YEAR(s.stopped_at)";
+
+        $stoppedQueryBuilder = \DB::table('students as s')
+            ->leftJoin('lead_enrollments as le', 's.id', '=', 'le.student_id')
+            ->leftJoin('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->leftJoin('leads as l', 's.lead_id', '=', 'l.id')
+            ->selectRaw("
+                {$monthExprStopped} AS month_num,
+                SUM(CASE WHEN sc.type = 'online' OR (sc.type IS NULL AND l.is_online = 1) THEN 1 ELSE 0 END) AS online_count,
+                SUM(CASE WHEN sc.type = 'offline' OR (sc.type IS NULL AND (l.is_online = 0 OR l.is_online IS NULL)) THEN 1 ELSE 0 END) AS offline_count
+            ")
+            ->where('s.status', 'stop')
+            ->whereNotNull('s.stopped_at')
+            ->whereRaw("{$yearExprStopped} = ?", [$year]);
+
+        if ($month) {
+            $stoppedQueryBuilder->whereRaw("{$monthExprStopped} = ?", [$month]);
+        }
+
+        if ($branchId) {
+            $stoppedQueryBuilder->where('l.branch_id', '=', $branchId);
+        }
+
+        $rawStoppedRows = $stoppedQueryBuilder
+            ->groupByRaw("{$monthExprStopped}")
+            ->get();
+
+        $stoppedByMonth = [];
+        $stoppedTotals = ['online' => 0, 'offline' => 0];
+
+        foreach ($rawStoppedRows as $r) {
+            $mNum = (int) $r->month_num;
+            $on = (int) $r->online_count;
+            $off = (int) $r->offline_count;
+            $stoppedByMonth[$mNum] = ['online' => $on, 'offline' => $off];
+            $stoppedTotals['online'] += $on;
+            $stoppedTotals['offline'] += $off;
+        }
+
+        // Monthly student snapshots count (Total Students)
+        $snapshotQuery = \DB::table('branch_monthly_student_snapshots')
+            ->selectRaw("month, SUM(total_students_count) as total_students")
+            ->where('year', $year);
+
+        if ($branchId) {
+            $snapshotQuery->where('branch_id', '=', $branchId);
+        }
+
+        $monthlySnapshots = $snapshotQuery
+            ->groupBy('month')
+            ->get()
+            ->keyBy('month');
+
+        $currentYear = (int) now()->year;
+        $currentMonth = (int) now()->month;
+
+        $realtimeQuery = \DB::table('lead_enrollments as le')
+            ->leftJoin('leads as l', 'le.lead_id', '=', 'l.id')
+            ->where('le.status', 'active');
+
+        if ($branchId) {
+            $realtimeQuery->where('l.branch_id', '=', $branchId);
+        }
+
+        $realtimeActiveEnrollmentsCount = $realtimeQuery->count();
+
+        foreach ($pivotMonths as &$pmItem) {
+            $mNum = $pmItem['month'];
+            $pmItem['stopped'] = $stoppedByMonth[$mNum] ?? ['online' => 0, 'offline' => 0];
+            
+            $snap = $monthlySnapshots->get($mNum);
+            if ($year === $currentYear && $mNum === $currentMonth) {
+                // Untuk bulan sekarang, hitung dari jumlah lead_enrollments yang masih aktif
+                $pmItem['total_students'] = $realtimeActiveEnrollmentsCount;
+            } elseif ($snap && (int) $snap->total_students > 0) {
+                // Untuk bulan-bulan kemarin, ambil dari snapshot branch_monthly_student_snapshots
+                $pmItem['total_students'] = (int) $snap->total_students;
+            } else {
+                $pmItem['total_students'] = 0;
+            }
+        }
+        unset($pmItem);
+
+        $joinPatterns = [
+            'months'         => $pivotMonths,
+            'package_list'   => $allPackages,
+            'totals'         => $totals,
+            'stopped_totals' => $stoppedTotals,
+        ];
 
         // ═════════════════════════════════════════════════════════
         // 3. SISWA STOP
@@ -276,20 +508,52 @@ class StudentController extends Controller
             ];
         }
 
+        // Online vs Offline breakdown derived from active enrolled class type (fallback to leads.is_online if no class enrolled yet)
+        $channelCounts = Student::where('students.status', 'active')
+            ->leftJoin('lead_enrollments', function ($join) {
+                $join->on('students.id', '=', 'lead_enrollments.student_id')
+                     ->where('lead_enrollments.status', '=', 'active');
+            })
+            ->leftJoin('study_classes', 'lead_enrollments.study_class_id', '=', 'study_classes.id')
+            ->leftJoin('leads', 'students.lead_id', '=', 'leads.id')
+            ->selectRaw("
+                sum(case 
+                    when study_classes.type = 'online' then 1 
+                    when study_classes.type is null and leads.is_online = 1 then 1 
+                    else 0 
+                end) as online_count,
+                sum(case 
+                    when study_classes.type = 'offline' then 1 
+                    when study_classes.type is null and (leads.is_online = 0 or leads.is_online is null) then 1 
+                    else 0 
+                end) as offline_count
+            ");
+        $filterByDate($channelCounts, 'students.start_join', $year); // NO $month
+        $channelData = $channelCounts->first();
+
+        $onlineCount = (int) ($channelData->online_count ?? 0);
+        $offlineCount = (int) ($channelData->offline_count ?? 0);
+
         return [
             'filters' => [
-                'year'            => $year,
-                'month'           => $month,
-                'tab'             => $activeTab,
-                'available_years' => $availableYears,
+                'year'               => $year,
+                'month'              => $month,
+                'mode'               => $modeFilter,
+                'branch_id'          => $branchId,
+                'tab'                => $activeTab,
+                'available_years'    => $availableYears,
+                'available_branches' => $availableBranches,
             ],
             'reports' => [
                 'overall' => [
                     'total_active'       => $totalActiveStudents,
+                    'online_count'       => $onlineCount,
+                    'offline_count'      => $offlineCount,
                     'new_this_month'     => $newStudentsThisMonth,
                     'target_month'       => $targetMonth,
                     'monthly_trend'      => $monthlyTrend,
                     'branch_distribution' => $branchDistribution,
+                    'grade_distribution'  => $gradeDistribution,
                 ],
                 'join_patterns' => $joinPatterns,
                 'siswa_stop' => [
@@ -378,6 +642,63 @@ class StudentController extends Controller
         return response()->json([
             'students' => StudentResource::collection($students),
         ]);
+    }
+
+    public function bulkPromote(Request $request, \App\Domains\Academic\Application\Actions\BulkPromoteStudentsAction $action): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'mode' => 'required|in:auto,auto_detailed,auto_level,custom',
+            'from_grade' => 'nullable|string',
+            'to_grade' => 'nullable|string',
+            'branch_id' => 'nullable|string',
+            'preview_only' => 'nullable|boolean',
+            'selected_lead_ids' => 'nullable|array',
+            'selected_lead_ids.*' => 'string|uuid',
+        ]);
+
+        if (!empty($validated['preview_only'])) {
+            $previewData = $action->preview(
+                $validated['mode'],
+                $validated['from_grade'] ?? null,
+                $validated['to_grade'] ?? null,
+                $validated['branch_id'] ?? null
+            );
+            return response()->json($previewData);
+        }
+
+        $count = $action->execute(
+            $validated['mode'],
+            $validated['from_grade'] ?? null,
+            $validated['to_grade'] ?? null,
+            $validated['branch_id'] ?? null,
+            $validated['selected_lead_ids'] ?? null
+        );
+
+        return redirect()->back()->with('success', "Berhasil menaikkan kelas massal untuk {$count} siswa.");
+    }
+
+    public function storeProgressReport(
+        \App\Http\Requests\Academic\StoreStudentProgressReportRequest $request,
+        Student $student,
+        \App\Domains\Academic\Application\Actions\StoreStudentProgressReport $action
+    ): RedirectResponse {
+        $action->handle($student, $request->validated(), $request->file('file'));
+
+        return redirect()->back()->with('success', 'Progress report berhasil ditambahkan.');
+    }
+
+    public function destroyProgressReport(
+        Student $student,
+        \App\Domains\Academic\Domain\Models\StudentProgressReport $report,
+        \App\Domains\Academic\Application\Actions\DeleteStudentProgressReport $action
+    ): RedirectResponse {
+        if ($report->student_id !== $student->id) {
+            abort(404);
+        }
+
+        $action->handle($report);
+
+        return redirect()->back()->with('success', 'Progress report berhasil dihapus.');
     }
 }
 

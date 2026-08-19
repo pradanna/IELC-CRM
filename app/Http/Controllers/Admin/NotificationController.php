@@ -27,19 +27,27 @@ class NotificationController extends Controller
         ]);
     }
 
-    public function markAsRead($id)
+    public function markAsRead(Request $request, $id)
     {
         $notification = Auth::user()->notifications()->findOrFail($id);
         $notification->markAsRead();
 
-        return response()->json(['success' => true]);
+        if ($request->wantsJson() && !$request->header('X-Inertia')) {
+            return response()->json(['success' => true]);
+        }
+
+        return back();
     }
 
-    public function markAllAsRead()
+    public function markAllAsRead(Request $request)
     {
         Auth::user()->unreadNotifications->markAsRead();
 
-        return response()->json(['success' => true]);
+        if ($request->wantsJson() && !$request->header('X-Inertia')) {
+            return response()->json(['success' => true]);
+        }
+
+        return back();
     }
 }
 

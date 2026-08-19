@@ -23,6 +23,13 @@ class BillingService
             // Calculate remaining sessions from join_date
             $joinDate = isset($data['join_date']) ? new \DateTime($data['join_date']) : new \DateTime();
             $joinDate->setTime(0, 0, 0);
+            $dayOfWeek = (int)$joinDate->format('N'); // 1 (Mon) to 7 (Sun)
+            if ($dayOfWeek > 1) {
+                $joinDate->modify('-' . ($dayOfWeek - 1) . ' days');
+            }
+
+            $startDate = new \DateTime($studyClass->start_session_date->format('Y-m-d'));
+            $startDate->setTime(0, 0, 0);
             $endDate = new \DateTime($studyClass->end_session_date->format('Y-m-d'));
             $endDate->setTime(0, 0, 0);
             $scheduleDays = $studyClass->schedule_days;
@@ -33,9 +40,11 @@ class BillingService
                 $remaining = 0;
                 $current = clone $joinDate;
                 while ($current <= $endDate) {
-                    $dayName = $current->format('l');
-                    if (in_array($dayName, $scheduleDays)) {
-                        $remaining++;
+                    if ($current >= $startDate) {
+                        $dayName = $current->format('l');
+                        if (in_array($dayName, $scheduleDays)) {
+                            $remaining++;
+                        }
                     }
                     $current->modify('+1 day');
                 }

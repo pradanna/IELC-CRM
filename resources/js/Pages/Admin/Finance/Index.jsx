@@ -8,16 +8,17 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import PlotAndInvoiceModal from './modals/PlotAndInvoiceModal';
+import PayInvoiceModal from './modals/PayInvoiceModal';
 import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 import Button from '@/Components/ui/Button';
 
-export default function Index({ leads, rejoinStudents = [], paketLanjutStudents = [], classes, priceMasters, recentInvoices, expiringClasses }) {
+export default function Index({ leads, placementTestLeads = [], rejoinStudents = [], paketLanjutStudents = [], classes, priceMasters, recentInvoices, expiringClasses }) {
     const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
     const [selectedEntity, setSelectedEntity] = useState(null); // Can be lead or student
     const [entityType, setEntityType] = useState('lead'); // 'lead' or 'student'
     const [search, setSearch] = useState('');
-    const [activeTab, setActiveTab] = useState('new'); // 'new', 'paket_lanjut', or 'rejoin'
+    const [activeTab, setActiveTab] = useState('placement_test'); // 'placement_test', 'new', 'paket_lanjut', or 'rejoin'
 
     const expiringClassesList = useMemo(() => {
         if (!expiringClasses) return [];
@@ -26,16 +27,41 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
         return [];
     }, [expiringClasses]);
 
+    const filteredPlacementTestLeads = useMemo(() => {
+        return (placementTestLeads || []).filter(lead =>
+            lead.name.toLowerCase().includes(search.toLowerCase()) ||
+            lead.phone?.includes(search) ||
+            lead.branch?.name?.toLowerCase().includes(search.toLowerCase())
+        );
+    }, [placementTestLeads, search]);
+
+    const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+    const [selectedInvoiceToPay, setSelectedInvoiceToPay] = useState(null);
+
     const openPlotModal = (entity, type = 'lead') => {
         setSelectedEntity(entity);
         setEntityType(type);
         setIsPlotModalOpen(true);
     };
 
-    const handlePayInvoice = (invoiceId) => {
-        if (confirm('Mark this invoice as paid? This will automatically promote the lead to current student and enroll them in the class.')) {
-            router.post(route('admin.finance.invoices.pay', invoiceId));
-        }
+    const handleOpenPayModal = (invoice) => {
+        setSelectedInvoiceToPay(invoice);
+        setIsPayModalOpen(true);
+    };
+
+    const handleConfirmPay = (paymentMethod, callback) => {
+        if (!selectedInvoiceToPay) return;
+        router.post(
+            route('admin.finance.invoices.pay', selectedInvoiceToPay.id),
+            { payment_method: paymentMethod },
+            {
+                onFinish: () => {
+                    if (callback) callback();
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                },
+            }
+        );
     };
     
     const handleSendInvoiceWA = async (invoice) => {
@@ -46,10 +72,28 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
         }
 
         const publicUrl = route('public.invoice.download', invoice.id);
-        const message = `Halo *${lead.nickname || lead.name}*,\n\n` +
-                        `Berikut adalah link invoice pendaftaran Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
-                        `${publicUrl}\n\n` +
-                        `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+        const name = lead.nickname || lead.name;
+        const isPaid = invoice.status === 'paid';
+        
+        let typeLabel = 'pendaftaran';
+        if (invoice.type === 'placement_test') {
+            typeLabel = 'placement test';
+        } else if (invoice.type === 'rejoin') {
+            typeLabel = 'rejoin';
+        } else if (invoice.type === 'paket_lanjut') {
+            typeLabel = 'paket lanjut';
+        }
+
+        let message = `Halo *${name}*,\n\n`;
+        if (isPaid) {
+            message += `Berikut adalah bukti pembayaran ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                       `${publicUrl}\n\n` +
+                       `Terima kasih! 🙏`;
+        } else {
+            message += `Berikut adalah tagihan ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
+                       `${publicUrl}\n\n` +
+                       `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+        }
         
         if (window.confirm(`Kirim invoice ${invoice.invoice_number} via WhatsApp?`)) {
             try {
@@ -96,20 +140,20 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                         <User className="w-5 h-5" />
                     </div>
                     <div>
-                        <p className="font-black text-slate-900 tracking-tight uppercase">{activeTab === 'new' ? row.name : row.lead?.name}</p>
+                        <p className="font-black text-slate-900 tracking-tight uppercase">{(activeTab === 'new' || activeTab === 'placement_test') ? row.name : row.lead?.name}</p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {activeTab === 'new' ? row.branch?.name : row.lead?.branch?.name}
+                            {(activeTab === 'new' || activeTab === 'placement_test') ? row.branch?.name : row.lead?.branch?.name}
                         </p>
                     </div>
                 </div>
             )
         },
         {
-            header: activeTab === 'new' ? 'Lead Type' : 'Last Class',
+            header: (activeTab === 'new' || activeTab === 'placement_test') ? 'Lead Type' : 'Last Class',
             render: (row) => (
-                activeTab === 'new' ? (
+                (activeTab === 'new' || activeTab === 'placement_test') ? (
                     <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest border border-emerald-100">
-                        {row.lead_type?.name}
+                        {row.lead_type?.name || 'General'}
                     </span>
                 ) : (
                     <span className="text-xs font-bold text-slate-600">
@@ -122,9 +166,9 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
             header: 'Status',
             render: (row) => (
                 <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${activeTab === 'new' ? 'bg-amber-400 animate-pulse' : 'bg-red-400'}`} />
+                    <div className={`w-2 h-2 rounded-full ${activeTab === 'placement_test' ? 'bg-purple-500 animate-pulse' : activeTab === 'new' ? 'bg-amber-400 animate-pulse' : 'bg-red-400'}`} />
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {activeTab === 'new' ? 'Awaiting Plotting' : 'Inactive (Rejoin)'}
+                        {activeTab === 'placement_test' ? 'Placement Test' : activeTab === 'new' ? 'Awaiting Plotting' : 'Inactive (Rejoin)'}
                     </span>
                 </div>
             )
@@ -180,12 +224,12 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
 
                 return (
                     <Button 
-                        onClick={() => openPlotModal(activeTab === 'new' ? row : row, activeTab === 'new' ? 'lead' : 'student')}
+                        onClick={() => openPlotModal(row, (activeTab === 'placement_test' || activeTab === 'new') ? 'lead' : 'student')}
                         variant="primary"
                         icon={Calculator}
                         className="inline-flex py-2 px-4 bg-red-600 hover:bg-red-700 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/10"
                     >
-                        Plot &amp; Invoice
+                        Generate Invoice
                     </Button>
                 );
             }
@@ -206,6 +250,17 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
             (student.student_number || '').toLowerCase().includes(search.toLowerCase())
         );
     }, [rejoinStudents, search]);
+
+    const formatIndoDate = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch (e) {
+            return dateStr;
+        }
+    };
 
     const getRemainingDays = (endDateStr) => {
         if (!endDateStr) return '';
@@ -281,6 +336,8 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
             render: (row) => {
                 const studentCount = row.students?.length || 0;
                 const invoiceCount = row.pending_bulk_invoices_count ?? null;
+                const paidCount = row.paid_bulk_invoices_count ?? 0;
+
                 if (invoiceCount === null) return null;
 
                 if (invoiceCount > 0) {
@@ -288,10 +345,12 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                         <div className="space-y-1">
                             <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-1 w-fit">
                                 <CheckCircle className="w-3 h-3" />
-                                Invoiced
+                                Invoiced ({invoiceCount}/{studentCount})
                             </span>
-                            <p className="text-[10px] font-bold text-slate-400 mt-1">
-                                {invoiceCount} of {studentCount} students
+                            <p className="text-[10px] font-bold text-slate-500 mt-1">
+                                <span className={paidCount > 0 ? "text-emerald-600 font-extrabold" : "text-slate-400"}>
+                                    {paidCount} siswa sudah bayar
+                                </span>
                             </p>
                         </div>
                     );
@@ -300,7 +359,7 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                 return (
                     <span className="px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest border bg-amber-50 text-amber-700 border-amber-100 flex items-center gap-1 w-fit">
                         <Clock className="w-3 h-3" />
-                        Not Yet
+                        Belum Terbit
                     </span>
                 );
             }
@@ -320,7 +379,7 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                             {getRemainingDays(row.end_session_date)}
                         </span>
                         <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                            {row.end_session_date}
+                            {formatIndoDate(row.end_session_date)}
                         </p>
                     </div>
                 );
@@ -400,7 +459,7 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                         <p className="font-black text-slate-700 tracking-tight uppercase">{lastClass?.name || 'Belum Ada Kelas'}</p>
                         {lastClass && (
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Selesai Pada: {lastClass.end_session_date}
+                                Stop Tanggal: {formatIndoDate(row.stopped_at || lastClass?.end_session_date)}
                             </p>
                         )}
                     </div>
@@ -425,7 +484,7 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                     icon={Calculator}
                     className="inline-flex py-2 px-4 bg-red-600 hover:bg-red-700 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/10"
                 >
-                    Plot &amp; Invoice
+                    Generate Invoice
                 </Button>
             )
         }
@@ -434,7 +493,10 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
     let currentData = [];
     let currentColumns = [];
 
-    if (activeTab === 'new') {
+    if (activeTab === 'placement_test') {
+        currentData = filteredPlacementTestLeads;
+        currentColumns = leadColumns;
+    } else if (activeTab === 'new') {
         currentData = filteredLeads;
         currentColumns = leadColumns;
     } else if (activeTab === 'paket_lanjut') {
@@ -468,23 +530,30 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
                                 <Button 
+                                    onClick={() => setActiveTab('placement_test')}
+                                    variant="ghost"
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'placement_test' ? 'bg-white text-purple-700 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                >
+                                    Placement Test ({(placementTestLeads || []).length})
+                                </Button>
+                                <Button 
                                     onClick={() => setActiveTab('new')}
                                     variant="ghost"
-                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'new' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'new' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                 >
                                     New Leads ({leads.length})
                                 </Button>
                                 <Button 
                                     onClick={() => setActiveTab('paket_lanjut')}
                                     variant="ghost"
-                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'paket_lanjut' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'paket_lanjut' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                 >
                                     Paket Lanjut ({expiringClassesList.length})
                                 </Button>
                                 <Button 
                                     onClick={() => setActiveTab('rejoin')}
                                     variant="ghost"
-                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'rejoin' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'rejoin' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
                                 >
                                     Rejoin ({rejoinStudents.length})
                                 </Button>
@@ -575,19 +644,24 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
 
                                         {invoice.status === 'pending' && (
                                             <Button 
-                                                onClick={() => handlePayInvoice(invoice.id)}
+                                                onClick={() => handleOpenPayModal(invoice)}
                                                 variant="primary"
                                                 icon={CheckCircle2}
                                                 className="flex-[2] py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/10 transition-all active:scale-95"
                                             >
-                                                Mark Paid
+                                                Tandai Lunas
                                             </Button>
                                         )}
                                         
                                         {invoice.status === 'paid' && (
-                                            <div className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                                                <CheckCircle className="w-3 h-3" />
-                                                <span className="text-[8px] font-black uppercase tracking-widest">Enrollment Verified</span>
+                                            <div className="flex-[2] flex flex-col items-center justify-center gap-0.5 px-3 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                                                <div className="flex items-center gap-1.5">
+                                                    <CheckCircle className="w-3 h-3" />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Tagihan Terbayarkan</span>
+                                                </div>
+                                                {invoice.payment_method && (
+                                                    <span className="text-[7px] font-bold text-emerald-700 uppercase">{invoice.payment_method}</span>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -606,6 +680,16 @@ export default function Index({ leads, rejoinStudents = [], paketLanjutStudents 
                 student={entityType === 'student' ? selectedEntity : null}
                 classes={classes}
                 priceMasters={priceMasters}
+            />
+            <PayInvoiceModal
+                isOpen={isPayModalOpen}
+                onClose={() => {
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                }}
+                onConfirm={handleConfirmPay}
+                invoiceNumber={selectedInvoiceToPay?.invoice_number}
+                totalAmount={selectedInvoiceToPay?.total_amount}
             />
         </AuthenticatedLayout>
     );

@@ -18,10 +18,14 @@ return new class extends Migration
             $table->foreignUuid('student_id')->nullable()->constrained('students')->nullOnDelete();
             $table->foreignUuid('study_class_id')->nullable()->constrained('study_classes')->nullOnDelete();
             $table->unsignedBigInteger('total_amount');
+            $table->unsignedBigInteger('discount_amount')->default(0);
             $table->unsignedInteger('session_count');
+            $table->date('start_date')->nullable();
             $table->date('due_date')->nullable();
             $table->enum('status', ['pending', 'paid', 'cancelled'])->default('pending');
+            $table->string('type')->default('new_join');
             $table->timestamp('paid_at')->nullable();
+            $table->json('discount_breakdown')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();

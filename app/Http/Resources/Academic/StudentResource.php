@@ -25,6 +25,7 @@ class StudentResource extends JsonResource
             // Relationships
             'lead' => new LeadResource($this->whenLoaded('lead')),
             'study_classes' => StudyClassResource::collection($this->whenLoaded('studyClasses')),
+            'progress_reports' => StudentProgressReportResource::collection($this->whenLoaded('progressReports')),
         ];
     }
 }

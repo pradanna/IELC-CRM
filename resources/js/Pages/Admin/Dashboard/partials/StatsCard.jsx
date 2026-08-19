@@ -2,7 +2,7 @@ import React from 'react';
 import * as LucideIcons from 'lucide-react';
 import useLeadPhaseStyle from '@/Hooks/useLeadPhaseStyle';
 
-export default function StatsCard({ title, value, icon, color, bg, variant = 'standard', phaseCode, subtitle }) {
+export default function StatsCard({ title, value, icon, color, bg, variant = 'standard', phaseCode, subtitle, onClick }) {
     const { getPhaseStyle } = useLeadPhaseStyle();
     
     // Resolve style from phaseCode if provided, otherwise use explicit props
@@ -16,9 +16,24 @@ export default function StatsCard({ title, value, icon, color, bg, variant = 'st
     const finalBg = style?.bg || bg;
     const finalTitle = style?.label ? style.label.toUpperCase() : title;
 
+    const clickableProps = onClick ? {
+        onClick,
+        role: 'button',
+        tabIndex: 0,
+        onKeyDown: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick(e);
+            }
+        }
+    } : {};
+
     if (variant === 'primary') {
         return (
-            <div className="bg-slate-900 rounded-3xl p-8 shadow-xl shadow-slate-200 flex items-center justify-between group hover:shadow-2xl transition-all duration-300 border-none relative overflow-hidden">
+            <div 
+                {...clickableProps}
+                className={`bg-slate-900 rounded-3xl p-8 shadow-xl shadow-slate-200 flex items-center justify-between group hover:shadow-2xl transition-all duration-300 border-none relative overflow-hidden ${onClick ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''}`}
+            >
                 {/* Subtle highlight effect */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl -mr-16 -mt-16 pointer-events-none" />
                 <div className="space-y-1 relative z-10">
@@ -42,7 +57,10 @@ export default function StatsCard({ title, value, icon, color, bg, variant = 'st
     }
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all duration-300">
+        <div 
+            {...clickableProps}
+            className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition-all duration-300 ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:border-indigo-200 active:scale-[0.98]' : ''}`}
+        >
             <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                     {finalTitle}

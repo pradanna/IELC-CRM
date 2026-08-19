@@ -32,7 +32,8 @@ class StudyClassController extends Controller
             'branches' => BranchResource::collection($data['branches']),
             'instructors' => $data['instructors'], 
             'priceMasters' => PriceMasterResource::collection($data['priceMasters']),
-            'filters' => $request->only(['branch_id', 'search', 'type']),
+            'leadTypes' => $data['leadTypes'],
+            'filters' => array_merge(['status' => 'active', 'session_status' => '', 'category' => ''], $request->only(['branch_id', 'search', 'type', 'category', 'status', 'session_status'])),
         ]);
     }
 

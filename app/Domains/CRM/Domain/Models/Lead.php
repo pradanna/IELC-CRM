@@ -34,6 +34,7 @@ class Lead extends Model
         'birth_date',
         'school',
         'grade',
+        'school_level',
         'branch_id',
         'owner_id',
         'created_by',
@@ -170,6 +171,11 @@ class Lead extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(LeadEnrollment::class);
+    }
+
     public function chatLogs(): HasMany
     {
         return $this->hasMany(LeadChatLog::class);
@@ -178,6 +184,11 @@ class Lead extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(LeadNote::class)->latest();
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(LeadActivity::class)->latest();
     }
 
 

@@ -12,6 +12,18 @@ class GenerateInvoiceRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'lead_id' => $this->lead_id ?: null,
+            'student_id' => $this->student_id ?: null,
+            'study_class_id' => $this->study_class_id ?: null,
+            'price_master_id' => $this->price_master_id ?: null,
+            'join_date' => $this->join_date ?: null,
+            'billing_mode' => $this->billing_mode ?: null,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -22,10 +34,10 @@ class GenerateInvoiceRequest extends FormRequest
         return [
             'lead_id' => 'required_without:student_id|nullable|exists:leads,id',
             'student_id' => 'required_without:lead_id|nullable|exists:students,id',
-            'study_class_id' => 'required|exists:study_classes,id',
-            'price_master_id' => 'required|exists:price_masters,id',
-            'join_date' => 'required|date_format:Y-m-d',
-            'billing_mode' => 'required|string|in:prorata,full',
+            'study_class_id' => 'nullable|exists:study_classes,id',
+            'price_master_id' => 'nullable|exists:price_masters,id',
+            'join_date' => 'nullable|date_format:Y-m-d',
+            'billing_mode' => 'nullable|string|in:prorata,full',
             'notes' => 'nullable|string',
             'discount_amount' => 'nullable|integer|min:0',
             'manual_discounts' => 'nullable|array',

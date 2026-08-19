@@ -122,6 +122,25 @@ export default function CreateEditLeadModal({
 
     const [cities, setCities] = useState([]);
     const [loadingCities, setLoadingCities] = useState(false);
+    const parseGradeAndSchoolLevel = (rawGrade, rawLevel) => {
+        if (rawLevel) {
+            return { grade: rawGrade, school_level: rawLevel };
+        }
+        if (!rawGrade) {
+            return { grade: '', school_level: '' };
+        }
+        const trimmed = rawGrade.trim();
+        const sdMatch = trimmed.match(/^SD\s*([1-6])$/i);
+        if (sdMatch) return { grade: 'SD', school_level: `Kelas ${sdMatch[1]}` };
+
+        const smpMatch = trimmed.match(/^SMP\s*([7-9])$/i);
+        if (smpMatch) return { grade: 'SMP', school_level: `Kelas ${smpMatch[1]}` };
+
+        const smaMatch = trimmed.match(/^SMA\s*(1[0-2])$/i);
+        if (smaMatch) return { grade: 'SMA', school_level: `Kelas ${smaMatch[1]}` };
+
+        return { grade: trimmed, school_level: '' };
+    };
 
     // Initial defaults for New Lead OR Prefill for Edit
     useEffect(() => {
@@ -144,6 +163,8 @@ export default function CreateEditLeadModal({
                     is_main_contact: r.is_main_contact || false
                 })) : [];
 
+                const parsedGrade = parseGradeAndSchoolLevel(lead.grade, lead.school_level);
+
                 setData({
                     name: lead.name || '',
                     nickname: lead.nickname || '',
@@ -152,7 +173,8 @@ export default function CreateEditLeadModal({
                     email: lead.email || '',
                     birth_date: lead.birth_date || '',
                     school: lead.school || '',
-                    grade: lead.grade || '',
+                    grade: parsedGrade.grade,
+                    school_level: parsedGrade.school_level,
                     branch_id: lead.branch_id || '',
                     lead_source_id: lead.lead_source_id || '',
                     info_source_id: lead.info_source_id || '',
@@ -177,6 +199,7 @@ export default function CreateEditLeadModal({
                     birth_date: '',
                     school: '',
                     grade: '',
+                    school_level: '',
                     branch_id: auth.user.branch_id || '',
                     lead_source_id: '',
                     info_source_id: '',
@@ -237,15 +260,44 @@ export default function CreateEditLeadModal({
         }
     };
 
-    const gradeOptions = [
-        { value: 'PG', label: 'PG' },
-        { value: 'TK', label: 'TK' },
+    const mainGradeOptions = [
+        { value: 'TK', label: 'TK / PAUD' },
         { value: 'SD', label: 'SD' },
         { value: 'SMP', label: 'SMP' },
-        { value: 'SMA', label: 'SMA' },
-        { value: 'KULIAH', label: 'KULIAH' },
-        { value: 'UMUM', label: 'UMUM' }
+        { value: 'SMA', label: 'SMA / SMK' },
+        { value: 'UMUM', label: 'Umum / Profesional' },
     ];
+
+    const getSchoolLevelOptions = (grade) => {
+        if (grade === 'SD') {
+            return [
+                { value: '', label: 'Pilih Kelas (Opsional)' },
+                { value: 'Kelas 1', label: 'SD Kelas 1' },
+                { value: 'Kelas 2', label: 'SD Kelas 2' },
+                { value: 'Kelas 3', label: 'SD Kelas 3' },
+                { value: 'Kelas 4', label: 'SD Kelas 4' },
+                { value: 'Kelas 5', label: 'SD Kelas 5' },
+                { value: 'Kelas 6', label: 'SD Kelas 6' },
+            ];
+        }
+        if (grade === 'SMP') {
+            return [
+                { value: '', label: 'Pilih Kelas (Opsional)' },
+                { value: 'Kelas 7', label: 'SMP Kelas 7' },
+                { value: 'Kelas 8', label: 'SMP Kelas 8' },
+                { value: 'Kelas 9', label: 'SMP Kelas 9' },
+            ];
+        }
+        if (grade === 'SMA') {
+            return [
+                { value: '', label: 'Pilih Kelas (Opsional)' },
+                { value: 'Kelas 10', label: 'SMA Kelas 10' },
+                { value: 'Kelas 11', label: 'SMA Kelas 11' },
+                { value: 'Kelas 12', label: 'SMA Kelas 12' },
+            ];
+        }
+        return [];
+    };
 
     return (
         <Transition.Root show={isOpen} as={Fragment}>
@@ -531,15 +583,31 @@ export default function CreateEditLeadModal({
                                                                 placeholder="Nama Sekolah 'diisi UMUM jika sudah tidak dalam fase sekolah'"
                                                             />
                                                         </PremiumFormGroup>
-                                                        <PremiumFormGroup label="Kelas" error={errors.grade}>
-                                                            <PremiumSearchableSelect
-                                                                options={gradeOptions}
-                                                                value={data.grade}
-                                                                onChange={val => setData('grade', val)}
-                                                                placeholder="Pilih Kelas"
-                                                                error={errors.grade}
-                                                            />
-                                                        </PremiumFormGroup>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            <PremiumFormGroup label="Jenjang Sekolah" error={errors.grade}>
+                                                                <PremiumSearchableSelect
+                                                                    options={mainGradeOptions}
+                                                                    value={data.grade}
+                                                                    onChange={val => {
+                                                                        setData(prev => ({ ...prev, grade: val, school_level: '' }));
+                                                                    }}
+                                                                    placeholder="Pilih Jenjang"
+                                                                    error={errors.grade}
+                                                                />
+                                                            </PremiumFormGroup>
+
+                                                            {['SD', 'SMP', 'SMA'].includes(data.grade) && (
+                                                                <PremiumFormGroup label="Detail Kelas" error={errors.school_level}>
+                                                                    <PremiumSearchableSelect
+                                                                        options={getSchoolLevelOptions(data.grade)}
+                                                                        value={data.school_level}
+                                                                        onChange={val => setData('school_level', val)}
+                                                                        placeholder="Pilih Kelas (Opsional)"
+                                                                        error={errors.school_level}
+                                                                    />
+                                                                </PremiumFormGroup>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="pt-6 border-t border-slate-100">
@@ -581,81 +649,88 @@ export default function CreateEditLeadModal({
                                                                 <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide">No additional guardians</p>
                                                             </div>
                                                         ) : (
-                                                            data.guardians.map((guardian, index) => (
-                                                                <div key={index} className="group relative p-5 bg-slate-50 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:shadow-lg">
-                                                                    <button type="button" onClick={() => removeGuardian(index)} className="absolute -top-2 -right-2 w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:text-red-600 opacity-0 group-hover:opacity-100"><X size={10} /></button>
-                                                                    <div className="space-y-4">
-                                                                        <div className="grid grid-cols-2 gap-3">
-                                                                            <PremiumSearchableSelect 
-                                                                                options={[
-                                                                                    { value: 'ayah', label: 'Ayah' },
-                                                                                    { value: 'ibu', label: 'Ibu' },
-                                                                                    { value: 'wali', label: 'Wali' }
-                                                                                ]}
-                                                                                value={guardian.role}
-                                                                                onChange={val => updateGuardian(index, 'role', val)}
-                                                                                placeholder="Role"
-                                                                            />
-                                                                        </div>
-                                                                        <input type="text" value={guardian.name} onChange={e => updateGuardian(index, 'name', e.target.value)} placeholder="Nama Guardian" className="w-full px-5 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
-                                                                        <input type="tel" value={guardian.phone} onChange={e => updateGuardian(index, 'phone', e.target.value)} placeholder="Phone" className="w-full px-5 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
-                                                                    </div>
-                                                                </div>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Lead Relationships Section */}
-                                                <div className="space-y-6 pt-6 border-t border-slate-100">
-                                                    <div className="flex items-center gap-2">
-                                                        <Globe className="text-red-500" size={14} />
-                                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Lead Relationships</h3>
-                                                    </div>
-
-                                                    <div className="space-y-4">
-                                                        <PremiumSearchableSelect 
-                                                            options={relatableOptions}
-                                                            onChange={(val) => {
-                                                                const label = relatableOptions.find(o => o.value === val)?.label;
-                                                                addRelationship(val, label);
-                                                            }}
-                                                            placeholder="Search other Leads..."
-                                                            icon={Search}
-                                                        />
-
-                                                        <div className="space-y-3">
-                                                            {data.relationships.length === 0 ? (
-                                                                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide py-4 border-2 border-dashed border-slate-100 rounded-2xl">No linked leads</p>
-                                                            ) : (
-                                                                data.relationships.map((rel) => (
-                                                                    <div key={rel.related_lead_id} className="p-4 bg-red-50/50 border border-red-100 rounded-2xl flex items-center justify-between group">
-                                                                        <div className="flex-1">
-                                                                            <p className="text-xs font-black text-slate-800">{rel.related_lead_name}</p>
-                                                                            <div className="flex items-center gap-4 mt-2">
-                                                                                <select label="Role" value={rel.type} onChange={(e) => updateRelationship(rel.related_lead_id, 'type', e.target.value)} className="bg-transparent border-none p-0 text-[10px] font-black text-red-500 uppercase tracking-widest outline-none cursor-pointer">
-                                                                                    <option value="sibling">Sibling</option>
-                                                                                    <option value="parent">Parent</option>
-                                                                                    <option value="child">Child</option>
-                                                                                </select>
-                                                                                <label className="flex items-center gap-1.5 cursor-pointer">
-                                                                                    <input type="checkbox" checked={rel.is_main_contact} onChange={e => updateRelationship(rel.related_lead_id, 'is_main_contact', e.target.checked)} className="w-3 h-3 text-red-600 rounded" />
-                                                                                    <span className="text-[10px] font-black text-slate-400 uppercase">Main</span>
-                                                                                </label>
+                                                                    data.guardians.map((guardian, index) => (
+                                                                        <div key={index} className="group relative p-5 bg-slate-50 rounded-2xl border border-slate-100 transition-all hover:bg-white hover:shadow-lg">
+                                                                            <button type="button" onClick={() => removeGuardian(index)} className="absolute -top-2 -right-2 w-6 h-6 bg-red-50 border border-red-200 text-red-500 rounded-full flex items-center justify-center hover:bg-red-100 hover:text-red-700 transition-all shadow-sm" title="Hapus Guardian"><X size={12} /></button>
+                                                                            <div className="space-y-4">
+                                                                                <div className="flex items-center justify-between gap-3">
+                                                                                    <div className="flex-1">
+                                                                                        <PremiumSearchableSelect 
+                                                                                            options={[
+                                                                                                { value: 'ayah', label: 'Ayah' },
+                                                                                                { value: 'ibu', label: 'Ibu' },
+                                                                                                { value: 'wali', label: 'Wali' }
+                                                                                            ]}
+                                                                                            value={guardian.role}
+                                                                                            onChange={val => updateGuardian(index, 'role', val)}
+                                                                                            placeholder="Role"
+                                                                                        />
+                                                                                    </div>
+                                                                                    <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                                                                                        <input 
+                                                                                            type="checkbox" 
+                                                                                            checked={!!guardian.is_main_contact} 
+                                                                                            onChange={e => updateGuardian(index, 'is_main_contact', e.target.checked)} 
+                                                                                            className="w-4 h-4 text-red-600 rounded focus:ring-red-500 border-slate-300" 
+                                                                                        />
+                                                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Kontak Utama</span>
+                                                                                    </label>
+                                                                                </div>
+                                                                                <input type="text" value={guardian.name} onChange={e => updateGuardian(index, 'name', e.target.value)} placeholder="Nama Guardian" className="w-full px-5 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
+                                                                                <input type="tel" value={guardian.phone} onChange={e => updateGuardian(index, 'phone', e.target.value)} placeholder="Phone (WhatsApp)" className="w-full px-5 py-2.5 bg-white border border-slate-100 rounded-xl text-xs font-bold" />
                                                                             </div>
                                                                         </div>
-                                                                        <button type="button" onClick={() => removeRelationship(rel.related_lead_id)} className="text-red-300 hover:text-red-600 transition-colors">
-                                                                            <X size={14} />
-                                                                        </button>
-                                                                    </div>
-                                                                ))
-                                                            )}
+                                                                    ))
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Lead Relationships Section */}
+                                                        <div className="space-y-6 pt-6 border-t border-slate-100">
+                                                            <div className="flex items-center gap-2">
+                                                                <Globe className="text-red-500" size={14} />
+                                                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Lead Relationships</h3>
+                                                            </div>
+
+                                                            <div className="space-y-4">
+                                                                <PremiumSearchableSelect 
+                                                                    options={relatableOptions}
+                                                                    onChange={(val) => {
+                                                                        const label = relatableOptions.find(o => o.value === val)?.label;
+                                                                        addRelationship(val, label);
+                                                                    }}
+                                                                    placeholder="Search other Leads..."
+                                                                    icon={Search}
+                                                                />
+
+                                                                <div className="space-y-3">
+                                                                    {data.relationships.length === 0 ? (
+                                                                        <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide py-4 border-2 border-dashed border-slate-100 rounded-2xl">No linked leads</p>
+                                                                    ) : (
+                                                                        data.relationships.map((rel) => (
+                                                                            <div key={rel.related_lead_id} className="p-4 bg-red-50/50 border border-red-100 rounded-2xl flex items-center justify-between group">
+                                                                                <div className="flex-1">
+                                                                                    <p className="text-xs font-black text-slate-800">{rel.related_lead_name}</p>
+                                                                                    <div className="flex items-center gap-4 mt-2">
+                                                                                        <select label="Role" value={rel.type} onChange={(e) => updateRelationship(rel.related_lead_id, 'type', e.target.value)} className="bg-transparent border-none p-0 text-[10px] font-black text-red-500 uppercase tracking-widest outline-none cursor-pointer">
+                                                                                            <option value="sibling">Sibling</option>
+                                                                                            <option value="parent">Parent</option>
+                                                                                            <option value="child">Child</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                </div>
+                                                        <button type="button" onClick={() => removeRelationship(rel.related_lead_id)} className="w-7 h-7 rounded-xl bg-red-100/80 text-red-600 hover:bg-red-200 flex items-center justify-center transition-all shrink-0" title="Hapus Relasi">
+                                                                                    <X size={14} />
+                                                                                </button>
+                                                                            </div>
+                                                                        ))
+                                                                    )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
                                     {/* Action Footer */}
                                     <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">

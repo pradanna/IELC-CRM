@@ -16,7 +16,8 @@ class PromoteLeadOnInvoicePaid
     {
         $invoice = $event->invoice;
 
-        if ($invoice->lead_id && !$invoice->student_id) {
+        // Only promote lead to student if invoice is for class enrollment (not placement_test)
+        if ($invoice->type !== 'placement_test' && $invoice->study_class_id && $invoice->lead_id && !$invoice->student_id) {
             $lead = Lead::findOrFail($invoice->lead_id);
             $student = $this->promoteLeadToStudent->handle($lead);
             

@@ -34,7 +34,7 @@
 | `invoiced_items` | Finance | Line item invoice |
 | `students` | Academic | Data siswa aktif |
 | `study_classes` | Academic | Kelas belajar |
-| `study_class_student` | Academic | Pivot enrollment siswa ke kelas |
+| `lead_enrollments` | CRM / Academic | Pendaftaran resmi siswa ke kelas |
 | `sessions` | System | Laravel session |
 | `password_reset_tokens` | System | Token reset password |
 
@@ -268,6 +268,7 @@
 | `branch_id` | uuid | ❌ | FK → branches, cascade |
 | `instructor_id` | uuid | ✅ | FK → users (guru), null on delete |
 | `name` | string | ❌ | |
+| `type` | string | ❌ | Default: `'offline'` (`'online'` / `'offline'`) |
 | `start_session_date` | date | ✅ | |
 | `end_session_date` | date | ✅ | |
 | `total_meetings` | unsignedInt | ❌ | Default: 12 |
@@ -276,16 +277,25 @@
 | `schedule_days` | string | ✅ | Format: `Senin,Rabu` |
 | `deleted_at` | timestamp | ✅ | SoftDeletes |
 
-### `study_class_student` (Pivot)
+### `lead_enrollments`
+Tabel pendaftaran resmi siswa ke kelas (menampung status keaktifan, tanggal join, tanggal selesai, dan nomor invoice).
+
 | Kolom | Tipe | Nullable | Catatan |
 |-------|------|:--------:|---------|
-| `id` | bigInt | ❌ | Auto-increment (pivot, bukan UUID) |
+| `id` | uuid | ❌ | PK (UUID) |
+| `lead_id` | uuid | ❌ | FK → leads, cascade |
+| `student_id` | uuid | ✅ | FK → students, nullOnDelete |
 | `study_class_id` | uuid | ❌ | FK → study_classes, cascade |
-| `student_id` | uuid | ❌ | FK → students, cascade |
-| `cycle_number` | unsignedInt | ❌ | Default: 1 (siklus ke berapa) |
+| `invoice_id` | uuid | ✅ | FK → invoices, nullOnDelete |
+| `joined_at` | date | ❌ | Tanggal join kelas |
+| `end_date` | date | ✅ | Tanggal paket selesai |
+| `stopped_at` | date | ✅ | Tanggal di-stop |
+| `status` | enum | ❌ | `'active'`, `'completed'`, `'stopped'` (Default: `'active'`) |
+| `cycle_number` | unsignedInt | ❌ | Default: 1 |
+| `notes` | text | ✅ | Catatan pendaftaran |
 | `created_at` / `updated_at` | timestamp | ✅ | |
 
-**Index**: `[study_class_id, student_id, cycle_number]`
+**Index**: `joined_at`, `end_date`, `status`, `[lead_id, joined_at]`
 
 ---
 

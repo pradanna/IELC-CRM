@@ -13,8 +13,8 @@
 
 ## 🗓️ Last Updated
 
-**Tanggal**: 2026-04-08
-**Updated by**: Manager Agent (Initial Scan)
+**Tanggal**: 2026-07-21
+**Updated by**: Antigravity AI (Full Finance & Academic Updates)
 
 ---
 
@@ -22,9 +22,9 @@
 
 | Module     | Backend | Frontend | Overall Status | Catatan |
 |------------|:-------:|:--------:|:--------------:|---------|
-| **CRM**        | ✅ Done | ✅ Done | ✅ Done | Backend Actions complete, flow verified |
-| **Finance**    | ✅ Done | 🏗️ Stub | 🔄 In Progress | Backend ready, Frontend Invoice index in progress |
-| **Academic**   | ✅ Done | 🔄 In Progress | 🔄 In Progress | Student page still minimal |
+| **CRM**        | ✅ Done | ✅ Done | ✅ Done | Actions complete, Kanban & List views verified |
+| **Finance**    | ✅ Done | ✅ Done | ✅ Done | Standalone Invoices, Placement Test Tab, Re-Invoice Auto-Cancel, Sibling Discount, Magic Link |
+| **Academic**   | ✅ Done | ✅ Done | ✅ Done | Class Types (Online/Offline), Cycle Reset, Student & Class Management complete |
 | **Master Data**| ✅ Done | ✅ Done | ✅ Done | Full CRUD available |
 | **Auth / User**| ✅ Done | ✅ Done | ✅ Done | — |
 
@@ -63,10 +63,10 @@
 | Lead List View | `Pages/Admin/CRM/ListView.jsx` | ✅ Done | — |
 | Lead Kanban View | `Pages/Admin/CRM/KanbanView.jsx` | ✅ Done | — |
 | Lead Modals | `Pages/Admin/CRM/modals/` | ✅ Done | — |
-| Lead Drawers | `Pages/Admin/CRM/drawers/` | ✅ Done | — |
+| Lead Drawers | `Pages/Admin/CRM/drawers/` | ✅ Done | Smooth non-blocking phase switch |
 | Lead Partials | `Pages/Admin/CRM/partials/` | ✅ Done | — |
 | Lead Hooks | `Pages/Admin/CRM/hooks/` | ✅ Done | — |
-| Lead Registrations | `Pages/Admin/CRM/Registrations/` | 🏗️ Stub | Perlu verifikasi isi |
+| Lead Registrations | `Pages/Admin/CRM/Registrations/` | ✅ Done | — |
 
 ---
 
@@ -77,23 +77,25 @@
 | Komponen | File | Status | Catatan |
 |----------|------|:------:|---------|
 | Migration: price_masters | `2026_04_06_161430_create_price_masters_table.php` | ✅ Done | — |
-| Migration: invoices | `2026_04_06_161431_create_invoices_table.php` | ✅ Done | UUID PK |
+| Migration: invoices | `2026_04_06_161431_create_invoices_table.php` | ✅ Done | UUID PK, dynamic end_date |
 | Migration: invoiced_items | `2026_04_06_161432_create_invoiced_items_table.php` | ✅ Done | — |
-| Action: GenerateInvoice | `app/Actions/Finance/GenerateInvoice.php` | ✅ Done | — |
-| Action: ProcessInvoicePayment | `app/Actions/Finance/ProcessInvoicePayment.php` | ✅ Done | — |
-| Model: Invoice | `app/Models/Invoice.php` | ✅ Done | — |
-| Model: PriceMaster | `app/Models/PriceMaster.php` | ✅ Done | — |
-| Resource: InvoiceResource | — | 📋 Planned | — |
-| Controller: FinanceController| `app/Http/Controllers/Admin/Finance/FinanceController.php` | ✅ Done | — |
-| PDF Generation (dompdf) | `config/dompdf.php` | ✅ Done | Implemented via barryvdh/laravel-dompdf |
+| Action: GenerateInvoice | `app/Domains/Finance/Application/Actions/GenerateInvoice.php` | ✅ Done | Standalone/PT, Auto-cancel old pending invoices |
+| Action: ProcessInvoicePayment | `app/Domains/Finance/Application/Actions/ProcessInvoicePayment.php` | ✅ Done | — |
+| Service: FinanceDashboardService | `app/Domains/Finance/Application/Services/FinanceDashboardService.php` | ✅ Done | Placement Test tab query added |
+| Model: Invoice | `app/Domains/Finance/Domain/Models/Invoice.php` | ✅ Done | — |
+| Model: PriceMaster | `app/Domains/Finance/Domain/Models/PriceMaster.php` | ✅ Done | — |
+| Controller: FinanceController| `app/Http/Controllers/Admin/Finance/FinanceController.php` | ✅ Done | Type filtering (New Join, Paket Lanjut, Rejoin, Placement Test) |
+| Public Controller | `app/Http/Controllers/Public/PublicLeadController.php` | ✅ Done | Public Magic Link `/invoice/{id}` |
+| PDF Generation (dompdf) | `resources/views/pdf/invoice.blade.php` | ✅ Done | Redesigned header, dynamic study period & loyalty note |
 
 ### Frontend
 
 | Komponen | File | Status | Catatan |
 |----------|------|:------:|---------|
-| Invoice Index | `Pages/Admin/Finance/Index.jsx` | 🏗️ Stub | Ada file, belum jelas kelengkapannya |
-| Price Master | `Pages/Admin/Finance/PriceMaster/` | 🏗️ Stub | Ada folder, perlu verifikasi |
-| Invoice Modals | `Pages/Admin/Finance/modals/` | 🏗️ Stub | Ada folder, perlu verifikasi |
+| Billing Center Index | `Pages/Admin/Finance/Index.jsx` | ✅ Done | Placement Test Tab, Generate Invoice button |
+| Invoice History Index | `Pages/Admin/Finance/Invoices/Index.jsx` | ✅ Done | Paket Diselesaikan badge, Red Cancelled badge, Magic Link, WA share |
+| Invoice Detail Modal | `Pages/Admin/Finance/Invoices/modals/InvoiceDetailModal.jsx` | ✅ Done | Copy Magic Link & WA button integration |
+| Plot & Invoice Modal | `Pages/Admin/Finance/modals/PlotAndInvoiceModal.jsx` | ✅ Done | Auto Sibling discount (10%), PT default item |
 
 ---
 
@@ -105,26 +107,26 @@
 |----------|------|:------:|---------|
 | Migration: students | `2026_04_05_162601_create_students_table.php` | ✅ Done | — |
 | Migration: study_classes | `2026_04_05_162601_create_study_classes_table.php` | ✅ Done | — |
-| Migration: study_class_student | `2026_04_05_162602_create_study_class_student_table.php` | ✅ Done | Pivot |
-| Action: PromoteLeadToStudent | `app/Actions/Academic/PromoteLeadToStudent.php` | ✅ Done | — |
-| Action: EnrollStudent | `app/Actions/Academic/EnrollStudent.php` | ✅ Done | — |
-| Action: ResetClassCycle | `app/Actions/Academic/ResetClassCycle.php` | ✅ Done | — |
-| Action: StoreStudyClass | `app/Actions/Academic/StoreStudyClass.php` | ✅ Done | — |
-| Action: UpdateStudyClass | `app/Actions/Academic/UpdateStudyClass.php` | ✅ Done | — |
-| Model: Student | — | ❓ Unchecked | Perlu verifikasi |
-| Model: StudyClass | — | ❓ Unchecked | Perlu verifikasi |
-| Resource: StudentResource | — | ❓ Unchecked | Perlu verifikasi |
-| Controller: StudentController | — | ❓ Unchecked | Perlu verifikasi |
+| Migration: add_type_to_study_classes | `2026_07_21_090000_add_type_to_study_classes_table.php` | ✅ Done | Online / Offline class type |
+| Migration: lead_enrollments | `2026_07_24_100000_create_lead_enrollments_table.php` | ✅ Done | Unified multi-class enrollment, status, end_date, cycle_number & target calculation |
+| Action: PromoteLeadToStudent | `app/Domains/Academic/Application/Actions/PromoteLeadToStudent.php` | ✅ Done | — |
+| Action: EnrollStudent | `app/Domains/Academic/Application/Actions/EnrollStudent.php` | ✅ Done | — |
+| Action: ResetClassCycle | `app/Domains/Academic/Application/Actions/ResetClassCycle.php` | ✅ Done | — |
+| Action: StoreStudyClass | `app/Domains/Academic/Application/Actions/StoreStudyClass.php` | ✅ Done | Supports `type` validation |
+| Action: UpdateStudyClass | `app/Domains/Academic/Application/Actions/UpdateStudyClass.php` | ✅ Done | Supports `type` validation |
+| Model: Student | `app/Domains/Academic/Domain/Models/Student.php` | ✅ Done | — |
+| Model: StudyClass | `app/Domains/Academic/Domain/Models/StudyClass.php` | ✅ Done | Includes `type` attribute |
+| Resource: StudyClassResource | `app/Http/Resources/Academic/StudyClassResource.php` | ✅ Done | Includes `type` |
+| Service: StudyClassQueryService| `app/Domains/Academic/Application/Services/StudyClassQueryService.php` | ✅ Done | Class type filtering |
 
 ### Frontend
 
 | Komponen | File | Status | Catatan |
 |----------|------|:------:|---------|
-| Student Index | `Pages/Admin/Academic/Student/Index.jsx` | 🏗️ Stub | Ada, belum ada hooks/modals |
-| StudyClass Index | `Pages/Admin/Academic/StudyClass/Index.jsx` | ✅ Done | Lengkap dengan hooks, modals, partials |
-| StudyClass Modals | `Pages/Admin/Academic/StudyClass/modals/` | ✅ Done | — |
-| StudyClass Drawers | `Pages/Admin/Academic/StudyClass/drawers/` | ✅ Done | — |
-| StudyClass Hooks | `Pages/Admin/Academic/StudyClass/hooks/` | ✅ Done | — |
+| Student Index | `Pages/Admin/Academic/Student/Index.jsx` | ✅ Done | Completed package count display |
+| StudyClass Index | `Pages/Admin/Academic/StudyClass/Index.jsx` | ✅ Done | Complete with hooks, modals, partials |
+| CreateEditClassModal | `Pages/Admin/Academic/StudyClass/modals/CreateEditClassModal.jsx` | ✅ Done | Jenis Kelas (Online/Offline) input |
+| ClassCard | `Pages/Admin/Academic/StudyClass/partials/ClassCard.jsx` | ✅ Done | ONLINE / OFFLINE badge tag |
 
 ---
 
