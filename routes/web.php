@@ -127,6 +127,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::group(['prefix' => 'academic', 'as' => 'academic.'], function () {
         Route::resource('study-classes', \App\Http\Controllers\Admin\Academic\StudyClassController::class);
         Route::post('study-classes/{study_class}/reset-cycle', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'resetCycle'])->name('study-classes.reset-cycle');
+        Route::patch('study-classes/{study_class}/update-progress', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'updateProgress'])->name('study-classes.update-progress');
+        Route::post('study-classes/{study_class}/attendances', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'recordAttendance'])->name('study-classes.attendances.store');
+        Route::delete('study-classes/{study_class}/attendances/{attendance}', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'deleteAttendance'])->name('study-classes.attendances.destroy');
         Route::post('study-classes/{study_class}/enroll', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'enroll'])->name('study-classes.enroll');
         Route::delete('study-classes/{study_class}/unenroll/{student}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'unenroll'])->name('study-classes.unenroll');
 

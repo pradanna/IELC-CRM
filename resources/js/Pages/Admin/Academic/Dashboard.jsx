@@ -5,7 +5,7 @@ import {
     GraduationCap, Users, BookOpen, Laptop,
     Activity, TrendingUp, Calendar, Building2, 
     ShieldAlert, Filter, ChevronDown, X, MapPin, Search, FileText,
-    ArrowRightLeft, ArrowRight
+    ArrowRightLeft, ArrowRight, RefreshCw, Sparkles, UserPlus
 } from 'lucide-react';
 import { 
     ResponsiveContainer, AreaChart, Area,
@@ -23,7 +23,7 @@ const MONTH_NAMES = [
 export function AcademicDashboardContent({ reports, filters, onFilterChange, hideHeader = false }) {
     const [activeTab, setActiveTab] = useState(filters?.tab || 'overall');
 
-    const { overall, join_patterns, siswa_stop, class_transfers, grades } = reports || {};
+    const { overall, join_patterns, join_lifecycle, siswa_stop, class_transfers, grades } = reports || {};
     const [selectedMonthData, setSelectedMonthData] = useState(null);
     const [selectedGradeData, setSelectedGradeData] = useState(null);
     const [searchStudentInModal, setSearchStudentInModal] = useState('');
@@ -158,9 +158,9 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                         onChange={(e) => handleFilterChange({ month: e.target.value ? parseInt(e.target.value) : null })}
                         className="text-xs font-bold text-slate-700 bg-transparent border-none outline-none cursor-pointer pr-5 appearance-none"
                     >
-                        <option value="">Semua Bulan</option>
-                        {MONTH_NAMES.map((m, i) => (
-                            <option key={i + 1} value={i + 1}>{m}</option>
+                        <option value="">Semua Bulan (Tahunan)</option>
+                        {MONTH_NAMES.map((name, index) => (
+                            <option key={name} value={index + 1}>{name}</option>
                         ))}
                     </select>
                     <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 pointer-events-none" />
@@ -176,8 +176,8 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                         onChange={(e) => handleFilterChange({ mode: e.target.value || null })}
                         className="text-xs font-bold text-slate-700 bg-transparent border-none outline-none cursor-pointer pr-5 appearance-none"
                     >
-                        <option value="">Semua Mode</option>
-                        <option value="offline">On Campus</option>
+                        <option value="">Semua Tipe (Offline &amp; Online)</option>
+                        <option value="offline">Tatap Muka (On Campus)</option>
                         <option value="online">Online</option>
                     </select>
                     <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 pointer-events-none" />
@@ -185,59 +185,39 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
             )}
 
             {/* Branch Selector */}
-            {showBranch && available_branches?.length > 0 && (
+            {showBranch && available_branches && available_branches.length > 1 && (
                 <div className="relative flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl px-3.5 py-2 hover:border-amber-300 hover:shadow-sm transition-all duration-200 group">
-                    <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                    <Building2 className="w-3.5 h-3.5 text-amber-500" />
                     <select
-                        value={branch_id ? String(branch_id) : ''}
-                        onChange={(e) => handleFilterChange({ branch_id: e.target.value || null })}
+                        value={branch_id || ''}
+                        onChange={(e) => handleFilterChange({ branch_id: e.target.value ? parseInt(e.target.value) : null })}
                         className="text-xs font-bold text-slate-700 bg-transparent border-none outline-none cursor-pointer pr-5 appearance-none"
                     >
                         <option value="">Semua Cabang</option>
                         {available_branches.map(b => (
-                            <option key={b.id} value={String(b.id)}>{b.name}</option>
+                            <option key={b.id} value={b.id}>{b.name}</option>
                         ))}
                     </select>
                     <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 pointer-events-none" />
                 </div>
             )}
 
-            {/* Active filters indicator + Reset */}
+            {/* Reset Filters */}
             {(month || mode || branch_id) && (
                 <button
                     onClick={() => handleFilterChange({ month: null, mode: null, branch_id: null })}
-                    className="flex items-center gap-1.5 text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-600 transition-colors bg-red-50 border border-red-100 rounded-xl px-3 py-2"
+                    className="flex items-center gap-1.5 text-[10px] font-black text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-2 rounded-xl transition-all uppercase tracking-wider ml-auto"
                 >
                     <X className="w-3 h-3" />
                     Reset Filter
                 </button>
             )}
-
-            {/* Filter summary badge */}
-            <div className="ml-auto text-[10px] font-bold text-slate-400 flex items-center gap-2">
-                {branch_id && (
-                    <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 font-extrabold uppercase">
-                        {available_branches?.find(b => String(b.id) === String(branch_id))?.name || 'Cabang'}
-                    </span>
-                )}
-                {mode && (
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-extrabold uppercase">
-                        {mode === 'offline' ? 'On Campus' : 'Online'}
-                    </span>
-                )}
-                <span>
-                    {month
-                        ? `${MONTH_NAMES[month - 1]} ${year}`
-                        : `Tahun ${year}`
-                    }
-                </span>
-            </div>
         </div>
     );
 
     // ── Dynamic label for "new students" card ────────────────────
-    const targetMonthName = overall.target_month
-        ? MONTH_NAMES[(overall.target_month || 1) - 1]
+    const targetMonthName = overall?.target_month 
+        ? MONTH_NAMES[(overall.target_month || 1) - 1] 
         : MONTH_NAMES[new Date().getMonth()];
 
     return (
@@ -247,11 +227,11 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                            Academic <span className="text-red-600">Dashboard</span>
+                            Student <span className="text-red-600">Database</span>
                         </h1>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 ml-0.5">
                             <Activity className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                            Academic Analytics &amp; Student Distribution Reports
+                            Database Analytics &amp; Student Distribution Reports
                         </p>
                     </div>
                 </div>
@@ -261,6 +241,7 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                 <div className="flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl w-fit border border-slate-200/50 backdrop-blur-md flex-wrap">
                     {[
                         { id: 'overall', label: 'Overall Overview', icon: GraduationCap },
+                        { id: 'join_lifecycle', label: 'Siklus Join (Baru / Lanjut / Rejoin)', icon: RefreshCw },
                         { id: 'join_patterns', label: 'Pola Join (Online/Offline)', icon: Laptop },
                         { id: 'siswa_stop', label: 'Siswa Stop', icon: ShieldAlert },
                         { id: 'class_transfers', label: 'Riwayat Pindah Kelas', icon: ArrowRightLeft },
@@ -615,6 +596,485 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                         </div>
                     </div>
                 )}
+
+                {/* ═══════════════════════════════════════════════════
+                    TAB: SIKLUS JOIN (BARU / LANJUT / REJOIN)
+                ═══════════════════════════════════════════════════ */}
+                {activeTab === 'join_lifecycle' && (() => {
+                    const { months = [], monthly_trend = [], package_list = [], totals = {} } = join_lifecycle || {};
+                    const hasData = (totals?.total ?? 0) > 0 || months.some(m => (m.total ?? 0) > 0);
+
+                    // Filter months if single month is selected
+                    const displayedMonths = month 
+                        ? months.filter(m => m.month === month) 
+                        : months;
+
+                    const activeMonthsCount = months.filter(m => (m.total ?? 0) > 0).length || 1;
+
+                    return (
+                        <div className="space-y-8 animate-fadeIn">
+                            <div className="space-y-3">
+                                <FilterBar showMonth={true} showMode={true} />
+                                <div className="flex items-center justify-end">
+                                    <ExportButtons
+                                        onPdf={buildExportUrl('pdf', 'join_lifecycle')}
+                                        onExcel={buildExportUrl('excel', 'join_lifecycle')}
+                                        label="Siklus Join"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 3 KPI Summary Cards */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* Total Transaksi Join */}
+                                <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-6 relative overflow-hidden shadow-lg border border-slate-700/50">
+                                    <div className="space-y-3 relative z-10">
+                                        <div className="w-10 h-10 bg-white/10 text-white rounded-xl flex items-center justify-center backdrop-blur-md">
+                                            <Sparkles className="w-5 h-5 text-amber-300" />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                                            Total Transaksi Join
+                                        </p>
+                                        <h3 className="text-3xl font-black text-white leading-none flex items-baseline gap-2">
+                                            {formatNumber(totals?.total ?? 0)}
+                                            <span className="text-xs font-bold text-slate-300">siswa</span>
+                                        </h3>
+                                    </div>
+                                    <div className="absolute -right-4 -bottom-4 w-28 h-28 bg-white/5 rounded-full blur-2xl" />
+                                </div>
+
+                                {/* Siswa Baru (New Join) */}
+                                <div 
+                                    onClick={() => {
+                                        const allNewStudents = months.flatMap(m => m.month_students?.new_join || []);
+                                        if (allNewStudents.length > 0) {
+                                            setSelectedGradeData({
+                                                grade: `Daftar Siswa Baru (New Join) — Tahun ${year}`,
+                                                count: allNewStudents.length,
+                                                student_list: allNewStudents,
+                                            });
+                                            setSearchStudentInModal('');
+                                        }
+                                    }}
+                                    className="bg-gradient-to-br from-emerald-50/70 to-emerald-100/30 border border-emerald-200/60 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500 cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
+                                    <div className="space-y-3">
+                                        <div className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/20">
+                                            <UserPlus className="w-5 h-5" />
+                                        </div>
+                                        <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">
+                                            Join Baru (New)
+                                        </p>
+                                        <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
+                                            {formatNumber(totals?.new_join ?? 0)}
+                                            <span className="text-xs font-bold text-emerald-600 font-extrabold">
+                                                ({totals?.total > 0 ? Math.round(((totals?.new_join ?? 0) / totals.total) * 100) : 0}%)
+                                            </span>
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                {/* Paket Lanjut (Renewal / Extend) */}
+                                <div 
+                                    onClick={() => {
+                                        const allLanjutStudents = months.flatMap(m => m.month_students?.paket_lanjut || []);
+                                        if (allLanjutStudents.length > 0) {
+                                            setSelectedGradeData({
+                                                grade: `Daftar Siswa Paket Lanjut (Renewal) — Tahun ${year}`,
+                                                count: allLanjutStudents.length,
+                                                student_list: allLanjutStudents,
+                                            });
+                                            setSearchStudentInModal('');
+                                        }
+                                    }}
+                                    className="bg-gradient-to-br from-sky-50/70 to-sky-100/30 border border-sky-200/60 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500 cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
+                                    <div className="space-y-3">
+                                        <div className="w-10 h-10 bg-sky-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20">
+                                            <TrendingUp className="w-5 h-5" />
+                                        </div>
+                                        <p className="text-[10px] font-black text-sky-800 uppercase tracking-widest">
+                                            Paket Lanjut (Renewal)
+                                        </p>
+                                        <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
+                                            {formatNumber(totals?.paket_lanjut ?? 0)}
+                                            <span className="text-xs font-bold text-sky-600 font-extrabold">
+                                                ({totals?.total > 0 ? Math.round(((totals?.paket_lanjut ?? 0) / totals.total) * 100) : 0}%)
+                                            </span>
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                {/* Rejoin (Siswa Kembali) */}
+                                <div 
+                                    onClick={() => {
+                                        const allRejoinStudents = months.flatMap(m => m.month_students?.rejoin || []);
+                                        if (allRejoinStudents.length > 0) {
+                                            setSelectedGradeData({
+                                                grade: `Daftar Siswa Rejoin (Kembali Aktif) — Tahun ${year}`,
+                                                count: allRejoinStudents.length,
+                                                student_list: allRejoinStudents,
+                                            });
+                                            setSearchStudentInModal('');
+                                        }
+                                    }}
+                                    className="bg-gradient-to-br from-purple-50/70 to-purple-100/30 border border-purple-200/60 rounded-3xl p-6 relative overflow-hidden group hover:shadow-lg transition-all duration-500 cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-bl-[80px] group-hover:scale-110 transition-transform duration-500" />
+                                    <div className="space-y-3">
+                                        <div className="w-10 h-10 bg-purple-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-purple-500/20">
+                                            <RefreshCw className="w-5 h-5" />
+                                        </div>
+                                        <p className="text-[10px] font-black text-purple-800 uppercase tracking-widest">
+                                            Siswa Rejoin (Kembali)
+                                        </p>
+                                        <h3 className="text-3xl font-black text-slate-900 leading-none flex items-baseline gap-2">
+                                            {formatNumber(totals?.rejoin ?? 0)}
+                                            <span className="text-xs font-bold text-purple-600 font-extrabold">
+                                                ({totals?.total > 0 ? Math.round(((totals?.rejoin ?? 0) / totals.total) * 100) : 0}%)
+                                            </span>
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {hasData ? (
+                                <>
+                                    {/* Monthly Trend Chart */}
+                                    <div className="bg-white border border-slate-100 p-6 rounded-[32px] shadow-sm space-y-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                                                    Tren Siklus Siswa (Baru vs Lanjut vs Rejoin) — {month ? `${MONTH_NAMES[month - 1]} ${year}` : `Tahun ${year}`}
+                                                </h4>
+                                                <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                                                    Klik pada batang grafik untuk melihat daftar rincian siswa
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+                                                <span className="flex items-center gap-1.5 text-emerald-700">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Baru
+                                                </span>
+                                                <span className="flex items-center gap-1.5 text-sky-700">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500" /> Lanjut
+                                                </span>
+                                                <span className="flex items-center gap-1.5 text-purple-700">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> Rejoin
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="h-80 w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={monthly_trend} margin={{ top: 10, right: 10, left: -15, bottom: 20 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                                                    <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                                                    <YAxis tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                                                    <Tooltip 
+                                                        contentStyle={{ borderRadius: '16px', border: '1px solid #f1f5f9', fontSize: '11px', fontWeight: 'bold' }} 
+                                                        formatter={(value, name) => [
+                                                            `${value} Siswa`, 
+                                                            name === 'new_join' ? 'Join Baru' : (name === 'paket_lanjut' ? 'Paket Lanjut' : 'Rejoin')
+                                                        ]}
+                                                    />
+                                                    <Legend 
+                                                        verticalAlign="top" 
+                                                        height={36} 
+                                                        wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                                                        formatter={(value) => value === 'new_join' ? 'Join Baru' : (value === 'paket_lanjut' ? 'Paket Lanjut' : 'Rejoin')}
+                                                    />
+                                                    <Bar dataKey="new_join" name="new_join" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="paket_lanjut" name="paket_lanjut" fill="#0284c7" radius={[4, 4, 0, 0]} />
+                                                    <Bar dataKey="rejoin" name="rejoin" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    {/* Pivot Table: Bulan x Paket (Baru, Lanjut, Rejoin, Total) */}
+                                    <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+                                        <div className="p-6 border-b border-slate-50 flex items-center justify-between flex-wrap gap-4">
+                                            <div>
+                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                                                    Matriks Siklus Belajar Siswa per Paket Harga
+                                                </h4>
+                                                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                                    Breakdown Pendaftar Baru (New), Paket Lanjut (Extend), dan Siswa Rejoin
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest flex-wrap">
+                                                <span className="flex items-center gap-1.5 text-emerald-700">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> BARU
+                                                </span>
+                                                <span className="flex items-center gap-1.5 text-sky-700">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500" /> LANJUT
+                                                </span>
+                                                <span className="flex items-center gap-1.5 text-purple-700">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> REJOIN
+                                                </span>
+                                                <span className="flex items-center gap-1.5 text-slate-800 font-extrabold">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-slate-900" /> TOTAL
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse" style={{ minWidth: `${260 + package_list.length * 200}px` }}>
+                                                <thead>
+                                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                                        <th
+                                                            rowSpan={2}
+                                                            className="sticky left-0 z-10 bg-slate-50 px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] border-r border-slate-200 min-w-[120px]"
+                                                        >
+                                                            Bulan
+                                                        </th>
+                                                        {package_list.map((pkg) => (
+                                                            <th
+                                                                key={pkg}
+                                                                colSpan={4}
+                                                                className="px-4 py-3 text-center text-xs font-black text-slate-800 uppercase tracking-wider border-r border-slate-200 bg-slate-100/70"
+                                                            >
+                                                                {pkg}
+                                                            </th>
+                                                        ))}
+                                                        <th
+                                                            colSpan={4}
+                                                            className="px-6 py-3 text-center text-xs font-black text-slate-900 uppercase tracking-wider bg-slate-200/80"
+                                                        >
+                                                            Total Gabungan
+                                                        </th>
+                                                    </tr>
+                                                    <tr className="bg-slate-50/80 border-b border-slate-200 text-[9px] font-black uppercase tracking-wider">
+                                                        {package_list.map((pkg) => (
+                                                            <React.Fragment key={`${pkg}-sub`}>
+                                                                <th className="px-2.5 py-2 text-center text-emerald-700 border-r border-slate-100 bg-emerald-50/40">Baru</th>
+                                                                <th className="px-2.5 py-2 text-center text-sky-700 border-r border-slate-100 bg-sky-50/40">Lanjut</th>
+                                                                <th className="px-2.5 py-2 text-center text-purple-700 border-r border-slate-100 bg-purple-50/40">Rejoin</th>
+                                                                <th className="px-3 py-2 text-center text-slate-800 border-r border-slate-200 bg-slate-100">Total</th>
+                                                            </React.Fragment>
+                                                        ))}
+                                                        <th className="px-2.5 py-2 text-center text-emerald-800 bg-emerald-100/50">Baru</th>
+                                                        <th className="px-2.5 py-2 text-center text-sky-800 bg-sky-100/50">Lanjut</th>
+                                                        <th className="px-2.5 py-2 text-center text-purple-800 bg-purple-100/50">Rejoin</th>
+                                                        <th className="px-3 py-2 text-center text-slate-900 font-extrabold bg-slate-200">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {displayedMonths.map((row) => {
+                                                        const isRowActive = (row.total ?? 0) > 0;
+                                                        return (
+                                                            <tr 
+                                                                key={row.month}
+                                                                className={`hover:bg-slate-50/60 transition-colors ${!isRowActive ? 'opacity-40' : ''}`}
+                                                            >
+                                                                <td className="sticky left-0 z-10 bg-white px-6 py-3.5 text-xs font-black text-slate-800 uppercase tracking-wider border-r border-slate-100 whitespace-nowrap">
+                                                                    {row.label}
+                                                                </td>
+
+                                                                {/* Per Package columns */}
+                                                                {package_list.map((pkg) => {
+                                                                    const pData = row.packages[pkg] || { new_join: 0, paket_lanjut: 0, rejoin: 0, total: 0 };
+                                                                    const pStudents = row.package_students?.[pkg] || {};
+
+                                                                    return (
+                                                                        <React.Fragment key={`${pkg}-${row.month}`}>
+                                                                            {/* Baru */}
+                                                                            <td 
+                                                                                className={`px-2.5 py-3 text-center text-xs font-bold border-r border-slate-50 ${pData.new_join > 0 ? 'text-emerald-700 hover:bg-emerald-100 cursor-pointer font-black underline decoration-emerald-300' : 'text-slate-300'}`}
+                                                                                onClick={() => {
+                                                                                    if (pData.new_join > 0) {
+                                                                                        setSelectedGradeData({
+                                                                                            grade: `${pkg} (Join Baru) — ${row.label}`,
+                                                                                            count: pData.new_join,
+                                                                                            student_list: pStudents.new_join || [],
+                                                                                        });
+                                                                                        setSearchStudentInModal('');
+                                                                                    }
+                                                                                }}
+                                                                                title={pData.new_join > 0 ? `Klik untuk melihat ${pData.new_join} siswa` : ''}
+                                                                            >
+                                                                                {pData.new_join}
+                                                                            </td>
+                                                                            {/* Lanjut */}
+                                                                            <td 
+                                                                                className={`px-2.5 py-3 text-center text-xs font-bold border-r border-slate-50 ${pData.paket_lanjut > 0 ? 'text-sky-700 hover:bg-sky-100 cursor-pointer font-black underline decoration-sky-300' : 'text-slate-300'}`}
+                                                                                onClick={() => {
+                                                                                    if (pData.paket_lanjut > 0) {
+                                                                                        setSelectedGradeData({
+                                                                                            grade: `${pkg} (Paket Lanjut) — ${row.label}`,
+                                                                                            count: pData.paket_lanjut,
+                                                                                            student_list: pStudents.paket_lanjut || [],
+                                                                                        });
+                                                                                        setSearchStudentInModal('');
+                                                                                    }
+                                                                                }}
+                                                                                title={pData.paket_lanjut > 0 ? `Klik untuk melihat ${pData.paket_lanjut} siswa` : ''}
+                                                                            >
+                                                                                {pData.paket_lanjut}
+                                                                            </td>
+                                                                            {/* Rejoin */}
+                                                                            <td 
+                                                                                className={`px-2.5 py-3 text-center text-xs font-bold border-r border-slate-50 ${pData.rejoin > 0 ? 'text-purple-700 hover:bg-purple-100 cursor-pointer font-black underline decoration-purple-300' : 'text-slate-300'}`}
+                                                                                onClick={() => {
+                                                                                    if (pData.rejoin > 0) {
+                                                                                        setSelectedGradeData({
+                                                                                            grade: `${pkg} (Rejoin) — ${row.label}`,
+                                                                                            count: pData.rejoin,
+                                                                                            student_list: pStudents.rejoin || [],
+                                                                                        });
+                                                                                        setSearchStudentInModal('');
+                                                                                    }
+                                                                                }}
+                                                                                title={pData.rejoin > 0 ? `Klik untuk melihat ${pData.rejoin} siswa` : ''}
+                                                                            >
+                                                                                {pData.rejoin}
+                                                                            </td>
+                                                                            {/* Total Pkg */}
+                                                                            <td 
+                                                                                className={`px-3 py-3 text-center text-xs font-black border-r border-slate-200 bg-slate-50/50 ${pData.total > 0 ? 'text-slate-900 hover:bg-slate-100 cursor-pointer underline' : 'text-slate-300'}`}
+                                                                                onClick={() => {
+                                                                                    if (pData.total > 0) {
+                                                                                        setSelectedGradeData({
+                                                                                            grade: `${pkg} (Total Siklus) — ${row.label}`,
+                                                                                            count: pData.total,
+                                                                                            student_list: pStudents.all || [],
+                                                                                        });
+                                                                                        setSearchStudentInModal('');
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                {pData.total}
+                                                                            </td>
+                                                                        </React.Fragment>
+                                                                    );
+                                                                })}
+
+                                                                {/* Row Totals */}
+                                                                <td 
+                                                                    className={`px-2.5 py-3 text-center text-xs font-black bg-emerald-50/40 ${row.new_join > 0 ? 'text-emerald-800 hover:bg-emerald-100 cursor-pointer underline decoration-emerald-400' : 'text-slate-300'}`}
+                                                                    onClick={() => {
+                                                                        if (row.new_join > 0) {
+                                                                            setSelectedGradeData({
+                                                                                grade: `Total Siswa Baru — ${row.label}`,
+                                                                                count: row.new_join,
+                                                                                student_list: row.month_students?.new_join || [],
+                                                                            });
+                                                                            setSearchStudentInModal('');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {row.new_join}
+                                                                </td>
+                                                                <td 
+                                                                    className={`px-2.5 py-3 text-center text-xs font-black bg-sky-50/40 ${row.paket_lanjut > 0 ? 'text-sky-800 hover:bg-sky-100 cursor-pointer underline decoration-sky-400' : 'text-slate-300'}`}
+                                                                    onClick={() => {
+                                                                        if (row.paket_lanjut > 0) {
+                                                                            setSelectedGradeData({
+                                                                                grade: `Total Paket Lanjut — ${row.label}`,
+                                                                                count: row.paket_lanjut,
+                                                                                student_list: row.month_students?.paket_lanjut || [],
+                                                                            });
+                                                                            setSearchStudentInModal('');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {row.paket_lanjut}
+                                                                </td>
+                                                                <td 
+                                                                    className={`px-2.5 py-3 text-center text-xs font-black bg-purple-50/40 ${row.rejoin > 0 ? 'text-purple-800 hover:bg-purple-100 cursor-pointer underline decoration-purple-400' : 'text-slate-300'}`}
+                                                                    onClick={() => {
+                                                                        if (row.rejoin > 0) {
+                                                                            setSelectedGradeData({
+                                                                                grade: `Total Rejoin — ${row.label}`,
+                                                                                count: row.rejoin,
+                                                                                student_list: row.month_students?.rejoin || [],
+                                                                            });
+                                                                            setSearchStudentInModal('');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {row.rejoin}
+                                                                </td>
+                                                                <td 
+                                                                    className={`px-3 py-3 text-center text-xs font-black bg-slate-100 ${row.total > 0 ? 'text-slate-900 hover:bg-slate-200 cursor-pointer underline font-black' : 'text-slate-300'}`}
+                                                                    onClick={() => {
+                                                                        if (row.total > 0) {
+                                                                            setSelectedGradeData({
+                                                                                grade: `Total Seluruh Siklus — ${row.label}`,
+                                                                                count: row.total,
+                                                                                student_list: row.month_students?.all || [],
+                                                                            });
+                                                                            setSearchStudentInModal('');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {row.total}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                                <tfoot>
+                                                    {/* Total Row */}
+                                                    <tr className="bg-slate-900 text-white font-black text-xs border-t-2 border-slate-700">
+                                                        <td className="sticky left-0 z-10 bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-wider border-r border-slate-700">
+                                                            Total
+                                                        </td>
+                                                        {package_list.map((pkg) => {
+                                                            const tPkg = totals?.by_package?.[pkg] || { new_join: 0, paket_lanjut: 0, rejoin: 0, total: 0 };
+                                                            return (
+                                                                <React.Fragment key={`tot-${pkg}`}>
+                                                                    <td className="px-2.5 py-4 text-center text-emerald-400 border-r border-slate-800">{tPkg.new_join}</td>
+                                                                    <td className="px-2.5 py-4 text-center text-sky-400 border-r border-slate-800">{tPkg.paket_lanjut}</td>
+                                                                    <td className="px-2.5 py-4 text-center text-purple-400 border-r border-slate-800">{tPkg.rejoin}</td>
+                                                                    <td className="px-3 py-4 text-center text-white border-r border-slate-700 bg-slate-800">{tPkg.total}</td>
+                                                                </React.Fragment>
+                                                            );
+                                                        })}
+                                                        <td className="px-2.5 py-4 text-center text-emerald-300 bg-emerald-950/60">{totals?.new_join ?? 0}</td>
+                                                        <td className="px-2.5 py-4 text-center text-sky-300 bg-sky-950/60">{totals?.paket_lanjut ?? 0}</td>
+                                                        <td className="px-2.5 py-4 text-center text-purple-300 bg-purple-950/60">{totals?.rejoin ?? 0}</td>
+                                                        <td className="px-3 py-4 text-center text-amber-300 bg-slate-800 font-extrabold text-sm">{totals?.total ?? 0}</td>
+                                                    </tr>
+
+                                                    {/* Average Row */}
+                                                    <tr className="bg-slate-800 text-slate-300 font-bold text-[10px] border-t border-slate-700">
+                                                        <td className="sticky left-0 z-10 bg-slate-800 px-6 py-3 text-[10px] font-black uppercase tracking-wider border-r border-slate-700">
+                                                            Rata-rata / Bulan
+                                                        </td>
+                                                        {package_list.map((pkg) => {
+                                                            const tPkg = totals?.by_package?.[pkg] || { new_join: 0, paket_lanjut: 0, rejoin: 0, total: 0 };
+                                                            return (
+                                                                <React.Fragment key={`avg-${pkg}`}>
+                                                                    <td className="px-2.5 py-3 text-center text-emerald-400/80 border-r border-slate-800">{Math.round(tPkg.new_join / activeMonthsCount)}</td>
+                                                                    <td className="px-2.5 py-3 text-center text-sky-400/80 border-r border-slate-800">{Math.round(tPkg.paket_lanjut / activeMonthsCount)}</td>
+                                                                    <td className="px-2.5 py-3 text-center text-purple-400/80 border-r border-slate-800">{Math.round(tPkg.rejoin / activeMonthsCount)}</td>
+                                                                    <td className="px-3 py-3 text-center text-slate-200 border-r border-slate-700 bg-slate-700/50">{Math.round(tPkg.total / activeMonthsCount)}</td>
+                                                                </React.Fragment>
+                                                            );
+                                                        })}
+                                                        <td className="px-2.5 py-3 text-center text-emerald-300 bg-emerald-950/40">{Math.round((totals?.new_join ?? 0) / activeMonthsCount)}</td>
+                                                        <td className="px-2.5 py-3 text-center text-sky-300 bg-sky-950/40">{Math.round((totals?.paket_lanjut ?? 0) / activeMonthsCount)}</td>
+                                                        <td className="px-2.5 py-3 text-center text-purple-300 bg-purple-950/40">{Math.round((totals?.rejoin ?? 0) / activeMonthsCount)}</td>
+                                                        <td className="px-3 py-3 text-center text-amber-300 bg-slate-700/80 font-black">{Math.round((totals?.total ?? 0) / activeMonthsCount)}</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-16 flex flex-col items-center justify-center text-center gap-4">
+                                    <RefreshCw className="w-12 h-12 text-slate-300" />
+                                    <p className="text-sm font-bold text-slate-400">
+                                        Tidak ada data transaksi siklus siswa untuk tahun {year}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
 
                 {/* ═══════════════════════════════════════════════════
                     TAB: POLA JOIN

@@ -5,7 +5,7 @@ import { Plus, Search, Filter, BookOpen } from 'lucide-react';
 import ClassCard from './partials/ClassCard';
 import CreateEditClassModal from './modals/CreateEditClassModal';
 import ResetCycleModal from './modals/ResetCycleModal';
-import ClassStudentDrawer from './drawers/ClassStudentDrawer';
+import ClassDetailModal from './modals/ClassDetailModal';
 import PremiumSelect from '@/Components/PremiumSelect';
 import TextInput from '@/Components/TextInput';
 import { useStudyClassIndex } from './hooks/useStudyClassIndex';
@@ -17,9 +17,11 @@ export default function Index({ classes, branches, instructors, priceMasters, le
         isModalOpen,
         isDrawerOpen,
         isResetModalOpen,
+        isDetailModalOpen,
         selectedClass,
         editingClass,
         resettingClass,
+        detailClass,
         search,
         setSearch,
         
@@ -34,11 +36,13 @@ export default function Index({ classes, branches, instructors, priceMasters, le
         openCreateModal,
         openEditModal,
         openStudentDrawer,
+        openDetailModal,
         handleResetCycle,
         handleDelete,
         closeModal,
         closeDrawer,
-        closeResetModal
+        closeResetModal,
+        closeDetailModal,
     } = useStudyClassIndex(classes, branches, instructors, filters);
 
     return (
@@ -50,7 +54,7 @@ export default function Index({ classes, branches, instructors, priceMasters, le
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                            Study Class <span className="text-red-600">Management</span>
+                            Class <span className="text-red-600">Management</span>
                         </h1>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 ml-0.5">
                             <BookOpen className="w-3.5 h-3.5" />
@@ -64,6 +68,42 @@ export default function Index({ classes, branches, instructors, priceMasters, le
                     >
                         <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
                         <span>Launch New Class</span>
+                    </button>
+                </div>
+
+                {/* Category Navigation Tabs */}
+                <div className="flex border-b border-slate-200 gap-8">
+                    <button
+                        onClick={() => handleFilterCategory('')}
+                        className={`pb-4 text-sm font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+                            !filters.category
+                                ? 'border-red-600 text-red-600'
+                                : 'border-transparent text-slate-400 hover:text-slate-700'
+                        }`}
+                    >
+                        <span>Semua Kelas</span>
+                    </button>
+                    <button
+                        onClick={() => handleFilterCategory('group')}
+                        className={`pb-4 text-sm font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+                            filters.category === 'group'
+                                ? 'border-red-600 text-red-600'
+                                : 'border-transparent text-slate-400 hover:text-slate-700'
+                        }`}
+                    >
+                        <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                        <span>Group Classes</span>
+                    </button>
+                    <button
+                        onClick={() => handleFilterCategory('private')}
+                        className={`pb-4 text-sm font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+                            filters.category === 'private'
+                                ? 'border-red-600 text-red-600'
+                                : 'border-transparent text-slate-400 hover:text-slate-700'
+                        }`}
+                    >
+                        <span className="w-2 h-2 rounded-full bg-orange-500" />
+                        <span>Non-Group / Private (Kedatangan)</span>
                     </button>
                 </div>
 
@@ -124,20 +164,6 @@ export default function Index({ classes, branches, instructors, priceMasters, le
                         <div className="w-full sm:w-36 xl:w-44">
                             <PremiumSelect 
                                 options={[
-                                    { value: '', label: 'Semua Kategori' },
-                                    { value: 'group', label: 'Group Class' },
-                                    { value: 'private', label: 'Private Class' }
-                                ]}
-                                value={filters.category || ''}
-                                onChange={handleFilterCategory}
-                                icon={Filter}
-                                placeholder="Kategori Kelas"
-                            />
-                        </div>
-
-                        <div className="w-full sm:w-36 xl:w-44">
-                            <PremiumSelect 
-                                options={[
                                     { value: '', label: 'Semua Mode' },
                                     { value: 'offline', label: 'Offline' },
                                     { value: 'online', label: 'Online' }
@@ -167,8 +193,8 @@ export default function Index({ classes, branches, instructors, priceMasters, le
                                     onEdit={openEditModal}
                                     onDelete={handleDelete}
                                     onResetCycle={handleResetCycle}
-                                    onManageStudents={openStudentDrawer}
                                     onToggleStatus={handleToggleStatus}
+                                    onViewDetail={openDetailModal}
                                 />
                             ))}
                         </div>
@@ -194,7 +220,7 @@ export default function Index({ classes, branches, instructors, priceMasters, le
                 )}
             </div>
 
-            {/* Modals & Drawers */}
+            {/* Modals */}
             <CreateEditClassModal 
                 isOpen={isModalOpen}
                 onClose={closeModal}
@@ -205,16 +231,16 @@ export default function Index({ classes, branches, instructors, priceMasters, le
                 leadTypes={leadTypes}
             />
 
-            <ClassStudentDrawer 
-                isOpen={isDrawerOpen}
-                onClose={closeDrawer}
-                studyClass={selectedClass}
-            />
-
             <ResetCycleModal 
                 isOpen={isResetModalOpen}
                 onClose={closeResetModal}
                 studyClass={resettingClass}
+            />
+
+            <ClassDetailModal 
+                isOpen={isDetailModalOpen}
+                onClose={closeDetailModal}
+                studyClass={detailClass}
             />
         </AdminLayout>
     );

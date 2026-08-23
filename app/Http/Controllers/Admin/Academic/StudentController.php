@@ -270,9 +270,10 @@ class StudentController extends Controller
     public function update(Request $request, Student $student)
     {
         $validated = $request->validate([
-            'status'     => 'nullable|string|in:active,stop',
-            'notes'      => 'nullable|string|max:5000',
-            'start_join' => 'nullable|date',
+            'status'       => 'nullable|string|in:active,stop',
+            'notes'        => 'nullable|string|max:5000',
+            'start_join'   => 'nullable|date',
+            'rejoin_count' => 'nullable|integer|min:0',
         ]);
 
         $updates = [];
@@ -310,6 +311,18 @@ class StudentController extends Controller
 
         if (array_key_exists('start_join', $validated)) {
             $updates['start_join'] = $validated['start_join'];
+        }
+
+        if (array_key_exists('rejoin_count', $validated) && $validated['rejoin_count'] !== null) {
+            $newRejoinCount = (int) $validated['rejoin_count'];
+            $updates['rejoin_count'] = $newRejoinCount;
+
+            // Automatically recalculate loyalty tier based on the new rejoin_count
+            $matchingSetting = \App\Domains\Finance\Domain\Models\LoyaltySetting::where('min_rejoin_count', '<=', $newRejoinCount)
+                ->orderBy('min_rejoin_count', 'desc')
+                ->first();
+
+            $updates['loyalty_tier'] = $matchingSetting ? $matchingSetting->tier_name : 'Bronze';
         }
 
         if (!empty($updates)) {

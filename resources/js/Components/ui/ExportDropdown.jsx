@@ -17,6 +17,13 @@ export default function ExportDropdown({ buildExportUrl, type = 'join' }) {
 
     const joinOptions = [
         {
+            id: 'join_lifecycle',
+            label: 'Siklus Join (Baru / Lanjut / Rejoin)',
+            sublabel: 'Rincian Siswa Baru, Paket Lanjut & Rejoin',
+            icon: Users,
+            color: 'text-purple-500',
+        },
+        {
             id: 'join_patterns',
             label: 'Pola Join',
             sublabel: 'Rincian per Paket Harga & Sesi',

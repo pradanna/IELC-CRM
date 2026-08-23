@@ -30,6 +30,7 @@ class StudyClass extends Model
         'start_session_date',
         'end_session_date',
         'total_meetings',
+        'manual_session_progress',
         'meetings_per_week',
         'current_session_number',
         'schedule_days',
@@ -45,6 +46,7 @@ class StudyClass extends Model
         'start_session_date' => 'date',
         'end_session_date' => 'date',
         'schedule_days' => 'array',
+        'manual_session_progress' => 'integer',
     ];
 
     public function branch(): BelongsTo
@@ -75,13 +77,46 @@ class StudyClass extends Model
             ->withTimestamps();
     }
 
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(ClassAttendance::class)->orderBy('session_number', 'asc');
+    }
+
+    public function currentCycleAttendances(): HasMany
+    {
+        return $this->hasMany(ClassAttendance::class)
+            ->where('cycle_number', $this->current_session_number ?? 1)
+            ->orderBy('session_number', 'asc');
+    }
+
     /**
-     * Automatically calculate the progress (meetings passed) within the current cycle.
+     * Calculate progress:
+     * - Non-Group (Private): Based on manual_session_progress if set, OR logged attendances in current cycle.
+     * - Group: Automatically based on schedule dates in current cycle.
      */
     protected function sessionProgress(): Attribute
     {
         return Attribute::make(
             get: function () {
+                // Non-Group (Private) calculates progress based on manual progress and recorded sessions
+                if ($this->category === 'private') {
+                    $attCount = 0;
+                    if ($this->relationLoaded('currentCycleAttendances')) {
+                        $attCount = $this->currentCycleAttendances->count();
+                    } elseif ($this->relationLoaded('attendances')) {
+                        $currentCycle = $this->current_session_number ?? 1;
+                        $attCount = $this->attendances->where('cycle_number', $currentCycle)->count();
+                    } else {
+                        $attCount = $this->attendances()
+                            ->where('cycle_number', $this->current_session_number ?? 1)
+                            ->count();
+                    }
+
+                    $val = max((int) ($this->manual_session_progress ?? 0), $attCount);
+                    return min($val, (int) $this->total_meetings);
+                }
+
+                // Group classes: auto calculate by date
                 if (!$this->start_session_date || !is_array($this->schedule_days)) {
                     return 0;
                 }
@@ -114,7 +149,7 @@ class StudyClass extends Model
     {
         return Attribute::make(
             get: function () {
-                if ($this->end_session_date && $this->end_session_date->endOfDay()->isPast()) {
+                if ($this->category !== 'private' && $this->end_session_date && $this->end_session_date->endOfDay()->isPast()) {
                     return true;
                 }
                 if ($this->session_progress >= (int) $this->total_meetings && (int) $this->total_meetings > 0) {

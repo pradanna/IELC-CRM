@@ -65,13 +65,13 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
                     </div>
                     <div>
                         <p className="font-black text-slate-900 tracking-tight">{row.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rate per session</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Harga per paket</p>
                     </div>
                 </div>
             )
         },
         {
-            header: 'Price per Session',
+            header: 'Harga per Paket',
             accessor: 'price_per_session',
             render: (row) => (
                 <div className="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl font-black text-sm border border-emerald-100">
@@ -130,7 +130,7 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
                         </h1>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Package className="w-3.5 h-3.5" />
-                            Global rates & initial fees management
+                            Global package rates & initial fees management
                         </p>
                     </div>
 
@@ -164,7 +164,7 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
                                 : 'border-transparent text-slate-400 hover:text-slate-700'
                         }`}
                     >
-                        Paket Kelas (Session Rates)
+                        Paket Kelas (Package Rates)
                     </button>
                     <button
                         onClick={() => setActiveTab('initial_fees')}

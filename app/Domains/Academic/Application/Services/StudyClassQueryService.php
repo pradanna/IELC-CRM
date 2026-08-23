@@ -23,7 +23,9 @@ class StudyClassQueryService
             'instructor.finance', 
             'instructor.teacher',
             'priceMaster', 
-            'students.lead'
+            'students.lead',
+            'currentCycleAttendances.student.lead',
+            'currentCycleAttendances.recorder'
         ])->withCount('students');
 
         $status = $request->input('status', 'active');

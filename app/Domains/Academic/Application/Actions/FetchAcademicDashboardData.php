@@ -643,6 +643,227 @@ class FetchAcademicDashboardData
         ];
 
         // ═════════════════════════════════════════════════════════
+        // 2.5 SIKLUS JOIN (JOIN BARU, PAKET LANJUT, REJOIN)
+        // ═════════════════════════════════════════════════════════
+        $lifecycleMonthExpr = $isSqlite
+            ? "CAST(strftime('%m', COALESCE(le.joined_at, s.start_join, s.created_at)) AS INTEGER)"
+            : "MONTH(COALESCE(le.joined_at, s.start_join, s.created_at))";
+
+        $lifecycleYearExpr = $isSqlite
+            ? "CAST(strftime('%Y', COALESCE(le.joined_at, s.start_join, s.created_at)) AS INTEGER)"
+            : "YEAR(COALESCE(le.joined_at, s.start_join, s.created_at))";
+
+        $lifecycleQuery = DB::table('lead_enrollments as le')
+            ->join('study_classes as sc', 'le.study_class_id', '=', 'sc.id')
+            ->join('price_masters as pm', 'sc.price_master_id', '=', 'pm.id')
+            ->join('students as s', 'le.student_id', '=', 's.id')
+            ->leftJoin('leads as l', 'le.lead_id', '=', 'l.id')
+            ->leftJoin('branches as b', 'l.branch_id', '=', 'b.id')
+            ->leftJoin('invoices as inv', 'le.invoice_id', '=', 'inv.id')
+            ->selectRaw("
+                {$lifecycleMonthExpr} AS month_num,
+                pm.name AS package_name,
+                CASE 
+                    WHEN sc.type = 'online' OR (sc.type IS NULL AND l.is_online = 1) THEN 'online'
+                    ELSE 'offline'
+                END AS delivery_mode,
+                CASE 
+                    WHEN inv.type = 'rejoin' OR (inv.type IS NULL AND s.rejoin_count > 0) THEN 'rejoin'
+                    WHEN inv.type IN ('paket_lanjut', 'renewal', 'continue') OR (inv.type IS NULL AND le.cycle_number > 1) THEN 'paket_lanjut'
+                    ELSE 'new_join'
+                END AS lifecycle_type,
+                le.id AS enrollment_id,
+                inv.invoice_number,
+                le.joined_at AS join_date,
+                s.id AS student_id,
+                s.student_number AS student_number,
+                s.profile_picture AS profile_picture,
+                l.name AS student_name,
+                l.phone AS student_phone,
+                l.grade AS student_grade,
+                l.school AS student_school,
+                b.name AS branch_name,
+                sc.name AS class_name
+            ")
+            ->whereNotNull(DB::raw("COALESCE(le.joined_at, s.start_join, s.created_at)"))
+            ->whereRaw("{$lifecycleYearExpr} = ?", [$year]);
+
+        if ($month) {
+            $lifecycleQuery->whereRaw("{$lifecycleMonthExpr} = ?", [$month]);
+        }
+
+        if ($modeFilter && in_array($modeFilter, ['online', 'offline'])) {
+            if ($modeFilter === 'online') {
+                $lifecycleQuery->where(function($q) {
+                    $q->where('sc.type', 'online')
+                      ->orWhere(function($sub) {
+                          $sub->whereNull('sc.type')->where('l.is_online', 1);
+                      });
+                });
+            } else {
+                $lifecycleQuery->where(function($q) {
+                    $q->where('sc.type', '!=', 'online')
+                      ->orWhere(function($sub) {
+                          $sub->whereNull('sc.type')->where(function($sub2) {
+                              $sub2->where('l.is_online', 0)->orWhereNull('l.is_online');
+                          });
+                      });
+                });
+            }
+        }
+
+        if ($branchId) {
+            $lifecycleQuery->where('l.branch_id', '=', $branchId);
+        }
+
+        $allLifecycleRows = $lifecycleQuery->get();
+
+        $lifecyclePackages = $allLifecycleRows->pluck('package_name')->unique()->sort()->values()->toArray();
+        if (empty($lifecyclePackages)) {
+            $lifecyclePackages = $allPackages;
+        }
+
+        $lifecyclePivotMonths = [];
+        $lifecycleTotals = [
+            'new_join'     => 0,
+            'paket_lanjut' => 0,
+            'rejoin'       => 0,
+            'total'        => 0,
+            'by_package'   => [],
+        ];
+
+        foreach ($lifecyclePackages as $pkg) {
+            $lifecycleTotals['by_package'][$pkg] = [
+                'new_join'     => 0,
+                'paket_lanjut' => 0,
+                'rejoin'       => 0,
+                'total'        => 0,
+            ];
+        }
+
+        $lifecycleByMonthPkgType = [];
+        $lifecycleStudentsByMonthPkgType = [];
+
+        foreach ($allLifecycleRows as $row) {
+            $m = (int) $row->month_num;
+            $pkg = $row->package_name;
+            $type = $row->lifecycle_type; // 'new_join', 'paket_lanjut', 'rejoin'
+
+            if (!isset($lifecycleByMonthPkgType[$m])) {
+                $lifecycleByMonthPkgType[$m] = [];
+            }
+            if (!isset($lifecycleByMonthPkgType[$m][$pkg])) {
+                $lifecycleByMonthPkgType[$m][$pkg] = [
+                    'new_join'     => 0,
+                    'paket_lanjut' => 0,
+                    'rejoin'       => 0,
+                    'total'        => 0,
+                ];
+            }
+
+            $lifecycleByMonthPkgType[$m][$pkg][$type]++;
+            $lifecycleByMonthPkgType[$m][$pkg]['total']++;
+
+            $lifecycleTotals[$type]++;
+            $lifecycleTotals['total']++;
+
+            if (isset($lifecycleTotals['by_package'][$pkg])) {
+                $lifecycleTotals['by_package'][$pkg][$type]++;
+                $lifecycleTotals['by_package'][$pkg]['total']++;
+            }
+
+            $joinDateFormatted = $row->join_date ? $formatIndoDate($row->join_date) : '-';
+
+            $studentItem = [
+                'id'              => $row->student_id ?: $row->enrollment_id,
+                'student_number'  => $row->student_number,
+                'name'            => $row->student_name ?: 'Siswa',
+                'phone'           => $row->student_phone ?: '-',
+                'grade'           => $row->student_grade ?: '-',
+                'school'          => $row->student_school ?: '-',
+                'branch_name'     => $row->branch_name ?: 'Central',
+                'class_name'      => $row->class_name ?: '-',
+                'package_name'    => $pkg,
+                'lifecycle_type'  => $type,
+                'delivery_mode'   => $row->delivery_mode,
+                'invoice_number'  => $row->invoice_number,
+                'paid_at'         => $joinDateFormatted,
+                'profile_picture' => $row->profile_picture ? asset('storage/' . $row->profile_picture) : null,
+            ];
+
+            $lifecycleStudentsByMonthPkgType[$m][$pkg][$type][] = $studentItem;
+            $lifecycleStudentsByMonthPkgType[$m][$pkg]['all'][] = $studentItem;
+            $lifecycleStudentsByMonthPkgType[$m]['_all_'][$type][] = $studentItem;
+            $lifecycleStudentsByMonthPkgType[$m]['_all_']['all'][] = $studentItem;
+        }
+
+        $lifecycleMonthlyTrend = [];
+
+        foreach ($monthLabels as $num => $label) {
+            $pkgData = [];
+            $pkgStudents = [];
+            $monthNew = 0;
+            $monthLanjut = 0;
+            $monthRejoin = 0;
+
+            foreach ($lifecyclePackages as $pkg) {
+                $pCounts = $lifecycleByMonthPkgType[$num][$pkg] ?? [
+                    'new_join'     => 0,
+                    'paket_lanjut' => 0,
+                    'rejoin'       => 0,
+                    'total'        => 0,
+                ];
+                $pkgData[$pkg] = $pCounts;
+                $pkgStudents[$pkg] = [
+                    'new_join'     => $lifecycleStudentsByMonthPkgType[$num][$pkg]['new_join'] ?? [],
+                    'paket_lanjut' => $lifecycleStudentsByMonthPkgType[$num][$pkg]['paket_lanjut'] ?? [],
+                    'rejoin'       => $lifecycleStudentsByMonthPkgType[$num][$pkg]['rejoin'] ?? [],
+                    'all'          => $lifecycleStudentsByMonthPkgType[$num][$pkg]['all'] ?? [],
+                ];
+
+                $monthNew += $pCounts['new_join'];
+                $monthLanjut += $pCounts['paket_lanjut'];
+                $monthRejoin += $pCounts['rejoin'];
+            }
+
+            $monthTotal = $monthNew + $monthLanjut + $monthRejoin;
+
+            $lifecyclePivotMonths[] = [
+                'month'            => $num,
+                'label'            => $label,
+                'new_join'         => $monthNew,
+                'paket_lanjut'     => $monthLanjut,
+                'rejoin'           => $monthRejoin,
+                'total'            => $monthTotal,
+                'packages'         => $pkgData,
+                'package_students' => $pkgStudents,
+                'month_students'   => [
+                    'new_join'     => $lifecycleStudentsByMonthPkgType[$num]['_all_']['new_join'] ?? [],
+                    'paket_lanjut' => $lifecycleStudentsByMonthPkgType[$num]['_all_']['paket_lanjut'] ?? [],
+                    'rejoin'       => $lifecycleStudentsByMonthPkgType[$num]['_all_']['rejoin'] ?? [],
+                    'all'          => $lifecycleStudentsByMonthPkgType[$num]['_all_']['all'] ?? [],
+                ],
+            ];
+
+            $lifecycleMonthlyTrend[] = [
+                'month'        => substr($label, 0, 3),
+                'full_month'   => "{$label} {$year}",
+                'month_num'    => $num,
+                'new_join'     => $monthNew,
+                'paket_lanjut' => $monthLanjut,
+                'rejoin'       => $monthRejoin,
+                'total'        => $monthTotal,
+            ];
+        }
+
+        $joinLifecycle = [
+            'months'         => $lifecyclePivotMonths,
+            'monthly_trend'  => $lifecycleMonthlyTrend,
+            'package_list'   => $lifecyclePackages,
+            'totals'         => $lifecycleTotals,
+        ];
+
+        // ═════════════════════════════════════════════════════════
         // 3. SISWA STOP
         // ═════════════════════════════════════════════════════════
 
@@ -936,7 +1157,8 @@ class FetchAcademicDashboardData
                     'branch_distribution' => $branchDistribution,
                     'grade_distribution'  => $overallGradeDistribution,
                 ],
-                'join_patterns' => $joinPatterns,
+                'join_patterns'   => $joinPatterns,
+                'join_lifecycle'  => $joinLifecycle,
                 'siswa_stop' => [
                     'total_stopped'  => $totalStopped,
                     'monthly_trend'  => $stoppedMonthly,
