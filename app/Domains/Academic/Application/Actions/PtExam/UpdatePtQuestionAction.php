@@ -36,7 +36,19 @@ class UpdatePtQuestionAction
                         'is_correct' => ($data['correct_answer'] == $index),
                     ]);
                 }
-            } elseif ($questionData['type'] !== 'mcq') {
+            } elseif ($questionData['type'] === 'drag_drop' && isset($data['canvas_data'])) {
+                $question->options()->delete();
+                $canvas = is_string($data['canvas_data']) ? json_decode($data['canvas_data'], true) : $data['canvas_data'];
+                if (isset($canvas['items']) && is_array($canvas['items'])) {
+                    foreach ($canvas['items'] as $item) {
+                        PtQuestionOption::create([
+                            'pt_question_id' => $question->id,
+                            'option_text' => json_encode($item),
+                            'is_correct' => true,
+                        ]);
+                    }
+                }
+            } elseif ($questionData['type'] !== 'mcq' && $questionData['type'] !== 'drag_drop') {
                 $question->options()->delete();
             }
 

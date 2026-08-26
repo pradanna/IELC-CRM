@@ -29,12 +29,13 @@ class PtQuestionController extends Controller
 
         $validator = Validator::make($data, [
             'pt_question_group_id' => ['nullable', 'exists:pt_question_groups,id'],
-            'type' => ['required', 'string', 'in:mcq,text,file'],
+            'type' => ['required', 'string', 'in:mcq,text,file,drag_drop'],
             'question_text' => ['required', 'string'],
             'points' => ['required', 'integer', 'min:1'],
             'options' => ['required_if:type,mcq', 'array'],
             'options.*' => ['required_if:type,mcq', 'string'],
             'correct_answer' => ['required_if:type,mcq', 'integer'],
+            'canvas_data' => ['nullable'],
             'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg'],
         ]);
 
@@ -58,12 +59,13 @@ class PtQuestionController extends Controller
     public function update(Request $request, PtExam $ptExam, PtQuestion $ptQuestion, UpdatePtQuestionAction $action): RedirectResponse
     {
         $validated = $request->validate([
-            'type' => ['required', 'string', 'in:mcq,text,file'],
+            'type' => ['required', 'string', 'in:mcq,text,file,drag_drop'],
             'question_text' => ['required', 'string'],
             'points' => ['required', 'integer', 'min:1'],
             'options' => ['required_if:type,mcq', 'array'],
             'options.*' => ['required_if:type,mcq', 'string'],
             'correct_answer' => ['required_if:type,mcq', 'integer'],
+            'canvas_data' => ['nullable'],
             'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg'],
         ]);
 

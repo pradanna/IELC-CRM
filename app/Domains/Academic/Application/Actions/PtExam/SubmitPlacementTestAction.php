@@ -53,6 +53,34 @@ class SubmitPlacementTestAction
 
                     $answerData['pt_question_option_id'] = $value;
                     $answerData['is_correct'] = $isCorrect;
+                } elseif ($question->type === 'drag_drop') {
+                    // $value is an associative array/object or JSON: { zone_id: [option_id, ...] }
+                    $userMapping = is_array($value) ? $value : json_decode($value, true);
+                    $answerData['answer_text'] = is_string($value) ? $value : json_encode($value);
+                    
+                    $isAllCorrect = true;
+                    $totalItemsChecked = 0;
+
+                    if (is_array($userMapping)) {
+                        foreach ($question->options as $opt) {
+                            $itemData = json_decode($opt->option_text, true);
+                            $targetZone = $itemData['target_zone'] ?? $itemData['correct_zone'] ?? null;
+                            if ($targetZone) {
+                                $totalItemsChecked++;
+                                $assignedItems = $userMapping[$targetZone] ?? [];
+                                if (!in_array($opt->id, $assignedItems) && !in_array($itemData['id'] ?? '', $assignedItems)) {
+                                    $isAllCorrect = false;
+                                }
+                            }
+                        }
+                    } else {
+                        $isAllCorrect = false;
+                    }
+
+                    $answerData['is_correct'] = ($totalItemsChecked > 0 && $isAllCorrect);
+                    if ($answerData['is_correct']) {
+                        $totalScore += $question->points;
+                    }
                 } elseif ($question->type === 'text') {
                     $answerData['answer_text'] = $value;
                     $hasManualGrading = true;

@@ -29,6 +29,7 @@ export function usePtExamShow(examData) {
         points: 1,
         options: ['', '', '', ''],
         correct_answer: 0,
+        canvas_data: null,
         media: null,
     });
 

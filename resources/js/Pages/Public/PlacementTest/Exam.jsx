@@ -3,6 +3,7 @@ import { Head } from "@inertiajs/react";
 import { Clock, ChevronLeft, ChevronRight, Check, AlertCircle, FileText, ExternalLink, Music, Download } from "lucide-react";
 import { usePlacementTest } from "./hooks/usePlacementTest";
 import { Upload, File, Type } from "lucide-react";
+import KidsCanvasQuestion from "./components/KidsCanvasQuestion";
 
 export default function Exam({
     session,
@@ -331,6 +332,16 @@ export default function Exam({
                                                     );
                                                 })}
                                             </div>
+                                        )}
+
+                                        {/* Kids Drag & Drop Canvas Question Rendering */}
+                                        {q.type === 'drag_drop' && (
+                                            <KidsCanvasQuestion
+                                                question={q}
+                                                value={answers[q.id]}
+                                                onChange={(val) => handleTextChange(q.id, val)}
+                                                isReview={is_review}
+                                            />
                                         )}
 
                                         {/* Essay / Text Rendering */}

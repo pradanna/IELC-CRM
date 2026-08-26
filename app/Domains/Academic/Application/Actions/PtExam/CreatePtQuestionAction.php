@@ -35,6 +35,19 @@ class CreatePtQuestionAction
                         'is_correct' => ($data['correct_answer'] == $index),
                     ]);
                 }
+            } elseif ($questionData['type'] === 'drag_drop' && isset($data['canvas_data'])) {
+                // Parse canvas_data if sent as JSON string or array
+                $canvas = is_string($data['canvas_data']) ? json_decode($data['canvas_data'], true) : $data['canvas_data'];
+                if (isset($canvas['items']) && is_array($canvas['items'])) {
+                    foreach ($canvas['items'] as $item) {
+                        // We store the item payload in option_text as JSON: { text, image, zone_id }
+                        PtQuestionOption::create([
+                            'pt_question_id' => $question->id,
+                            'option_text' => json_encode($item),
+                            'is_correct' => true,
+                        ]);
+                    }
+                }
             }
 
             return $question;

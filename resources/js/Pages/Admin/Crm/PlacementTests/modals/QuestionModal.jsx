@@ -7,7 +7,8 @@ import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
 import FileInput from '@/Components/form/FileInput';
-import { AlignLeft, CheckCircle2, Music, Type, FileUp, ListChecks, FileText, Paperclip } from 'lucide-react';
+import { AlignLeft, CheckCircle2, Music, Type, FileUp, ListChecks, FileText, Paperclip, Sparkles } from 'lucide-react';
+import KidsCanvasBuilder from '../partials/KidsCanvasBuilder';
 
 export default function QuestionModal({ show, onClose, form, onSubmit, editingQuestion, targetGroupId, examCategory = 'General' }) {
     const isIELTS = examCategory === 'IELTS';
@@ -33,9 +34,10 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                     {/* Question Type */}
                     <div>
                         <InputLabel value="Question Type" className="flex items-center gap-1.5" />
-                        <div className="mt-2 grid grid-cols-3 gap-3">
+                        <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {[
                                 { id: 'mcq', label: 'Multiple Choice', icon: ListChecks, desc: 'Single correct answer', hide: isIELTS },
+                                { id: 'drag_drop', label: 'Kids Drag & Drop', icon: Sparkles, desc: 'Interactive Canvas', hide: isIELTS },
                                 { id: 'text', label: isIELTS ? 'Task / Instruction' : 'Text Essay', icon: isIELTS ? AlignLeft : Type, desc: isIELTS ? 'Instructional prompt' : 'Written response', hide: !isIELTS },
                                 { id: 'file', label: isIELTS ? 'File Prompt' : 'File Upload', icon: FileUp, desc: isIELTS ? 'Attachment instruction' : 'Assignment/document', hide: !isIELTS },
                             ].filter(t => !t.hide).map((t) => (
@@ -105,6 +107,13 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                     </div>
 
                     {/* Options (Only for MCQ - Hidden for IELTS) */}
+                    {form.data.type === 'drag_drop' && !isIELTS && (
+                        <KidsCanvasBuilder
+                            value={form.data.canvas_data}
+                            onChange={(canvas) => form.setData('canvas_data', canvas)}
+                        />
+                    )}
+
                     {form.data.type === 'mcq' && !isIELTS && (
                         <div>
                             <InputLabel value="Response Options" />
