@@ -2,30 +2,31 @@
 
 namespace App\Domains\Academic\Domain\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-class PtQuestion extends Model
+class PtGeneralQuestion extends Model
 {
-    /** @use HasFactory<\Database\Factories\PtQuestionFactory> */
     use HasFactory, HasUuids;
 
     protected $fillable = [
         'pt_exam_id',
-        'pt_question_group_id',
+        'pt_general_question_group_id',
+        'number',
         'type',
         'question_text',
         'audio_path',
         'points',
-        'number',
         'position',
     ];
 
     protected $casts = [
+        'number' => 'integer',
         'points' => 'integer',
+        'position' => 'integer',
     ];
 
     public function ptExam(): BelongsTo
@@ -33,30 +34,18 @@ class PtQuestion extends Model
         return $this->belongsTo(PtExam::class);
     }
 
-    public function ptQuestionGroup(): BelongsTo
+    public function ptGeneralQuestionGroup(): BelongsTo
     {
-        return $this->belongsTo(PtQuestionGroup::class);
+        return $this->belongsTo(PtGeneralQuestionGroup::class, 'pt_general_question_group_id');
     }
 
     public function options(): HasMany
     {
-        return $this->hasMany(PtQuestionOption::class);
+        return $this->hasMany(PtGeneralQuestionOption::class, 'pt_general_question_id')->orderBy('position');
     }
 
     public function answers(): HasMany
     {
-        return $this->hasMany(PtAnswer::class);
-    }
-
-    public function kidCanvas()
-    {
-        return $this->hasOne(PtKidCanvas::class, 'pt_question_id');
-    }
-
-    public function kidCanvasAnswers(): HasMany
-    {
-        return $this->hasMany(PtKidCanvasAnswer::class, 'pt_question_id');
+        return $this->hasMany(PtGeneralAnswer::class, 'pt_general_question_id');
     }
 }
-
-

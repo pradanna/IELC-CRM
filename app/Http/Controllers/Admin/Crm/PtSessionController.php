@@ -57,16 +57,68 @@ class PtSessionController extends Controller
 
     public function getResult(PtSession $ptSession)
     {
-        $ptSession->load(['answers', 'ptExam.questions.options', 'ptExam.ptQuestionGroups.questions.options']);
+        $ptSession->load([
+            'answers',
+            'generalAnswers',
+            'kidsAnswers',
+            'ieltsAnswers',
+            'ptExam.questions.options',
+            'ptExam.ptQuestionGroups.questions.options',
+            'ptExam.generalQuestions.options',
+            'ptExam.generalGroups.questions.options',
+            'ptExam.kidsQuestions',
+            'ptExam.ieltsTasks',
+        ]);
         
-        $answers = $ptSession->answers->keyBy('pt_question_id')->map(function ($answer) {
-            return [
-                'option_id' => $answer->pt_question_option_id,
+        $answers = collect();
+
+        // 1. General Answers
+        foreach ($ptSession->generalAnswers as $answer) {
+            $answers->put($answer->pt_general_question_id, [
+                'option_id' => $answer->pt_general_question_option_id,
                 'answer_text' => $answer->answer_text,
-                'file_path' => $answer->file_path ? \Illuminate\Support\Facades\Storage::url($answer->file_path) : null,
                 'is_correct' => $answer->is_correct,
-            ];
-        });
+                'score_earned' => $answer->score_earned,
+            ]);
+        }
+
+        // 2. Kids Answers
+        foreach ($ptSession->kidsAnswers as $answer) {
+            $answers->put($answer->pt_kids_question_id, [
+                'user_mapping' => $answer->user_mapping,
+                'answer_text' => is_array($answer->user_mapping) ? json_encode($answer->user_mapping) : $answer->user_mapping,
+                'is_correct' => $answer->is_correct,
+                'score_earned' => $answer->score_earned,
+                'teacher_notes' => $answer->teacher_notes,
+            ]);
+        }
+
+        // 3. IELTS Answers
+        foreach ($ptSession->ieltsAnswers as $answer) {
+            $answers->put($answer->pt_ielts_task_id, [
+                'essay_text' => $answer->essay_text,
+                'answer_text' => $answer->essay_text,
+                'file_path' => $answer->file_path ? \Illuminate\Support\Facades\Storage::url($answer->file_path) : null,
+                'score_tr' => $answer->score_tr,
+                'score_cc' => $answer->score_cc,
+                'score_lr' => $answer->score_lr,
+                'score_gra' => $answer->score_gra,
+                'band_score' => $answer->band_score,
+                'evaluator_notes' => $answer->evaluator_notes,
+            ]);
+        }
+
+        // 4. Legacy Answers fallback
+        foreach ($ptSession->answers as $answer) {
+            if (!$answers->has($answer->pt_question_id)) {
+                $answers->put($answer->pt_question_id, [
+                    'option_id' => $answer->pt_question_option_id,
+                    'answer_text' => $answer->answer_text,
+                    'file_path' => $answer->file_path ? \Illuminate\Support\Facades\Storage::url($answer->file_path) : null,
+                    'is_correct' => $answer->is_correct,
+                ]);
+            }
+        }
         
         return response()->json([
             'session' => new PtSessionResource($ptSession),

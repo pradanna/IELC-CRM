@@ -23,7 +23,7 @@ class UpdatePtSessionGradeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'final_score' => 'required|integer|min:0',
+            'final_score' => 'required|numeric|min:0',
             'recommended_level' => 'nullable|string|max:255',
             'grading_notes' => 'nullable|string',
         ];

@@ -31,7 +31,7 @@ class PtExamController extends Controller
             ->take(10)
             ->get();
 
-        $exams = PtExam::withCount('questions')
+        $exams = PtExam::withCount(['questions', 'ptSessions'])
             ->orderBy('title')
             ->get();
 
@@ -52,14 +52,12 @@ class PtExamController extends Controller
     public function show(PtExam $ptExam): Response
     {
         $ptExam->load([
-            'ptQuestionGroups' => function ($q) {
-                $q->orderBy('position')->with(['questions' => function ($q2) {
-                    $q2->orderBy('position')->with('options');
-                }]);
-            },
-            'questions' => function ($q) {
-                $q->whereNull('pt_question_group_id')->orderBy('position')->with('options');
-            }
+            'generalGroups.questions.options',
+            'generalQuestions.options',
+            'kidsQuestions',
+            'ieltsTasks',
+            'ptQuestionGroups.questions.options',
+            'questions.options',
         ]);
 
         return Inertia::render('Admin/Crm/PlacementTests/Show', [

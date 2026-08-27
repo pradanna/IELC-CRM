@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '@/Components/ui/Modal';
 import TextInput from '@/Components/form/TextInput';
 import TextArea from '@/Components/ui/TextArea';
@@ -7,10 +7,14 @@ import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
 import FileInput from '@/Components/form/FileInput';
-import { AlignLeft, CheckCircle2, Music, Type, FileUp, ListChecks, FileText, Paperclip, Sparkles } from 'lucide-react';
+import { AlignLeft, CheckCircle2, Music, Type, FileUp, ListChecks, FileText, Paperclip, Sparkles, Image as ImageIcon, Eye } from 'lucide-react';
 import KidsCanvasBuilder from '../partials/KidsCanvasBuilder';
+import KidsImageCanvasBuilder from '../partials/KidsImageCanvasBuilder';
+import KidsFreeformCanvasStudio from '../partials/KidsFreeformCanvasStudio';
+import KidsFreeformCanvasQuestion from '@/Pages/Public/PlacementTest/components/KidsFreeformCanvasQuestion';
 
 export default function QuestionModal({ show, onClose, form, onSubmit, editingQuestion, targetGroupId, examCategory = 'General' }) {
+    const [isLivePreviewOpen, setIsLivePreviewOpen] = useState(false);
     const isIELTS = examCategory === 'IELTS';
     const modalTitle = editingQuestion
         ? (isIELTS ? 'Edit Task Prompt' : 'Edit Question')
@@ -21,11 +25,15 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
     useEffect(() => {
         if (isIELTS && form.data.type === 'mcq' && show) {
             form.setData('type', 'text');
+        } else if (examCategory === 'Kids' && form.data.type === 'mcq' && show && !editingQuestion) {
+            form.setData('type', 'drag_drop');
         }
-    }, [isIELTS, form.data.type, show]);
+    }, [isIELTS, examCategory, form.data.type, show, editingQuestion]);
+
+    const isKidsCanvas = form.data.type === 'drag_drop' || examCategory === 'Kids';
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="3xl">
+        <Modal show={show} onClose={onClose} maxWidth={isKidsCanvas ? "full" : "4xl"}>
             <div className="p-8">
                 <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1">{modalTitle}</h2>
                 <p className="text-xs text-slate-400 mb-6">Configure assessment item parameters</p>
@@ -106,9 +114,9 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                         </div>
                     </div>
 
-                    {/* Options (Only for MCQ - Hidden for IELTS) */}
+                    {/* Options / Free-Form Canvas Studio for Kids Drag & Drop */}
                     {form.data.type === 'drag_drop' && !isIELTS && (
-                        <KidsCanvasBuilder
+                        <KidsFreeformCanvasStudio
                             value={form.data.canvas_data}
                             onChange={(canvas) => form.setData('canvas_data', canvas)}
                         />
@@ -157,16 +165,78 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                         </div>
                     )}
 
-                    <div className="flex items-center justify-end gap-3 pt-2">
-                        <SecondaryButton type="button" onClick={onClose}>
-                            Cancel
-                        </SecondaryButton>
-                        <PrimaryButton type="submit" disabled={form.processing} className="bg-red-600 hover:bg-red-700 focus:ring-red-500">
-                            {form.processing ? 'Saving...' : editingQuestion ? 'Update Question' : 'Save Question'}
-                        </PrimaryButton>
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                        {isKidsCanvas && (
+                            <button
+                                type="button"
+                                onClick={() => setIsLivePreviewOpen(true)}
+                                className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs"
+                            >
+                                <Eye className="w-4 h-4" />
+                                <span>Preview Tampilan Siswa</span>
+                            </button>
+                        )}
+                        <div className="flex items-center gap-3 ml-auto">
+                            <SecondaryButton type="button" onClick={onClose}>
+                                Cancel
+                            </SecondaryButton>
+                            <PrimaryButton type="submit" disabled={form.processing} className="bg-red-600 hover:bg-red-700 focus:ring-red-500">
+                                {form.processing ? 'Saving...' : editingQuestion ? 'Update Question' : 'Save Question'}
+                            </PrimaryButton>
+                        </div>
                     </div>
                 </form>
             </div>
+
+            {/* Instant Live Student Preview Modal */}
+            <Modal show={isLivePreviewOpen} onClose={() => setIsLivePreviewOpen(false)} maxWidth="6xl">
+                <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                    <div className="flex items-center gap-2.5">
+                        <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                            <Eye className="w-4 h-4" />
+                        </span>
+                        <div>
+                            <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400">
+                                Live Student Exam Preview
+                            </h3>
+                            <p className="text-[10px] text-slate-400">
+                                Uji coba interaksi drag & drop kata dan ring persis seperti yang akan dikerjakan oleh siswa.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setIsLivePreviewOpen(false)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-lg border border-slate-700 transition-colors"
+                    >
+                        Tutup Preview
+                    </button>
+                </div>
+
+                <div className="p-6 bg-slate-50 overflow-y-auto max-h-[80vh]">
+                    <KidsFreeformCanvasQuestion
+                        question={{
+                            id: 'preview_q',
+                            number: 1,
+                            type: 'drag_drop',
+                            text: form.data.question_text || 'Placement Test Question',
+                            options: [
+                                {
+                                    id: 'preview_opt',
+                                    option_text: JSON.stringify(form.data.canvas_data || {}),
+                                    text: JSON.stringify(form.data.canvas_data || {}),
+                                    is_correct: true,
+                                }
+                            ]
+                        }}
+                        value={null}
+                        onChange={(val) => {
+                            console.log('Preview Student Answers:', val);
+                        }}
+                        isReview={false}
+                    />
+                </div>
+            </Modal>
         </Modal>
     );
 }
