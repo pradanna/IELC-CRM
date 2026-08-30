@@ -99,13 +99,9 @@ class SubmitPlacementTestAction
                         $isAllCorrect = false;
                     }
 
-                    // Proporsionalitas: (Jumlah Benar / Total Dropzone) * Bobot Poin Soal
+                    // Nilai dihitung per dropzone yang benar dikalikan bobot poin (points per correct dropzone)
                     $questionPoints = (float)($question->points ?? 1);
-                    if ($totalTargets > 0) {
-                        $earnedScore = round(($correctTargetsCount / $totalTargets) * $questionPoints, 2);
-                    } else {
-                        $earnedScore = 0;
-                    }
+                    $earnedScore = $correctTargetsCount * $questionPoints;
 
                     $isQuestionCorrect = ($totalTargets > 0 && $isAllCorrect);
                     $totalScore += $earnedScore;

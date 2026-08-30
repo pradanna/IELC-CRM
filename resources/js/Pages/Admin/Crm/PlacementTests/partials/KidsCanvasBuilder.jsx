@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Layers, Sparkles, Image as ImageIcon, CheckCircle2, Move, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Layers, Palette, Image as ImageIcon, CheckCircle2, Move, AlertCircle } from 'lucide-react';
 import TextInput from '@/Components/form/TextInput';
 import InputLabel from '@/Components/form/InputLabel';
 
@@ -86,7 +86,7 @@ export default function KidsCanvasBuilder({ value, onChange }) {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="p-2 bg-amber-500/10 text-amber-600 rounded-xl">
-                        <Sparkles className="w-5 h-5" />
+                        <Palette className="w-5 h-5" />
                     </span>
                     <div>
                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">

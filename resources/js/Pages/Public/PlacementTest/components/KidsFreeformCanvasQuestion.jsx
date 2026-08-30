@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
     DndContext, 
     DragOverlay, 
@@ -9,7 +9,11 @@ import {
     useSensor, 
     useSensors 
 } from '@dnd-kit/core';
-import { Sparkles, CheckCircle2, RotateCcw, Move, X, Eye } from 'lucide-react';
+import { CheckCircle2, RotateCcw, Move, X, Eye } from 'lucide-react';
+
+// Base Reference Coordinate System from Admin Studio
+const BASE_WIDTH = 920;
+const BASE_HEIGHT = 560;
 
 // Draggable Token Component (supports both Ring Token & Word Token)
 function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
@@ -289,6 +293,26 @@ export default function KidsFreeformCanvasQuestion({
     onChange,
     isReview = false
 }) {
+    const containerRef = useRef(null);
+    const [canvasScale, setCanvasScale] = useState(1);
+
+    // Responsive Canvas Resizing calculation
+    useEffect(() => {
+        const updateScale = () => {
+            if (!containerRef.current) return;
+            const containerWidth = containerRef.current.clientWidth;
+            if (containerWidth > 0) {
+                // Skala otomatis: max 1.0 (layar lebar), dan mengecil proporsional di layar sempit / HP / tablet
+                const newScale = Math.min(1, containerWidth / BASE_WIDTH);
+                setCanvasScale(newScale);
+            }
+        };
+
+        updateScale();
+        window.addEventListener('resize', updateScale);
+        return () => window.removeEventListener('resize', updateScale);
+    }, []);
+
     // Parse Canvas Payload from kid_canvas relationship or question options
     const canvasConfig = useMemo(() => {
         if (question.kid_canvas?.canvas_data) {
@@ -386,7 +410,6 @@ export default function KidsFreeformCanvasQuestion({
                 {/* 1. Instruction Banner */}
                 {instruction && (
                     <div className="p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl flex items-center gap-3">
-                        <Sparkles className="w-5 h-5 text-amber-600 shrink-0" />
                         <p className="font-black text-xs text-amber-950 tracking-wide">
                             {instruction}
                         </p>
@@ -394,7 +417,7 @@ export default function KidsFreeformCanvasQuestion({
                 )}
 
                 {/* 2. Sticky Draggable Token Bank */}
-                <div className="sticky top-2 z-30 bg-slate-900 p-5 rounded-3xl border-2 border-amber-400/40 shadow-xl text-white">
+                <div className="sticky top-2 z-30 bg-slate-900 p-4 sm:p-5 rounded-3xl border-2 border-amber-400/40 shadow-xl text-white">
                     <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
                         <div className="flex items-center gap-2">
                             <h4 className="font-black text-xs uppercase tracking-widest text-amber-400">
@@ -408,24 +431,17 @@ export default function KidsFreeformCanvasQuestion({
                                 onClick={handleResetAll}
                                 className="text-[10px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-wider flex items-center gap-1 transition-colors"
                             >
-                                <RotateCcw className="w-3 h-3" /> Reset Jawaban
+                                <RotateCcw className="w-3 h-3" /> Reset Semua
                             </button>
                         )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4">
-                        {/* Check & Cross Tokens Group */}
-                        {(checkTokens.length > 0 || crossTokens.length > 0) && (
-                            <div className="flex items-center gap-2.5 p-2 bg-slate-800/90 rounded-2xl border border-slate-700">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Simbol Centang / Silang:</span>
-                                {checkTokens.map(tok => (
-                                    <DraggableTokenItem
-                                        key={tok.id}
-                                        token={tok}
-                                        isUsed={usedTokenIds.includes(tok.id)}
-                                    />
-                                ))}
-                                {crossTokens.map(tok => (
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Ring Tokens Group */}
+                        {ringTokens.length > 0 && (
+                            <div className="flex items-center gap-2 p-2 bg-slate-800/90 rounded-2xl border border-slate-700">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Lingkaran:</span>
+                                {ringTokens.map(tok => (
                                     <DraggableTokenItem
                                         key={tok.id}
                                         token={tok}
@@ -435,11 +451,18 @@ export default function KidsFreeformCanvasQuestion({
                             </div>
                         )}
 
-                        {/* Ring Tokens Group */}
-                        {ringTokens.length > 0 && (
+                        {/* Check & Cross Tokens Group */}
+                        {(checkTokens.length > 0 || crossTokens.length > 0) && (
                             <div className="flex items-center gap-2 p-2 bg-slate-800/90 rounded-2xl border border-slate-700">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Lingkaran:</span>
-                                {ringTokens.map(tok => (
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Simbol Centang / Silang:</span>
+                                {checkTokens.map(tok => (
+                                    <DraggableTokenItem
+                                        key={tok.id}
+                                        token={tok}
+                                        isUsed={usedTokenIds.includes(tok.id)}
+                                    />
+                                ))}
+                                {crossTokens.map(tok => (
                                     <DraggableTokenItem
                                         key={tok.id}
                                         token={tok}
@@ -465,75 +488,92 @@ export default function KidsFreeformCanvasQuestion({
                     </div>
                 </div>
 
-                {/* 3. Free-Form Canvas Rendering Area */}
-                <div className="relative bg-white rounded-3xl border-4 border-slate-200 shadow-xl overflow-hidden p-6 min-h-[520px]">
-                    {/* Render Canvas Elements (Text & Images) */}
-                    {elements.map((el) => {
-                        if (el.type === 'text') {
+                {/* 3. Free-Form Canvas Responsive Rendering Area */}
+                <div 
+                    ref={containerRef}
+                    className="w-full bg-slate-100 rounded-3xl border-4 border-slate-200 shadow-xl overflow-hidden flex justify-center items-center"
+                    style={{
+                        height: `${BASE_HEIGHT * canvasScale}px`,
+                        maxHeight: `${BASE_HEIGHT}px`
+                    }}
+                >
+                    <div 
+                        className="relative bg-white shrink-0 origin-top-left transition-transform duration-75"
+                        style={{
+                            width: `${BASE_WIDTH}px`,
+                            height: `${BASE_HEIGHT}px`,
+                            transform: `scale(${canvasScale})`,
+                            transformOrigin: 'top left',
+                        }}
+                    >
+                        {/* Render Canvas Elements (Text & Images) */}
+                        {elements.map((el) => {
+                            if (el.type === 'text') {
+                                return (
+                                    <div
+                                        key={el.id}
+                                        style={{
+                                            position: 'absolute',
+                                            left: `${el.x}px`,
+                                            top: `${el.y}px`,
+                                            fontSize: `${el.fontSize || 18}px`,
+                                            fontWeight: el.fontStyle?.includes('bold') ? 'bold' : 'normal',
+                                            fontStyle: el.fontStyle?.includes('italic') ? 'italic' : 'normal',
+                                            color: el.fill || '#1e293b',
+                                            fontFamily: "'Comic Sans MS', 'Outfit', 'Inter', sans-serif"
+                                        }}
+                                        className="select-none pointer-events-none whitespace-pre"
+                                    >
+                                        {el.text}
+                                    </div>
+                                );
+                            } else if (el.type === 'image') {
+                                return (
+                                    <img
+                                        key={el.id}
+                                        src={el.src}
+                                        alt="Canvas Clip-Art"
+                                        style={{
+                                            position: 'absolute',
+                                            left: `${el.x}px`,
+                                            top: `${el.y}px`,
+                                            width: `${el.width || 100}px`,
+                                            height: `${el.height || 100}px`,
+                                        }}
+                                        className="select-none pointer-events-none object-contain"
+                                    />
+                                );
+                            }
+                            return null;
+                        })}
+
+                        {/* Render Droppable Canvas Targets */}
+                        {targets.map((tgt) => {
+                            const assignedTokenId = answers[tgt.id];
+                            const assignedToken = tgt.type === 'input_target' 
+                                ? assignedTokenId 
+                                : tokens.find(t => t.id === assignedTokenId);
+
+                            const isCorrect = tgt.type === 'ring_target'
+                                ? assignedToken?.type === 'ring'
+                                : tgt.type === 'box_target'
+                                ? (tgt.correct_symbol ? assignedToken?.type === tgt.correct_symbol : (tgt.correct_token_id ? assignedToken?.type === (tgt.correct_token_id.includes('chk') ? 'check' : 'cross') : false))
+                                : tgt.type === 'input_target'
+                                ? (String(assignedTokenId || '').trim().toLowerCase() === String(tgt.correct_text || '').trim().toLowerCase())
+                                : tgt.correct_token_id === assignedTokenId;
+
                             return (
-                                <div
-                                    key={el.id}
-                                    style={{
-                                        position: 'absolute',
-                                        left: `${el.x}px`,
-                                        top: `${el.y}px`,
-                                        fontSize: `${el.fontSize || 18}px`,
-                                        fontWeight: el.fontStyle?.includes('bold') ? 'bold' : 'normal',
-                                        fontStyle: el.fontStyle?.includes('italic') ? 'italic' : 'normal',
-                                        color: el.fill || '#1e293b',
-                                        fontFamily: "'Comic Sans MS', 'Outfit', 'Inter', sans-serif"
-                                    }}
-                                    className="select-none pointer-events-none whitespace-pre"
-                                >
-                                    {el.text}
-                                </div>
-                            );
-                        } else if (el.type === 'image') {
-                            return (
-                                <img
-                                    key={el.id}
-                                    src={el.src}
-                                    alt="Canvas Clip-Art"
-                                    style={{
-                                        position: 'absolute',
-                                        left: `${el.x}px`,
-                                        top: `${el.y}px`,
-                                        width: `${el.width || 100}px`,
-                                        height: `${el.height || 100}px`,
-                                    }}
-                                    className="select-none pointer-events-none object-contain"
+                                <DroppableCanvasTarget
+                                    key={tgt.id}
+                                    target={tgt}
+                                    assignedToken={assignedToken}
+                                    onRemove={handleRemoveFromTarget}
+                                    isReview={isReview}
+                                    isCorrect={isCorrect}
                                 />
                             );
-                        }
-                        return null;
-                    })}
-
-                    {/* Render Droppable Canvas Targets */}
-                    {targets.map((tgt) => {
-                        const assignedTokenId = answers[tgt.id];
-                        const assignedToken = tgt.type === 'input_target' 
-                            ? assignedTokenId 
-                            : tokens.find(t => t.id === assignedTokenId);
-
-                        const isCorrect = tgt.type === 'ring_target'
-                            ? assignedToken?.type === 'ring'
-                            : tgt.type === 'box_target'
-                            ? (tgt.correct_symbol ? assignedToken?.type === tgt.correct_symbol : (tgt.correct_token_id ? assignedToken?.type === (tgt.correct_token_id.includes('chk') ? 'check' : 'cross') : false))
-                            : tgt.type === 'input_target'
-                            ? (String(assignedTokenId || '').trim().toLowerCase() === String(tgt.correct_text || '').trim().toLowerCase())
-                            : tgt.correct_token_id === assignedTokenId;
-
-                        return (
-                            <DroppableCanvasTarget
-                                key={tgt.id}
-                                target={tgt}
-                                assignedToken={assignedToken}
-                                onRemove={handleRemoveFromTarget}
-                                isReview={isReview}
-                                isCorrect={isCorrect}
-                            />
-                        );
-                    })}
+                        })}
+                    </div>
                 </div>
 
                 {/* Drag Overlay */}

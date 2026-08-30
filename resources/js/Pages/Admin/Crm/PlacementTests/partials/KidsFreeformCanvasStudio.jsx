@@ -14,7 +14,9 @@ import {
     X,
     MousePointer,
     CheckCircle2,
-    Eye
+    Eye,
+    Undo2,
+    Redo2
 } from 'lucide-react';
 import TextInput from '@/Components/form/TextInput';
 import InputLabel from '@/Components/form/InputLabel';
@@ -100,33 +102,162 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         };
     });
 
-    const [selectedId, setSelectedId] = useState(null);
-    const [selectedTargetId, setSelectedTargetId] = useState(null);
+    const [selectedIds, setSelectedIds] = useState([]); // Array of selected element IDs
+    const [selectedTargetIds, setSelectedTargetIds] = useState([]); // Array of selected target IDs
     const [activeTab, setActiveTab] = useState('elements'); // 'elements' | 'targets' | 'tokens'
     const [newWordInput, setNewWordInput] = useState('');
+    const [editingTextId, setEditingTextId] = useState(null);
+    const [editingTextValue, setEditingTextValue] = useState('');
+    const [editingTargetId, setEditingTargetId] = useState(null);
+    const [editingTargetValue, setEditingTargetValue] = useState('');
     const trRef = useRef(null);
     const stageRef = useRef(null);
+    const textInputRef = useRef(null);
+    const targetInputRef = useRef(null);
+
+    // Undo / Redo History Stack
+    const [history, setHistory] = useState([canvasState]);
+    const [historyStep, setHistoryStep] = useState(0);
+
+    const pushHistory = (newState) => {
+        setHistory(prev => {
+            const nextHistory = prev.slice(0, historyStep + 1);
+            return [...nextHistory, newState];
+        });
+        setHistoryStep(prev => prev + 1);
+    };
+
+    const handleUndo = () => {
+        if (historyStep > 0) {
+            const prevStep = historyStep - 1;
+            setHistoryStep(prevStep);
+            setCanvasState(history[prevStep]);
+            setSelectedIds([]);
+            setSelectedTargetIds([]);
+            setEditingTextId(null);
+            setEditingTargetId(null);
+        }
+    };
+
+    const handleRedo = () => {
+        if (historyStep < history.length - 1) {
+            const nextStep = historyStep + 1;
+            setHistoryStep(nextStep);
+            setCanvasState(history[nextStep]);
+            setSelectedIds([]);
+            setSelectedTargetIds([]);
+            setEditingTextId(null);
+            setEditingTargetId(null);
+        }
+    };
+
+    // Helper updater with history tracking
+    const updateCanvasStateWithHistory = (updater) => {
+        setCanvasState(prev => {
+            const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+            pushHistory(next);
+            return next;
+        });
+    };
+
+    const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
+    const selectedTargetId = selectedTargetIds.length === 1 ? selectedTargetIds[0] : null;
+
+    const setSelectedId = (id) => {
+        setSelectedIds(id ? [id] : []);
+    };
+
+    const setSelectedTargetId = (id) => {
+        setSelectedTargetIds(id ? [id] : []);
+    };
 
     // Synchronize to Parent Form
     useEffect(() => {
         onChange(canvasState);
     }, [canvasState]);
 
-    // Handle selection transformer
+    // Focus & select text when entering inline edit mode
+    useEffect(() => {
+        if (editingTextId && textInputRef.current) {
+            textInputRef.current.focus();
+            textInputRef.current.select();
+        }
+    }, [editingTextId]);
+
+    // Focus & select target when entering inline edit mode
+    useEffect(() => {
+        if (editingTargetId && targetInputRef.current) {
+            targetInputRef.current.focus();
+            targetInputRef.current.select();
+        }
+    }, [editingTargetId]);
+
+    // Handle selection transformer (supports multi-selection for elements & targets!)
     useEffect(() => {
         if (!trRef.current || !stageRef.current) return;
-        if (!selectedId) {
+        if ((selectedIds.length === 0 && selectedTargetIds.length === 0) || editingTextId || editingTargetId) {
             trRef.current.nodes([]);
             trRef.current.getLayer()?.batchDraw();
             return;
         }
 
-        const selectedNode = stageRef.current.findOne('#' + selectedId);
-        if (selectedNode) {
-            trRef.current.nodes([selectedNode]);
-            trRef.current.getLayer()?.batchDraw();
+        const elementNodes = selectedIds
+            .map(id => stageRef.current.findOne('#' + id))
+            .filter(Boolean);
+
+        const targetNodes = selectedTargetIds
+            .map(id => stageRef.current.findOne('#' + id))
+            .filter(Boolean);
+
+        trRef.current.nodes([...elementNodes, ...targetNodes]);
+        trRef.current.getLayer()?.batchDraw();
+    }, [selectedIds, selectedTargetIds, editingTextId, editingTargetId, canvasState.elements, canvasState.targets]);
+
+    // Inline Text Editing Actions
+    const handleStartEditText = (el) => {
+        setSelectedIds([el.id]);
+        setSelectedTargetIds([]);
+        setActiveTab('elements');
+        setEditingTargetId(null);
+        setEditingTextId(el.id);
+        setEditingTextValue(el.text || '');
+    };
+
+    const handleFinishEditText = () => {
+        if (editingTextId) {
+            const trimmed = editingTextValue;
+            handleUpdateElement(editingTextId, { text: trimmed });
+            setEditingTextId(null);
         }
-    }, [selectedId, canvasState.elements]);
+    };
+
+    // Inline Target Label / Word Editing Actions (Double-Click on Word Spot / Input Spot)
+    const handleStartEditTarget = (tgt) => {
+        setSelectedTargetIds([tgt.id]);
+        setSelectedIds([]);
+        setActiveTab('targets');
+        setEditingTextId(null);
+        setEditingTargetId(tgt.id);
+        if (tgt.type === 'input_target') {
+            setEditingTargetValue(tgt.correct_text || tgt.label || '');
+        } else {
+            setEditingTargetValue(tgt.label || '');
+        }
+    };
+
+    const handleFinishEditTarget = () => {
+        if (editingTargetId) {
+            const tgt = canvasState.targets.find(t => t.id === editingTargetId);
+            if (tgt) {
+                if (tgt.type === 'input_target') {
+                    handleUpdateTarget(editingTargetId, { correct_text: editingTargetValue, label: editingTargetValue || tgt.label });
+                } else {
+                    handleUpdateTarget(editingTargetId, { label: editingTargetValue });
+                }
+            }
+            setEditingTargetId(null);
+        }
+    };
 
     // 1. Add Text Element
     const handleAddText = () => {
@@ -146,32 +277,232 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             elements: [...prev.elements, newElem]
         }));
         setSelectedId(newId);
+        // Langsung aktifkan mode edit teks agar kursor langsung masuk
+        handleStartEditText(newElem);
     };
 
-    // 2. Add Image Element via file input
-    const handleAddImage = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
+
+    // Helper: proses file gambar menjadi elemen canvas dengan dimensi proporsional
+    const processImageFile = (file, dropX = 150, dropY = 150) => {
+        if (!file || !file.type.startsWith('image/')) return;
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            const newId = `img_${Date.now()}`;
-            const newElem = {
-                id: newId,
-                type: 'image',
-                src: event.target.result,
-                x: 150,
-                y: 150,
-                width: 90,
-                height: 70
+            const dataUrl = event.target.result;
+            const tempImg = new window.Image();
+            tempImg.src = dataUrl;
+            tempImg.onload = () => {
+                // Hitung dimensi yang pas di canvas (maksimal lebar/tinggi ~180px dengan menjaga aspect ratio)
+                const maxDim = 180;
+                let w = tempImg.naturalWidth || 120;
+                let h = tempImg.naturalHeight || 100;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round((h / w) * maxDim);
+                        w = maxDim;
+                    } else {
+                        w = Math.round((w / h) * maxDim);
+                        h = maxDim;
+                    }
+                }
+
+                // Posisi center pada titik drop
+                const finalX = Math.max(10, Math.min(stageWidth - w - 10, dropX - w / 2));
+                const finalY = Math.max(10, Math.min(stageHeight - h - 10, dropY - h / 2));
+
+                const newId = `img_${Date.now()}`;
+                const newElem = {
+                    id: newId,
+                    type: 'image',
+                    src: dataUrl,
+                    x: Math.round(finalX),
+                    y: Math.round(finalY),
+                    width: w,
+                    height: h
+                };
+                setCanvasState(prev => ({
+                    ...prev,
+                    elements: [...prev.elements, newElem]
+                }));
+                setSelectedId(newId);
+                setActiveTab('elements');
             };
-            setCanvasState(prev => ({
-                ...prev,
-                elements: [...prev.elements, newElem]
-            }));
-            setSelectedId(newId);
         };
         reader.readAsDataURL(file);
+    };
+
+    // Select All Elements & Targets (Ctrl+A)
+    const handleSelectAll = () => {
+        const allElementIds = canvasState.elements.map(el => el.id);
+        const allTargetIds = canvasState.targets.map(tgt => tgt.id);
+        setSelectedIds(allElementIds);
+        setSelectedTargetIds(allTargetIds);
+        setActiveTab('elements');
+    };
+
+    // Duplicate Selected Items (Supports single & multiple selection)
+    const handleDuplicateSelected = () => {
+        let newElementIds = [];
+        let newTargetIds = [];
+
+        // Duplicate selected elements (text / image)
+        if (selectedIds.length > 0) {
+            const duplicatedElements = [];
+            canvasState.elements.forEach(el => {
+                if (selectedIds.includes(el.id)) {
+                    const newId = `${el.type === 'text' ? 'txt' : 'img'}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+                    newElementIds.push(newId);
+                    duplicatedElements.push({
+                        ...el,
+                        id: newId,
+                        x: Math.min(stageWidth - (el.width || 120), el.x + 20),
+                        y: Math.min(stageHeight - (el.height || 40), el.y + 20)
+                    });
+                }
+            });
+
+            if (duplicatedElements.length > 0) {
+                setCanvasState(prev => ({
+                    ...prev,
+                    elements: [...prev.elements, ...duplicatedElements]
+                }));
+            }
+        }
+
+        // Duplicate selected drop targets
+        if (selectedTargetIds.length > 0) {
+            const duplicatedTargets = [];
+            canvasState.targets.forEach(tgt => {
+                if (selectedTargetIds.includes(tgt.id)) {
+                    const newId = `tgt_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+                    newTargetIds.push(newId);
+                    duplicatedTargets.push({
+                        ...tgt,
+                        id: newId,
+                        label: `${tgt.label || 'Target'} (Copy)`,
+                        x: Math.min(stageWidth - (tgt.width || 60), tgt.x + 20),
+                        y: Math.min(stageHeight - (tgt.height || 40), tgt.y + 20)
+                    });
+                }
+            });
+
+            if (duplicatedTargets.length > 0) {
+                setCanvasState(prev => ({
+                    ...prev,
+                    targets: [...prev.targets, ...duplicatedTargets]
+                }));
+            }
+        }
+
+        if (newElementIds.length > 0) {
+            setSelectedIds(newElementIds);
+            setActiveTab('elements');
+        }
+        if (newTargetIds.length > 0) {
+            setSelectedTargetIds(newTargetIds);
+            if (newElementIds.length === 0) setActiveTab('targets');
+        }
+    };
+
+    // Keyboard Shortcuts (Ctrl+Z undo, Ctrl+Y redo, Ctrl+A select all, Ctrl+D duplicate, Delete/Backspace remove)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Jangan jalankan shortcut jika sedang mengetik di input/textarea
+            const tag = e.target.tagName.toLowerCase();
+            const isEditingInput = tag === 'input' || tag === 'textarea';
+
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey && !isEditingInput) {
+                e.preventDefault();
+                handleUndo();
+            } else if (((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y') || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z'))) && !isEditingInput) {
+                e.preventDefault();
+                handleRedo();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A') && !isEditingInput) {
+                e.preventDefault();
+                handleSelectAll();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D') && !isEditingInput) {
+                e.preventDefault();
+                handleDuplicateSelected();
+            } else if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditingInput) {
+                if (selectedIds.length > 0 || selectedTargetIds.length > 0) {
+                    e.preventDefault();
+                    updateCanvasStateWithHistory(prev => ({
+                        ...prev,
+                        elements: prev.elements.filter(el => !selectedIds.includes(el.id)),
+                        targets: prev.targets.filter(tgt => !selectedTargetIds.includes(tgt.id))
+                    }));
+                    setSelectedIds([]);
+                    setSelectedTargetIds([]);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedIds, selectedTargetIds, canvasState, history, historyStep, stageWidth, stageHeight]);
+
+    // Paste from Clipboard (Ctrl+V) handler
+    useEffect(() => {
+        const handlePaste = (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        e.preventDefault();
+                        processImageFile(file, stageWidth / 2, stageHeight / 2);
+                        break;
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('paste', handlePaste);
+        return () => window.removeEventListener('paste', handlePaste);
+    }, [stageWidth, stageHeight]);
+
+    // Handle Drop file gambar dari luar / file explorer ke Canvas
+    const handleCanvasDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOverCanvas(false);
+
+        if (!stageRef.current) return;
+        stageRef.current.setPointersPositions(e);
+        const pointerPos = stageRef.current.getPointerPosition() || { x: stageWidth / 2, y: stageHeight / 2 };
+
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('image/')) {
+                    // Staggering jika drop banyak file sekaligus
+                    const offsetX = pointerPos.x + (i * 20);
+                    const offsetY = pointerPos.y + (i * 20);
+                    processImageFile(files[i], offsetX, offsetY);
+                }
+            }
+        }
+    };
+
+    const handleCanvasDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isDragOverCanvas) setIsDragOverCanvas(true);
+    };
+
+    const handleCanvasDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOverCanvas(false);
+    };
+
+    // 2. Add Image Element via file input button
+    const handleAddImage = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        processImageFile(file, 150, 150);
         e.target.value = '';
     };
 
@@ -339,6 +670,32 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {/* Undo / Redo Buttons */}
+                    <div className="flex items-center bg-white rounded-xl border border-slate-300 p-0.5 shadow-sm mr-1">
+                        <button
+                            type="button"
+                            onClick={handleUndo}
+                            disabled={historyStep <= 0}
+                            title="Undo (Ctrl+Z)"
+                            className={`p-1.5 rounded-lg transition-colors ${
+                                historyStep > 0 ? 'text-slate-700 hover:bg-slate-100 cursor-pointer' : 'text-slate-300 cursor-not-allowed'
+                            }`}
+                        >
+                            <Undo2 className="w-4 h-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleRedo}
+                            disabled={historyStep >= history.length - 1}
+                            title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
+                            className={`p-1.5 rounded-lg transition-colors ${
+                                historyStep < history.length - 1 ? 'text-slate-700 hover:bg-slate-100 cursor-pointer' : 'text-slate-300 cursor-not-allowed'
+                            }`}
+                        >
+                            <Redo2 className="w-4 h-4" />
+                        </button>
+                    </div>
+
                     {/* Add Text */}
                     <button
                         type="button"
@@ -421,21 +778,54 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 {/* 1. Interactive Konva Canvas (8 Cols) */}
                 <div className="lg:col-span-8 space-y-2">
                     <div className="flex items-center justify-between px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        <span className="flex items-center gap-1.5">
-                            <MousePointer className="w-3.5 h-3.5 text-amber-600" />
-                            Live Interactive Canvas Workspace (Drag untuk memindahkan elemen)
+                        <span className="flex items-center gap-2 flex-wrap">
+                            <span className="flex items-center gap-1 text-slate-700">
+                                <MousePointer className="w-3.5 h-3.5 text-amber-600" />
+                                <span><b>Ctrl+Z</b> Undo</span>
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span><b>Ctrl+Y</b> Redo</span>
+                            <span className="text-slate-300">•</span>
+                            <span><b>Ctrl+A</b> Pilih Semua</span>
+                            <span className="text-slate-300">•</span>
+                            <span><b>Ctrl+D</b> Duplikat</span>
+                            <span className="text-slate-300">•</span>
+                            <span><b>Ctrl+V</b> Tempel Gambar</span>
+                            <span className="text-slate-300">•</span>
+                            <span><b>Del</b> Hapus</span>
                         </span>
-                        <span>{stageWidth} x {stageHeight} px</span>
+                        <span className="shrink-0 text-slate-400 font-mono">{stageWidth} x {stageHeight} px</span>
                     </div>
 
-                    <div className="bg-white rounded-3xl p-3 shadow-2xl border-4 border-slate-700/80 overflow-hidden flex items-center justify-center">
+                    <div
+                        onDrop={handleCanvasDrop}
+                        onDragOver={handleCanvasDragOver}
+                        onDragLeave={handleCanvasDragLeave}
+                        className={`relative bg-white rounded-3xl p-3 shadow-2xl border-4 transition-all overflow-x-auto overflow-y-hidden flex items-center justify-start lg:justify-center ${
+                            isDragOverCanvas ? 'border-amber-500 ring-4 ring-amber-500/20 bg-amber-50/20' : 'border-slate-700/80'
+                        }`}
+                    >
+                        {/* Drag & Drop Overlay Indicator */}
+                        {isDragOverCanvas && (
+                            <div className="absolute inset-0 z-30 bg-amber-500/10 backdrop-blur-xs flex flex-col items-center justify-center border-2 border-dashed border-amber-500 rounded-2xl pointer-events-none">
+                                <div className="p-4 bg-white/95 rounded-2xl shadow-xl border border-amber-200 flex items-center gap-3 animate-bounce">
+                                    <ImageIcon className="w-8 h-8 text-amber-600" />
+                                    <div>
+                                        <p className="text-sm font-black text-slate-800">Lepaskan File Gambar Di Sini</p>
+                                        <p className="text-xs text-slate-500">Gambar akan langsung ditempelkan ke titik kursor Anda</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <Stage
                             ref={stageRef}
                             width={stageWidth}
                             height={stageHeight}
                             onMouseDown={(e) => {
-                                if (e.target === e.target.getStage()) {
-                                    setSelectedId(null);
+                                if (e.target === e.target.getStage() || e.target.name?.() === 'bg_rect') {
+                                    setSelectedIds([]);
+                                    setSelectedTargetIds([]);
                                 }
                             }}
                             className="bg-white rounded-2xl cursor-default select-none shadow-inner"
@@ -443,6 +833,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             <Layer>
                                 {/* Background Canvas Paper */}
                                 <Rect
+                                    name="bg_rect"
                                     x={0}
                                     y={0}
                                     width={stageWidth}
@@ -468,6 +859,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                 {/* Render Canvas Elements (Text & Images) */}
                                 {canvasState.elements.map((el) => {
                                     if (el.type === 'text') {
+                                        const isEditing = editingTextId === el.id;
                                         return (
                                             <KonvaText
                                                 key={el.id}
@@ -475,11 +867,12 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                 text={el.text}
                                                 x={el.x}
                                                 y={el.y}
+                                                visible={!isEditing}
                                                 fontSize={el.fontSize || 18}
                                                 fontStyle={el.fontStyle || 'normal'}
                                                 fontFamily="'Comic Sans MS', 'Outfit', 'Inter', sans-serif"
                                                 fill={el.fill || '#1e293b'}
-                                                draggable
+                                                draggable={!isEditing}
                                                 onClick={() => {
                                                     setSelectedId(el.id);
                                                     setSelectedTargetId(null);
@@ -490,6 +883,8 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                     setSelectedTargetId(null);
                                                     setActiveTab('elements');
                                                 }}
+                                                onDblClick={() => handleStartEditText(el)}
+                                                onDblTap={() => handleStartEditText(el)}
                                                 onDragEnd={(e) => {
                                                     handleUpdateElement(el.id, {
                                                         x: e.target.x(),
@@ -518,12 +913,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
                                 {/* Render Interactive Target Spots */}
                                 {canvasState.targets.map((tgt) => {
-                                    const isTargetSelected = selectedTargetId === tgt.id;
+                                    const isTargetSelected = selectedTargetIds.includes(tgt.id);
 
                                     if (tgt.type === 'ring_target') {
                                         return (
                                             <Group
                                                 key={tgt.id}
+                                                id={tgt.id}
                                                 x={tgt.x}
                                                 y={tgt.y}
                                                 draggable
@@ -567,6 +963,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                         return (
                                             <Group
                                                 key={tgt.id}
+                                                id={tgt.id}
                                                 x={tgt.x}
                                                 y={tgt.y}
                                                 draggable
@@ -607,12 +1004,15 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             </Group>
                                         );
                                     } else if (tgt.type === 'input_target') {
+                                        const isEditingTgt = editingTargetId === tgt.id;
                                         return (
                                             <Group
                                                 key={tgt.id}
+                                                id={tgt.id}
                                                 x={tgt.x}
                                                 y={tgt.y}
-                                                draggable
+                                                draggable={!isEditingTgt}
+                                                visible={!isEditingTgt}
                                                 onClick={() => {
                                                     setSelectedTargetId(tgt.id);
                                                     setSelectedId(null);
@@ -623,6 +1023,8 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                     setSelectedId(null);
                                                     setActiveTab('targets');
                                                 }}
+                                                onDblClick={() => handleStartEditTarget(tgt)}
+                                                onDblTap={() => handleStartEditTarget(tgt)}
                                                 onDragEnd={(e) => {
                                                     handleUpdateTarget(tgt.id, {
                                                         x: e.target.x(),
@@ -649,12 +1051,15 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             </Group>
                                         );
                                     } else if (tgt.type === 'word_target') {
+                                        const isEditingTgt = editingTargetId === tgt.id;
                                         return (
                                             <Group
                                                 key={tgt.id}
+                                                id={tgt.id}
                                                 x={tgt.x}
                                                 y={tgt.y}
-                                                draggable
+                                                draggable={!isEditingTgt}
+                                                visible={!isEditingTgt}
                                                 onClick={() => {
                                                     setSelectedTargetId(tgt.id);
                                                     setSelectedId(null);
@@ -665,6 +1070,8 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                     setSelectedId(null);
                                                     setActiveTab('targets');
                                                 }}
+                                                onDblClick={() => handleStartEditTarget(tgt)}
+                                                onDblTap={() => handleStartEditTarget(tgt)}
                                                 onDragEnd={(e) => {
                                                     handleUpdateTarget(tgt.id, {
                                                         x: e.target.x(),
@@ -705,6 +1112,93 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                 />
                             </Layer>
                         </Stage>
+
+                        {/* Floating Direct Inline Text Editor (Double-Click / 2x Klik Teks) */}
+                        {editingTextId && (() => {
+                            const editingEl = canvasState.elements.find(el => el.id === editingTextId && el.type === 'text');
+                            if (!editingEl) return null;
+
+                            return (
+                                <textarea
+                                    ref={textInputRef}
+                                    value={editingTextValue}
+                                    onChange={(e) => {
+                                        setEditingTextValue(e.target.value);
+                                        handleUpdateElement(editingTextId, { text: e.target.value });
+                                    }}
+                                    onBlur={handleFinishEditText}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleFinishEditText();
+                                        } else if (e.key === 'Escape') {
+                                            handleFinishEditText();
+                                        }
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${editingEl.x + 12}px`,
+                                        top: `${editingEl.y + 12}px`,
+                                        fontSize: `${editingEl.fontSize || 18}px`,
+                                        fontStyle: editingEl.fontStyle?.includes('italic') ? 'italic' : 'normal',
+                                        fontWeight: editingEl.fontStyle?.includes('bold') ? 'bold' : 'normal',
+                                        fontFamily: "'Comic Sans MS', 'Outfit', 'Inter', sans-serif",
+                                        color: editingEl.fill || '#1e293b',
+                                        lineHeight: 1.2,
+                                        zIndex: 40,
+                                        minWidth: '120px',
+                                        minHeight: `${(editingEl.fontSize || 18) * 1.5}px`
+                                    }}
+                                    className="bg-white/95 border-2 border-amber-500 rounded-lg p-1.5 shadow-2xl outline-none ring-4 ring-amber-500/20 resize"
+                                    placeholder="Ketik teks di sini..."
+                                />
+                            );
+                        })()}
+
+                        {/* Floating Direct Target / Word Spot Editor (Double-Click / 2x Klik Word Spot) */}
+                        {editingTargetId && (() => {
+                            const editingTgt = canvasState.targets.find(t => t.id === editingTargetId);
+                            if (!editingTgt) return null;
+
+                            const isInputTgt = editingTgt.type === 'input_target';
+
+                            return (
+                                <input
+                                    ref={targetInputRef}
+                                    type="text"
+                                    value={editingTargetValue}
+                                    onChange={(e) => {
+                                        setEditingTargetValue(e.target.value);
+                                        if (isInputTgt) {
+                                            handleUpdateTarget(editingTargetId, { correct_text: e.target.value, label: e.target.value || editingTgt.label });
+                                        } else {
+                                            handleUpdateTarget(editingTargetId, { label: e.target.value });
+                                        }
+                                    }}
+                                    onBlur={handleFinishEditTarget}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === 'Escape') {
+                                            e.preventDefault();
+                                            handleFinishEditTarget();
+                                        }
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${editingTgt.x + 12}px`,
+                                        top: `${editingTgt.y + 12}px`,
+                                        width: `${Math.max(120, editingTgt.width || 100)}px`,
+                                        height: `${editingTgt.height || 32}px`,
+                                        zIndex: 40,
+                                    }}
+                                    className={`bg-white border-2 rounded-lg px-2 text-xs font-black shadow-2xl outline-none ring-4 ${
+                                        isInputTgt 
+                                            ? 'border-sky-500 text-sky-950 ring-sky-500/20' 
+                                            : 'border-amber-500 text-amber-950 ring-amber-500/20'
+                                    }`}
+                                    placeholder={isInputTgt ? "Kunci jawaban..." : "Label Word Spot..."}
+                                />
+                            );
+                        })()}
                     </div>
 
                     {/* Live Token Bank Preview Bar (Tampilan Token Yang Diberikan ke Siswa) */}

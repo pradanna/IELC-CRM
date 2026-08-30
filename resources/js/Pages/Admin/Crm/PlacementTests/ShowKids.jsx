@@ -8,7 +8,6 @@ import {
     Trash2,
     Edit2,
     FileText,
-    Sparkles,
     Palette,
     PlayCircle,
     LayoutGrid,
@@ -78,7 +77,7 @@ export default function ShowKids({ exam }) {
             render: (row) => (
                 <div className="flex items-start gap-3 py-1">
                     <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
-                        <Sparkles size={16} />
+                        <Palette size={16} />
                     </div>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -124,15 +123,15 @@ export default function ShowKids({ exam }) {
             },
         },
         {
-            header: "Poin",
+            header: "Poin / Item",
             accessor: "points",
-            className: "w-16 text-center",
+            className: "w-24 text-center",
             render: (row) =>
                 row.isGroupHeader ? (
                     ""
                 ) : (
                     <span className="text-xs font-black text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
-                        {row.points || 1}
+                        {row.points || 1} pt
                     </span>
                 ),
         },
@@ -260,7 +259,7 @@ export default function ShowKids({ exam }) {
                         ) : (
                             <div className="text-center py-20 space-y-4">
                                 <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-400 mx-auto border-2 border-dashed border-amber-200">
-                                    <Sparkles size={28} />
+                                    <Palette size={28} />
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-black text-slate-900 tracking-tight">
@@ -275,7 +274,7 @@ export default function ShowKids({ exam }) {
                                 <div className="flex items-center justify-center gap-3 pt-2">
                                     <Button
                                         variant="primary"
-                                        icon={Sparkles}
+                                        icon={Palette}
                                         onClick={() => openQuestionModal()}
                                         className="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
                                     >

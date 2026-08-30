@@ -7,7 +7,7 @@ import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
 import FileInput from '@/Components/form/FileInput';
-import { Sparkles, Music, Eye } from 'lucide-react';
+import { Music, Eye, Palette } from 'lucide-react';
 import KidsFreeformCanvasStudio from '../partials/KidsFreeformCanvasStudio';
 import KidsFreeformCanvasQuestion from '@/Pages/Public/PlacementTest/components/KidsFreeformCanvasQuestion';
 
@@ -26,7 +26,7 @@ export default function KidsCanvasModal({ show, onClose, form, onSubmit, editing
                 <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold border border-amber-200">
-                            <Sparkles size={20} />
+                            <Palette size={20} />
                         </div>
                         <div>
                             <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none">{modalTitle}</h2>
@@ -76,7 +76,7 @@ export default function KidsCanvasModal({ show, onClose, form, onSubmit, editing
 
                         {/* Points */}
                         <div>
-                            <InputLabel value="Nilai / Bobot Poin" className="font-bold" />
+                            <InputLabel value="Nilai / Bobot Poin per Dropzone" className="font-bold" />
                             <TextInput
                                 type="number"
                                 className="mt-1.5"
@@ -85,6 +85,9 @@ export default function KidsCanvasModal({ show, onClose, form, onSubmit, editing
                                 min={1}
                                 required
                             />
+                            <p className="text-[11px] text-slate-400 mt-1">
+                                Tiap dropzone yang dicocokkan dengan benar akan dikalikan dengan poin ini.
+                            </p>
                             <InputError message={form.errors.points} className="mt-1" />
                         </div>
                     </div>

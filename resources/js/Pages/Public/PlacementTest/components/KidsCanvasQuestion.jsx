@@ -9,7 +9,7 @@ import {
     useSensor, 
     useSensors 
 } from '@dnd-kit/core';
-import { Sparkles, CheckCircle2, RotateCcw, Volume2, Move, HelpCircle } from 'lucide-react';
+import { Palette, CheckCircle2, RotateCcw, Volume2, Move, HelpCircle } from 'lucide-react';
 
 // Draggable Card Component
 function DraggableCard({ item, isOverlay = false }) {
@@ -224,7 +224,7 @@ export default function KidsCanvasQuestion({
             <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-amber-50/70 border border-amber-200 rounded-3xl">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-sm">
-                        <Sparkles className="w-5 h-5 animate-spin" style={{ animationDuration: '6s' }} />
+                        <Palette className="w-5 h-5" />
                     </div>
                     <div>
                         <h3 className="text-sm font-black text-slate-900">

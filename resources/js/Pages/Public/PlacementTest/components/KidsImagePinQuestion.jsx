@@ -9,7 +9,7 @@ import {
     useSensor, 
     useSensors 
 } from '@dnd-kit/core';
-import { Sparkles, CheckCircle2, RotateCcw, Move, HelpCircle, Image as ImageIcon, X } from 'lucide-react';
+import { Palette, CheckCircle2, RotateCcw, Move, HelpCircle, Image as ImageIcon, X } from 'lucide-react';
 
 // Draggable Word Bank Card
 function DraggableWord({ word, isOverlay = false, isUsed = false }) {
@@ -202,9 +202,6 @@ export default function KidsImagePinQuestion({
                 <div className="sticky top-2 z-30 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 rounded-3xl border-2 border-amber-200 shadow-md">
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                         <div className="flex items-center gap-2">
-                            <span className="p-1.5 bg-amber-400 text-slate-950 rounded-xl shadow-xs">
-                                <Sparkles className="w-4 h-4" />
-                            </span>
                             <h4 className="font-black text-xs uppercase tracking-widest text-amber-950">
                                 Word Bank (Pilihan Kata)
                             </h4>

@@ -7,7 +7,7 @@ import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
 import FileInput from '@/Components/form/FileInput';
-import { AlignLeft, CheckCircle2, Music, Type, FileUp, ListChecks, FileText, Paperclip, Sparkles, Image as ImageIcon, Eye } from 'lucide-react';
+import { AlignLeft, CheckCircle2, Music, Type, FileUp, ListChecks, FileText, Paperclip, Palette, Image as ImageIcon, Eye } from 'lucide-react';
 import KidsCanvasBuilder from '../partials/KidsCanvasBuilder';
 import KidsImageCanvasBuilder from '../partials/KidsImageCanvasBuilder';
 import KidsFreeformCanvasStudio from '../partials/KidsFreeformCanvasStudio';
@@ -45,7 +45,7 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                         <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {[
                                 { id: 'mcq', label: 'Multiple Choice', icon: ListChecks, desc: 'Single correct answer', hide: isIELTS },
-                                { id: 'drag_drop', label: 'Kids Drag & Drop', icon: Sparkles, desc: 'Interactive Canvas', hide: isIELTS },
+                                { id: 'drag_drop', label: 'Kids Drag & Drop', icon: Palette, desc: 'Interactive Canvas', hide: isIELTS },
                                 { id: 'text', label: isIELTS ? 'Task / Instruction' : 'Text Essay', icon: isIELTS ? AlignLeft : Type, desc: isIELTS ? 'Instructional prompt' : 'Written response', hide: !isIELTS },
                                 { id: 'file', label: isIELTS ? 'File Prompt' : 'File Upload', icon: FileUp, desc: isIELTS ? 'Attachment instruction' : 'Assignment/document', hide: !isIELTS },
                             ].filter(t => !t.hide).map((t) => (

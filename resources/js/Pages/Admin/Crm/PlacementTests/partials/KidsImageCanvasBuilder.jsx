@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     Plus, 
     Trash2, 
+    Palette, 
     Image as ImageIcon, 
-    Sparkles, 
     CheckCircle2, 
     Move, 
     MousePointerClick, 
@@ -167,7 +167,7 @@ export default function KidsImageCanvasBuilder({ value, onChange, onMediaChange,
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-inner">
-                        <Sparkles className="w-5 h-5" />
+                        <Palette className="w-5 h-5" />
                     </div>
                     <div>
                         <h3 className="text-sm font-black uppercase tracking-wider text-amber-400">
