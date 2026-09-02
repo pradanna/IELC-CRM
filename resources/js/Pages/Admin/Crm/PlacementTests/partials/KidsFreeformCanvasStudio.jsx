@@ -30,6 +30,12 @@ import {
     AlignLeft,
     AlignCenter,
     AlignRight,
+    ArrowUp,
+    ArrowDown,
+    BringToFront,
+    SendToBack,
+    ChevronUp,
+    ChevronDown,
 } from "lucide-react";
 import TextInput from "@/Components/form/TextInput";
 import InputLabel from "@/Components/form/InputLabel";
@@ -800,6 +806,28 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                     setSelectedIds([]);
                     setSelectedTargetIds([]);
                 }
+            } else if (
+                (e.ctrlKey || e.metaKey) &&
+                (e.key === "]" || e.key === "}") &&
+                !isEditingInput
+            ) {
+                // Layer Up / Front (Ctrl+] or Ctrl+Shift+])
+                e.preventDefault();
+                const dir = e.shiftKey ? "front" : "forward";
+                if (selectedId) handleMoveElementLayer(selectedId, dir);
+                else if (selectedTargetId)
+                    handleMoveTargetLayer(selectedTargetId, dir);
+            } else if (
+                (e.ctrlKey || e.metaKey) &&
+                (e.key === "[" || e.key === "{") &&
+                !isEditingInput
+            ) {
+                // Layer Down / Back (Ctrl+[ or Ctrl+Shift+[)
+                e.preventDefault();
+                const dir = e.shiftKey ? "back" : "backward";
+                if (selectedId) handleMoveElementLayer(selectedId, dir);
+                else if (selectedTargetId)
+                    handleMoveTargetLayer(selectedTargetId, dir);
             }
         };
 
@@ -958,6 +986,63 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             elements: prev.elements.filter((el) => el.id !== id),
         }));
         if (selectedId === id) setSelectedId(null);
+    };
+
+    // Layer Reordering for Canvas Elements (Teks & Gambar)
+    // direction: 'forward' | 'backward' | 'front' | 'back'
+    const handleMoveElementLayer = (id, direction) => {
+        updateCanvasStateWithHistory((prev) => {
+            const list = [...prev.elements];
+            const index = list.findIndex((el) => el.id === id);
+            if (index === -1) return prev;
+
+            const [item] = list.splice(index, 1);
+
+            if (direction === "front") {
+                list.push(item); // Paling atas (paling depan)
+            } else if (direction === "back") {
+                list.unshift(item); // Paling bawah (paling belakang)
+            } else if (direction === "forward") {
+                const targetIdx = Math.min(list.length, index + 1);
+                list.splice(targetIdx, 0, item);
+            } else if (direction === "backward") {
+                const targetIdx = Math.max(0, index - 1);
+                list.splice(targetIdx, 0, item);
+            }
+
+            return {
+                ...prev,
+                elements: list,
+            };
+        });
+    };
+
+    // Layer Reordering for Drop Targets
+    const handleMoveTargetLayer = (id, direction) => {
+        updateCanvasStateWithHistory((prev) => {
+            const list = [...prev.targets];
+            const index = list.findIndex((t) => t.id === id);
+            if (index === -1) return prev;
+
+            const [item] = list.splice(index, 1);
+
+            if (direction === "front") {
+                list.push(item);
+            } else if (direction === "back") {
+                list.unshift(item);
+            } else if (direction === "forward") {
+                const targetIdx = Math.min(list.length, index + 1);
+                list.splice(targetIdx, 0, item);
+            } else if (direction === "backward") {
+                const targetIdx = Math.max(0, index - 1);
+                list.splice(targetIdx, 0, item);
+            }
+
+            return {
+                ...prev,
+                targets: list,
+            };
+        });
     };
 
     // 6. Update Target Properties
@@ -1254,6 +1339,10 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             <span className="text-slate-300">•</span>
                             <span>
                                 <b>Shift + Drag</b> Lurus (Vertikal/Horizontal)
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span>
+                                <b>Ctrl+[/]</b> Layer Belakang/Depan
                             </span>
                             <span className="text-slate-300">•</span>
                             <span>
@@ -2434,6 +2523,72 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Layer Ordering Controls (Urutan Depan / Belakang) */}
+                                    <div className="pt-3 border-t border-slate-100 space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-600 uppercase flex items-center justify-between">
+                                            <span>Urutan Layer (Tumpukan)</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Ctrl+[ / Ctrl+]</span>
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleMoveElementLayer(
+                                                        selectedElement.id,
+                                                        "front",
+                                                    )
+                                                }
+                                                className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
+                                                title="Pindahkan ke paling atas / paling depan (Ctrl+Shift+])"
+                                            >
+                                                <BringToFront className="w-3.5 h-3.5 text-amber-600" />
+                                                <span>Paling Depan</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleMoveElementLayer(
+                                                        selectedElement.id,
+                                                        "forward",
+                                                    )
+                                                }
+                                                className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
+                                                title="Maju 1 tingkat ke atas (Ctrl+])"
+                                            >
+                                                <ChevronUp className="w-3.5 h-3.5 text-slate-600" />
+                                                <span>Maju 1 Step</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleMoveElementLayer(
+                                                        selectedElement.id,
+                                                        "backward",
+                                                    )
+                                                }
+                                                className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
+                                                title="Mundur 1 tingkat ke bawah (Ctrl+[)"
+                                            >
+                                                <ChevronDown className="w-3.5 h-3.5 text-slate-600" />
+                                                <span>Mundur 1 Step</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleMoveElementLayer(
+                                                        selectedElement.id,
+                                                        "back",
+                                                    )
+                                                }
+                                                className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors"
+                                                title="Pindahkan ke paling bawah / background (Ctrl+Shift+[)"
+                                            >
+                                                <SendToBack className="w-3.5 h-3.5 text-amber-600" />
+                                                <span>Paling Belakang</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="py-8 text-center text-slate-400 text-xs font-medium">
@@ -2778,6 +2933,58 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                     </div>
                                                 </div>
                                             )}
+                                            {/* Target Layer Ordering Controls */}
+                                            <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between">
+                                                <span className="text-[9px] font-bold text-slate-500 uppercase">
+                                                    Layer:
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMoveTargetLayer(tgt.id, "front");
+                                                        }}
+                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
+                                                        title="Paling Depan"
+                                                    >
+                                                        <BringToFront className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMoveTargetLayer(tgt.id, "forward");
+                                                        }}
+                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
+                                                        title="Maju 1 Tingkat"
+                                                    >
+                                                        <ChevronUp className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMoveTargetLayer(tgt.id, "backward");
+                                                        }}
+                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
+                                                        title="Mundur 1 Tingkat"
+                                                    >
+                                                        <ChevronDown className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMoveTargetLayer(tgt.id, "back");
+                                                        }}
+                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
+                                                        title="Paling Belakang"
+                                                    >
+                                                        <SendToBack className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
