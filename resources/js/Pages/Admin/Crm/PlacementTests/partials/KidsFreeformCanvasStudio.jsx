@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import TextInput from "@/Components/form/TextInput";
 import InputLabel from "@/Components/form/InputLabel";
+import axios from "axios";
+import { compressImageIfNeeded } from "@/Utils/imageCompressor";
 
 // Helper hook for loading HTML images into Konva
 const useKonvaImage = (url) => {
@@ -517,59 +519,86 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
     const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
-    // Helper: proses file gambar menjadi elemen canvas dengan dimensi proporsional
-    const processImageFile = (file, dropX = 150, dropY = 150) => {
+    // Helper: proses file gambar menjadi elemen canvas dengan auto-upload ke disk storage
+    const processImageFile = async (file, dropX = 150, dropY = 150) => {
         if (!file || !file.type.startsWith("image/")) return;
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const dataUrl = event.target.result;
-            const tempImg = new window.Image();
-            tempImg.src = dataUrl;
-            tempImg.onload = () => {
-                // Hitung dimensi yang pas di canvas (maksimal lebar/tinggi ~180px dengan menjaga aspect ratio)
-                const maxDim = 180;
-                let w = tempImg.naturalWidth || 120;
-                let h = tempImg.naturalHeight || 100;
-                if (w > maxDim || h > maxDim) {
-                    if (w > h) {
-                        h = Math.round((h / w) * maxDim);
-                        w = maxDim;
-                    } else {
-                        w = Math.round((w / h) * maxDim);
-                        h = maxDim;
-                    }
+        let imageUrl = null;
+
+        try {
+            // Kompres gambar jika perlu sebelum dikirim ke server
+            const compressedFile = await compressImageIfNeeded(file, 2 * 1024 * 1024, 1920, 1920);
+            const formData = new FormData();
+            formData.append("image", compressedFile);
+
+            const uploadUrl = route("admin.placement-tests.upload-canvas-image");
+            const res = await axios.post(uploadUrl, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            if (res.data?.url) {
+                imageUrl = res.data.url;
+            }
+        } catch (err) {
+            console.warn("Gagal auto-upload gambar ke server, fallback ke Base64 lokal:", err);
+        }
+
+        // Fallback ke FileReader (Base64) jika upload jaringan gagal
+        if (!imageUrl) {
+            imageUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (!imageUrl) return;
+
+        const tempImg = new window.Image();
+        tempImg.crossOrigin = "Anonymous";
+        tempImg.src = imageUrl;
+        tempImg.onload = () => {
+            // Hitung dimensi yang pas di canvas (maksimal lebar/tinggi ~180px dengan menjaga aspect ratio)
+            const maxDim = 180;
+            let w = tempImg.naturalWidth || 120;
+            let h = tempImg.naturalHeight || 100;
+            if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                    h = Math.round((h / w) * maxDim);
+                    w = maxDim;
+                } else {
+                    w = Math.round((w / h) * maxDim);
+                    h = maxDim;
                 }
+            }
 
-                // Posisi center pada titik drop
-                const finalX = Math.max(
-                    10,
-                    Math.min(stageWidth - w - 10, dropX - w / 2),
-                );
-                const finalY = Math.max(
-                    10,
-                    Math.min(stageHeight - h - 10, dropY - h / 2),
-                );
+            // Posisi center pada titik drop
+            const finalX = Math.max(
+                10,
+                Math.min(stageWidth - w - 10, dropX - w / 2),
+            );
+            const finalY = Math.max(
+                10,
+                Math.min(stageHeight - h - 10, dropY - h / 2),
+            );
 
-                const newId = `img_${Date.now()}`;
-                const newElem = {
-                    id: newId,
-                    type: "image",
-                    src: dataUrl,
-                    x: Math.round(finalX),
-                    y: Math.round(finalY),
-                    width: w,
-                    height: h,
-                };
-                updateCanvasStateWithHistory((prev) => ({
-                    ...prev,
-                    elements: [...prev.elements, newElem],
-                }));
-                setSelectedId(newId);
-                setActiveTab("elements");
+            const newId = `img_${Date.now()}`;
+            const newElem = {
+                id: newId,
+                type: "image",
+                src: imageUrl,
+                x: Math.round(finalX),
+                y: Math.round(finalY),
+                width: w,
+                height: h,
             };
+            updateCanvasStateWithHistory((prev) => ({
+                ...prev,
+                elements: [...prev.elements, newElem],
+            }));
+            setSelectedId(newId);
+            setActiveTab("elements");
         };
-        reader.readAsDataURL(file);
     };
 
     // Select All Elements & Targets (Ctrl+A)

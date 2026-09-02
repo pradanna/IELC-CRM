@@ -11,8 +11,10 @@ use App\Http\Resources\Crm\PtExam\PtExamResource;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Domains\Academic\Domain\Models\PtExam;
 use App\Domains\Academic\Domain\Models\PtSession;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -78,6 +80,22 @@ class PtExamController extends Controller
         $action->handle($ptExam);
 
         return redirect()->route('admin.placement-tests.index')->with('success', 'Placement test package deleted successfully.');
+    }
+
+    public function uploadCanvasImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|max:10240', // Max 10MB
+        ]);
+
+        $file = $request->file('image');
+        $path = $file->store('pt_exams/kids_canvas', 'public');
+        $url = Storage::url($path);
+
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+        ]);
     }
 }
 
