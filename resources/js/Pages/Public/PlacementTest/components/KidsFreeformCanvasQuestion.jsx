@@ -12,8 +12,8 @@ import {
 import { CheckCircle2, RotateCcw, Move, X, Eye } from 'lucide-react';
 
 // Base Reference Coordinate System from Admin Studio
-const BASE_WIDTH = 920;
-const BASE_HEIGHT = 560;
+const BASE_WIDTH = 1100;
+const BASE_HEIGHT = 1000;
 
 // Draggable Token Component (supports both Ring Token & Word Token)
 function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
@@ -146,23 +146,23 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
                     height: `${height}px`,
                 }}
                 title={!isReview && assignedToken ? "Klik untuk mengembalikan token" : undefined}
-                className={`z-20 rounded-full border-2 transition-all flex items-center justify-center select-none ${
+                className={`z-20 rounded-full transition-all flex items-center justify-center select-none ${
                     !isReview && assignedToken ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
                 } ${
                     isOver
-                        ? 'border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30'
+                        ? 'border-2 border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30'
                         : assignedToken
                         ? isReview
                             ? isCorrect
-                                ? 'border-emerald-500 bg-emerald-500/20 ring-2 ring-emerald-400/30'
-                                : 'border-rose-500 bg-rose-500/20 ring-2 ring-rose-400/30'
-                            : 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-400/20'
-                        : 'border-dashed border-emerald-400/80 bg-emerald-50/20 hover:border-emerald-500'
+                                ? 'border-2 border-emerald-500 bg-emerald-500/15'
+                                : 'border-2 border-rose-500 bg-rose-500/15'
+                            : 'border-0 bg-transparent'
+                        : 'border-2 border-dashed border-emerald-400/80 bg-emerald-50/20 hover:border-emerald-500'
                 }`}
             >
                 {assignedToken ? (
                     <div className="flex items-center justify-center pointer-events-none">
-                        <span className="text-2xl drop-shadow-md">🟢</span>
+                        <span className="text-2xl drop-shadow-sm">🟢</span>
                     </div>
                 ) : null}
             </div>
@@ -189,18 +189,18 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
                     height: `${height}px`,
                 }}
                 title={!isReview && assignedToken ? "Klik untuk mengembalikan token" : undefined}
-                className={`z-20 rounded-xl border-2 transition-all flex items-center justify-center select-none ${
+                className={`z-20 rounded-xl transition-all flex items-center justify-center select-none ${
                     !isReview && assignedToken ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
                 } ${
                     isOver
-                        ? 'border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30'
+                        ? 'border-2 border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30'
                         : assignedToken
                         ? isReview
                             ? isCorrect
-                                ? 'border-emerald-500 bg-emerald-500/20 ring-2 ring-emerald-400/30'
-                                : 'border-rose-500 bg-rose-500/20 ring-2 ring-rose-400/30'
-                            : 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-400/20'
-                        : 'border-dashed border-emerald-500/80 bg-emerald-50/20 hover:border-emerald-500'
+                                ? 'border-2 border-emerald-500 bg-emerald-500/15'
+                                : 'border-2 border-rose-500 bg-rose-500/15'
+                            : 'border-0 bg-transparent'
+                        : 'border-2 border-dashed border-emerald-500/80 bg-emerald-50/20 hover:border-emerald-500'
                 }`}
             >
                 {assignedToken ? (
@@ -272,31 +272,27 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
                 height: `${target.height || 30}px`,
             }}
             title={!isReview && assignedToken ? "Klik untuk mengembalikan kata ke Token Bank" : undefined}
-            className={`z-20 rounded-xl border-2 transition-all flex items-center justify-center select-none overflow-hidden ${
+            className={`z-20 rounded-xl transition-all flex items-center justify-center select-none overflow-hidden ${
                 !isReview && assignedToken ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
             } ${
                 isOver
-                    ? 'border-orange-500 bg-orange-400/30 backdrop-blur-sm text-orange-950 scale-105 ring-4 ring-orange-400/30 z-30'
+                    ? 'border-2 border-orange-500 bg-orange-400/30 backdrop-blur-sm text-orange-950 scale-105 ring-4 ring-orange-400/30 z-30'
                     : assignedToken
                     ? isReview
                         ? isCorrect
-                            ? 'border-emerald-500 bg-emerald-500/30 backdrop-blur-sm text-emerald-950 ring-2 ring-emerald-400/30'
-                            : 'border-rose-500 bg-rose-500/30 backdrop-blur-sm text-rose-950 ring-2 ring-rose-400/30'
-                        : 'border-orange-500 bg-orange-500/25 backdrop-blur-[2px] text-orange-950 font-bold shadow-sm'
-                    : 'border-dashed border-orange-300/80 bg-orange-50/20 hover:border-orange-400'
+                            ? 'border-2 border-emerald-500 bg-emerald-500/20 text-emerald-950'
+                            : 'border-2 border-rose-500 bg-rose-500/20 text-rose-950'
+                        : 'border-0 bg-transparent text-slate-900 font-bold'
+                    : 'border-2 border-dashed border-orange-300/80 bg-orange-50/20 hover:border-orange-400'
             }`}
         >
             {assignedToken ? (
                 <div className="w-full h-full flex items-center justify-center px-1 text-center pointer-events-none">
                     <span
                         style={{
-                            fontSize: target.fontSize
-                                ? `${target.fontSize}px`
-                                : assignedToken.fontSize
-                                ? `${assignedToken.fontSize}px`
-                                : undefined,
+                            fontSize: `${assignedToken.fontSize || target.fontSize || 14}px`,
                         }}
-                        className="font-extrabold text-xs text-orange-900 drop-shadow-sm truncate w-full"
+                        className="font-black text-orange-600 drop-shadow-xs truncate w-full"
                     >
                         {assignedToken.text}
                     </span>

@@ -102,8 +102,8 @@ const CanvasImageItem = ({
 };
 
 export default function KidsFreeformCanvasStudio({ value, onChange }) {
-    const stageWidth = 920;
-    const stageHeight = 560;
+    const stageWidth = 1100;
+    const stageHeight = 1000;
 
     // Normalization helper
     const normalizeState = (raw) => {
@@ -2425,7 +2425,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                 </h4>
                             </div>
 
-                            <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+                            <div className="space-y-2 max-h-[850px] overflow-y-auto pr-1">
                                 {canvasState.targets.map((tgt, idx) => (
                                     <div
                                         key={tgt.id}
@@ -2815,7 +2815,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             </div>
 
                             {/* Token List */}
-                            <div className="space-y-2 pt-2">
+                            <div className="space-y-2 pt-2 max-h-[850px] overflow-y-auto pr-1">
                                 {canvasState.tokens.map((tok) => (
                                     <div
                                         key={tok.id}

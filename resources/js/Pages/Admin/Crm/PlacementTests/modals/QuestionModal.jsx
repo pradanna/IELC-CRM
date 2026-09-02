@@ -190,7 +190,7 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
             </div>
 
             {/* Instant Live Student Preview Modal */}
-            <Modal show={isLivePreviewOpen} onClose={() => setIsLivePreviewOpen(false)} maxWidth="6xl">
+            <Modal show={isLivePreviewOpen} onClose={() => setIsLivePreviewOpen(false)} maxWidth="full">
                 <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between rounded-t-2xl">
                     <div className="flex items-center gap-2.5">
                         <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
@@ -214,7 +214,7 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                     </button>
                 </div>
 
-                <div className="p-6 bg-slate-50 overflow-y-auto max-h-[80vh]">
+                <div className="p-6 bg-slate-50 overflow-y-auto max-h-[90vh]">
                     <KidsFreeformCanvasQuestion
                         question={{
                             id: 'preview_q',

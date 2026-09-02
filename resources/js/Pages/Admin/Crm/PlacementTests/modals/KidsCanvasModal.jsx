@@ -186,7 +186,7 @@ export default function KidsCanvasModal({
             <Modal
                 show={isLivePreviewOpen}
                 onClose={() => setIsLivePreviewOpen(false)}
-                maxWidth="6xl"
+                maxWidth="full"
             >
                 <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between rounded-t-2xl">
                     <div className="flex items-center gap-2.5">
@@ -212,7 +212,7 @@ export default function KidsCanvasModal({
                     </button>
                 </div>
 
-                <div className="p-6 bg-slate-50 overflow-y-auto max-h-[80vh]">
+                <div className="p-6 bg-slate-50 overflow-y-auto max-h-[90vh]">
                     <KidsFreeformCanvasQuestion
                         question={{
                             id: "preview_q",
