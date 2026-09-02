@@ -28,12 +28,18 @@ class KidsPtExamSeeder extends Seeder
         $exam = PtExam::firstOrCreate(
             ['title' => $sampleData['exam_title'] ?? 'PT KIDS'],
             [
+                'category' => 'Kids',
                 'slug' => Str::slug($sampleData['exam_title'] ?? 'PT KIDS'),
                 'description' => 'Placement test khusus untuk anak-anak dengan tampilan visual komik, drag-and-drop kata, dan kanvas interaktif.',
                 'duration_minutes' => 45,
                 'is_active' => true,
             ]
         );
+
+        // Ensure category is Kids even if record already existed
+        if ($exam->category !== 'Kids') {
+            $exam->update(['category' => 'Kids']);
+        }
 
         $qData = $sampleData['question'];
         $cData = $sampleData['canvas'];
