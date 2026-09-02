@@ -58,6 +58,7 @@ class PtExamController extends Controller
             'ieltsTasks',
             'ptQuestionGroups.questions.options',
             'questions.options',
+            'questions.kidCanvas',
         ]);
 
         return Inertia::render('Admin/Crm/PlacementTests/Show', [

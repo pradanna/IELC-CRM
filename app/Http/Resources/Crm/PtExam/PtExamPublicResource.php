@@ -17,10 +17,15 @@ class PtExamPublicResource extends JsonResource
 
         if ($category === 'Kids') {
             // KIDS PLACEMENT TEST: Every question is an interactive canvas page (No Theme Stage group box)
-            $kidsQuestions = $this->kidsQuestions ?? collect();
-            $kidsQuestions = $kidsQuestions->sortBy('position')->values();
+            $kidsQuestions = $this->kidsQuestions && $this->kidsQuestions->isNotEmpty()
+                ? $this->kidsQuestions->sortBy('position')->values()
+                : ($this->questions ?? collect())->sortBy('position')->values();
 
             foreach ($kidsQuestions as $q) {
+                $canvasData = $q->canvas_data ?? $q->kidCanvas?->canvas_data;
+                $mode = $q->mode ?? $q->kidCanvas?->mode ?? 'freeform_canvas';
+                $instruction = $q->instruction ?? $q->kidCanvas?->instruction ?? $q->question_text;
+
                 $pages[] = [
                     'id' => 'kids_q_' . $q->id,
                     'type' => 'standalone',
@@ -28,15 +33,15 @@ class PtExamPublicResource extends JsonResource
                         'id' => $q->id,
                         'number' => $questionNumber++,
                         'type' => 'drag_drop',
-                        'mode' => $q->mode,
-                        'instruction' => $q->instruction,
-                        'text' => $q->instruction ?? 'Interactive Canvas',
-                        'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
+                        'mode' => $mode,
+                        'instruction' => $instruction,
+                        'text' => $instruction ?? 'Interactive Canvas',
+                        'audio_path' => $q->audio_path ? (str_starts_with($q->audio_path, 'http') ? $q->audio_path : Storage::url($q->audio_path)) : null,
                         'options' => [],
                         'kid_canvas' => [
-                            'mode' => $q->mode,
-                            'instruction' => $q->instruction,
-                            'canvas_data' => $q->canvas_data,
+                            'mode' => $mode,
+                            'instruction' => $instruction,
+                            'canvas_data' => $canvasData,
                         ],
                     ]]
                 ];

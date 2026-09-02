@@ -96,10 +96,13 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
     return (
         <div
             ref={setNodeRef}
-            style={style}
+            style={{
+                ...style,
+                fontSize: token.fontSize ? `${token.fontSize}px` : undefined,
+            }}
             {...listeners}
             {...attributes}
-            className={`cursor-grab active:cursor-grabbing select-none px-4 py-2 rounded-2xl border-2 font-black text-sm transition-all flex items-center gap-2 ${
+            className={`cursor-grab active:cursor-grabbing select-none px-3.5 py-1.5 rounded-2xl border-2 font-black text-sm transition-all flex items-center gap-2 ${
                 isDragging
                     ? 'opacity-40 border-dashed border-orange-400 bg-orange-50 scale-95'
                     : isOverlay
@@ -110,7 +113,7 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
             }`}
         >
             <Move className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-            <span>{token.text}</span>
+            <span style={{ fontSize: token.fontSize ? `${token.fontSize}px` : undefined }}>{token.text}</span>
         </div>
     );
 }
@@ -124,91 +127,100 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
     });
 
     if (target.type === 'ring_target') {
+        const radius = target.radius || 24;
+        const width = target.width || radius * 3; // radius 24 * scaleX 1.5 * 2 = 72px
+        const height = target.height || radius * 2; // radius 24 * 2 = 48px
         return (
             <div
                 ref={setNodeRef}
-                style={{
-                    left: `${target.x}px`,
-                    top: `${target.y}px`,
-                    transform: 'translate(-50%, -50%)',
+                onClick={() => {
+                    if (!isReview && assignedToken) {
+                        onRemove(target.id);
+                    }
                 }}
-                className={`absolute z-20 w-16 h-10 rounded-full border-3 transition-all flex items-center justify-center select-none ${
+                style={{
+                    position: 'absolute',
+                    left: `${target.x - width / 2}px`,
+                    top: `${target.y - height / 2}px`,
+                    width: `${width}px`,
+                    height: `${height}px`,
+                }}
+                title={!isReview && assignedToken ? "Klik untuk mengembalikan token" : undefined}
+                className={`z-20 rounded-full border-2 transition-all flex items-center justify-center select-none ${
+                    !isReview && assignedToken ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
+                } ${
                     isOver
-                        ? 'border-emerald-400 bg-emerald-400/30 scale-125 ring-4 ring-emerald-400/40 z-30'
+                        ? 'border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30'
                         : assignedToken
                         ? isReview
                             ? isCorrect
-                                ? 'border-emerald-500 bg-emerald-500/30 ring-4 ring-emerald-400/30'
-                                : 'border-rose-500 bg-rose-500/30 ring-4 ring-rose-400/30'
-                            : 'border-emerald-500 bg-emerald-500/25 ring-2 ring-emerald-400/20'
-                        : 'border-dashed border-emerald-400/80 bg-emerald-50/40 hover:border-emerald-500'
-                }`}
-            >
-                {assignedToken && !isReview && (
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onRemove(target.id);
-                        }}
-                        className="w-4 h-4 rounded-full bg-black/30 hover:bg-rose-500 text-white flex items-center justify-center transition-colors text-[9px]"
-                    >
-                        <X className="w-2.5 h-2.5" />
-                    </button>
-                )}
-            </div>
-        );
-    }
-
-    // Box Target Spot for Checkmark / Cross (Kotak Centang/Silang)
-    if (target.type === 'box_target') {
-        return (
-            <div
-                ref={setNodeRef}
-                style={{
-                    left: `${target.x}px`,
-                    top: `${target.y}px`,
-                    width: `${target.width || 36}px`,
-                    height: `${target.height || 36}px`,
-                }}
-                className={`absolute z-20 rounded-lg border-2 transition-all flex items-center justify-center select-none ${
-                    isOver
-                        ? 'border-emerald-500 bg-emerald-400/30 scale-110 ring-4 ring-emerald-400/30 z-30'
-                        : assignedToken
-                        ? isReview
-                            ? isCorrect
-                                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-700 ring-2 ring-emerald-400/30'
-                                : 'border-rose-500 bg-rose-500/20 text-rose-700 ring-2 ring-rose-400/30'
-                            : 'border-slate-800 bg-white text-slate-900 shadow-sm'
-                        : 'border-2 border-slate-700 bg-white hover:border-emerald-500 hover:bg-emerald-50/30'
+                                ? 'border-emerald-500 bg-emerald-500/20 ring-2 ring-emerald-400/30'
+                                : 'border-rose-500 bg-rose-500/20 ring-2 ring-rose-400/30'
+                            : 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-400/20'
+                        : 'border-dashed border-emerald-400/80 bg-emerald-50/20 hover:border-emerald-500'
                 }`}
             >
                 {assignedToken ? (
-                    <div className="relative w-full h-full flex items-center justify-center">
-                        <span className={`font-black text-xl ${
-                            assignedToken.type === 'cross' ? 'text-rose-600' : 'text-emerald-600'
-                        }`}>
-                            {assignedToken.symbol || (assignedToken.type === 'cross' ? '✖' : '✔')}
-                        </span>
-                        {!isReview && (
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRemove(target.id);
-                                }}
-                                className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 hover:bg-rose-500 text-white flex items-center justify-center transition-colors text-[9px] shadow-sm"
-                            >
-                                <X className="w-2.5 h-2.5" />
-                            </button>
-                        )}
+                    <div className="flex items-center justify-center pointer-events-none">
+                        <span className="text-2xl drop-shadow-md">🟢</span>
                     </div>
                 ) : null}
             </div>
         );
     }
 
-    // Input Target Spot (Kotak Isian Ketik Langsung untuk Unscramble / Spelling / Ketik Jawaban)
+    // Box Target Spot (Kotak Centang/Silang)
+    if (target.type === 'box_target') {
+        const width = target.width || 36;
+        const height = target.height || 36;
+        return (
+            <div
+                ref={setNodeRef}
+                onClick={() => {
+                    if (!isReview && assignedToken) {
+                        onRemove(target.id);
+                    }
+                }}
+                style={{
+                    position: 'absolute',
+                    left: `${target.x}px`,
+                    top: `${target.y}px`,
+                    width: `${width}px`,
+                    height: `${height}px`,
+                }}
+                title={!isReview && assignedToken ? "Klik untuk mengembalikan token" : undefined}
+                className={`z-20 rounded-xl border-2 transition-all flex items-center justify-center select-none ${
+                    !isReview && assignedToken ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
+                } ${
+                    isOver
+                        ? 'border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30'
+                        : assignedToken
+                        ? isReview
+                            ? isCorrect
+                                ? 'border-emerald-500 bg-emerald-500/20 ring-2 ring-emerald-400/30'
+                                : 'border-rose-500 bg-rose-500/20 ring-2 ring-rose-400/30'
+                            : 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-400/20'
+                        : 'border-dashed border-emerald-500/80 bg-emerald-50/20 hover:border-emerald-500'
+                }`}
+            >
+                {assignedToken ? (
+                    <div className="flex items-center justify-center w-full h-full pointer-events-none">
+                        <span
+                            className={`font-black text-lg ${
+                                assignedToken.symbol === '✖' || assignedToken.id?.includes('crs')
+                                    ? 'text-rose-600'
+                                    : 'text-emerald-600'
+                            }`}
+                        >
+                            {assignedToken.symbol || (assignedToken.id?.includes('crs') ? '✖' : '✔')}
+                        </span>
+                    </div>
+                ) : null}
+            </div>
+        );
+    }
+
+    // Input Target Spot (Kotak Isian)
     if (target.type === 'input_target') {
         const textValue = typeof assignedToken === 'string' ? assignedToken : (assignedToken?.text || '');
         return (
@@ -228,6 +240,9 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
                     disabled={isReview}
                     onChange={(e) => onRemove(target.id, e.target.value)}
                     placeholder={target.placeholder || '...'}
+                    style={{
+                        fontSize: target.fontSize ? `${target.fontSize}px` : undefined,
+                    }}
                     className={`w-full h-full px-2.5 rounded-xl text-center font-black text-sm tracking-wide transition-all shadow-sm ${
                         isReview
                             ? isCorrect
@@ -240,17 +255,26 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
         );
     }
 
-    // Word Target Spot
+    // Word Target Spot (Drop Zone Kata)
     return (
         <div
             ref={setNodeRef}
+            onClick={() => {
+                if (!isReview && assignedToken) {
+                    onRemove(target.id);
+                }
+            }}
             style={{
+                position: 'absolute',
                 left: `${target.x}px`,
                 top: `${target.y}px`,
                 width: `${target.width || 100}px`,
                 height: `${target.height || 30}px`,
             }}
-            className={`absolute z-20 rounded-xl border-2 transition-all flex items-center justify-center select-none ${
+            title={!isReview && assignedToken ? "Klik untuk mengembalikan kata ke Token Bank" : undefined}
+            className={`z-20 rounded-xl border-2 transition-all flex items-center justify-center select-none overflow-hidden ${
+                !isReview && assignedToken ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
+            } ${
                 isOver
                     ? 'border-orange-500 bg-orange-400/30 backdrop-blur-sm text-orange-950 scale-105 ring-4 ring-orange-400/30 z-30'
                     : assignedToken
@@ -263,23 +287,22 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
             }`}
         >
             {assignedToken ? (
-                <div className="flex items-center gap-1.5 px-2">
-                    <span className="font-extrabold text-xs text-orange-900 drop-shadow-sm">{assignedToken.text}</span>
-                    {!isReview && (
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onRemove(target.id);
-                            }}
-                            className="w-4 h-4 rounded-full bg-black/20 hover:bg-rose-500 text-white flex items-center justify-center transition-colors text-[9px]"
-                        >
-                            <X className="w-2.5 h-2.5" />
-                        </button>
-                    )}
+                <div className="w-full h-full flex items-center justify-center px-1 text-center pointer-events-none">
+                    <span
+                        style={{
+                            fontSize: target.fontSize
+                                ? `${target.fontSize}px`
+                                : assignedToken.fontSize
+                                ? `${assignedToken.fontSize}px`
+                                : undefined,
+                        }}
+                        className="font-extrabold text-xs text-orange-900 drop-shadow-sm truncate w-full"
+                    >
+                        {assignedToken.text}
+                    </span>
                 </div>
             ) : (
-                <span className="text-[9px] font-bold text-orange-400/70 uppercase tracking-wider">
+                <span className="text-[9px] font-bold text-orange-400/70 uppercase tracking-wider truncate px-1 pointer-events-none">
                     {target.label || 'Drop Word'}
                 </span>
             )}
@@ -296,21 +319,35 @@ export default function KidsFreeformCanvasQuestion({
     const containerRef = useRef(null);
     const [canvasScale, setCanvasScale] = useState(1);
 
-    // Responsive Canvas Resizing calculation
+    // Responsive Canvas Resizing calculation with ResizeObserver
     useEffect(() => {
+        if (!containerRef.current) return;
+
         const updateScale = () => {
             if (!containerRef.current) return;
-            const containerWidth = containerRef.current.clientWidth;
-            if (containerWidth > 0) {
-                // Skala otomatis: max 1.0 (layar lebar), dan mengecil proporsional di layar sempit / HP / tablet
-                const newScale = Math.min(1, containerWidth / BASE_WIDTH);
+            // Dapatkan lebar efektif container (dikurangi padding 16px)
+            const availableWidth = containerRef.current.clientWidth - 16;
+            if (availableWidth > 0) {
+                // Skala otomatis: max 1.0 pada layar besar desktop, dan mengecil secara proporsional di tablet/HP
+                const newScale = Math.min(1, Math.max(0.3, availableWidth / BASE_WIDTH));
                 setCanvasScale(newScale);
             }
         };
 
         updateScale();
+
+        // Gunakan ResizeObserver agar saat modal terbuka animasi selesai, skala langsung terhitung akurat
+        const observer = new ResizeObserver(() => {
+            updateScale();
+        });
+
+        observer.observe(containerRef.current);
+
         window.addEventListener('resize', updateScale);
-        return () => window.removeEventListener('resize', updateScale);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updateScale);
+        };
     }, []);
 
     // Parse Canvas Payload from kid_canvas relationship or question options
@@ -491,21 +528,26 @@ export default function KidsFreeformCanvasQuestion({
                 {/* 3. Free-Form Canvas Responsive Rendering Area */}
                 <div 
                     ref={containerRef}
-                    className="w-full bg-slate-100 rounded-3xl border-4 border-slate-200 shadow-xl overflow-hidden flex justify-center items-center"
-                    style={{
-                        height: `${BASE_HEIGHT * canvasScale}px`,
-                        maxHeight: `${BASE_HEIGHT}px`
-                    }}
+                    className="w-full bg-slate-100 rounded-3xl border-4 border-slate-200 shadow-xl overflow-hidden flex justify-center items-center p-2"
                 >
                     <div 
-                        className="relative bg-white shrink-0 origin-top-left transition-transform duration-75"
                         style={{
-                            width: `${BASE_WIDTH}px`,
-                            height: `${BASE_HEIGHT}px`,
-                            transform: `scale(${canvasScale})`,
-                            transformOrigin: 'top left',
+                            width: `${BASE_WIDTH * canvasScale}px`,
+                            height: `${BASE_HEIGHT * canvasScale}px`,
+                            position: 'relative',
+                            overflow: 'hidden',
                         }}
+                        className="rounded-2xl shadow-sm border border-slate-200 bg-white"
                     >
+                        <div 
+                            className="relative bg-white shrink-0 origin-top-left"
+                            style={{
+                                width: `${BASE_WIDTH}px`,
+                                height: `${BASE_HEIGHT}px`,
+                                transform: `scale(${canvasScale})`,
+                                transformOrigin: 'top left',
+                            }}
+                        >
                         {/* Render Canvas Elements (Text & Images) */}
                         {elements.map((el) => {
                             if (el.type === 'text') {
@@ -520,6 +562,7 @@ export default function KidsFreeformCanvasQuestion({
                                             fontWeight: el.fontStyle?.includes('bold') ? 'bold' : 'normal',
                                             fontStyle: el.fontStyle?.includes('italic') ? 'italic' : 'normal',
                                             color: el.fill || '#1e293b',
+                                            textAlign: el.align || 'left',
                                             fontFamily: "'Comic Sans MS', 'Outfit', 'Inter', sans-serif"
                                         }}
                                         className="select-none pointer-events-none whitespace-pre"
@@ -573,6 +616,7 @@ export default function KidsFreeformCanvasQuestion({
                                 />
                             );
                         })}
+                        </div>
                     </div>
                 </div>
 

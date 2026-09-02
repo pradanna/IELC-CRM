@@ -125,12 +125,12 @@ export default function ShowKids({ exam }) {
         {
             header: "Poin / Item",
             accessor: "points",
-            className: "w-24 text-center",
+            className: "w-28 text-center whitespace-nowrap",
             render: (row) =>
                 row.isGroupHeader ? (
                     ""
                 ) : (
-                    <span className="text-xs font-black text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
+                    <span className="inline-flex items-center justify-center whitespace-nowrap text-xs font-black text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
                         {row.points || 1} pt
                     </span>
                 ),

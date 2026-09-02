@@ -64,22 +64,35 @@ export function usePtExamShow(param) {
         });
     };
 
-    const handleQuestionSubmit = (e) => {
-        e.preventDefault();
+    const handleQuestionSubmit = (e, { keepOpen = false } = {}) => {
+        if (e && e.preventDefault) e.preventDefault();
         if (editingQuestion) {
             questionForm.post(route('admin.placement-tests.questions.update', [examData.id, editingQuestion.id]), {
                 forceFormData: true,
-                onSuccess: () => {
-                    setIsQuestionModalOpen(false);
-                    setEditingQuestion(null);
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    if (!keepOpen) {
+                        setIsQuestionModalOpen(false);
+                        setEditingQuestion(null);
+                    }
                 },
             });
         } else {
             questionForm.post(route('admin.placement-tests.questions.store', examData.id), {
                 forceFormData: true,
-                onSuccess: () => {
-                    setIsQuestionModalOpen(false);
-                    questionForm.reset();
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    if (!keepOpen) {
+                        setIsQuestionModalOpen(false);
+                        questionForm.reset();
+                    } else {
+                        // Cari question yang baru saja dibuat dari list soal terbaru untuk dijadikan editingQuestion
+                        const latestQuestions = page.props?.exam?.data?.questions || page.props?.exam?.questions || [];
+                        if (latestQuestions.length > 0) {
+                            const newCreatedQ = latestQuestions[latestQuestions.length - 1];
+                            setEditingQuestion(newCreatedQ);
+                        }
+                    }
                 },
             });
         }
@@ -140,11 +153,12 @@ export function usePtExamShow(param) {
         if (item) {
             setEditingQuestion(item);
             let canvasData = null;
-            if (item.type === 'drag_drop') {
-                if (item.kid_canvas?.canvas_data) {
-                    canvasData = typeof item.kid_canvas.canvas_data === 'string'
-                        ? JSON.parse(item.kid_canvas.canvas_data)
-                        : item.kid_canvas.canvas_data;
+            if (item.type === 'drag_drop' || item.kid_canvas || item.canvas_data) {
+                const rawCanvas = item.kid_canvas?.canvas_data || item.canvas_data;
+                if (rawCanvas) {
+                    canvasData = typeof rawCanvas === 'string'
+                        ? JSON.parse(rawCanvas)
+                        : rawCanvas;
                 }
             }
 
@@ -247,12 +261,17 @@ export function usePtExamShow(param) {
         return items;
     }, [examData]);
 
-    const filteredItems = tableItems.filter(
-        (item) =>
-            item.question_text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.instruction?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.title?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredItems = useMemo(() => {
+        if (!searchQuery) return tableItems;
+        const q = searchQuery.toLowerCase();
+        return tableItems.filter(
+            (item) =>
+                item.question_text?.toLowerCase().includes(q) ||
+                item.instruction?.toLowerCase().includes(q) ||
+                item.title?.toLowerCase().includes(q) ||
+                item.text?.toLowerCase().includes(q)
+        );
+    }, [tableItems, searchQuery]);
 
     const previewPages = useMemo(() => {
         const pages = [];

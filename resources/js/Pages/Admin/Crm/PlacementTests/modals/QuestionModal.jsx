@@ -117,6 +117,7 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                     {/* Options / Free-Form Canvas Studio for Kids Drag & Drop */}
                     {form.data.type === 'drag_drop' && !isIELTS && (
                         <KidsFreeformCanvasStudio
+                            key={editingQuestion ? editingQuestion.id : "new_canvas"}
                             value={form.data.canvas_data}
                             onChange={(canvas) => form.setData('canvas_data', canvas)}
                         />

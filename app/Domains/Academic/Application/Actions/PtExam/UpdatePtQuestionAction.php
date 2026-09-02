@@ -47,6 +47,31 @@ class UpdatePtQuestionAction
                 return $ieltsTask;
             }
 
+            // Cek apakah Kids Question (PtKidsQuestion)
+            $kidsQuestion = \App\Domains\Academic\Domain\Models\PtKidsQuestion::find($questionId);
+            if ($kidsQuestion) {
+                $canvas = isset($data['canvas_data']) 
+                    ? (is_string($data['canvas_data']) ? json_decode($data['canvas_data'], true) : $data['canvas_data'])
+                    : $kidsQuestion->canvas_data;
+
+                $kidsData = [
+                    'instruction' => $data['question_text'] ?? $kidsQuestion->instruction,
+                    'points' => $data['points'] ?? $kidsQuestion->points ?? 1,
+                    'mode' => $canvas['mode'] ?? $kidsQuestion->mode ?? 'freeform_canvas',
+                    'canvas_data' => $canvas,
+                ];
+
+                if (isset($data['media']) && $data['media']->isValid()) {
+                    if ($kidsQuestion->audio_path) {
+                        Storage::disk('public')->delete($kidsQuestion->audio_path);
+                    }
+                    $kidsData['audio_path'] = $data['media']->store('pt_exams/audio', 'public');
+                }
+
+                $kidsQuestion->update($kidsData);
+                return $kidsQuestion;
+            }
+
             // Default PtQuestion
             $question = PtQuestion::findOrFail($questionId);
             $questionData = [

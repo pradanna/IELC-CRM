@@ -52,17 +52,36 @@ class PtExamResource extends JsonResource
             })(),
             'standalone_questions' => (function() {
                 if ($this->category === 'Kids') {
-                    return $this->kidsQuestions->map(fn($q) => [
+                    if ($this->kidsQuestions && $this->kidsQuestions->isNotEmpty()) {
+                        return $this->kidsQuestions->map(fn($q) => [
+                            'id' => $q->id,
+                            'number' => $q->number,
+                            'type' => 'drag_drop',
+                            'mode' => $q->mode,
+                            'question_text' => $q->instruction ?? 'Interactive Canvas',
+                            'instruction' => $q->instruction,
+                            'audio_path' => $q->audio_path,
+                            'points' => $q->points,
+                            'position' => $q->position,
+                            'kid_canvas' => ['canvas_data' => $q->canvas_data, 'mode' => $q->mode],
+                        ])->values();
+                    }
+
+                    // Fallback to pt_questions with kidCanvas / canvas_data
+                    return $this->questions->map(fn($q) => [
                         'id' => $q->id,
                         'number' => $q->number,
                         'type' => 'drag_drop',
-                        'mode' => $q->mode,
-                        'question_text' => $q->instruction ?? 'Interactive Canvas',
-                        'instruction' => $q->instruction,
-                        'audio_path' => $q->audio_path,
+                        'mode' => $q->kidCanvas?->mode ?? 'freeform_canvas',
+                        'question_text' => $q->question_text ?? 'Interactive Canvas Task',
+                        'instruction' => $q->kidCanvas?->instruction ?? $q->question_text,
+                        'audio_path' => $q->audio_path ? (str_starts_with($q->audio_path, 'http') ? $q->audio_path : Storage::url($q->audio_path)) : null,
                         'points' => $q->points,
                         'position' => $q->position,
-                        'kid_canvas' => ['canvas_data' => $q->canvas_data, 'mode' => $q->mode],
+                        'kid_canvas' => [
+                            'canvas_data' => $q->kidCanvas?->canvas_data,
+                            'mode' => $q->kidCanvas?->mode ?? 'freeform_canvas',
+                        ],
                     ])->values();
                 } elseif ($this->category === 'IELTS') {
                     return $this->ieltsTasks->map(fn($t, $idx) => [
