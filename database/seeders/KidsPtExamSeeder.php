@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Domains\Academic\Domain\Models\PtExam;
 use App\Domains\Academic\Domain\Models\PtQuestion;
 use App\Domains\Academic\Domain\Models\PtKidCanvas;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class KidsPtExamSeeder extends Seeder
@@ -15,6 +16,18 @@ class KidsPtExamSeeder extends Seeder
      */
     public function run(): void
     {
+        // 1. Auto-sync assets from database/seeders/assets to storage
+        $assetSourceDir = __DIR__ . '/assets/pt_exams/kids_canvas';
+        $storageTargetDir = storage_path('app/public/pt_exams/kids_canvas');
+
+        if (File::exists($assetSourceDir)) {
+            if (!File::exists($storageTargetDir)) {
+                File::makeDirectory($storageTargetDir, 0755, true);
+            }
+            File::copyDirectory($assetSourceDir, $storageTargetDir);
+            $this->command->info("Canvas assets synced to storage successfully.");
+        }
+
         $jsonPath = __DIR__ . '/data/kids_canvas_sample.json';
         
         if (!file_exists($jsonPath)) {
