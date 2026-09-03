@@ -23,12 +23,27 @@ class GenerateInvoice
     public function handle(array $data): Invoice
     {
         return DB::transaction(function () use ($data) {
-            // Remove previous pending invoice for this lead or student so updating overwrites the existing pending invoice
-            if (!empty($data['student_id'])) {
+            // Remove previous pending invoice for the same class only (to support multi-enrollment with multiple classes).
+            // We only delete if the same study_class_id matches, so we don't wipe out pending invoices for other classes.
+            $studyClassId = $data['study_class_id'] ?? null;
+
+            if (!empty($data['student_id']) && $studyClassId) {
+                Invoice::where('student_id', $data['student_id'])
+                    ->where('study_class_id', $studyClassId)
+                    ->where('status', 'pending')
+                    ->forceDelete();
+            } elseif (!empty($data['student_id'])) {
+                // No study_class_id (e.g. placement test) — delete any pending invoice for this student
                 Invoice::where('student_id', $data['student_id'])
                     ->where('status', 'pending')
                     ->forceDelete();
+            } elseif (!empty($data['lead_id']) && $studyClassId) {
+                Invoice::where('lead_id', $data['lead_id'])
+                    ->where('study_class_id', $studyClassId)
+                    ->where('status', 'pending')
+                    ->forceDelete();
             } elseif (!empty($data['lead_id'])) {
+                // No study_class_id — delete any pending invoice for this lead
                 Invoice::where('lead_id', $data['lead_id'])
                     ->where('status', 'pending')
                     ->forceDelete();

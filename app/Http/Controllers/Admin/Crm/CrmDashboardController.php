@@ -14,6 +14,8 @@ use App\Http\Resources\Crm\LeadSourceResource;
 use App\Http\Resources\Crm\LeadTypeResource;
 use App\Http\Resources\Master\BranchResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,7 +27,21 @@ class CrmDashboardController extends Controller
     public function index(Request $request, FetchCrmDashboardData $action): Response
     {
         $filters = $request->only(['month', 'year', 'branch_id']);
-        $dashboardData = $action->handle($filters);
+
+        // Resolve auth context here in the HTTP layer, not inside the domain Action
+        $userId   = Auth::id();
+        $userRole = Auth::user()->roles->first()?->name;
+
+        // Cache wrapping lives in the controller — infrastructure concern, not business logic
+        $version  = Cache::get('crm_dashboard_version', 1);
+        $cacheKey = "crm_dashboard_v{$version}_"
+            . ($filters['year'] ?? 'all') . '_'
+            . ($filters['month'] ?? 'all') . '_'
+            . ($filters['branch_id'] ?? 'all') . "_user_{$userId}";
+
+        $dashboardData = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($action, $filters, $userId, $userRole) {
+            return $action->handle($filters, $userId, $userRole);
+        });
         
         return Inertia::render('Admin/Crm/Dashboard/Index', [
             'data' => $dashboardData,
@@ -38,6 +54,3 @@ class CrmDashboardController extends Controller
         ]);
     }
 }
-
-
-

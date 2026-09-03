@@ -62,17 +62,17 @@ const menuItems = [
                 href: route("admin.crm.reports.index"),
                 name: "admin.crm.reports.*",
             },
+            {
+                icon: <Headset size={20} />,
+                text: "WhatsApp Inbox",
+                href: route("admin.whatsapp.inbox"),
+                name: "admin.whatsapp.inbox",
+            },
         ],
     },
     {
-        category: "Academic",
+        category: "Database",
         items: [
-            {
-                icon: <GraduationCap size={20} />,
-                text: "Academic Dashboard",
-                href: route("admin.academic.index"),
-                name: "admin.academic.index",
-            },
             {
                 icon: <Users size={20} />,
                 text: "Students",
@@ -81,7 +81,7 @@ const menuItems = [
             },
             {
                 icon: <BookCopy size={20} />,
-                text: "Study Classes",
+                text: "Classes",
                 href: route("admin.academic.study-classes.index"),
                 name: "admin.academic.study-classes.*",
             },
@@ -131,29 +131,6 @@ const menuItems = [
                 href: route("admin.master.index"),
                 name: "admin.master.index",
             },
-            // {
-            //     icon: <LayoutDashboard size={20} />,
-            //     text: "Schedule",
-            //     href: route("admin.schedules.index"),
-            //     name: "admin.schedules.*",
-            // },
-            {
-                icon: <GraduationCap size={20} />,
-                text: "Academic",
-                href: route("admin.academic.index"),
-                name: "admin.academics.*",
-            },
-        ],
-    },
-    {
-        category: "Users",
-        items: [
-            {
-                icon: <Users size={20} />,
-                text: "Teachers",
-                href: route("admin.teachers.index"),
-                name: "admin.teachers.*",
-            },
         ],
     },
     {
@@ -198,7 +175,7 @@ export default function AdminLayout({ children }) {
         if (isSuperAdmin) return true;
         
         if (isFrontdesk) {
-            return ['CRM & Leads', 'Academic', 'Management', 'Users'].includes(group.category);
+            return ['CRM & Leads', 'Database', 'Management'].includes(group.category);
         }
 
         if (isFinance) {
@@ -206,11 +183,11 @@ export default function AdminLayout({ children }) {
         }
 
         if (isMarketing) {
-            return ['Main', 'Management'].includes(group.category);
+            return ['Main', 'Management', 'CRM & Leads'].includes(group.category);
         }
 
         if (isTeacher) {
-            return ['Users'].includes(group.category);
+            return ['Database'].includes(group.category);
         }
 
         return false;
@@ -221,15 +198,15 @@ export default function AdminLayout({ children }) {
             ...group,
             items: group.items.filter(item => {
                 if (isFrontdesk) {
-                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'Academic Dashboard', 'Students', 'Study Classes', 'Master', 'Academic'];
+                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
-                    const allowed = ['Dashboard', 'Invoices', 'Price Master', 'Staff Accounts', 'WhatsApp'];
+                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon', 'Laporan', 'Staff Accounts', 'WhatsApp'];
                     return allowed.includes(item.text);
                 }
                 if (isMarketing) {
-                    const allowed = ['Dashboard', 'Crm'];
+                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isTeacher) {

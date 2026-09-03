@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Crm\PtExam;
 
-use App\Domains\CRM\Application\Actions\PtExam\SubmitPlacementTestAction;
+use App\Domains\Academic\Application\Actions\PtExam\SubmitPlacementTestAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PtExam\SubmitPlacementTestRequest;
 use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
@@ -58,7 +58,11 @@ class PublicPlacementTestController extends Controller
     {
         $session = PtSession::with([
             'ptExam.questions.options',
-            'ptExam.ptQuestionGroups.questions.options'
+            'ptExam.ptQuestionGroups.questions.options',
+            'ptExam.generalQuestions.options',
+            'ptExam.generalGroups.questions.options',
+            'ptExam.kidsQuestions',
+            'ptExam.ieltsTasks',
         ])->where('token', $token)->firstOrFail();
 
         if ($session->status === 'completed') {
@@ -101,9 +105,15 @@ class PublicPlacementTestController extends Controller
 
     public function result(string $token): Response|RedirectResponse
     {
-        $session = PtSession::with(['lead', 'ptExam.questions', 'ptExam.ptQuestionGroups.questions'])
-            ->where('token', $token)
-            ->firstOrFail();
+        $session = PtSession::with([
+            'lead',
+            'ptExam.generalQuestions',
+            'ptExam.generalGroups.questions',
+            'ptExam.kidsQuestions',
+            'ptExam.ieltsTasks',
+            'ptExam.questions',
+            'ptExam.ptQuestionGroups.questions',
+        ])->where('token', $token)->firstOrFail();
 
         if ($session->status !== 'completed') {
             return redirect()->route('public.placement-test.show', ['token' => $token]);
@@ -111,10 +121,25 @@ class PublicPlacementTestController extends Controller
 
         $examResource = new PtExamPublicResource($session->ptExam);
         $totalQuestions = $examResource->toArray(request())['total_questions'];
+        $category = $session->ptExam->category ?? 'General';
 
-        $correctAnswers = PtAnswer::where('pt_session_id', $session->id)
-            ->where('is_correct', true)
-            ->count();
+        $correctAnswers = 0;
+        if ($category === 'Kids') {
+            $correctAnswers = \App\Domains\Academic\Domain\Models\PtKidsAnswer::where('pt_session_id', $session->id)
+                ->where('is_correct', true)
+                ->count();
+        } elseif ($category === 'IELTS') {
+            $correctAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::where('pt_session_id', $session->id)
+                ->count();
+        } else {
+            $generalCorrect = \App\Domains\Academic\Domain\Models\PtGeneralAnswer::where('pt_session_id', $session->id)
+                ->where('is_correct', true)
+                ->count();
+            $legacyCorrect = PtAnswer::where('pt_session_id', $session->id)
+                ->where('is_correct', true)
+                ->count();
+            $correctAnswers = $generalCorrect > 0 ? $generalCorrect : $legacyCorrect;
+        }
 
         return Inertia::render('Public/PlacementTest/Result', [
             'session' => [

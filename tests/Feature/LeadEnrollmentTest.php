@@ -62,7 +62,7 @@ class LeadEnrollmentTest extends TestCase
 
     public function test_paying_invoice_creates_enrollment_and_promotes_lead(): void
     {
-        $startDate = now()->addDays(5)->format('Y-m-d');
+        $startDate = now()->startOfMonth()->addDays(5)->format('Y-m-d');
         
         // 1. Create a pending invoice for the lead in a class
         $invoice = Invoice::create([

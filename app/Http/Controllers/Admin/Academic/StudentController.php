@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin\Academic;
 
 use App\Domains\Academic\Application\Actions\EnrollStudent;
+use App\Domains\Academic\Application\Actions\FetchAcademicDashboardData;
 use App\Domains\Academic\Application\Actions\PromoteLeadToStudent;
+use App\Domains\Academic\Application\Actions\TransferStudentClass;
 use App\Domains\Academic\Application\Actions\UnenrollStudent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Academic\EnrollStudentRequest;
+use App\Http\Requests\Admin\Academic\TransferStudentClassRequest;
 use App\Domains\CRM\Domain\Models\Lead;
 use App\Domains\Academic\Domain\Models\Student;
 use App\Domains\Academic\Domain\Models\StudyClass;
@@ -21,7 +24,16 @@ class StudentController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Student::with(['lead.branch', 'studyClasses']);
+        $query = Student::with([
+            'lead.branch', 
+            'lead.leadSource', 
+            'lead.infoSource', 
+            'lead.leadType', 
+            'lead.guardians', 
+            'lead.enrollments.studyClass', 
+            'studyClasses',
+            'progressReports',
+        ]);
 
         if ($request->filled('search')) {
             $query->whereHas('lead', function ($q) use ($request) {
@@ -49,8 +61,20 @@ class StudentController extends Controller
             }
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+        $statusFilter = $request->input('status', 'active');
+        if ($statusFilter !== 'all' && $statusFilter !== '') {
+            $query->where('status', $statusFilter);
+        }
+
+        if ($request->filled('loyalty_tier')) {
+            $tier = $request->input('loyalty_tier');
+            if ($tier === 'none') {
+                $query->where(function ($q) {
+                    $q->whereNull('loyalty_tier')->orWhere('loyalty_tier', '');
+                });
+            } else {
+                $query->where('loyalty_tier', $tier);
+            }
         }
 
         if ($request->filled('class_category')) {
@@ -64,6 +88,88 @@ class StudentController extends Controller
             $classId = $request->input('study_class_id');
             $query->whereHas('studyClasses', function ($q) use ($classId) {
                 $q->where('study_classes.id', $classId);
+            });
+        }
+
+        if ($request->filled('grade')) {
+            $g = trim($request->input('grade'));
+            $gUpper = strtoupper($g);
+            $query->whereHas('lead', function ($q) use ($g, $gUpper) {
+                if (in_array($gUpper, ['TK / PAUD', 'TK', 'PAUD'])) {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', '%TK%')
+                            ->orWhere('grade', 'like', '%PAUD%')
+                            ->orWhere('grade', 'like', '%PLAYGROUP%')
+                            ->orWhere('grade', 'like', '%PG%')
+                            ->orWhere('grade', 'like', '%KB%')
+                            ->orWhere('school_level', 'like', '%TK%')
+                            ->orWhere('school_level', 'like', '%PAUD%');
+                    });
+                } elseif ($gUpper === 'SD') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SD%')
+                            ->orWhere('grade', 'like', '% SD%')
+                            ->orWhere('grade', 'like', 'D %')
+                            ->orWhere('school_level', 'SD')
+                            ->orWhere('grade', 'like', 'Kelas 1%')
+                            ->orWhere('grade', 'like', 'Kelas 2%')
+                            ->orWhere('grade', 'like', 'Kelas 3%')
+                            ->orWhere('grade', 'like', 'Kelas 4%')
+                            ->orWhere('grade', 'like', 'Kelas 5%')
+                            ->orWhere('grade', 'like', 'Kelas 6%');
+                    });
+                } elseif ($gUpper === 'SMP') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SMP%')
+                            ->orWhere('grade', 'like', '% SMP%')
+                            ->orWhere('school_level', 'SMP')
+                            ->orWhere('grade', 'like', 'Kelas 7%')
+                            ->orWhere('grade', 'like', 'Kelas 8%')
+                            ->orWhere('grade', 'like', 'Kelas 9%');
+                    });
+                } elseif (in_array($gUpper, ['SMA / SMK', 'SMA', 'SMK'])) {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', 'SMA%')
+                            ->orWhere('grade', 'like', 'SMK%')
+                            ->orWhere('grade', 'like', '% SMA%')
+                            ->orWhere('grade', 'like', '% SMK%')
+                            ->orWhere('grade', '10th')
+                            ->orWhere('grade', 'XI')
+                            ->orWhere('grade', 'XII')
+                            ->orWhere('school_level', 'SMA')
+                            ->orWhere('school_level', 'SMK')
+                            ->orWhere('grade', 'like', 'Kelas 10%')
+                            ->orWhere('grade', 'like', 'Kelas 11%')
+                            ->orWhere('grade', 'like', 'Kelas 12%');
+                    });
+                } elseif ($gUpper === 'UMUM') {
+                    $q->where(function ($sub) {
+                        $sub->where('grade', 'like', '%UMUM%')
+                            ->orWhere('grade', 'like', '%KULIAH%')
+                            ->orWhere('grade', 'like', '%KERJA%')
+                            ->orWhere('grade', 'like', '%MAHASISWA%')
+                            ->orWhere('grade', 'like', '%DEWASA%')
+                            ->orWhere('school_level', 'UMUM')
+                            ->orWhere('school_level', 'Kuliah')
+                            ->orWhere('school_level', 'Kerja');
+                    });
+                } else {
+                    $q->where('grade', $g);
+                }
+            });
+        }
+
+        if ($request->filled('price_master_id')) {
+            $pmId = $request->input('price_master_id');
+            $query->whereHas('studyClasses', function ($q) use ($pmId) {
+                $q->where('price_master_id', $pmId);
+            });
+        }
+
+        if ($request->filled('branch_id')) {
+            $bId = $request->input('branch_id');
+            $query->whereHas('lead', function ($q) use ($bId) {
+                $q->where('branch_id', $bId);
             });
         }
 
@@ -89,241 +195,41 @@ class StudentController extends Controller
             ->orderBy('name')
             ->get();
 
+        $priceMastersList = \App\Domains\Finance\Domain\Models\PriceMaster::select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        $gradesList = collect([
+            'TK / PAUD',
+            'SD',
+            'SMP',
+            'SMA / SMK',
+            'Umum',
+        ]);
+
         $allFilters = array_merge(
+            ['status' => $statusFilter],
             $dashboardData['filters'],
-            $request->only(['search', 'expiry_status', 'status', 'class_category', 'study_class_id', 'sort_field', 'sort_direction'])
+            array_filter($request->only(['search', 'expiry_status', 'status', 'loyalty_tier', 'class_category', 'study_class_id', 'price_master_id', 'grade', 'sort_field', 'sort_direction', 'branch_id', 'mode']), fn($v) => !is_null($v) && $v !== '')
         );
+
+        $branchesList = \Illuminate\Support\Facades\DB::table('branches')->select('id', 'name')->orderBy('name')->get();
+        $loyaltyTiersList = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'asc')->pluck('tier_name')->unique()->values();
 
         return Inertia::render('Admin/Academic/Student/Index', array_merge($dashboardData, [
             'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
             'studyClassesList' => $studyClassesList,
+            'priceMastersList' => $priceMastersList,
+            'gradesList' => $gradesList,
+            'branchesList' => $branchesList,
+            'loyaltyTiersList' => $loyaltyTiersList,
             'filters' => $allFilters,
         ]));
     }
 
     private function getAcademicDashboardData(Request $request): array
     {
-        $isSqlite = \DB::connection()->getDriverName() === 'sqlite';
-
-        $year  = (int) $request->input('year', now()->year);
-        $month = $request->input('month') ? (int) $request->input('month') : null;
-        $activeTab = $request->input('tab', 'overall');
-
-        // ── Available years ──────────────────────────────────────
-        $yearExpr        = $isSqlite ? "cast(strftime('%Y', start_join) as integer)" : "YEAR(start_join)";
-        $stoppedYearExpr = $isSqlite ? "cast(strftime('%Y', stopped_at) as integer)" : "YEAR(stopped_at)";
-
-        $startYears = Student::selectRaw("DISTINCT {$yearExpr} as yr")
-            ->whereNotNull('start_join')->pluck('yr')->filter()->toArray();
-
-        $stopYears = Student::selectRaw("DISTINCT {$stoppedYearExpr} as yr")
-            ->whereNotNull('stopped_at')->pluck('yr')->filter()->toArray();
-
-        $availableYears = collect(array_merge($startYears, $stopYears, [(int) now()->year]))
-            ->unique()->sortDesc()->values()->map(fn($v) => (int) $v)->toArray();
-
-        if (!in_array($year, $availableYears)) {
-            $availableYears[] = $year;
-            rsort($availableYears);
-        }
-
-        // ── Helper: apply year/month date filter ─────────────────
-        $filterByDate = function ($query, string $col, int $y, ?int $m = null) use ($isSqlite) {
-            if ($isSqlite) {
-                $query->whereRaw("cast(strftime('%Y', {$col}) as integer) = ?", [$y]);
-                if ($m) {
-                    $query->whereRaw("cast(strftime('%m', {$col}) as integer) = ?", [$m]);
-                }
-            } else {
-                $query->whereYear($col, $y);
-                if ($m) {
-                    $query->whereMonth($col, $m);
-                }
-            }
-            return $query;
-        };
-
-        // ═════════════════════════════════════════════════════════
-        // 1. OVERALL
-        // ═════════════════════════════════════════════════════════
-
-        // Total active students in selected period
-        $totalActiveQuery = Student::where('status', 'active');
-        $filterByDate($totalActiveQuery, 'start_join', $year, $month);
-        $totalActiveStudents = $totalActiveQuery->count();
-
-        // New students in target month
-        $targetMonth = $month ?? (int) now()->month;
-        $newStudentsQuery = Student::where('status', 'active');
-        $filterByDate($newStudentsQuery, 'created_at', $year, $targetMonth);
-        $newStudentsThisMonth = $newStudentsQuery->count();
-
-        // Monthly trend (full year – ignores month filter for the chart)
-        $dateFormat = $isSqlite
-            ? "strftime('%Y-%m', start_join)"
-            : "DATE_FORMAT(start_join, '%Y-%m')";
-
-        $monthlyTrendQuery = Student::where('status', 'active')
-            ->whereNotNull('start_join')
-            ->selectRaw("{$dateFormat} as month, count(*) as count")
-            ->groupBy('month')
-            ->orderBy('month', 'asc');
-        $filterByDate($monthlyTrendQuery, 'start_join', $year);
-        $monthlyTrendRaw = $monthlyTrendQuery->get();
-
-        $monthlyTrend = [];
-        foreach ($monthlyTrendRaw as $row) {
-            if (!$row->month) continue;
-            try {
-                $monthlyTrend[] = [
-                    'month'    => \Carbon\Carbon::createFromFormat('Y-m', $row->month)->format('M Y'),
-                    'students' => (int) $row->count,
-                ];
-            } catch (\Exception $e) {
-                $monthlyTrend[] = [
-                    'month'    => $row->month,
-                    'students' => (int) $row->count,
-                ];
-            }
-        }
-
-        // Branch distribution
-        $branchQuery = Student::where('students.status', 'active')
-            ->join('leads', 'students.lead_id', '=', 'leads.id')
-            ->join('branches', 'leads.branch_id', '=', 'branches.id')
-            ->selectRaw('branches.name as branch_name, count(*) as count')
-            ->groupBy('branches.name');
-        $filterByDate($branchQuery, 'students.start_join', $year, $month);
-        $branchDistribution = $branchQuery->get()->map(fn($item) => [
-            'name'  => $item->branch_name,
-            'value' => (int) $item->count,
-        ]);
-
-        // ═════════════════════════════════════════════════════════
-        // 2. POLA JOIN
-        // ═════════════════════════════════════════════════════════
-
-        $joinQuery = Student::where('students.status', 'active')
-            ->join('leads', 'students.lead_id', '=', 'leads.id')
-            ->leftJoin('lead_types', 'leads.lead_type_id', '=', 'lead_types.id')
-            ->selectRaw("
-                COALESCE(lead_types.name, 'Lainnya') as program_name,
-                sum(case when leads.is_online = 1 then 1 else 0 end) as online_count,
-                sum(case when leads.is_online = 0 then 1 else 0 end) as offline_count,
-                count(*) as total_count
-            ")
-            ->groupBy('program_name');
-        $filterByDate($joinQuery, 'students.start_join', $year, $month);
-        $joinPatterns = $joinQuery->get()->map(fn($item) => [
-            'program' => $item->program_name,
-            'online'  => (int) $item->online_count,
-            'offline' => (int) $item->offline_count,
-            'total'   => (int) $item->total_count,
-        ]);
-
-        // ═════════════════════════════════════════════════════════
-        // 3. SISWA STOP
-        // ═════════════════════════════════════════════════════════
-
-        $stoppedAtFormat = $isSqlite
-            ? "strftime('%Y-%m', stopped_at)"
-            : "DATE_FORMAT(stopped_at, '%Y-%m')";
-
-        // Trend chart (full year – ignores month filter)
-        $stoppedTrendQuery = Student::where('status', 'stop')
-            ->whereNotNull('stopped_at')
-            ->selectRaw("{$stoppedAtFormat} as month, count(*) as count")
-            ->groupBy('month')
-            ->orderBy('month', 'asc');
-        $filterByDate($stoppedTrendQuery, 'stopped_at', $year);
-        $stoppedMonthlyRaw = $stoppedTrendQuery->get();
-
-        $stoppedMonthly = [];
-        foreach ($stoppedMonthlyRaw as $row) {
-            if (!$row->month) continue;
-            try {
-                $stoppedMonthly[] = [
-                    'month'   => \Carbon\Carbon::createFromFormat('Y-m', $row->month)->format('M Y'),
-                    'stopped' => (int) $row->count,
-                ];
-            } catch (\Exception $e) {
-                $stoppedMonthly[] = [
-                    'month'   => $row->month,
-                    'stopped' => (int) $row->count,
-                ];
-            }
-        }
-
-        // Total stopped (respects month filter for the stat card)
-        $totalStoppedQuery = Student::where('status', 'stop')->whereNotNull('stopped_at');
-        $filterByDate($totalStoppedQuery, 'stopped_at', $year, $month);
-        $totalStopped = $totalStoppedQuery->count();
-
-        // ═════════════════════════════════════════════════════════
-        // 4. TINGKAT PENDIDIKAN
-        // ═════════════════════════════════════════════════════════
-
-        $gradeQuery = Student::where('students.status', 'active')
-            ->join('leads', 'students.lead_id', '=', 'leads.id')
-            ->selectRaw("COALESCE(leads.grade, 'UMUM') as grade, count(*) as count")
-            ->groupBy('grade');
-        $filterByDate($gradeQuery, 'students.start_join', $year, $month);
-        $gradeDistributionRaw = $gradeQuery->get();
-
-        $gradeGroups = [
-            'PG' => 0, 'TK' => 0, 'SD' => 0, 'SMP' => 0, 'SMA' => 0, 'KULIAH' => 0, 'UMUM' => 0
-        ];
-
-        foreach ($gradeDistributionRaw as $item) {
-            $rawGrade = strtoupper(trim($item->grade));
-            if (str_contains($rawGrade, 'PG') || str_contains($rawGrade, 'PLAYGROUP') || str_contains($rawGrade, 'KB')) {
-                $gradeGroups['PG'] += $item->count;
-            } elseif (str_contains($rawGrade, 'TK')) {
-                $gradeGroups['TK'] += $item->count;
-            } elseif (str_contains($rawGrade, 'SD')) {
-                $gradeGroups['SD'] += $item->count;
-            } elseif (str_contains($rawGrade, 'SMP')) {
-                $gradeGroups['SMP'] += $item->count;
-            } elseif (str_contains($rawGrade, 'SMA') || str_contains($rawGrade, 'SMK') || str_contains($rawGrade, 'SLTA')) {
-                $gradeGroups['SMA'] += $item->count;
-            } elseif (str_contains($rawGrade, 'KULIAH') || str_contains($rawGrade, 'UNIV') || str_contains($rawGrade, 'MHS')) {
-                $gradeGroups['KULIAH'] += $item->count;
-            } else {
-                $gradeGroups['UMUM'] += $item->count;
-            }
-        }
-
-        $gradeDistribution = [];
-        foreach ($gradeGroups as $label => $count) {
-            $gradeDistribution[] = [
-                'name'  => $label,
-                'count' => (int) $count,
-            ];
-        }
-
-        return [
-            'filters' => [
-                'year'            => $year,
-                'month'           => $month,
-                'tab'             => $activeTab,
-                'available_years' => $availableYears,
-            ],
-            'reports' => [
-                'overall' => [
-                    'total_active'       => $totalActiveStudents,
-                    'new_this_month'     => $newStudentsThisMonth,
-                    'target_month'       => $targetMonth,
-                    'monthly_trend'      => $monthlyTrend,
-                    'branch_distribution' => $branchDistribution,
-                ],
-                'join_patterns' => $joinPatterns,
-                'siswa_stop' => [
-                    'total_stopped'  => $totalStopped,
-                    'monthly_trend'  => $stoppedMonthly,
-                ],
-                'grades' => $gradeDistribution,
-            ],
-        ];
+        return (new FetchAcademicDashboardData())->handle($request->all());
     }
 
     public function promoteFromLead(Request $request, Lead $lead, PromoteLeadToStudent $action): RedirectResponse|JsonResponse
@@ -361,28 +267,74 @@ class StudentController extends Controller
     /**
      * Update the specified student's status, notes, and join date.
      */
-    public function update(Request $request, Student $student): RedirectResponse
+    public function update(Request $request, Student $student)
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:active,stop',
-            'notes' => 'nullable|string',
-            'start_join' => 'required|date',
+            'status'       => 'nullable|string|in:active,stop',
+            'notes'        => 'nullable|string|max:5000',
+            'start_join'   => 'nullable|date',
+            'rejoin_count' => 'nullable|integer|min:0',
         ]);
 
-        $oldStatus = $student->status;
+        $updates = [];
 
-        if ($validated['status'] === 'stop' && $oldStatus !== 'stop') {
-            $student->stopped_at = now();
-        } elseif ($validated['status'] === 'active' && $oldStatus !== 'active') {
-            $student->stopped_at = null;
+        if (array_key_exists('status', $validated)) {
+            $oldStatus = $student->status;
+            if ($validated['status'] === 'stop' && $oldStatus !== 'stop') {
+                $updates['stopped_at'] = now();
+                \App\Domains\CRM\Domain\Models\LeadEnrollment::where('student_id', $student->id)
+                    ->where('status', 'active')
+                    ->update([
+                        'status' => 'stopped',
+                        'stopped_at' => now()->toDateString(),
+                        'notes' => $validated['notes'] ?? $student->notes,
+                    ]);
+            } elseif ($validated['status'] === 'active' && $oldStatus !== 'active') {
+                $updates['stopped_at'] = null;
+                \App\Domains\CRM\Domain\Models\LeadEnrollment::where('student_id', $student->id)
+                    ->where('status', 'stopped')
+                    ->update([
+                        'status' => 'active',
+                        'stopped_at' => null,
+                    ]);
+            }
+            $updates['status'] = $validated['status'];
         }
 
-        $student->update([
-            'status' => $validated['status'],
-            'notes' => $validated['notes'],
-            'start_join' => $validated['start_join'],
-            'stopped_at' => $student->stopped_at,
-        ]);
+        if (array_key_exists('notes', $validated)) {
+            $updates['notes'] = $validated['notes'];
+            if ($student->status === 'stop') {
+                \App\Domains\CRM\Domain\Models\LeadEnrollment::where('student_id', $student->id)
+                    ->update(['notes' => $validated['notes']]);
+            }
+        }
+
+        if (array_key_exists('start_join', $validated)) {
+            $updates['start_join'] = $validated['start_join'];
+        }
+
+        if (array_key_exists('rejoin_count', $validated) && $validated['rejoin_count'] !== null) {
+            $newRejoinCount = (int) $validated['rejoin_count'];
+            $updates['rejoin_count'] = $newRejoinCount;
+
+            // Automatically recalculate loyalty tier based on the new rejoin_count
+            $matchingSetting = \App\Domains\Finance\Domain\Models\LoyaltySetting::where('min_rejoin_count', '<=', $newRejoinCount)
+                ->orderBy('min_rejoin_count', 'desc')
+                ->first();
+
+            $updates['loyalty_tier'] = $matchingSetting ? $matchingSetting->tier_name : 'Bronze';
+        }
+
+        if (!empty($updates)) {
+            $student->update($updates);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Detail siswa berhasil diperbarui.',
+                'student' => $student->refresh(),
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Student details updated successfully.');
     }
@@ -404,6 +356,102 @@ class StudentController extends Controller
             'students' => StudentResource::collection($students),
         ]);
     }
+
+    public function bulkPromote(Request $request, \App\Domains\Academic\Application\Actions\BulkPromoteStudentsAction $action): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'mode' => 'required|in:auto,auto_detailed,auto_level,custom',
+            'from_grade' => 'nullable|string',
+            'to_grade' => 'nullable|string',
+            'branch_id' => 'nullable|string',
+            'preview_only' => 'nullable|boolean',
+            'selected_lead_ids' => 'nullable|array',
+            'selected_lead_ids.*' => 'string|uuid',
+        ]);
+
+        if (!empty($validated['preview_only'])) {
+            $previewData = $action->preview(
+                $validated['mode'],
+                $validated['from_grade'] ?? null,
+                $validated['to_grade'] ?? null,
+                $validated['branch_id'] ?? null
+            );
+            return response()->json($previewData);
+        }
+
+        $count = $action->execute(
+            $validated['mode'],
+            $validated['from_grade'] ?? null,
+            $validated['to_grade'] ?? null,
+            $validated['branch_id'] ?? null,
+            $validated['selected_lead_ids'] ?? null
+        );
+
+        return redirect()->back()->with('success', "Berhasil menaikkan kelas massal untuk {$count} siswa.");
+    }
+
+    public function storeProgressReport(
+        \App\Http\Requests\Academic\StoreStudentProgressReportRequest $request,
+        Student $student,
+        \App\Domains\Academic\Application\Actions\StoreStudentProgressReport $action
+    ): RedirectResponse {
+        $action->handle($student, $request->validated(), $request->file('file'));
+
+        return redirect()->back()->with('success', 'Progress report berhasil ditambahkan.');
+    }
+
+    public function destroyProgressReport(
+        Student $student,
+        \App\Domains\Academic\Domain\Models\StudentProgressReport $report,
+        \App\Domains\Academic\Application\Actions\DeleteStudentProgressReport $action
+    ): RedirectResponse {
+        if ($report->student_id !== $student->id) {
+            abort(404);
+        }
+
+        $action->handle($report);
+
+        return redirect()->back()->with('success', 'Progress report berhasil dihapus.');
+    }
+
+    public function uploadProfilePicture(Request $request, Student $student): JsonResponse
+    {
+        $request->validate([
+            'profile_picture' => ['required', 'image', 'max:51200'],
+        ]);
+
+        if ($request->hasFile('profile_picture')) {
+            // Delete old picture if exists
+            if ($student->profile_picture && \Illuminate\Support\Facades\Storage::disk('public')->exists($student->profile_picture)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($student->profile_picture);
+            }
+
+            $path = $request->file('profile_picture')->store('student-profiles', 'public');
+            $student->update(['profile_picture' => $path]);
+        }
+
+        return response()->json([
+            'message'             => 'Foto profil siswa berhasil diperbarui.',
+            'profile_picture'     => $student->profile_picture,
+            'profile_picture_url' => asset('storage/' . $student->profile_picture),
+        ]);
+    }
+
+    public function transferClass(
+        TransferStudentClassRequest $request,
+        Student $student,
+        TransferStudentClass $action
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        $action->handle(
+            student: $student,
+            fromClassId: $validated['from_study_class_id'],
+            toClassId: $validated['to_study_class_id'],
+            effectiveDate: $validated['effective_date'] ?? null,
+            reason: $validated['reason'] ?? null
+        );
+
+        return redirect()->back()->with('success', 'Siswa berhasil dipindahkan ke kelas baru.');
+    }
 }
-
-

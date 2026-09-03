@@ -33,6 +33,8 @@ export default function Modal({
             "5xl": "sm:max-w-5xl",
             "6xl": "sm:max-w-6xl",
             "7xl": "sm:max-w-7xl",
+            full: "sm:max-w-[96vw] max-w-[96vw]",
+            screen: "sm:max-w-[98vw] max-w-[98vw]",
         }[maxWidth] || "sm:max-w-lg";
 
     return createPortal(

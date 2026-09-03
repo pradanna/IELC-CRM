@@ -193,6 +193,19 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
             render: (row) => <span className="font-black text-emerald-600">{formatCurrency(row.total_amount)}</span>
         },
         {
+            header: 'Metode Bayar',
+            accessor: 'payment_method',
+            render: (row) => (
+                row.payment_method ? (
+                    <span className="inline-flex items-center px-2 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg text-[10px] uppercase border border-emerald-100">
+                        {row.payment_method}
+                    </span>
+                ) : (
+                    <span className="text-slate-400 text-[10px] italic">-</span>
+                )
+            )
+        },
+        {
             header: 'Aksi',
             accessor: 'id',
             render: (row) => (
@@ -647,6 +660,40 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                                                 ></div>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Rekapitulasi Kas & Bank / Metode Pembayaran */}
+                                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Akun / Metode Bayar</h3>
+                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">Rekapitulasi Kas, Bank &amp; QRIS</p>
+                                        </div>
+                                        <span className="text-[10px] font-black text-emerald-700 uppercase bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
+                                            {stats.payment_method_revenue?.length || 0} Metode
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {stats.payment_method_revenue?.length > 0 ? (
+                                            stats.payment_method_revenue.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/80 transition-colors rounded-2xl border border-slate-100/50">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 font-black text-xs flex items-center justify-center border border-emerald-100">
+                                                            💳
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-xs font-black text-slate-900 uppercase">{item.payment_method}</h4>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">{item.count || 0} transaksi lunas</span>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs font-black text-emerald-600">{formatCurrency(item.total)}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-xs text-slate-400 font-bold italic text-center py-6">Belum ada rincian metode pembayaran pada periode ini</p>
+                                        )}
                                     </div>
                                 </div>
 

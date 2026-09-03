@@ -248,7 +248,7 @@ class PublicLeadController extends Controller
             "Pembaruan Data Mandiri",
             "Lead {$lead->name} telah melakukan pengisian data mandiri.",
             "info",
-            route('admin.crm.registrations.index') // Assuming this is where updates are approved
+            route('admin.crm.leads.kanban', ['open_lead' => $lead->id])
         ));
 
         return redirect()->back()->with('success', 'Data Anda telah lunas kami terima dan sedang dalam proses verifikasi admin. Terima kasih!');

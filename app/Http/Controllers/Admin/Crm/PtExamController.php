@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Domains\CRM\Application\Actions\PtExam\CreatePtExamAction;
-use App\Domains\CRM\Application\Actions\PtExam\DeletePtExamAction;
-use App\Domains\CRM\Application\Actions\PtExam\UpdatePtExamAction;
+use App\Domains\Academic\Application\Actions\PtExam\CreatePtExamAction;
+use App\Domains\Academic\Application\Actions\PtExam\DeletePtExamAction;
+use App\Domains\Academic\Application\Actions\PtExam\UpdatePtExamAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PtExam\StorePtExamRequest;
 use App\Http\Resources\Crm\PtExam\PtExamResource;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Domains\Academic\Domain\Models\PtExam;
 use App\Domains\Academic\Domain\Models\PtSession;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,7 +33,7 @@ class PtExamController extends Controller
             ->take(10)
             ->get();
 
-        $exams = PtExam::withCount('questions')
+        $exams = PtExam::withCount(['questions', 'ptSessions'])
             ->orderBy('title')
             ->get();
 
@@ -52,14 +54,13 @@ class PtExamController extends Controller
     public function show(PtExam $ptExam): Response
     {
         $ptExam->load([
-            'ptQuestionGroups' => function ($q) {
-                $q->orderBy('position')->with(['questions' => function ($q2) {
-                    $q2->orderBy('position')->with('options');
-                }]);
-            },
-            'questions' => function ($q) {
-                $q->whereNull('pt_question_group_id')->orderBy('position')->with('options');
-            }
+            'generalGroups.questions.options',
+            'generalQuestions.options',
+            'kidsQuestions',
+            'ieltsTasks',
+            'ptQuestionGroups.questions.options',
+            'questions.options',
+            'questions.kidCanvas',
         ]);
 
         return Inertia::render('Admin/Crm/PlacementTests/Show', [
@@ -79,6 +80,22 @@ class PtExamController extends Controller
         $action->handle($ptExam);
 
         return redirect()->route('admin.placement-tests.index')->with('success', 'Placement test package deleted successfully.');
+    }
+
+    public function uploadCanvasImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|max:10240', // Max 10MB
+        ]);
+
+        $file = $request->file('image');
+        $path = $file->store('pt_exams/kids_canvas', 'public');
+        $url = Storage::url($path);
+
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+        ]);
     }
 }
 

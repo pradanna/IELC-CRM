@@ -9,26 +9,34 @@ class PromoteLeadToStudent
 {
     public function handle(Lead $lead): Student
     {
-        // Generate student number (e.g., STU-2026-0001)
-        $year = now()->year;
-        $count = Student::whereYear('created_at', $year)->count() + 1;
-        $studentNumber = 'STU-' . $year . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        // Check if student already exists for this lead
+        $student = Student::where('lead_id', $lead->id)->first();
 
-        $latestInvoice = $lead->invoices()->latest()->first();
-        $startJoin = $latestInvoice ? ($latestInvoice->start_date ?? now()) : now();
+        if (!$student) {
+            // Generate unique student number (e.g., STU-2026-0001)
+            $year = now()->year;
+            $count = Student::whereYear('created_at', $year)->count() + 1;
+            $studentNumber = 'STU-' . $year . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
 
-        $student = Student::create([
-            'lead_id' => $lead->id,
-            'student_number' => $studentNumber,
-            'start_join' => $startJoin,
-            'status' => 'active',
-        ]);
+            $latestInvoice = $lead->invoices()->latest()->first();
+            $startJoin = $latestInvoice ? ($latestInvoice->start_date ?? now()) : now();
+
+            $student = Student::create([
+                'lead_id' => $lead->id,
+                'student_number' => $studentNumber,
+                'start_join' => $startJoin,
+                'status' => 'active',
+            ]);
+        } else {
+            // If already exists, ensure status is active
+            $student->update(['status' => 'active']);
+        }
 
         // Update Lead Phase to Enrollment and set timestamp
         $enrollmentPhase = \App\Domains\Master\Domain\Models\LeadPhase::where('code', 'enrollment')->first();
         $lead->update([
             'lead_phase_id' => $enrollmentPhase?->id,
-            'enrolled_at' => $startJoin,
+            'enrolled_at' => $student->start_join ?? now(),
         ]);
 
         // Clear dashboard cache
@@ -37,5 +45,3 @@ class PromoteLeadToStudent
         return $student;
     }
 }
-
-

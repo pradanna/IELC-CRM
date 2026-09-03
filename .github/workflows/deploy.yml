@@ -18,6 +18,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          timeout: 10m
+          command_timeout: 15m
           script: |
             cd /home/pradana/IELC-CRM
             

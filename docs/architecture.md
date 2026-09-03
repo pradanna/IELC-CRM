@@ -108,7 +108,47 @@ erDiagram
 
 ---
 
-## 6. Integrations & Coding Standards
+## 6. Module: Placement Test (Multi-Domain Diagnostic)
+
+Manages diagnostic testing for prospective students across 3 independent educational domains while maintaining unified CRM Lead reporting and magic link generation.
+
+### Placement Test Architecture
+```mermaid
+erDiagram
+    LEADS ||--o{ PT_SESSIONS : "assigned_to"
+    PT_EXAMS ||--o{ PT_SESSIONS : "generates_token"
+
+    %% General Domain (MCQ / Auto-grading)
+    PT_EXAMS ||--o{ PT_GENERAL_QUESTION_GROUPS : "has"
+    PT_GENERAL_QUESTION_GROUPS ||--o{ PT_GENERAL_QUESTIONS : "groups"
+    PT_GENERAL_QUESTIONS ||--o{ PT_GENERAL_QUESTION_OPTIONS : "options"
+    PT_SESSIONS ||--o{ PT_GENERAL_ANSWERS : "submits"
+    PT_GENERAL_QUESTIONS ||--o{ PT_GENERAL_ANSWERS : "for_question"
+
+    %% Kids Domain (Interactive Freeform Canvas & Pin)
+    PT_EXAMS ||--o{ PT_KIDS_QUESTION_GROUPS : "has"
+    PT_KIDS_QUESTION_GROUPS ||--o{ PT_KIDS_QUESTIONS : "groups"
+    PT_SESSIONS ||--o{ PT_KIDS_ANSWERS : "submits"
+    PT_KIDS_QUESTIONS ||--o{ PT_KIDS_ANSWERS : "for_question"
+
+    %% IELTS Domain (Academic Tasks & Band Criteria)
+    PT_EXAMS ||--o{ PT_IELTS_SECTIONS : "has"
+    PT_IELTS_SECTIONS ||--o{ PT_IELTS_TASKS : "tasks"
+    PT_SESSIONS ||--o{ PT_IELTS_ANSWERS : "submits"
+    PT_IELTS_TASKS ||--o{ PT_IELTS_ANSWERS : "for_task"
+```
+
+### Technical Specs
+- **Unified Master**: `PtExam` (category: `General`, `Kids`, `IELTS`) and `PtSession` (token, status, `final_score`, `recommended_level`).
+- **General Domain**: `PtGeneralQuestionGroup`, `PtGeneralQuestion`, `PtGeneralQuestionOption`, `PtGeneralAnswer` (instant score).
+- **Kids Domain**: `PtKidsQuestionGroup`, `PtKidsQuestion` (`canvas_data` JSON layout/tokens), `PtKidsAnswer` (`user_mapping` JSON, `score_earned`, `teacher_notes`).
+- **IELTS Domain**: `PtIeltsSection` (Listening, Reading, Writing, Speaking), `PtIeltsTask`, `PtIeltsAnswer` (Essay text, file attachment, criteria scores: TR, CC, LR, GRA, `band_score`, `evaluator_notes`).
+- **Unified Public Runner**: `PtExamPublicResource` transforms domain-specific groups & questions into normalized frontend `pages` consumed by `Exam.jsx`.
+- **Domain Submission**: `SubmitPlacementTestAction` routes submitted answers to their corresponding domain answer models based on `exam.category`.
+
+---
+
+## 7. Integrations & Coding Standards
 
 ### WhatsApp Integration
 - **Node.js Gateway**: A separate Baileys-based server.
@@ -119,3 +159,4 @@ erDiagram
 - **Verify before Edit**: Always check `docs/architecture.md` and `.agents/skills` first.
 - **Standard Layout**: Maintain "Premium" UI patterns (consistent margins, HSL-based colors, and subtle micro-animations).
 - **Communication**: Use `Inertia::render()` only with `JsonResource` collections.
+

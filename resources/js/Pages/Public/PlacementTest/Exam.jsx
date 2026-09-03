@@ -2,7 +2,11 @@ import React from "react";
 import { Head } from "@inertiajs/react";
 import { Clock, ChevronLeft, ChevronRight, Check, AlertCircle, FileText, ExternalLink, Music, Download } from "lucide-react";
 import { usePlacementTest } from "./hooks/usePlacementTest";
-import { Upload, File, Type } from "lucide-react";
+import { Upload, File as FileIcon, Type } from "lucide-react";
+import KidsCanvasQuestion from "./components/KidsCanvasQuestion";
+import KidsImagePinQuestion from "./components/KidsImagePinQuestion";
+import KidsFreeformCanvasQuestion from "./components/KidsFreeformCanvasQuestion";
+import RichTextEditor from "@/Components/ui/RichTextEditor";
 
 export default function Exam({
     session,
@@ -25,13 +29,26 @@ export default function Exam({
         handleFileSelect,
         confirmFinish,
         getTimerColorClass,
+        saveStatus,
         answers,
         summaryFile,
         setData,
         processing,
     } = usePlacementTest({ session, pages, isReview: is_review, userAnswers: user_answers });
 
-    const activePage = pages[currentPageIndex];
+    const activePage = (pages && pages.length > 0) ? pages[currentPageIndex] : null;
+
+    if (!activePage) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-white rounded-3xl border border-gray-200">
+                <FileText className="w-12 h-12 text-slate-300 mb-3" />
+                <h3 className="text-base font-black text-slate-800 uppercase tracking-wider">Belum Ada Soal</h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                    Paket ujian ini belum memiliki soal atau group pertanyaan yang terdaftar.
+                </p>
+            </div>
+        );
+    }
 
     const getStatusBadge = (status) => {
         const styles = {
@@ -235,17 +252,29 @@ export default function Exam({
                                 </p>
 
                                 {activePage.file_path && (
-                                    <div className="mb-6 flex flex-wrap gap-3">
-                                        <a
-                                            href={activePage.file_path}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-primary-500 hover:bg-primary-50 text-slate-700 hover:text-primary-700 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all group"
-                                        >
-                                            <FileText size={16} className="text-slate-400 group-hover:text-primary-500" />
-                                            <span>Download Reading Resource</span>
-                                            <ExternalLink size={14} className="opacity-40" />
-                                        </a>
+                                    <div className="mb-6">
+                                        {activePage.file_path.match(/\.(jpeg|jpg|png|webp|gif|svg)$/i) ? (
+                                            <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 p-2 shadow-xs">
+                                                <img 
+                                                    src={activePage.file_path} 
+                                                    alt="Reading Passage Material" 
+                                                    className="w-full max-h-[500px] object-contain rounded-xl mx-auto"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-wrap gap-3">
+                                                <a
+                                                    href={activePage.file_path}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-primary-500 hover:bg-primary-50 text-slate-700 hover:text-primary-700 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all group"
+                                                >
+                                                    <FileText size={16} className="text-slate-400 group-hover:text-primary-500" />
+                                                    <span>Buka Dokumen Passage</span>
+                                                    <ExternalLink size={14} className="opacity-40" />
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -274,11 +303,186 @@ export default function Exam({
                                         {q.number}
                                     </div>
                                     <div className="flex-1 pt-1">
-                                        <p className="text-lg font-bold text-gray-900 mb-6 leading-snug">
+                                        <p className="text-lg font-bold text-gray-900 mb-4 leading-snug">
                                             {q.text}
                                         </p>
+
+                                        {/* Question-Level Audio Player */}
+                                        {q.audio_path && (
+                                            <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-2xl p-3.5 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                                    <Music size={16} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
+                                                        Listening Audio Question
+                                                    </p>
+                                                    <audio controls className="w-full h-9">
+                                                        <source src={q.audio_path} type="audio/mpeg" />
+                                                        Browser Anda tidak mendukung pemutaran audio.
+                                                    </audio>
+                                                </div>
+                                            </div>
+                                        )}
                                         
                                         {/* Question Content */}
+                                        {/* IELTS Task Multi-Modal (Audio, PDF Soal, Answer Sheet, Essay Input & Upload) */}
+                                        {q.type === 'ielts_task' && (
+                                            <div className="space-y-6">
+                                                {/* Description / Instructions (Rendered HTML) */}
+                                                {q.description && (
+                                                    <div 
+                                                        className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-5 text-xs text-indigo-950 font-medium leading-relaxed prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-indigo-950 prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5"
+                                                        dangerouslySetInnerHTML={{ __html: q.description }}
+                                                    />
+                                                )}
+
+                                                {/* Audio Player (Listening) with Direct Player & Open Link */}
+                                                {q.audio_path && (
+                                                    <div className="bg-sky-50/90 border border-sky-200 rounded-2xl p-4 flex flex-col gap-3 shadow-xs">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                                                    <Music size={16} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs font-black uppercase tracking-wider text-sky-950 leading-none">
+                                                                        Audio Listening Track
+                                                                    </p>
+                                                                    <p className="text-[10px] font-medium text-sky-700 mt-0.5">
+                                                                        Putar audio langsung di bawah atau buka di tab baru
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <a
+                                                                href={q.audio_path}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-xs font-bold hover:bg-sky-100/70 transition-all shadow-xs"
+                                                            >
+                                                                <span>Buka Audio File</span>
+                                                                <ExternalLink size={13} />
+                                                            </a>
+                                                        </div>
+                                                        <div className="pt-1">
+                                                            <audio 
+                                                                controls 
+                                                                preload="auto"
+                                                                src={q.audio_path} 
+                                                                className="w-full h-10 rounded-xl"
+                                                            >
+                                                                Browser Anda tidak mendukung pemutar audio langsung. Silakan klik tombol Buka Audio File di atas.
+                                                            </audio>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Downloadable PDF Resources (Buku Soal & Answer Sheet) */}
+                                                {(q.question_pdf_path || q.answer_sheet_pdf_path) && (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                        {q.question_pdf_path && (
+                                                            <a
+                                                                href={q.question_pdf_path}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="flex items-center justify-between p-4 rounded-2xl bg-white border border-rose-200/80 hover:border-rose-400 hover:shadow-md transition-all group"
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                                                        <FileText size={20} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-xs font-black text-slate-900 group-hover:text-rose-600 transition-colors">Buku Soal (PDF)</p>
+                                                                        <p className="text-[10px] font-medium text-slate-400">Klik untuk membaca / unduh soal</p>
+                                                                    </div>
+                                                                </div>
+                                                                <ExternalLink size={16} className="text-slate-400 group-hover:text-rose-600" />
+                                                            </a>
+                                                        )}
+
+                                                        {q.answer_sheet_pdf_path && (
+                                                            <a
+                                                                href={q.answer_sheet_pdf_path}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="flex items-center justify-between p-4 rounded-2xl bg-white border border-emerald-200/80 hover:border-emerald-400 hover:shadow-md transition-all group"
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                                                        <FileText size={20} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-xs font-black text-slate-900 group-hover:text-emerald-600 transition-colors">Template Answer Sheet (PDF)</p>
+                                                                        <p className="text-[10px] font-medium text-slate-400">Klik untuk membuka lembar jawaban di tab baru</p>
+                                                                    </div>
+                                                                </div>
+                                                                <ExternalLink size={16} className="text-slate-400 group-hover:text-emerald-600" />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Candidate Response: Essay Text Input AND/OR File Upload */}
+                                                <div className="space-y-4 pt-2 border-t border-slate-100">
+                                                    <div className="space-y-2">
+                                                        <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
+                                                            Ketik Tanggapan / Esai Online
+                                                        </label>
+                                                        {is_review ? (
+                                                            <div 
+                                                                className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm text-slate-800 leading-relaxed font-medium prose prose-sm max-w-none"
+                                                                dangerouslySetInnerHTML={{ __html: answers[q.id]?.essay_text || answers[q.id]?.answer_text || "(Tidak ada esai teks)" }}
+                                                            />
+                                                        ) : (
+                                                            <RichTextEditor
+                                                                value={typeof answers[q.id] === 'string' ? answers[q.id] : (answers[q.id]?.text || '')}
+                                                                onChange={(val) => handleTextChange(q.id, val)}
+                                                                placeholder="Ketik esai / jawaban lengkap Anda di sini..."
+                                                                minHeight="180px"
+                                                            />
+                                                        )}
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
+                                                            Unggah Berkas Lembar Jawaban / Scan (PDF/Docx/Foto)
+                                                        </label>
+                                                        {is_review ? (
+                                                            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
+                                                                <span className="text-xs font-bold text-slate-700">
+                                                                    {answers[q.id]?.file_path ? 'Berkas Telah Diunggah' : 'Tidak ada berkas diunggah'}
+                                                                </span>
+                                                                {answers[q.id]?.file_path && (
+                                                                    <a href={answers[q.id].file_path} target="_blank" className="text-xs font-bold text-indigo-600 hover:underline">
+                                                                        Unduh Berkas
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="relative group">
+                                                                <input
+                                                                    type="file"
+                                                                    accept=".pdf,.doc,.docx,image/*"
+                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                                    onChange={(e) => handleFileSelect(q.id, e.target.files[0])}
+                                                                />
+                                                                <div className={`border-2 border-dashed rounded-2xl p-6 flex items-center justify-center gap-3 transition-all ${
+                                                                    answers[q.id] instanceof File
+                                                                        ? 'border-emerald-300 bg-emerald-50/50'
+                                                                        : 'border-slate-200 bg-slate-50/50 hover:border-indigo-300 hover:bg-indigo-50/30'
+                                                                }`}>
+                                                                    <Upload size={18} className={answers[q.id] instanceof File ? 'text-emerald-600' : 'text-slate-400'} />
+                                                                    <span className="text-xs font-bold text-slate-700">
+                                                                        {answers[q.id] instanceof File ? answers[q.id].name : 'Pilih File Answer Sheet (PDF, DOCX, JPG)'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* MCQ Rendering */}
                                         {q.type === 'mcq' && (
                                             <div className="grid grid-cols-1 gap-3">
@@ -333,6 +537,66 @@ export default function Exam({
                                             </div>
                                         )}
 
+                                        {/* Kids Drag & Drop Canvas Question Rendering */}
+                                        {q.type === 'drag_drop' && (
+                                            (() => {
+                                                let canvasMode = 'category';
+                                                if (q.kid_canvas?.canvas_data) {
+                                                    const canvasObj = typeof q.kid_canvas.canvas_data === 'string'
+                                                        ? JSON.parse(q.kid_canvas.canvas_data)
+                                                        : q.kid_canvas.canvas_data;
+                                                    if (canvasObj?.mode === 'freeform_canvas' || canvasObj?.elements) {
+                                                        canvasMode = 'freeform';
+                                                    } else if (canvasObj?.mode === 'image_pin_gap_fill' || canvasObj?.drop_zones) {
+                                                        canvasMode = 'image_pin';
+                                                    }
+                                                } else {
+                                                    const firstOpt = (q.options || [])[0];
+                                                    if (firstOpt) {
+                                                        try {
+                                                            const parsed = JSON.parse(firstOpt.text || firstOpt.option_text);
+                                                            if (parsed?.mode === 'freeform_canvas' || parsed?.elements) {
+                                                                canvasMode = 'freeform';
+                                                            } else if (parsed?.mode === 'image_pin_gap_fill' || parsed?.drop_zones) {
+                                                                canvasMode = 'image_pin';
+                                                            }
+                                                        } catch (e) {}
+                                                    }
+                                                }
+
+                                                if (canvasMode === 'freeform') {
+                                                    return (
+                                                        <KidsFreeformCanvasQuestion
+                                                            question={q}
+                                                            value={answers[q.id]}
+                                                            onChange={(val) => handleTextChange(q.id, val)}
+                                                            isReview={is_review}
+                                                        />
+                                                    );
+                                                }
+
+                                                if (canvasMode === 'image_pin') {
+                                                    return (
+                                                        <KidsImagePinQuestion
+                                                            question={q}
+                                                            value={answers[q.id]}
+                                                            onChange={(val) => handleTextChange(q.id, val)}
+                                                            isReview={is_review}
+                                                        />
+                                                    );
+                                                }
+
+                                                return (
+                                                    <KidsCanvasQuestion
+                                                        question={q}
+                                                        value={answers[q.id]}
+                                                        onChange={(val) => handleTextChange(q.id, val)}
+                                                        isReview={is_review}
+                                                    />
+                                                );
+                                            })()
+                                        )}
+
                                         {/* Essay / Text Rendering */}
                                         {q.type === 'text' && (
                                             <div className="space-y-4">
@@ -358,7 +622,7 @@ export default function Exam({
                                                     <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-primary-600">
-                                                                <File size={20} />
+                                                                <FileIcon size={20} />
                                                             </div>
                                                             <div>
                                                                 <p className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">Attachment Answer</p>

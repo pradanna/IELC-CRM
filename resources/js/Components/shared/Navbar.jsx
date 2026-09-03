@@ -8,7 +8,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     return (
-        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200 sticky top-0 z-[60]">
+        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200 sticky top-0 z-40">
             {/* Search Bar */}
             <div className="flex-1 max-w-md">
                 <div className="relative">
@@ -80,15 +80,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
                                             role="menuitem"
                                             tabIndex="-1"
                                         >
-                                            Your Profile
-                                        </Link>
-                                        <Link
-                                            href="#" // Replace with settings route
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            role="menuitem"
-                                            tabIndex="-1"
-                                        >
-                                            Settings
+                                            Profil Saya
                                         </Link>
                                         <Link
                                             href={route("logout")}
@@ -98,7 +90,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
                                             role="menuitem"
                                             tabIndex="-1"
                                         >
-                                            Sign out
+                                            Keluar
                                         </Link>
                                     </div>
                                 </div>
