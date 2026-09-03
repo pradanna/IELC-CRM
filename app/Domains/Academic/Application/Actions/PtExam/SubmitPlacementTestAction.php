@@ -44,6 +44,18 @@ class SubmitPlacementTestAction
                             foreach ($canvasData['targets'] as $tgt) {
                                 $tgtId = $tgt['id'] ?? '';
                                 $tgtType = $tgt['type'] ?? '';
+                                $isExample = !empty($tgt['is_example']) || in_array($tgtType, ['example_circle', 'example_box']);
+                                
+                                // Target contoh tidak dihitung dalam penilaian sama sekali
+                                if ($isExample) {
+                                    continue;
+                                }
+
+                                // Jika target ring adalah pengecoh (bukan jawaban benar), jangan hitung sebagai bobot total yang harus diisi
+                                if ($tgtType === 'ring_target' && ($tgt['is_correct_answer'] ?? true) === false) {
+                                    continue;
+                                }
+
                                 if ($tgtId) {
                                     $totalTargets++;
                                     $userAssignedTokenId = $userMapping[$tgtId] ?? null;
@@ -51,7 +63,9 @@ class SubmitPlacementTestAction
 
                                     $isTargetCorrect = false;
                                     if ($tgtType === 'ring_target') {
-                                        if ($userToken && ($userToken['type'] ?? '') === 'ring') {
+                                        // Jika target ring diset sebagai pengecoh (is_correct_answer === false), maka jika dilingkari tetap salah
+                                        $isTargetExpected = ($tgt['is_correct_answer'] ?? true) !== false;
+                                        if ($userToken && ($userToken['type'] ?? '') === 'ring' && $isTargetExpected) {
                                             $isTargetCorrect = true;
                                         }
                                     } elseif ($tgtType === 'box_target') {

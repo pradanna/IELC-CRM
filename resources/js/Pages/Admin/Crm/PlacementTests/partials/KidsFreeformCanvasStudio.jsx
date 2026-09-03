@@ -2,112 +2,25 @@ import React, { useState, useRef, useEffect } from "react";
 import {
     Stage,
     Layer,
-    Image as KonvaImage,
-    Text as KonvaText,
     Rect,
-    Circle,
-    Line,
-    Group,
+    Text as KonvaText,
     Transformer,
 } from "react-konva";
-import {
-    Type,
-    Image as ImageIcon,
-    Plus,
-    Trash2,
-    Move,
-    RotateCcw,
-    Sliders,
-    Layers,
-    Bold,
-    Italic,
-    X,
-    MousePointer,
-    CheckCircle2,
-    Eye,
-    Undo2,
-    Redo2,
-    AlignLeft,
-    AlignCenter,
-    AlignRight,
-    ArrowUp,
-    ArrowDown,
-    BringToFront,
-    SendToBack,
-    ChevronUp,
-    ChevronDown,
-} from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import TextInput from "@/Components/form/TextInput";
-import InputLabel from "@/Components/form/InputLabel";
 import axios from "axios";
 import { compressImageIfNeeded } from "@/Utils/imageCompressor";
 
-// Helper hook for loading HTML images into Konva
-const useKonvaImage = (url) => {
-    const [image, setImage] = useState(null);
-    useEffect(() => {
-        if (!url) {
-            setImage(null);
-            return;
-        }
-        const img = new window.Image();
-        img.crossOrigin = "Anonymous";
-        img.src = url;
-        img.onload = () => setImage(img);
-    }, [url]);
-    return image;
-};
-
-// Render Individual Konva Image Element with Drag and Transform
-const CanvasImageItem = ({
-    element,
-    isSelected,
-    onSelect,
-    onChange,
-    onDragStart,
-    dragBoundFunc,
-}) => {
-    const image = useKonvaImage(element.src);
-    const shapeRef = useRef(null);
-
-    return (
-        <KonvaImage
-            id={element.id}
-            ref={shapeRef}
-            image={image}
-            x={element.x}
-            y={element.y}
-            width={element.width || 120}
-            height={element.height || 100}
-            draggable
-            dragBoundFunc={dragBoundFunc}
-            onDragStart={onDragStart}
-            onClick={onSelect}
-            onTap={onSelect}
-            onDragEnd={(e) => {
-                onChange({
-                    ...element,
-                    x: e.target.x(),
-                    y: e.target.y(),
-                });
-            }}
-            onTransformEnd={() => {
-                const node = shapeRef.current;
-                const scaleX = node.scaleX();
-                const scaleY = node.scaleY();
-                node.scaleX(1);
-                node.scaleY(1);
-                onChange({
-                    ...element,
-                    x: node.x(),
-                    y: node.y(),
-                    width: Math.round(Math.max(20, node.width() * scaleX)),
-                    height: Math.round(Math.max(20, node.height() * scaleY)),
-                });
-            }}
-        />
-    );
-};
+// Modular Canvas Feature Sub-components
+import CanvasElementItem from "./canvas-features/CanvasElementItem";
+import CanvasTargetItem from "./canvas-features/CanvasTargetItem";
+import CanvasTokenItem from "./canvas-features/CanvasTokenItem";
+import CanvasToolbar from "./canvas-features/CanvasToolbar";
+import CanvasShortcutsBar from "./canvas-features/CanvasShortcutsBar";
+import TokenBankBar from "./canvas-features/TokenBankBar";
+import InspectorElementsTab from "./canvas-features/InspectorElementsTab";
+import InspectorTargetsTab from "./canvas-features/InspectorTargetsTab";
+import InspectorTokensTab from "./canvas-features/InspectorTokensTab";
 
 export default function KidsFreeformCanvasStudio({ value, onChange }) {
     const stageWidth = 1100;
@@ -143,57 +56,74 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         }
 
         // Parse Elements (Text, Images) with safe numeric conversion
-        const elements = (Array.isArray(parsed.elements) ? parsed.elements : []).map(
-            (el) => {
-                const parsedX = Number(el.x);
-                const parsedY = Number(el.y);
-                const parsedWidth = Number(el.width);
-                const parsedHeight = Number(el.height);
-                const parsedFontSize = Number(el.fontSize);
+        const elements = (
+            Array.isArray(parsed.elements) ? parsed.elements : []
+        ).map((el) => {
+            const parsedX = Number(el.x);
+            const parsedY = Number(el.y);
+            const parsedWidth = Number(el.width);
+            const parsedHeight = Number(el.height);
+            const parsedFontSize = Number(el.fontSize);
 
-                return {
-                    ...el,
-                    x: Number.isFinite(parsedX) ? parsedX : 50,
-                    y: Number.isFinite(parsedY) ? parsedY : 50,
-                    ...(Number.isFinite(parsedWidth) ? { width: parsedWidth } : {}),
-                    ...(Number.isFinite(parsedHeight) ? { height: parsedHeight } : {}),
-                    ...(Number.isFinite(parsedFontSize) ? { fontSize: parsedFontSize } : {}),
-                };
-            },
-        );
+            return {
+                ...el,
+                x: Number.isFinite(parsedX) ? parsedX : 50,
+                y: Number.isFinite(parsedY) ? parsedY : 50,
+                ...(Number.isFinite(parsedWidth) ? { width: parsedWidth } : {}),
+                ...(Number.isFinite(parsedHeight) ? { height: parsedHeight } : {}),
+                ...(Number.isFinite(parsedFontSize)
+                    ? { fontSize: parsedFontSize }
+                    : {}),
+            };
+        });
 
-        // Parse Targets (Ring Target, Word Target, Box Target, Input Target)
-        const targets = (Array.isArray(parsed.targets) ? parsed.targets : []).map(
-            (tgt) => {
-                const parsedX = Number(tgt.x);
-                const parsedY = Number(tgt.y);
-                const parsedWidth = Number(tgt.width);
-                const parsedHeight = Number(tgt.height);
-                const parsedRadius = Number(tgt.radius);
-                const parsedFontSize = Number(tgt.fontSize);
+        // Parse Targets (Ring Target, Word Target, Box Target, Input Target, Example Markers)
+        const targets = (
+            Array.isArray(parsed.targets) ? parsed.targets : []
+        ).map((tgt) => {
+            const parsedX = Number(tgt.x);
+            const parsedY = Number(tgt.y);
+            const parsedWidth = Number(tgt.width);
+            const parsedHeight = Number(tgt.height);
+            const parsedRadius = Number(tgt.radius);
+            const parsedFontSize = Number(tgt.fontSize);
 
-                return {
-                    ...tgt,
-                    x: Number.isFinite(parsedX) ? parsedX : 100,
-                    y: Number.isFinite(parsedY) ? parsedY : 100,
-                    ...(Number.isFinite(parsedWidth) ? { width: parsedWidth } : {}),
-                    ...(Number.isFinite(parsedHeight) ? { height: parsedHeight } : {}),
-                    ...(Number.isFinite(parsedRadius) ? { radius: parsedRadius } : {}),
-                    ...(Number.isFinite(parsedFontSize) ? { fontSize: parsedFontSize } : {}),
-                };
-            },
-        );
+            return {
+                ...tgt,
+                x: Number.isFinite(parsedX) ? parsedX : 100,
+                y: Number.isFinite(parsedY) ? parsedY : 100,
+                ...(Number.isFinite(parsedWidth) ? { width: parsedWidth } : {}),
+                ...(Number.isFinite(parsedHeight) ? { height: parsedHeight } : {}),
+                ...(Number.isFinite(parsedRadius) ? { radius: parsedRadius } : {}),
+                ...(Number.isFinite(parsedFontSize)
+                    ? { fontSize: parsedFontSize }
+                    : {}),
+            };
+        });
 
-        // Parse Tokens with safe numeric fontSize
-        const tokens = (Array.isArray(parsed.tokens) ? parsed.tokens : []).map(
-            (tok) => {
-                const parsedFontSize = Number(tok.fontSize);
-                return {
-                    ...tok,
-                    ...(Number.isFinite(parsedFontSize) ? { fontSize: parsedFontSize } : {}),
-                };
-            },
-        );
+        // Parse Tokens with safe numeric coordinates & fontSize & allowed_target_ids
+        const tokens = (
+            Array.isArray(parsed.tokens) ? parsed.tokens : []
+        ).map((tok, idx) => {
+            const parsedFontSize = Number(tok.fontSize);
+            const parsedX = Number(tok.x);
+            const parsedY = Number(tok.y);
+            const allowedIds = Array.isArray(tok.allowed_target_ids)
+                ? tok.allowed_target_ids
+                : tok.allowed_target_id
+                ? [tok.allowed_target_id]
+                : [];
+
+            return {
+                ...tok,
+                allowed_target_ids: allowedIds,
+                x: Number.isFinite(parsedX) ? parsedX : 880,
+                y: Number.isFinite(parsedY) ? parsedY : 120 + idx * 55,
+                ...(Number.isFinite(parsedFontSize)
+                    ? { fontSize: parsedFontSize }
+                    : {}),
+            };
+        });
 
         return {
             mode: parsed.mode || "freeform_canvas",
@@ -209,7 +139,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
     const isInternalUpdateRef = useRef(false);
     const lastValueStringRef = useRef(JSON.stringify(normalizeState(value)));
 
-    // Update canvasState when value prop changes externally (e.g. switching question / opening modal)
+    // Update canvasState when value prop changes externally
     useEffect(() => {
         if (isInternalUpdateRef.current) {
             isInternalUpdateRef.current = false;
@@ -232,16 +162,20 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
     const [selectedIds, setSelectedIds] = useState([]); // Array of selected element IDs
     const [selectedTargetIds, setSelectedTargetIds] = useState([]); // Array of selected target IDs
+    const [selectedTokenIds, setSelectedTokenIds] = useState([]); // Array of selected token IDs
     const [activeTab, setActiveTab] = useState("elements"); // 'elements' | 'targets' | 'tokens'
     const [newWordInput, setNewWordInput] = useState("");
     const [editingTextId, setEditingTextId] = useState(null);
     const [editingTextValue, setEditingTextValue] = useState("");
     const [editingTargetId, setEditingTargetId] = useState(null);
     const [editingTargetValue, setEditingTargetValue] = useState("");
+    const [editingTokenId, setEditingTokenId] = useState(null);
+    const [editingTokenValue, setEditingTokenValue] = useState("");
     const trRef = useRef(null);
     const stageRef = useRef(null);
     const textInputRef = useRef(null);
     const targetInputRef = useRef(null);
+    const tokenInputRef = useRef(null);
 
     // Shift key tracker for Straight Axis Lock (Orthogonal drag / snapping)
     const isShiftPressedRef = useRef(false);
@@ -326,10 +260,9 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
     const pushHistory = (newState) => {
         const nextHistory = historyRef.current.slice(
             0,
-            historyStepRef.current + 1,
+            historyStepRef.current + 1
         );
         nextHistory.push(newState);
-        // Batasi history maksimal 50 langkah untuk performa
         if (nextHistory.length > 50) {
             nextHistory.shift();
         }
@@ -389,6 +322,49 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
     const setSelectedTargetId = (id) => {
         setSelectedTargetIds(id ? [id] : []);
+    };
+
+    // Selection click handlers supporting Shift + Click multi-selection
+    const handleSelectElementItem = (id, e) => {
+        const isShift = e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
+        if (isShift) {
+            setSelectedIds((prev) =>
+                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+            );
+        } else {
+            setSelectedIds([id]);
+            setSelectedTargetIds([]);
+            setSelectedTokenIds([]);
+        }
+        setActiveTab("elements");
+    };
+
+    const handleSelectTargetItem = (id, e) => {
+        const isShift = e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
+        if (isShift) {
+            setSelectedTargetIds((prev) =>
+                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+            );
+        } else {
+            setSelectedTargetIds([id]);
+            setSelectedIds([]);
+            setSelectedTokenIds([]);
+        }
+        setActiveTab("targets");
+    };
+
+    const handleSelectTokenItem = (id, e) => {
+        const isShift = e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
+        if (isShift) {
+            setSelectedTokenIds((prev) =>
+                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+            );
+        } else {
+            setSelectedTokenIds([id]);
+            setSelectedIds([]);
+            setSelectedTargetIds([]);
+        }
+        setActiveTab("tokens");
     };
 
     // Synchronize to Parent Form
@@ -466,7 +442,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         }
     };
 
-    // Inline Target Label / Word Editing Actions (Double-Click on Word Spot / Input Spot)
+    // Inline Target Label / Word Editing Actions
     const handleStartEditTarget = (tgt) => {
         setSelectedTargetIds([tgt.id]);
         setSelectedIds([]);
@@ -483,7 +459,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
     const handleFinishEditTarget = () => {
         if (editingTargetId) {
             const tgt = canvasState.targets.find(
-                (t) => t.id === editingTargetId,
+                (t) => t.id === editingTargetId
             );
             if (tgt) {
                 if (tgt.type === "input_target") {
@@ -519,21 +495,23 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             elements: [...prev.elements, newElem],
         }));
         setSelectedId(newId);
-        // Langsung aktifkan mode edit teks agar kursor langsung masuk
         handleStartEditText(newElem);
     };
 
     const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
-    // Helper: proses file gambar menjadi elemen canvas dengan auto-upload ke disk storage
+    // Process Image File with auto-upload
     const processImageFile = async (file, dropX = 150, dropY = 150) => {
         if (!file || !file.type.startsWith("image/")) return;
 
         let imageUrl = null;
-
         try {
-            // Kompres gambar jika perlu sebelum dikirim ke server
-            const compressedFile = await compressImageIfNeeded(file, 2 * 1024 * 1024, 1920, 1920);
+            const compressedFile = await compressImageIfNeeded(
+                file,
+                2 * 1024 * 1024,
+                1920,
+                1920
+            );
             const formData = new FormData();
             formData.append("image", compressedFile);
 
@@ -546,10 +524,12 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 imageUrl = res.data.url;
             }
         } catch (err) {
-            console.warn("Gagal auto-upload gambar ke server, fallback ke Base64 lokal:", err);
+            console.warn(
+                "Gagal auto-upload gambar ke server, fallback ke Base64 lokal:",
+                err
+            );
         }
 
-        // Fallback ke FileReader (Base64) jika upload jaringan gagal
         if (!imageUrl) {
             imageUrl = await new Promise((resolve) => {
                 const reader = new FileReader();
@@ -564,7 +544,6 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         tempImg.crossOrigin = "Anonymous";
         tempImg.src = imageUrl;
         tempImg.onload = () => {
-            // Hitung dimensi yang pas di canvas (maksimal lebar/tinggi ~180px dengan menjaga aspect ratio)
             const maxDim = 180;
             let w = tempImg.naturalWidth || 120;
             let h = tempImg.naturalHeight || 100;
@@ -578,14 +557,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 }
             }
 
-            // Posisi center pada titik drop
             const finalX = Math.max(
                 10,
-                Math.min(stageWidth - w - 10, dropX - w / 2),
+                Math.min(stageWidth - w - 10, dropX - w / 2)
             );
             const finalY = Math.max(
                 10,
-                Math.min(stageHeight - h - 10, dropY - h / 2),
+                Math.min(stageHeight - h - 10, dropY - h / 2)
             );
 
             const newId = `img_${Date.now()}`;
@@ -616,14 +594,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         setActiveTab("elements");
     };
 
-    // Duplicate Selected Items (Supports single & multiple selection)
+    // Duplicate Selected Items
     const handleDuplicateSelected = () => {
         let newElementIds = [];
         let newTargetIds = [];
         let duplicatedElements = [];
         let duplicatedTargets = [];
 
-        // Duplicate selected elements (text / image)
         if (selectedIds.length > 0) {
             canvasState.elements.forEach((el) => {
                 if (selectedIds.includes(el.id)) {
@@ -639,7 +616,6 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             });
         }
 
-        // Duplicate selected drop targets
         if (selectedTargetIds.length > 0) {
             canvasState.targets.forEach((tgt) => {
                 if (selectedTargetIds.includes(tgt.id)) {
@@ -652,7 +628,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                         x: Math.min(stageWidth - (tgt.width || 60), tgt.x + 20),
                         y: Math.min(
                             stageHeight - (tgt.height || 40),
-                            tgt.y + 20,
+                            tgt.y + 20
                         ),
                     });
                 }
@@ -688,7 +664,6 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 let w = el.width || 120;
                 let h = el.height || 40;
 
-                // Hitung dimensi teks aktual bila node tersedia di Konva Stage
                 if (el.type === "text" && stageRef.current) {
                     const node = stageRef.current.findOne("#" + el.id);
                     if (node) {
@@ -738,10 +713,9 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         });
     };
 
-    // Keyboard Shortcuts (Ctrl+Z undo, Ctrl+Y redo, Ctrl+A select all, Ctrl+D duplicate, Delete/Backspace remove, P center to page)
+    // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e) => {
-            // Jangan jalankan shortcut jika sedang mengetik di input/textarea
             const tag = e.target.tagName.toLowerCase();
             const isEditingInput = tag === "input" || tag === "textarea";
 
@@ -797,10 +771,10 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                     updateCanvasStateWithHistory((prev) => ({
                         ...prev,
                         elements: prev.elements.filter(
-                            (el) => !selectedIds.includes(el.id),
+                            (el) => !selectedIds.includes(el.id)
                         ),
                         targets: prev.targets.filter(
-                            (tgt) => !selectedTargetIds.includes(tgt.id),
+                            (tgt) => !selectedTargetIds.includes(tgt.id)
                         ),
                     }));
                     setSelectedIds([]);
@@ -811,7 +785,6 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 (e.key === "]" || e.key === "}") &&
                 !isEditingInput
             ) {
-                // Layer Up / Front (Ctrl+] or Ctrl+Shift+])
                 e.preventDefault();
                 const dir = e.shiftKey ? "front" : "forward";
                 if (selectedId) handleMoveElementLayer(selectedId, dir);
@@ -822,7 +795,6 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 (e.key === "[" || e.key === "{") &&
                 !isEditingInput
             ) {
-                // Layer Down / Back (Ctrl+[ or Ctrl+Shift+[)
                 e.preventDefault();
                 const dir = e.shiftKey ? "back" : "backward";
                 if (selectedId) handleMoveElementLayer(selectedId, dir);
@@ -881,7 +853,6 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         if (files && files.length > 0) {
             for (let i = 0; i < files.length; i++) {
                 if (files[i].type.startsWith("image/")) {
-                    // Staggering jika drop banyak file sekaligus
                     const offsetX = pointerPos.x + i * 20;
                     const offsetY = pointerPos.y + i * 20;
                     processImageFile(files[i], offsetX, offsetY);
@@ -910,7 +881,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         e.target.value = "";
     };
 
-    // 3. Add Drop Target (Ring Target, Word Target, or Box Target for Checkmark/Cross)
+    // 3. Add Drop Target / Example Markers
     const handleAddTarget = (type) => {
         const newId = `tgt_${Date.now()}`;
         let newTarget;
@@ -932,7 +903,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 y: 200,
                 width: 36,
                 height: 36,
-                correct_symbol: "check", // 'check' (True/Centang) | 'cross' (False/Silang)
+                correct_symbol: "check",
                 label: "Kotak True/False",
             };
         } else if (type === "input_target") {
@@ -946,6 +917,76 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 correct_text: "",
                 label: "Isian Teks (Ketik)",
                 placeholder: "Ketik jawaban...",
+            };
+        } else if (type === "example_circle" || type === "example_ring") {
+            newTarget = {
+                id: newId,
+                type: "example_circle",
+                is_example: true,
+                x: 200,
+                y: 250,
+                radius: 28,
+                label: "Contoh Lingkaran",
+            };
+        } else if (type === "example_box_check") {
+            newTarget = {
+                id: newId,
+                type: "example_box",
+                is_example: true,
+                example_symbol: "check",
+                x: 350,
+                y: 250,
+                width: 36,
+                height: 36,
+                label: "Contoh Centang",
+            };
+        } else if (type === "example_box_cross") {
+            newTarget = {
+                id: newId,
+                type: "example_box",
+                is_example: true,
+                example_symbol: "cross",
+                x: 350,
+                y: 250,
+                width: 36,
+                height: 36,
+                label: "Contoh Silang",
+            };
+        } else if (type === "example_box") {
+            newTarget = {
+                id: newId,
+                type: "example_box",
+                is_example: true,
+                example_symbol: "check",
+                x: 350,
+                y: 250,
+                width: 36,
+                height: 36,
+                label: "Contoh Kotak",
+            };
+        } else if (type === "example_word") {
+            newTarget = {
+                id: newId,
+                type: "example_word",
+                is_example: true,
+                example_text: "Contoh",
+                x: 300,
+                y: 250,
+                width: 100,
+                height: 32,
+                label: "Contoh Kata",
+            };
+        } else if (type === "example_input") {
+            newTarget = {
+                id: newId,
+                type: "example_input",
+                is_example: true,
+                example_text: "Jawaban Contoh",
+                x: 300,
+                y: 250,
+                width: 120,
+                height: 36,
+                label: "Contoh Isian",
             };
         } else {
             const firstWordId =
@@ -961,6 +1002,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 label: "Word Spot",
             };
         }
+
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             targets: [...prev.targets, newTarget],
@@ -974,7 +1016,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             elements: prev.elements.map((el) =>
-                el.id === id ? { ...el, ...newProps } : el,
+                el.id === id ? { ...el, ...newProps } : el
             ),
         }));
     };
@@ -988,8 +1030,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         if (selectedId === id) setSelectedId(null);
     };
 
-    // Layer Reordering for Canvas Elements (Teks & Gambar)
-    // direction: 'forward' | 'backward' | 'front' | 'back'
+    // Layer Reordering for Canvas Elements
     const handleMoveElementLayer = (id, direction) => {
         updateCanvasStateWithHistory((prev) => {
             const list = [...prev.elements];
@@ -999,9 +1040,9 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             const [item] = list.splice(index, 1);
 
             if (direction === "front") {
-                list.push(item); // Paling atas (paling depan)
+                list.push(item);
             } else if (direction === "back") {
-                list.unshift(item); // Paling bawah (paling belakang)
+                list.unshift(item);
             } else if (direction === "forward") {
                 const targetIdx = Math.min(list.length, index + 1);
                 list.splice(targetIdx, 0, item);
@@ -1050,7 +1091,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             targets: prev.targets.map((t) =>
-                t.id === id ? { ...t, ...newProps } : t,
+                t.id === id ? { ...t, ...newProps } : t
             ),
         }));
     };
@@ -1071,20 +1112,29 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         if (!text) return;
 
         const newId = `tok_w_${Date.now()}`;
+        const wordCount = canvasState.tokens.length;
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             tokens: [
                 ...prev.tokens,
-                { id: newId, type: "word", text, color: "#ea580c" },
+                {
+                    id: newId,
+                    type: "word",
+                    text,
+                    color: "#ea580c",
+                    x: 880,
+                    y: 120 + wordCount * 55,
+                },
             ],
         }));
         setNewWordInput("");
+        setSelectedTokenIds([newId]);
+        setActiveTab("tokens");
     };
 
     // 9. Add Ring Token
     const handleAddRingToken = () => {
-        const ringCount =
-            canvasState.tokens.filter((t) => t.type === "ring").length + 1;
+        const totalCount = canvasState.tokens.length;
         const newId = `tok_ring_${Date.now()}`;
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
@@ -1093,17 +1143,22 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 {
                     id: newId,
                     type: "ring",
-                    label: `🟢 Ring Hijau #${ringCount}`,
+                    label: "",
                     color: "#22c55e",
+                    x: 880,
+                    y: 120 + totalCount * 55,
                 },
             ],
         }));
+        setSelectedTokenIds([newId]);
+        setActiveTab("tokens");
     };
 
     // 9b. Add Checkmark Token (Centang Hijau)
     const handleAddCheckToken = () => {
         const checkCount =
             canvasState.tokens.filter((t) => t.type === "check").length + 1;
+        const totalCount = canvasState.tokens.length;
         const newId = `tok_chk_${Date.now()}`;
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
@@ -1115,15 +1170,20 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                     label: `✔ Centang #${checkCount}`,
                     symbol: "✔",
                     color: "#16a34a",
+                    x: 880,
+                    y: 120 + totalCount * 55,
                 },
             ],
         }));
+        setSelectedTokenIds([newId]);
+        setActiveTab("tokens");
     };
 
     // 9c. Add Cross Token (Silang Merah)
     const handleAddCrossToken = () => {
         const crossCount =
             canvasState.tokens.filter((t) => t.type === "cross").length + 1;
+        const totalCount = canvasState.tokens.length;
         const newId = `tok_crs_${Date.now()}`;
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
@@ -1135,17 +1195,21 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                     label: `✖ Silang #${crossCount}`,
                     symbol: "✖",
                     color: "#dc2626",
+                    x: 880,
+                    y: 120 + totalCount * 55,
                 },
             ],
         }));
+        setSelectedTokenIds([newId]);
+        setActiveTab("tokens");
     };
 
-    // 9d. Update Token Properties (e.g. fontSize / label)
+    // 9d. Update Token Properties
     const handleUpdateToken = (id, newProps) => {
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             tokens: prev.tokens.map((tok) =>
-                tok.id === id ? { ...tok, ...newProps } : tok,
+                tok.id === id ? { ...tok, ...newProps } : tok
             ),
         }));
     };
@@ -1158,7 +1222,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             targets: prev.targets.map((tgt) =>
                 tgt.correct_token_id === id
                     ? { ...tgt, correct_token_id: "" }
-                    : tgt,
+                    : tgt
             ),
         }));
     };
@@ -1172,119 +1236,18 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
     return (
         <div className="space-y-4 bg-slate-100/90 text-slate-800 p-6 rounded-3xl border border-slate-200 shadow-sm">
-            {/* Top Bar / Tools */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
-                <div className="flex items-center gap-3">
-                    <div>
-                        <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">
-                            Kids Free-Form Canvas Studio
-                        </h3>
-                        <p className="text-xs text-slate-500 font-medium">
-                            Rancang soal secara bebas di atas kanvas: tambah
-                            teks, gambar, sasaran kotak centang/silang,
-                            lingkaran, dan kata.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    {/* Undo / Redo Buttons */}
-                    <div className="flex items-center bg-white rounded-xl border border-slate-300 p-0.5 shadow-sm mr-1">
-                        <button
-                            type="button"
-                            onClick={handleUndo}
-                            disabled={historyStep <= 0}
-                            title="Undo (Ctrl+Z)"
-                            className={`p-1.5 rounded-lg transition-colors ${
-                                historyStep > 0
-                                    ? "text-slate-700 hover:bg-slate-100 cursor-pointer"
-                                    : "text-slate-300 cursor-not-allowed"
-                            }`}
-                        >
-                            <Undo2 className="w-4 h-4" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleRedo}
-                            disabled={historyStep >= history.length - 1}
-                            title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
-                            className={`p-1.5 rounded-lg transition-colors ${
-                                historyStep < history.length - 1
-                                    ? "text-slate-700 hover:bg-slate-100 cursor-pointer"
-                                    : "text-slate-300 cursor-not-allowed"
-                            }`}
-                        >
-                            <Redo2 className="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    {/* Add Text */}
-                    <button
-                        type="button"
-                        onClick={handleAddText}
-                        className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition-all shadow-sm"
-                    >
-                        <Type className="w-4 h-4 text-sky-600" />
-                        <span>+ Teks</span>
-                    </button>
-
-                    {/* Add Image */}
-                    <label className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition-all shadow-sm cursor-pointer">
-                        <ImageIcon className="w-4 h-4 text-emerald-600" />
-                        <span>+ Gambar</span>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleAddImage}
-                            className="hidden"
-                        />
-                    </label>
-
-                    {/* Add Checkbox Target Box */}
-                    <button
-                        type="button"
-                        onClick={() => handleAddTarget("box_target")}
-                        className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition-all shadow-sm"
-                    >
-                        <span className="w-3.5 h-3.5 border-2 border-emerald-600 rounded-sm inline-flex items-center justify-center text-[9px] font-black text-emerald-600">
-                            ✓
-                        </span>
-                        <span>+ Centang/Silang</span>
-                    </button>
-
-                    {/* Add Text Input Box (Ketik Jawaban) */}
-                    <button
-                        type="button"
-                        onClick={() => handleAddTarget("input_target")}
-                        className="px-3.5 py-2 bg-white hover:bg-sky-50 text-sky-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-sky-300 transition-all shadow-sm"
-                    >
-                        <span className="w-3.5 h-3 border border-sky-600 rounded-xs inline-flex items-center justify-center text-[8px] font-black text-sky-600 bg-sky-50">
-                            |
-                        </span>
-                        <span>+ Kotak Ketik (Isian)</span>
-                    </button>
-
-                    {/* Add Ring Target Spot */}
-                    <button
-                        type="button"
-                        onClick={() => handleAddTarget("ring_target")}
-                        className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition-all shadow-sm"
-                    >
-                        <span className="w-3.5 h-3.5 rounded-full border-2 border-emerald-500 inline-block" />
-                        <span>+ Ring</span>
-                    </button>
-
-                    {/* Add Word Target Spot */}
-                    <button
-                        type="button"
-                        onClick={() => handleAddTarget("word_target")}
-                        className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition-all shadow-sm"
-                    >
-                        <span className="w-3.5 h-2 border-b-2 border-amber-500 inline-block" />
-                        <span>+ Kata</span>
-                    </button>
-                </div>
-            </div>
+            {/* Top Toolbar */}
+            <CanvasToolbar
+                historyStep={historyStep}
+                historyLength={history.length}
+                onUndo={handleUndo}
+                onRedo={handleRedo}
+                onAddText={handleAddText}
+                onAddImage={handleAddImage}
+                onAddTarget={handleAddTarget}
+                onAddRingToken={handleAddRingToken}
+                onAddCheckToken={handleAddCheckToken}
+            />
 
             {/* Instruction Banner */}
             <div className="space-y-1">
@@ -1308,51 +1271,11 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* 1. Interactive Konva Canvas (8 Cols) */}
                 <div className="lg:col-span-8 space-y-2">
-                    <div className="flex items-center justify-between px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        <span className="flex items-center gap-2 flex-wrap">
-                            <span className="flex items-center gap-1 text-slate-700">
-                                <MousePointer className="w-3.5 h-3.5 text-amber-600" />
-                                <span>
-                                    <b>Ctrl+Z</b> Undo
-                                </span>
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>Ctrl+Y</b> Redo
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>Ctrl+A</b> Pilih Semua
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>Ctrl+D</b> Duplikat
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>Ctrl+V</b> Tempel Gambar
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>P</b> Center (Tengah)
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>Shift + Drag</b> Lurus (Vertikal/Horizontal)
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>Ctrl+[/]</b> Layer Belakang/Depan
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span>
-                                <b>Del</b> Hapus
-                            </span>
-                        </span>
-                        <span className="shrink-0 text-slate-400 font-mono">
-                            {stageWidth} x {stageHeight} px
-                        </span>
-                    </div>
+                    {/* Shortcuts Bar */}
+                    <CanvasShortcutsBar
+                        stageWidth={stageWidth}
+                        stageHeight={stageHeight}
+                    />
 
                     <div
                         onDrop={handleCanvasDrop}
@@ -1382,7 +1305,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             </div>
                         )}
 
-                        {/* Dedicated Inner Canvas Stage Wrapper to keep absolute DOM overlays and Stage coordinates 1:1 aligned */}
+                        {/* Dedicated Inner Canvas Stage Wrapper */}
                         <div
                             style={{
                                 width: `${stageWidth}px`,
@@ -1402,6 +1325,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                     ) {
                                         setSelectedIds([]);
                                         setSelectedTargetIds([]);
+                                        setSelectedTokenIds([]);
                                     }
                                 }}
                                 className="bg-white rounded-2xl cursor-default select-none shadow-inner"
@@ -1421,7 +1345,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                     {canvasState.elements.length === 0 &&
                                         canvasState.targets.length === 0 && (
                                             <KonvaText
-                                                text="Kanvas Bersih / Kosong. Klik tombol [+ Tambah Teks], [+ Upload Gambar], [+ Target Ring], atau [+ Target Kata] di toolbar atas untuk mulai menyusun soal."
+                                                text="Kanvas Bersih / Kosong. Klik tombol [+ Teks], [+ Gambar], [+ Centang/Silang], [+ Ring], [+ Kata], atau [+ Contoh] di toolbar atas untuk mulai menyusun soal."
                                                 x={60}
                                                 y={stageHeight / 2 - 20}
                                                 width={stageWidth - 120}
@@ -1429,539 +1353,112 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                 fontSize={14}
                                                 fontStyle="italic"
                                                 fill="#94a3b8"
-                                                listening={false}
                                             />
                                         )}
 
-                                    {/* Render Canvas Elements (Text & Images) */}
-                                    {canvasState.elements.map((el) => {
-                                        if (el.type === "text") {
-                                            const isEditing =
-                                                editingTextId === el.id;
-                                            return (
-                                                <KonvaText
-                                                    key={el.id}
-                                                    id={el.id}
-                                                    text={el.text}
-                                                    x={el.x}
-                                                    y={el.y}
-                                                    visible={!isEditing}
-                                                    fontSize={el.fontSize || 18}
-                                                    fontStyle={
-                                                        el.fontStyle || "normal"
-                                                    }
-                                                    fontFamily="'Comic Sans MS', 'Outfit', 'Inter', sans-serif"
-                                                    fill={el.fill || "#1e293b"}
-                                                    align={el.align || "left"}
-                                                    draggable={!isEditing}
-                                                    dragBoundFunc={createDragBoundFunc(
-                                                        el.id,
-                                                    )}
-                                                    onDragStart={(e) =>
-                                                        handleItemDragStart(
-                                                            el.id,
-                                                            e,
-                                                        )
-                                                    }
-                                                    onClick={() => {
-                                                        setSelectedId(el.id);
-                                                        setSelectedTargetId(
-                                                            null,
-                                                        );
-                                                        setActiveTab(
-                                                            "elements",
-                                                        );
-                                                    }}
-                                                    onTap={() => {
-                                                        setSelectedId(el.id);
-                                                        setSelectedTargetId(
-                                                            null,
-                                                        );
-                                                        setActiveTab(
-                                                            "elements",
-                                                        );
-                                                    }}
-                                                    onDblClick={() =>
-                                                        handleStartEditText(el)
-                                                    }
-                                                    onDblTap={() =>
-                                                        handleStartEditText(el)
-                                                    }
-                                                    onDragEnd={(e) => {
-                                                        handleItemDragEndClean(
-                                                            el.id,
-                                                        );
-                                                        handleUpdateElement(
-                                                            el.id,
-                                                            {
-                                                                x: e.target.x(),
-                                                                y: e.target.y(),
-                                                            },
-                                                        );
-                                                    }}
-                                                    onTransformEnd={(e) => {
-                                                        const node = e.target;
-                                                        const scaleX =
-                                                            node.scaleX();
-                                                        node.scaleX(1);
-                                                        node.scaleY(1);
-                                                        const currentFontSize =
-                                                            el.fontSize || 18;
-                                                        const newFontSize =
-                                                            Math.round(
-                                                                Math.max(
-                                                                    10,
-                                                                    currentFontSize *
-                                                                        scaleX,
-                                                                ),
-                                                            );
-                                                        handleUpdateElement(
-                                                            el.id,
-                                                            {
-                                                                x: node.x(),
-                                                                y: node.y(),
-                                                                fontSize:
-                                                                    newFontSize,
-                                                            },
-                                                        );
-                                                    }}
-                                                />
-                                            );
-                                        } else if (el.type === "image") {
-                                            return (
-                                                <CanvasImageItem
-                                                    key={el.id}
-                                                    element={el}
-                                                    isSelected={
-                                                        selectedId === el.id
-                                                    }
-                                                    dragBoundFunc={createDragBoundFunc(
-                                                        el.id,
-                                                    )}
-                                                    onDragStart={(e) =>
-                                                        handleItemDragStart(
-                                                            el.id,
-                                                            e,
-                                                        )
-                                                    }
-                                                    onSelect={() => {
-                                                        setSelectedId(el.id);
-                                                        setSelectedTargetId(
-                                                            null,
-                                                        );
-                                                        setActiveTab(
-                                                            "elements",
-                                                        );
-                                                    }}
-                                                    onChange={(newProps) => {
-                                                        handleItemDragEndClean(
-                                                            el.id,
-                                                        );
-                                                        handleUpdateElement(
-                                                            el.id,
-                                                            newProps,
-                                                        );
-                                                    }}
-                                                />
-                                            );
-                                        }
-                                        return null;
-                                    })}
+                                    {/* Render Elements (Text & Image) */}
+                                    {canvasState.elements.map((el) => (
+                                        <CanvasElementItem
+                                            key={el.id}
+                                            element={el}
+                                            isSelected={selectedIds.includes(
+                                                el.id
+                                            )}
+                                            isEditing={editingTextId === el.id}
+                                            dragBoundFunc={createDragBoundFunc(
+                                                el.id
+                                            )}
+                                            onDragStart={(e) =>
+                                                handleItemDragStart(el.id, e)
+                                            }
+                                            onSelect={(e) =>
+                                                handleSelectElementItem(
+                                                    el.id,
+                                                    e
+                                                )
+                                            }
+                                            onDoubleClick={() =>
+                                                handleStartEditText(el)
+                                            }
+                                            onDragEndClean={() =>
+                                                handleItemDragEndClean(el.id)
+                                            }
+                                            onUpdateElement={
+                                                handleUpdateElement
+                                            }
+                                        />
+                                    ))}
 
-                                    {/* Render Interactive Target Spots */}
-                                    {canvasState.targets.map((tgt) => {
-                                        const isTargetSelected =
-                                            selectedTargetIds.includes(tgt.id);
+                                    {/* Render Interactive Target Spots & Example Markers */}
+                                    {canvasState.targets.map((tgt) => (
+                                        <CanvasTargetItem
+                                            key={tgt.id}
+                                            tgt={tgt}
+                                            isSelected={selectedTargetIds.includes(
+                                                tgt.id
+                                            )}
+                                            isEditing={
+                                                editingTargetId === tgt.id
+                                            }
+                                            dragBoundFunc={createDragBoundFunc(
+                                                tgt.id
+                                            )}
+                                            onDragStart={(e) =>
+                                                handleItemDragStart(tgt.id, e)
+                                            }
+                                            onSelect={(e) =>
+                                                handleSelectTargetItem(
+                                                    tgt.id,
+                                                    e
+                                                )
+                                            }
+                                            onDoubleClick={() =>
+                                                handleStartEditTarget(tgt)
+                                            }
+                                            onDragEndClean={() =>
+                                                handleItemDragEndClean(tgt.id)
+                                            }
+                                            onUpdateTarget={handleUpdateTarget}
+                                        />
+                                    ))}
 
-                                        if (tgt.type === "ring_target") {
-                                            return (
-                                                <Group
-                                                    key={tgt.id}
-                                                    id={tgt.id}
-                                                    x={tgt.x}
-                                                    y={tgt.y}
-                                                    draggable
-                                                    dragBoundFunc={createDragBoundFunc(
-                                                        tgt.id,
-                                                    )}
-                                                    onDragStart={(e) =>
-                                                        handleItemDragStart(
-                                                            tgt.id,
-                                                            e,
-                                                        )
-                                                    }
-                                                    onClick={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onTap={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onDragEnd={(e) => {
-                                                        handleItemDragEndClean(
-                                                            tgt.id,
-                                                        );
-                                                        handleUpdateTarget(
-                                                            tgt.id,
-                                                            {
-                                                                x: e.target.x(),
-                                                                y: e.target.y(),
-                                                            },
-                                                        );
-                                                    }}
-                                                    onTransformEnd={(e) => {
-                                                        const node = e.target;
-                                                        const scaleX = node.scaleX();
-                                                        node.scaleX(1);
-                                                        node.scaleY(1);
-                                                        const currentRadius = tgt.radius || 24;
-                                                        const newRadius = Math.round(Math.max(12, currentRadius * scaleX));
-                                                        handleUpdateTarget(tgt.id, {
-                                                            x: node.x(),
-                                                            y: node.y(),
-                                                            radius: newRadius,
-                                                        });
-                                                    }}
-                                                >
-                                                    {/* Ellipse Ring Target */}
-                                                    <Circle
-                                                        radius={
-                                                            tgt.radius || 24
-                                                        }
-                                                        scaleX={1.5}
-                                                        stroke="#22c55e"
-                                                        strokeWidth={
-                                                            isTargetSelected
-                                                                ? 4
-                                                                : 2.5
-                                                        }
-                                                        dash={[6, 4]}
-                                                        fill="rgba(34, 197, 94, 0.1)"
-                                                    />
-                                                    <KonvaText
-                                                        text="⭕ Target"
-                                                        fontSize={9}
-                                                        fontStyle="bold"
-                                                        fill="#15803d"
-                                                        offsetX={18}
-                                                        offsetY={5}
-                                                    />
-                                                </Group>
-                                            );
-                                        } else if (tgt.type === "box_target") {
-                                            return (
-                                                <Group
-                                                    key={tgt.id}
-                                                    id={tgt.id}
-                                                    x={tgt.x}
-                                                    y={tgt.y}
-                                                    draggable
-                                                    dragBoundFunc={createDragBoundFunc(
-                                                        tgt.id,
-                                                    )}
-                                                    onDragStart={(e) =>
-                                                        handleItemDragStart(
-                                                            tgt.id,
-                                                            e,
-                                                        )
-                                                    }
-                                                    onClick={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onTap={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onDragEnd={(e) => {
-                                                        handleItemDragEndClean(
-                                                            tgt.id,
-                                                        );
-                                                        handleUpdateTarget(
-                                                            tgt.id,
-                                                            {
-                                                                x: e.target.x(),
-                                                                y: e.target.y(),
-                                                            },
-                                                        );
-                                                    }}
-                                                    onTransformEnd={(e) => {
-                                                        const node = e.target;
-                                                        const scaleX = node.scaleX();
-                                                        const scaleY = node.scaleY();
-                                                        node.scaleX(1);
-                                                        node.scaleY(1);
-                                                        const newWidth = Math.round(Math.max(20, (tgt.width || 36) * scaleX));
-                                                        const newHeight = Math.round(Math.max(20, (tgt.height || 36) * scaleY));
-                                                        handleUpdateTarget(tgt.id, {
-                                                            x: node.x(),
-                                                            y: node.y(),
-                                                            width: newWidth,
-                                                            height: newHeight,
-                                                        });
-                                                    }}
-                                                >
-                                                    <Rect
-                                                        width={tgt.width || 36}
-                                                        height={
-                                                            tgt.height || 36
-                                                        }
-                                                        stroke="#16a34a"
-                                                        strokeWidth={
-                                                            isTargetSelected
-                                                                ? 3
-                                                                : 2
-                                                        }
-                                                        dash={[4, 3]}
-                                                        cornerRadius={6}
-                                                        fill="rgba(22, 163, 74, 0.08)"
-                                                    />
-                                                    <KonvaText
-                                                        text={
-                                                            tgt.correct_symbol ===
-                                                                "cross" ||
-                                                            tgt.correct_token_id?.includes(
-                                                                "crs",
-                                                            )
-                                                                ? "✖"
-                                                                : "✔"
-                                                        }
-                                                        fontSize={16}
-                                                        fontStyle="bold"
-                                                        fill={
-                                                            tgt.correct_symbol ===
-                                                                "cross" ||
-                                                            tgt.correct_token_id?.includes(
-                                                                "crs",
-                                                            )
-                                                                ? "#dc2626"
-                                                                : "#16a34a"
-                                                        }
-                                                        width={tgt.width || 36}
-                                                        align="center"
-                                                        y={9}
-                                                    />
-                                                </Group>
-                                            );
-                                        } else if (
-                                            tgt.type === "input_target"
-                                        ) {
-                                            const isEditingTgt =
-                                                editingTargetId === tgt.id;
-                                            return (
-                                                <Group
-                                                    key={tgt.id}
-                                                    id={tgt.id}
-                                                    x={tgt.x}
-                                                    y={tgt.y}
-                                                    draggable={!isEditingTgt}
-                                                    visible={!isEditingTgt}
-                                                    dragBoundFunc={createDragBoundFunc(
-                                                        tgt.id,
-                                                    )}
-                                                    onDragStart={(e) =>
-                                                        handleItemDragStart(
-                                                            tgt.id,
-                                                            e,
-                                                        )
-                                                    }
-                                                    onClick={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onTap={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onDblClick={() =>
-                                                        handleStartEditTarget(
-                                                            tgt,
-                                                        )
-                                                    }
-                                                    onDblTap={() =>
-                                                        handleStartEditTarget(
-                                                            tgt,
-                                                        )
-                                                    }
-                                                    onDragEnd={(e) => {
-                                                        handleItemDragEndClean(
-                                                            tgt.id,
-                                                        );
-                                                        handleUpdateTarget(
-                                                            tgt.id,
-                                                            {
-                                                                x: e.target.x(),
-                                                                y: e.target.y(),
-                                                            },
-                                                        );
-                                                    }}
-                                                    onTransformEnd={(e) => {
-                                                        const node = e.target;
-                                                        const scaleX = node.scaleX();
-                                                        const scaleY = node.scaleY();
-                                                        node.scaleX(1);
-                                                        node.scaleY(1);
-                                                        const newWidth = Math.round(Math.max(40, (tgt.width || 120) * scaleX));
-                                                        const newHeight = Math.round(Math.max(24, (tgt.height || 36) * scaleY));
-                                                        handleUpdateTarget(tgt.id, {
-                                                            x: node.x(),
-                                                            y: node.y(),
-                                                            width: newWidth,
-                                                            height: newHeight,
-                                                        });
-                                                    }}
-                                                >
-                                                    <Rect
-                                                        width={tgt.width || 120}
-                                                        height={
-                                                            tgt.height || 36
-                                                        }
-                                                        stroke="#0284c7"
-                                                        strokeWidth={
-                                                            isTargetSelected
-                                                                ? 3
-                                                                : 2
-                                                        }
-                                                        cornerRadius={8}
-                                                        fill="#f0f9ff"
-                                                    />
-                                                    <KonvaText
-                                                        text={
-                                                            tgt.correct_text
-                                                                ? `⌨ "${tgt.correct_text}"`
-                                                                : "⌨ [Kotak Ketik]"
-                                                        }
-                                                        fontSize={tgt.fontSize || 11}
-                                                        fontStyle="bold"
-                                                        fill="#0369a1"
-                                                        width={tgt.width || 120}
-                                                        align="center"
-                                                        y={Math.max(4, Math.round(((tgt.height || 36) - (tgt.fontSize || 11) * 1.2) / 2))}
-                                                    />
-                                                </Group>
-                                            );
-                                        } else if (tgt.type === "word_target") {
-                                            const isEditingTgt =
-                                                editingTargetId === tgt.id;
-                                            return (
-                                                <Group
-                                                    key={tgt.id}
-                                                    id={tgt.id}
-                                                    x={tgt.x}
-                                                    y={tgt.y}
-                                                    draggable={!isEditingTgt}
-                                                    visible={!isEditingTgt}
-                                                    dragBoundFunc={createDragBoundFunc(
-                                                        tgt.id,
-                                                    )}
-                                                    onDragStart={(e) =>
-                                                        handleItemDragStart(
-                                                            tgt.id,
-                                                            e,
-                                                        )
-                                                    }
-                                                    onClick={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onTap={() => {
-                                                        setSelectedTargetId(
-                                                            tgt.id,
-                                                        );
-                                                        setSelectedId(null);
-                                                        setActiveTab("targets");
-                                                    }}
-                                                    onDblClick={() =>
-                                                        handleStartEditTarget(
-                                                            tgt,
-                                                        )
-                                                    }
-                                                    onDblTap={() =>
-                                                        handleStartEditTarget(
-                                                            tgt,
-                                                        )
-                                                    }
-                                                    onDragEnd={(e) => {
-                                                        handleItemDragEndClean(
-                                                            tgt.id,
-                                                        );
-                                                        handleUpdateTarget(
-                                                            tgt.id,
-                                                            {
-                                                                x: e.target.x(),
-                                                                y: e.target.y(),
-                                                            },
-                                                        );
-                                                    }}
-                                                    onTransformEnd={(e) => {
-                                                        const node = e.target;
-                                                        const scaleX = node.scaleX();
-                                                        const scaleY = node.scaleY();
-                                                        node.scaleX(1);
-                                                        node.scaleY(1);
-                                                        const newWidth = Math.round(Math.max(30, (tgt.width || 100) * scaleX));
-                                                        const newHeight = Math.round(Math.max(20, (tgt.height || 30) * scaleY));
-                                                        handleUpdateTarget(tgt.id, {
-                                                            x: node.x(),
-                                                            y: node.y(),
-                                                            width: newWidth,
-                                                            height: newHeight,
-                                                        });
-                                                    }}
-                                                >
-                                                    <Rect
-                                                        width={tgt.width || 100}
-                                                        height={
-                                                            tgt.height || 30
-                                                        }
-                                                        stroke="#ea580c"
-                                                        strokeWidth={
-                                                            isTargetSelected
-                                                                ? 3
-                                                                : 2
-                                                        }
-                                                        dash={[5, 4]}
-                                                        cornerRadius={8}
-                                                        fill="rgba(234, 88, 12, 0.08)"
-                                                    />
-                                                    <KonvaText
-                                                        text={`[ ${tgt.label || "Drop Word"} ]`}
-                                                        fontSize={tgt.fontSize || 10}
-                                                        fontStyle="bold"
-                                                        fill="#c2410c"
-                                                        width={tgt.width || 100}
-                                                        align="center"
-                                                        y={Math.max(4, Math.round(((tgt.height || 30) - (tgt.fontSize || 10) * 1.2) / 2))}
-                                                    />
-                                                </Group>
-                                            );
-                                        }
-                                        return null;
-                                    })}
+                                    {/* Render Interactive Token Items (Tokens in Canvas) */}
+                                    {canvasState.tokens.map((tok) => (
+                                        <CanvasTokenItem
+                                            key={tok.id}
+                                            tok={tok}
+                                            isSelected={selectedTokenIds.includes(
+                                                tok.id
+                                            )}
+                                            isEditing={
+                                                editingTokenId === tok.id
+                                            }
+                                            dragBoundFunc={createDragBoundFunc(
+                                                tok.id
+                                            )}
+                                            onDragStart={(e) =>
+                                                handleItemDragStart(tok.id, e)
+                                            }
+                                            onSelect={(e) =>
+                                                handleSelectTokenItem(
+                                                    tok.id,
+                                                    e
+                                                )
+                                            }
+                                            onDoubleClick={() => {
+                                                if (tok.type === "word") {
+                                                    setEditingTokenId(tok.id);
+                                                    setEditingTokenValue(tok.text || "");
+                                                }
+                                            }}
+                                            onDragEndClean={() =>
+                                                handleItemDragEndClean(tok.id)
+                                            }
+                                            onUpdateToken={handleUpdateToken}
+                                        />
+                                    ))}
 
-                                    {/* Transformer (Standard Corner/Edge Scaling) */}
+                                    {/* Transformer */}
                                     <Transformer
                                         ref={trRef}
                                         centeredScaling={false}
@@ -1995,14 +1492,15 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                 </Layer>
                             </Stage>
 
-                            {/* Floating Direct Inline Text Editor (Double-Click / 2x Klik Teks) */}
+                            {/* Floating Direct Inline Text Editor */}
                             {editingTextId &&
                                 (() => {
-                                    const editingEl = canvasState.elements.find(
-                                        (el) =>
-                                            el.id === editingTextId &&
-                                            el.type === "text",
-                                    );
+                                    const editingEl =
+                                        canvasState.elements.find(
+                                            (el) =>
+                                                el.id === editingTextId &&
+                                                el.type === "text"
+                                        );
                                     if (!editingEl) return null;
 
                                     return (
@@ -2011,13 +1509,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             value={editingTextValue}
                                             onChange={(e) => {
                                                 setEditingTextValue(
-                                                    e.target.value,
+                                                    e.target.value
                                                 );
                                                 handleUpdateElement(
                                                     editingTextId,
                                                     {
                                                         text: e.target.value,
-                                                    },
+                                                    }
                                                 );
                                             }}
                                             onBlur={handleFinishEditText}
@@ -2039,13 +1537,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                 fontSize: `${editingEl.fontSize || 18}px`,
                                                 fontStyle:
                                                     editingEl.fontStyle?.includes(
-                                                        "italic",
+                                                        "italic"
                                                     )
                                                         ? "italic"
                                                         : "normal",
                                                 fontWeight:
                                                     editingEl.fontStyle?.includes(
-                                                        "bold",
+                                                        "bold"
                                                     )
                                                         ? "bold"
                                                         : "normal",
@@ -2066,11 +1564,11 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                     );
                                 })()}
 
-                            {/* Floating Direct Target / Word Spot Editor (Double-Click / 2x Klik Word Spot) */}
+                            {/* Floating Direct Target Editor */}
                             {editingTargetId &&
                                 (() => {
                                     const editingTgt = canvasState.targets.find(
-                                        (t) => t.id === editingTargetId,
+                                        (t) => t.id === editingTargetId
                                     );
                                     if (!editingTgt) return null;
 
@@ -2084,7 +1582,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             value={editingTargetValue}
                                             onChange={(e) => {
                                                 setEditingTargetValue(
-                                                    e.target.value,
+                                                    e.target.value
                                                 );
                                                 if (isInputTgt) {
                                                     handleUpdateTarget(
@@ -2096,7 +1594,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                                 e.target
                                                                     .value ||
                                                                 editingTgt.label,
-                                                        },
+                                                        }
                                                     );
                                                 } else {
                                                     handleUpdateTarget(
@@ -2104,7 +1602,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                         {
                                                             label: e.target
                                                                 .value,
-                                                        },
+                                                        }
                                                     );
                                                 }
                                             }}
@@ -2120,70 +1618,99 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             }}
                                             style={{
                                                 position: "absolute",
-                                                left: `${editingTgt.x}px`,
-                                                top: `${editingTgt.y}px`,
-                                                width: `${editingTgt.width || 100}px`,
-                                                height: `${editingTgt.height || 32}px`,
+                                                left:
+                                                    editingTgt.type === "ring_target"
+                                                        ? `${editingTgt.x - (editingTgt.radius || 24) * 1.5}px`
+                                                        : `${editingTgt.x}px`,
+                                                top:
+                                                    editingTgt.type === "ring_target"
+                                                        ? `${editingTgt.y - (editingTgt.radius || 24)}px`
+                                                        : `${editingTgt.y}px`,
+                                                width:
+                                                    editingTgt.type === "ring_target"
+                                                        ? `${(editingTgt.radius || 24) * 3}px`
+                                                        : `${editingTgt.width || 100}px`,
+                                                height:
+                                                    editingTgt.type === "ring_target"
+                                                        ? `${(editingTgt.radius || 24) * 2}px`
+                                                        : `${editingTgt.height || 32}px`,
+                                                fontSize:
+                                                    editingTgt.type === "ring_target"
+                                                        ? `${editingTgt.fontSize || 16}px`
+                                                        : undefined,
                                                 zIndex: 40,
                                             }}
                                             className={`bg-white border-2 rounded-lg px-2 text-xs font-black text-center shadow-2xl outline-none ring-4 ${
                                                 isInputTgt
                                                     ? "border-sky-500 text-sky-950 ring-sky-500/20"
-                                                    : "border-amber-500 text-amber-950 ring-amber-500/20"
+                                                    : editingTgt.type === "ring_target"
+                                                      ? "border-emerald-500 text-slate-900 ring-emerald-500/20"
+                                                      : "border-amber-500 text-amber-950 ring-amber-500/20"
                                             }`}
                                             placeholder={
                                                 isInputTgt
                                                     ? "Kunci jawaban..."
-                                                    : "Label Word Spot..."
+                                                    : editingTgt.type === "ring_target"
+                                                      ? "Teks ring..."
+                                                      : "Label Word Spot..."
                                             }
+                                        />
+                                    );
+                                })()}
+
+                            {/* Floating Direct Token Editor */}
+                            {editingTokenId &&
+                                (() => {
+                                    const editingTok = canvasState.tokens.find(
+                                        (t) => t.id === editingTokenId
+                                    );
+                                    if (!editingTok) return null;
+
+                                    return (
+                                        <input
+                                            ref={tokenInputRef}
+                                            type="text"
+                                            value={editingTokenValue}
+                                            onChange={(e) => {
+                                                setEditingTokenValue(e.target.value);
+                                                handleUpdateToken(editingTokenId, {
+                                                    text: e.target.value,
+                                                    label: e.target.value,
+                                                });
+                                            }}
+                                            onBlur={() => {
+                                                setEditingTokenId(null);
+                                                setEditingTokenValue("");
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (
+                                                    e.key === "Enter" ||
+                                                    e.key === "Escape"
+                                                ) {
+                                                    e.preventDefault();
+                                                    setEditingTokenId(null);
+                                                    setEditingTokenValue("");
+                                                }
+                                            }}
+                                            style={{
+                                                position: "absolute",
+                                                left: `${editingTok.x}px`,
+                                                top: `${editingTok.y}px`,
+                                                minWidth: "90px",
+                                                height: "36px",
+                                                fontSize: `${editingTok.fontSize || 18}px`,
+                                                zIndex: 40,
+                                            }}
+                                            className="bg-white border-2 border-orange-500 rounded-lg px-2 text-xs font-black text-center text-orange-950 shadow-2xl outline-none ring-4 ring-orange-500/20"
+                                            placeholder="Teks token..."
                                         />
                                     );
                                 })()}
                         </div>
                     </div>
 
-                    {/* Live Token Bank Preview Bar (Tampilan Token Yang Diberikan ke Siswa) */}
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-black uppercase text-slate-600 tracking-wider flex items-center gap-1.5">
-                                <span>🎒</span> Bank Token Siswa (
-                                {canvasState.tokens.length} Token Aktif)
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-bold">
-                                (Item yang akan ditarik siswa saat ujian)
-                            </span>
-                        </div>
-
-                        {canvasState.tokens.length === 0 ? (
-                            <div className="py-2.5 px-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-xs font-medium">
-                                Belum ada token. Klik tombol <b>[+ Centang]</b>,{" "}
-                                <b>[+ Silang]</b>, atau tambah kata di tab{" "}
-                                <b>Token Bank</b> di sebelah kanan.
-                            </div>
-                        ) : (
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
-                                {canvasState.tokens.map((tok) => (
-                                    <div
-                                        key={tok.id}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-black text-xs shadow-xs select-none ${
-                                            tok.type === "check"
-                                                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                                                : tok.type === "cross"
-                                                  ? "bg-rose-50 border-rose-300 text-rose-700"
-                                                  : tok.type === "ring"
-                                                    ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                                                    : "bg-orange-50 border-orange-300 text-orange-800"
-                                        }`}
-                                    >
-                                        <span>
-                                            {tok.symbol ? `${tok.symbol} ` : ""}
-                                            {tok.text || tok.label}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    {/* Live Token Bank Preview Bar */}
+                    <TokenBankBar tokens={canvasState.tokens} />
                 </div>
 
                 {/* 2. Inspector / Settings Tabs (4 Cols) */}
@@ -2227,1001 +1754,50 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
                     {/* Tab 1: Elements Inspector */}
                     {activeTab === "elements" && (
-                        <div className="space-y-4">
-                            {/* 1. Selected Element Properties */}
-                            {selectedElement ? (
-                                <div className="space-y-4 bg-white p-4 rounded-2xl border border-amber-300 shadow-md ring-2 ring-amber-400/20">
-                                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 pb-2 border-b border-slate-100 flex items-center justify-between">
-                                        <span className="flex items-center gap-1.5 text-amber-700">
-                                            <span>{selectedElement.type === "text" ? "📝" : "🖼️"}</span>
-                                            <span>Edit {selectedElement.type === "text" ? "Teks" : "Gambar"} Aktif</span>
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                handleDeleteElement(
-                                                    selectedElement.id,
-                                                )
-                                            }
-                                            className="text-rose-500 hover:text-rose-600 text-[10px] font-bold flex items-center gap-1"
-                                        >
-                                            <Trash2 className="w-3 h-3" /> Hapus
-                                        </button>
-                                    </h4>
-
-                                    <div className="space-y-3">
-                                        {selectedElement.type === "text" ? (
-                                            <>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">
-                                                        Isi Teks:
-                                                    </label>
-                                                    <textarea
-                                                        rows={3}
-                                                        value={selectedElement.text}
-                                                        onChange={(e) =>
-                                                            handleUpdateElement(
-                                                                selectedElement.id,
-                                                                {
-                                                                    text: e.target
-                                                                        .value,
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-amber-400"
-                                                    />
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-slate-500 uppercase">
-                                                            Font Size:
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            value={
-                                                                selectedElement.fontSize ||
-                                                                18
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleUpdateElement(
-                                                                    selectedElement.id,
-                                                                    {
-                                                                        fontSize:
-                                                                            parseInt(
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                            ) || 16,
-                                                                    },
-                                                                )
-                                                            }
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-amber-400"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-slate-500 uppercase">
-                                                            Style:
-                                                        </label>
-                                                        <select
-                                                            value={
-                                                                selectedElement.fontStyle ||
-                                                                "normal"
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleUpdateElement(
-                                                                    selectedElement.id,
-                                                                    {
-                                                                        fontStyle:
-                                                                            e.target
-                                                                                .value,
-                                                                    },
-                                                                )
-                                                            }
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-amber-400"
-                                                        >
-                                                            <option value="normal">
-                                                                Normal
-                                                            </option>
-                                                            <option value="bold">
-                                                                Bold
-                                                            </option>
-                                                            <option value="italic">
-                                                                Italic
-                                                            </option>
-                                                            <option value="bold italic">
-                                                                Bold Italic
-                                                            </option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                {/* Text Alignment (Rata Kiri, Tengah, Kanan) */}
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">
-                                                        Rata Teks (Alignment):
-                                                    </label>
-                                                    <div className="grid grid-cols-3 gap-1.5 mt-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleUpdateElement(
-                                                                    selectedElement.id,
-                                                                    {
-                                                                        align: "left",
-                                                                    },
-                                                                )
-                                                            }
-                                                            className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                                                                (selectedElement.align ||
-                                                                    "left") ===
-                                                                "left"
-                                                                    ? "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                                                            }`}
-                                                            title="Rata Kiri"
-                                                        >
-                                                            <AlignLeft className="w-3.5 h-3.5" />
-                                                            <span>Kiri</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleUpdateElement(
-                                                                    selectedElement.id,
-                                                                    {
-                                                                        align: "center",
-                                                                    },
-                                                                )
-                                                            }
-                                                            className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                                                                selectedElement.align ===
-                                                                "center"
-                                                                    ? "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                                                            }`}
-                                                            title="Rata Tengah"
-                                                        >
-                                                            <AlignCenter className="w-3.5 h-3.5" />
-                                                            <span>Tengah</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleUpdateElement(
-                                                                    selectedElement.id,
-                                                                    {
-                                                                        align: "right",
-                                                                    },
-                                                                )
-                                                            }
-                                                            className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                                                                selectedElement.align ===
-                                                                "right"
-                                                                    ? "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                                                            }`}
-                                                            title="Rata Kanan"
-                                                        >
-                                                            <AlignRight className="w-3.5 h-3.5" />
-                                                            <span>Kanan</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 space-y-1">
-                                                    <span className="text-[10px] font-black uppercase text-emerald-700">
-                                                        🖼️ Image Element
-                                                    </span>
-                                                    <p className="text-[10px] text-emerald-600">
-                                                        Tarik titik sudut (kotak
-                                                        transformer) di kanvas atau
-                                                        ubah ukuran pixel di bawah:
-                                                    </p>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-slate-500 uppercase">
-                                                            Lebar (Width px):
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            value={
-                                                                selectedElement.width ||
-                                                                120
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleUpdateElement(
-                                                                    selectedElement.id,
-                                                                    {
-                                                                        width:
-                                                                            parseInt(
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                            ) || 20,
-                                                                    },
-                                                                )
-                                                            }
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-amber-400"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-slate-500 uppercase">
-                                                            Tinggi (Height px):
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            value={
-                                                                selectedElement.height ||
-                                                                100
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleUpdateElement(
-                                                                    selectedElement.id,
-                                                                    {
-                                                                        height:
-                                                                            parseInt(
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                            ) || 20,
-                                                                    },
-                                                                )
-                                                            }
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-amber-400"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Quick Size Presets */}
-                                                <div>
-                                                    <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                        Ukuran Cepat:
-                                                    </label>
-                                                    <div className="flex gap-1.5 mt-1">
-                                                        {[
-                                                            {
-                                                                label: "Kecil",
-                                                                w: 80,
-                                                                h: 60,
-                                                            },
-                                                            {
-                                                                label: "Sedang",
-                                                                w: 140,
-                                                                h: 100,
-                                                            },
-                                                            {
-                                                                label: "Besar",
-                                                                w: 220,
-                                                                h: 160,
-                                                            },
-                                                            {
-                                                                label: "Jumbo",
-                                                                w: 320,
-                                                                h: 220,
-                                                            },
-                                                        ].map((preset) => (
-                                                            <button
-                                                                key={preset.label}
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    handleUpdateElement(
-                                                                        selectedElement.id,
-                                                                        {
-                                                                            width: preset.w,
-                                                                            height: preset.h,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                className="flex-1 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 transition-colors"
-                                                            >
-                                                                {preset.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Layer Ordering Controls (Urutan Depan / Belakang) */}
-                                        <div className="pt-3 border-t border-slate-100 space-y-1.5">
-                                            <label className="text-[10px] font-black text-slate-600 uppercase flex items-center justify-between">
-                                                <span>Urutan Layer Objek Ini</span>
-                                                <span className="text-[9px] font-bold text-slate-400">Ctrl+[ / Ctrl+]</span>
-                                            </label>
-                                            <div className="grid grid-cols-2 gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleMoveElementLayer(
-                                                            selectedElement.id,
-                                                            "front",
-                                                        )
-                                                    }
-                                                    className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                                    title="Pindahkan ke paling atas / paling depan (Ctrl+Shift+])"
-                                                >
-                                                    <BringToFront className="w-3.5 h-3.5 text-amber-600" />
-                                                    <span>Paling Depan</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleMoveElementLayer(
-                                                            selectedElement.id,
-                                                            "forward",
-                                                        )
-                                                    }
-                                                    className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                                    title="Maju 1 tingkat ke atas (Ctrl+])"
-                                                >
-                                                    <ChevronUp className="w-3.5 h-3.5 text-slate-600" />
-                                                    <span>Maju 1 Step</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleMoveElementLayer(
-                                                            selectedElement.id,
-                                                            "backward",
-                                                        )
-                                                    }
-                                                    className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                                    title="Mundur 1 tingkat ke bawah (Ctrl+[)"
-                                                >
-                                                    <ChevronDown className="w-3.5 h-3.5 text-slate-600" />
-                                                    <span>Mundur 1 Step</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleMoveElementLayer(
-                                                            selectedElement.id,
-                                                            "back",
-                                                        )
-                                                    }
-                                                    className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                                    title="Pindahkan ke paling bawah / background (Ctrl+Shift+[)"
-                                                >
-                                                    <SendToBack className="w-3.5 h-3.5 text-amber-600" />
-                                                    <span>Paling Belakang</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="p-3 bg-amber-50/60 rounded-2xl border border-amber-200/80 text-center text-amber-800 text-xs font-bold">
-                                    Pilih salah satu elemen di daftar bawah atau klik di kanvas untuk mengedit properties.
-                                </div>
-                            )}
-
-                            {/* 2. Full Elements List / Layer Tree */}
-                            <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                                        <Layers className="w-3.5 h-3.5 text-slate-500" />
-                                        <span>Daftar Layer Elements ({canvasState.elements.length})</span>
-                                    </h4>
-                                    <span className="text-[10px] text-slate-400 font-bold">Urutan: Atas = Paling Depan</span>
-                                </div>
-
-                                {canvasState.elements.length === 0 ? (
-                                    <div className="py-6 text-center text-slate-400 text-xs font-medium">
-                                        Belum ada teks atau gambar di kanvas.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
-                                        {/* Menampilkan list dari atas (paling depan) ke bawah (paling belakang) */}
-                                        {[...canvasState.elements].reverse().map((el, revIdx) => {
-                                            const isSelected = selectedId === el.id;
-                                            return (
-                                                <div
-                                                    key={el.id}
-                                                    onClick={() => {
-                                                        setSelectedId(el.id);
-                                                        setSelectedTargetId(null);
-                                                    }}
-                                                    className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-pointer ${
-                                                        isSelected
-                                                            ? "bg-amber-50 border-amber-400 ring-2 ring-amber-400/20 shadow-xs"
-                                                            : "bg-slate-50/70 border-slate-200 hover:border-slate-300 hover:bg-slate-100/70"
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                        <span className="text-xs shrink-0">
-                                                            {el.type === "text" ? "📝" : "🖼️"}
-                                                        </span>
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="text-xs font-bold text-slate-800 truncate">
-                                                                {el.type === "text"
-                                                                    ? el.text || "(Teks Kosong)"
-                                                                    : `Gambar (${el.width || 120}x${el.height || 100}px)`}
-                                                            </p>
-                                                            <p className="text-[9px] text-slate-400 font-medium">
-                                                                Posisi: X:{el.x}, Y:{el.y}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Quick Layer Controls on each element */}
-                                                    <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleMoveElementLayer(el.id, "front")}
-                                                            className="p-1 text-slate-400 hover:text-amber-600 hover:bg-white rounded transition-colors"
-                                                            title="Ke Paling Depan"
-                                                        >
-                                                            <BringToFront className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleMoveElementLayer(el.id, "forward")}
-                                                            className="p-1 text-slate-400 hover:text-amber-600 hover:bg-white rounded transition-colors"
-                                                            title="Maju 1 Step"
-                                                        >
-                                                            <ChevronUp className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleMoveElementLayer(el.id, "backward")}
-                                                            className="p-1 text-slate-400 hover:text-amber-600 hover:bg-white rounded transition-colors"
-                                                            title="Mundur 1 Step"
-                                                        >
-                                                            <ChevronDown className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleMoveElementLayer(el.id, "back")}
-                                                            className="p-1 text-slate-400 hover:text-amber-600 hover:bg-white rounded transition-colors"
-                                                            title="Ke Paling Belakang (Background)"
-                                                        >
-                                                            <SendToBack className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleDeleteElement(el.id)}
-                                                            className="p-1 text-slate-300 hover:text-red-500 hover:bg-white rounded transition-colors ml-1"
-                                                            title="Hapus Elemen"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <InspectorElementsTab
+                            elements={canvasState.elements}
+                            selectedElement={selectedElement}
+                            selectedId={selectedId}
+                            selectedIds={selectedIds}
+                            onSelectElement={(id, e) => {
+                                handleSelectElementItem(id, e);
+                            }}
+                            onUpdateElement={handleUpdateElement}
+                            onDeleteElement={handleDeleteElement}
+                            onMoveElementLayer={handleMoveElementLayer}
+                        />
                     )}
 
-                    {/* Tab 2: Targets Inspector (Drop Zones) */}
+                    {/* Tab 2: Targets Inspector */}
                     {activeTab === "targets" && (
-                        <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                    Daftar Sasaran Drop (
-                                    {canvasState.targets.length})
-                                </h4>
-                            </div>
-
-                            <div className="space-y-2 max-h-[850px] overflow-y-auto pr-1">
-                                {canvasState.targets.map((tgt, idx) => (
-                                    <div
-                                        key={tgt.id}
-                                        onClick={() =>
-                                            setSelectedTargetId(tgt.id)
-                                        }
-                                        className={`p-3 rounded-2xl border transition-all cursor-pointer ${
-                                            selectedTargetId === tgt.id
-                                                ? "bg-amber-50 border-amber-400 ring-2 ring-amber-400/20"
-                                                : "bg-slate-50 border-slate-200 hover:border-slate-300"
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[11px] font-black uppercase text-amber-700 flex items-center gap-1.5">
-                                                {tgt.type === "ring_target"
-                                                    ? "🟢 Ring Spot"
-                                                    : tgt.type === "box_target"
-                                                      ? "☑️ Box Centang/Silang"
-                                                      : tgt.type ===
-                                                          "input_target"
-                                                        ? "⌨️ Kotak Isian (Ketik)"
-                                                        : "🔤 Word Spot"}{" "}
-                                                #{idx + 1}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteTarget(tgt.id);
-                                                }}
-                                                className="text-slate-400 hover:text-red-500 p-1"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <input
-                                                type="text"
-                                                value={tgt.label}
-                                                onChange={(e) =>
-                                                    handleUpdateTarget(tgt.id, {
-                                                        label: e.target.value,
-                                                    })
-                                                }
-                                                placeholder="Label Sasaran (misal: Nomor 1)"
-                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[11px] font-bold p-1.5 rounded-lg focus:border-amber-400"
-                                            />
-
-                                            {tgt.type === "input_target" && (
-                                                <div className="space-y-1.5">
-                                                    <div>
-                                                        <label className="text-[9px] font-black uppercase text-sky-700">
-                                                            Kunci Jawaban Teks
-                                                            (Case Insensitive):
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            value={
-                                                                tgt.correct_text ||
-                                                                ""
-                                                            }
-                                                            onChange={(e) =>
-                                                                handleUpdateTarget(
-                                                                    tgt.id,
-                                                                    {
-                                                                        correct_text:
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                    },
-                                                                )
-                                                            }
-                                                            placeholder="Contoh: trousers / dress"
-                                                            className="w-full bg-sky-50 border border-sky-300 text-sky-900 text-[11px] font-black p-1.5 rounded-lg focus:bg-white focus:border-sky-500"
-                                                        />
-                                                    </div>
-                                                    <div className="grid grid-cols-3 gap-1.5">
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                                Font (px):
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                value={
-                                                                    tgt.fontSize ||
-                                                                    11
-                                                                }
-                                                                onChange={(e) =>
-                                                                    handleUpdateTarget(
-                                                                        tgt.id,
-                                                                        {
-                                                                            fontSize:
-                                                                                parseInt(
-                                                                                    e
-                                                                                        .target
-                                                                                        .value,
-                                                                                ) ||
-                                                                                11,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                                Lebar (px):
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                value={
-                                                                    tgt.width ||
-                                                                    120
-                                                                }
-                                                                onChange={(e) =>
-                                                                    handleUpdateTarget(
-                                                                        tgt.id,
-                                                                        {
-                                                                            width:
-                                                                                parseInt(
-                                                                                    e
-                                                                                        .target
-                                                                                        .value,
-                                                                                ) ||
-                                                                                80,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                                Tinggi (px):
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                value={
-                                                                    tgt.height ||
-                                                                    36
-                                                                }
-                                                                onChange={(e) =>
-                                                                    handleUpdateTarget(
-                                                                        tgt.id,
-                                                                        {
-                                                                            height:
-                                                                                parseInt(
-                                                                                    e
-                                                                                        .target
-                                                                                        .value,
-                                                                                ) ||
-                                                                                30,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {tgt.type === "box_target" && (
-                                                <select
-                                                    value={
-                                                        tgt.correct_symbol ||
-                                                        (tgt.correct_token_id?.includes(
-                                                            "chk",
-                                                        )
-                                                            ? "check"
-                                                            : "cross") ||
-                                                        "check"
-                                                    }
-                                                    onChange={(e) =>
-                                                        handleUpdateTarget(
-                                                            tgt.id,
-                                                            {
-                                                                correct_symbol:
-                                                                    e.target
-                                                                        .value,
-                                                                correct_token_id:
-                                                                    e.target
-                                                                        .value,
-                                                            },
-                                                        )
-                                                    }
-                                                    className="w-full bg-white border border-slate-200 text-emerald-700 text-[11px] font-black p-1.5 rounded-lg focus:border-emerald-400"
-                                                >
-                                                    <option value="check">
-                                                        ✔ True (Centang Hijau
-                                                        Benar)
-                                                    </option>
-                                                    <option value="cross">
-                                                        ✖ False (Silang Merah
-                                                        Benar)
-                                                    </option>
-                                                </select>
-                                            )}
-
-                                            {tgt.type === "word_target" && (
-                                                <div className="space-y-1.5">
-                                                    <select
-                                                        value={
-                                                            tgt.correct_token_id ||
-                                                            ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleUpdateTarget(
-                                                                tgt.id,
-                                                                {
-                                                                    correct_token_id:
-                                                                        e.target
-                                                                            .value,
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-full bg-white border border-slate-200 text-amber-700 text-[11px] font-bold p-1.5 rounded-lg focus:border-amber-400"
-                                                    >
-                                                        <option value="">
-                                                            -- Kunci Jawaban Kata --
-                                                        </option>
-                                                        {canvasState.tokens
-                                                            .filter(
-                                                                (t) =>
-                                                                    t.type ===
-                                                                    "word",
-                                                            )
-                                                            .map((w) => (
-                                                                <option
-                                                                    key={w.id}
-                                                                    value={w.id}
-                                                                >
-                                                                    Kata: {w.text}
-                                                                </option>
-                                                            ))}
-                                                    </select>
-
-                                                    <div className="grid grid-cols-3 gap-1.5">
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                                Font (px):
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                value={
-                                                                    tgt.fontSize ||
-                                                                    10
-                                                                }
-                                                                onChange={(e) =>
-                                                                    handleUpdateTarget(
-                                                                        tgt.id,
-                                                                        {
-                                                                            fontSize:
-                                                                                parseInt(
-                                                                                    e
-                                                                                        .target
-                                                                                        .value,
-                                                                                ) ||
-                                                                                10,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                                Lebar (px):
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                value={
-                                                                    tgt.width ||
-                                                                    100
-                                                                }
-                                                                onChange={(e) =>
-                                                                    handleUpdateTarget(
-                                                                        tgt.id,
-                                                                        {
-                                                                            width:
-                                                                                parseInt(
-                                                                                    e
-                                                                                        .target
-                                                                                        .value,
-                                                                                ) ||
-                                                                                60,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                                Tinggi (px):
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                value={
-                                                                    tgt.height ||
-                                                                    30
-                                                                }
-                                                                onChange={(e) =>
-                                                                    handleUpdateTarget(
-                                                                        tgt.id,
-                                                                        {
-                                                                            height:
-                                                                                parseInt(
-                                                                                    e
-                                                                                        .target
-                                                                                        .value,
-                                                                                ) ||
-                                                                                20,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {/* Target Layer Ordering Controls */}
-                                            <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between">
-                                                <span className="text-[9px] font-bold text-slate-500 uppercase">
-                                                    Layer:
-                                                </span>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleMoveTargetLayer(tgt.id, "front");
-                                                        }}
-                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
-                                                        title="Paling Depan"
-                                                    >
-                                                        <BringToFront className="w-3 h-3" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleMoveTargetLayer(tgt.id, "forward");
-                                                        }}
-                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
-                                                        title="Maju 1 Tingkat"
-                                                    >
-                                                        <ChevronUp className="w-3 h-3" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleMoveTargetLayer(tgt.id, "backward");
-                                                        }}
-                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
-                                                        title="Mundur 1 Tingkat"
-                                                    >
-                                                        <ChevronDown className="w-3 h-3" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleMoveTargetLayer(tgt.id, "back");
-                                                        }}
-                                                        className="p-1 bg-white hover:bg-slate-100 border border-slate-200 rounded text-slate-600 hover:text-amber-600 transition-colors"
-                                                        title="Paling Belakang"
-                                                    >
-                                                        <SendToBack className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <InspectorTargetsTab
+                            targets={canvasState.targets}
+                            tokens={canvasState.tokens}
+                            selectedTargetId={selectedTargetId}
+                            selectedTargetIds={selectedTargetIds}
+                            onSelectTarget={(id, e) => {
+                                handleSelectTargetItem(id, e);
+                            }}
+                            onUpdateTarget={handleUpdateTarget}
+                            onDeleteTarget={handleDeleteTarget}
+                            onMoveTargetLayer={handleMoveTargetLayer}
+                        />
                     )}
 
                     {/* Tab 3: Tokens Bank Manager */}
                     {activeTab === "tokens" && (
-                        <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                    Token Yang Diberikan ke Siswa
-                                </h4>
-                            </div>
-
-                            {/* Preset Buttons for Quick Tokens */}
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    onClick={handleAddCheckToken}
-                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-1 shadow-sm"
-                                >
-                                    <span>✔</span> + Centang
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleAddCrossToken}
-                                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black flex items-center gap-1 shadow-sm"
-                                >
-                                    <span>✖</span> + Silang
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleAddRingToken}
-                                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black flex items-center gap-1 shadow-sm"
-                                >
-                                    <span>🟢</span> + Ring
-                                </button>
-                            </div>
-
-                            {/* Add Word Input */}
-                            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                                <input
-                                    type="text"
-                                    value={newWordInput}
-                                    onChange={(e) =>
-                                        setNewWordInput(e.target.value)
-                                    }
-                                    onKeyDown={(e) =>
-                                        e.key === "Enter" &&
-                                        handleAddWordToken(e)
-                                    }
-                                    placeholder="+ Kata (misal: cake)..."
-                                    className="bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs font-bold px-3 py-2 rounded-xl flex-1 focus:bg-white focus:border-amber-400"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddWordToken}
-                                    className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs shadow-sm"
-                                >
-                                    Tambah
-                                </button>
-                            </div>
-
-                            {/* Token List */}
-                            <div className="space-y-2 pt-2 max-h-[850px] overflow-y-auto pr-1">
-                                {canvasState.tokens.map((tok) => (
-                                    <div
-                                        key={tok.id}
-                                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 ${
-                                            tok.type === "check"
-                                                ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
-                                                : tok.type === "cross"
-                                                  ? "bg-rose-50/70 border-rose-200 text-rose-900"
-                                                  : tok.type === "ring"
-                                                    ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
-                                                    : "bg-orange-50/70 border-orange-200 text-orange-950"
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <span className="font-black text-xs shrink-0">
-                                                {tok.symbol ? `${tok.symbol} ` : ""}
-                                            </span>
-                                            {tok.type === "word" ? (
-                                                <input
-                                                    type="text"
-                                                    value={tok.text || ""}
-                                                    onChange={(e) =>
-                                                        handleUpdateToken(tok.id, {
-                                                            text: e.target.value,
-                                                        })
-                                                    }
-                                                    className="bg-white border border-slate-200 text-slate-800 text-xs font-bold px-2 py-1 rounded-lg flex-1 min-w-[80px]"
-                                                />
-                                            ) : (
-                                                <span className="text-xs font-bold truncate">
-                                                    {tok.label || tok.text}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
-                                                Font:
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={tok.fontSize || 14}
-                                                onChange={(e) =>
-                                                    handleUpdateToken(tok.id, {
-                                                        fontSize:
-                                                            parseInt(
-                                                                e.target
-                                                                    .value,
-                                                            ) || 12,
-                                                    })
-                                                }
-                                                className="w-14 bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md text-center"
-                                                title="Ukuran font token kata (px)"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    handleDeleteToken(tok.id)
-                                                }
-                                                className="text-slate-400 hover:text-red-600 p-1 ml-1"
-                                                title="Hapus Token"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <InspectorTokensTab
+                            tokens={canvasState.tokens}
+                            targets={canvasState.targets}
+                            newWordInput={newWordInput}
+                            onChangeNewWordInput={setNewWordInput}
+                            onAddWordToken={handleAddWordToken}
+                            onAddCheckToken={handleAddCheckToken}
+                            onAddCrossToken={handleAddCrossToken}
+                            onAddRingToken={handleAddRingToken}
+                            onUpdateToken={handleUpdateToken}
+                            onDeleteToken={handleDeleteToken}
+                        />
                     )}
                 </div>
             </div>

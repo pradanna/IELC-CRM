@@ -34,17 +34,17 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
                 style={style}
                 {...listeners}
                 {...attributes}
-                className={`cursor-grab active:cursor-grabbing select-none w-14 h-9 rounded-full border-3 border-emerald-500 bg-emerald-500/20 flex items-center justify-center transition-all ${
+                className={`cursor-grab active:cursor-grabbing select-none w-10 h-10 rounded-full border-3 border-emerald-500 bg-emerald-500/20 flex items-center justify-center transition-all ${
                     isDragging
                         ? 'opacity-30 border-dashed border-emerald-400 scale-95'
                         : isOverlay
                         ? 'scale-125 border-emerald-400 bg-emerald-500/40 shadow-2xl z-50 ring-4 ring-emerald-400/30'
                         : isUsed
                         ? 'opacity-20 border-slate-300 bg-slate-100 cursor-not-allowed'
-                        : 'hover:scale-110 active:scale-95 shadow-md'
+                        : 'hover:scale-110 active:scale-95 shadow-sm'
                 }`}
             >
-                <span className="text-[10px] font-black text-emerald-800">⭕ Ring</span>
+                <div className="w-5 h-5 rounded-full border-2 border-emerald-600 bg-white/40" />
             </div>
         );
     }
@@ -126,10 +126,127 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
         disabled: isReview,
     });
 
+    // Example Markers (Active/Pre-answered Examples - not interactive, not scored)
+    if (target.is_example || target.type === 'example_circle' || target.type === 'example_box' || target.type === 'example_word' || target.type === 'example_input') {
+        if (target.type === 'example_circle') {
+            const radius = target.radius || 28;
+            const width = target.width || radius * 3;
+            const height = target.height || radius * 2;
+            const fontSize = target.fontSize || 14;
+            const isRingText = !!target.label && target.label !== 'Contoh Lingkaran';
+
+            return (
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: `${target.x - width / 2}px`,
+                        top: `${target.y - height / 2}px`,
+                        width: `${width}px`,
+                        height: `${height}px`,
+                        fontSize: `${fontSize}px`,
+                    }}
+                    className={`z-20 rounded-full border-2.5 flex items-center justify-center select-none font-black shadow-xs ${
+                        isRingText
+                            ? 'border-emerald-500 bg-emerald-500/15 text-emerald-800'
+                            : 'border-violet-500 border-dashed bg-violet-500/10 text-violet-800'
+                    }`}
+                >
+                    <span className="truncate px-1">{target.label || 'CONTOH'}</span>
+                </div>
+            );
+        }
+
+        if (target.type === 'example_box') {
+            const width = target.width || 36;
+            const height = target.height || 36;
+            const isCross = target.example_symbol === 'cross';
+
+            return (
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: `${target.x}px`,
+                        top: `${target.y}px`,
+                        width: `${width}px`,
+                        height: `${height}px`,
+                    }}
+                    className={`z-20 rounded-xl border-2 border-dashed flex items-center justify-center select-none shadow-xs ${
+                        isCross
+                            ? 'border-rose-400 bg-rose-50/40 text-rose-600'
+                            : 'border-emerald-400 bg-emerald-50/40 text-emerald-600'
+                    }`}
+                >
+                    <span className="font-black text-lg">
+                        {isCross ? '✖' : '✔'}
+                    </span>
+                </div>
+            );
+        }
+
+        if (target.type === 'example_word') {
+            const width = target.width || 100;
+            const height = target.height || 32;
+            const text = target.example_text || 'Contoh';
+
+            return (
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: `${target.x}px`,
+                        top: `${target.y}px`,
+                        width: `${width}px`,
+                        height: `${height}px`,
+                    }}
+                    className="z-20 rounded-xl border-2 border-dashed border-orange-400 bg-orange-50/30 flex items-center justify-center select-none shadow-xs px-1 overflow-hidden"
+                >
+                    <span
+                        style={{
+                            fontSize: `${target.fontSize || 14}px`,
+                        }}
+                        className="font-black text-orange-600 truncate w-full text-center"
+                    >
+                        {text}
+                    </span>
+                </div>
+            );
+        }
+
+        if (target.type === 'example_input') {
+            const width = target.width || 120;
+            const height = target.height || 36;
+            const text = target.example_text || 'Jawaban Contoh';
+
+            return (
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: `${target.x}px`,
+                        top: `${target.y}px`,
+                        width: `${width}px`,
+                        height: `${height}px`,
+                        zIndex: 25,
+                    }}
+                >
+                    <input
+                        type="text"
+                        value={text}
+                        disabled
+                        readOnly
+                        style={{
+                            fontSize: target.fontSize ? `${target.fontSize}px` : undefined,
+                        }}
+                        className="w-full h-full px-2.5 rounded-xl text-center font-black text-sm tracking-wide border-2 border-sky-400 bg-sky-50/60 text-sky-800 shadow-xs cursor-default select-none"
+                    />
+                </div>
+            );
+        }
+    }
+
     if (target.type === 'ring_target') {
         const radius = target.radius || 24;
         const width = target.width || radius * 3; // radius 24 * scaleX 1.5 * 2 = 72px
         const height = target.height || radius * 2; // radius 24 * 2 = 48px
+        const fontSize = target.fontSize || 16;
         return (
             <div
                 ref={setNodeRef}
@@ -144,27 +261,24 @@ function DroppableCanvasTarget({ target, assignedToken, onRemove, isReview, isCo
                     top: `${target.y - height / 2}px`,
                     width: `${width}px`,
                     height: `${height}px`,
+                    fontSize: `${fontSize}px`,
                 }}
                 title={!isReview && assignedToken ? "Klik untuk mengembalikan token" : undefined}
-                className={`z-20 rounded-full transition-all flex items-center justify-center select-none ${
+                className={`z-20 rounded-full transition-all flex items-center justify-center select-none font-semibold ${
                     !isReview && assignedToken ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
                 } ${
                     isOver
-                        ? 'border-2 border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30'
+                        ? 'border-2 border-emerald-500 bg-emerald-400/30 backdrop-blur-sm scale-110 ring-4 ring-emerald-400/30 z-30 text-slate-900'
                         : assignedToken
                         ? isReview
                             ? isCorrect
-                                ? 'border-2 border-emerald-500 bg-emerald-500/15'
-                                : 'border-2 border-rose-500 bg-rose-500/15'
-                            : 'border-0 bg-transparent'
-                        : 'border-2 border-dashed border-emerald-400/80 bg-emerald-50/20 hover:border-emerald-500'
+                                ? 'border-2.5 border-emerald-500 bg-emerald-500/10 text-slate-900'
+                                : 'border-2.5 border-rose-500 bg-rose-500/10 text-slate-900'
+                            : 'border-2.5 border-emerald-500 bg-emerald-500/10 text-slate-900'
+                        : 'border-2 border-dashed border-emerald-400/80 bg-emerald-50/20 hover:border-emerald-500 text-slate-900'
                 }`}
             >
-                {assignedToken ? (
-                    <div className="flex items-center justify-center pointer-events-none">
-                        <span className="text-2xl drop-shadow-sm">🟢</span>
-                    </div>
-                ) : null}
+                <span>{target.label || ''}</span>
             </div>
         );
     }
@@ -404,6 +518,21 @@ export default function KidsFreeformCanvasQuestion({
         const targetId = over.id;
         const tokenId = active.id;
 
+        const token = tokens.find((t) => t.id === tokenId);
+        const target = targets.find((t) => t.id === targetId);
+
+        // Validasi pembatasan target jika token memiliki allowed_target_id atau allowed_target_ids
+        if (token && (token.allowed_target_id || (Array.isArray(token.allowed_target_ids) && token.allowed_target_ids.length > 0))) {
+            const allowedIds = Array.isArray(token.allowed_target_ids) && token.allowed_target_ids.length > 0
+                ? token.allowed_target_ids
+                : [token.allowed_target_id];
+
+            if (!allowedIds.includes(targetId)) {
+                // Bukan target yang diizinkan untuk token ini -> tolak drop
+                return;
+            }
+        }
+
         const updated = { ...answers, [targetId]: tokenId };
         setAnswers(updated);
         onChange(updated);
@@ -449,77 +578,21 @@ export default function KidsFreeformCanvasQuestion({
                     </div>
                 )}
 
-                {/* 2. Sticky Draggable Token Bank */}
-                <div className="sticky top-2 z-30 bg-slate-900 p-4 sm:p-5 rounded-3xl border-2 border-amber-400/40 shadow-xl text-white">
-                    <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-                        <div className="flex items-center gap-2">
-                            <h4 className="font-black text-xs uppercase tracking-widest text-amber-400">
-                                Token Bank (Tarik ke dalam kanvas)
-                            </h4>
-                        </div>
-
-                        {!isReview && Object.keys(answers).length > 0 && (
-                            <button
-                                type="button"
-                                onClick={handleResetAll}
-                                className="text-[10px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-wider flex items-center gap-1 transition-colors"
-                            >
-                                <RotateCcw className="w-3 h-3" /> Reset Semua
-                            </button>
-                        )}
+                {/* 2. Optional Reset Bar (Only shown if student has filled some answers or review mode) */}
+                {!isReview && Object.keys(answers).length > 0 && (
+                    <div className="flex items-center justify-between px-4 py-2 bg-slate-800 text-white rounded-2xl border border-slate-700 shadow-sm">
+                        <span className="text-xs font-bold text-slate-300">
+                            💡 Klik target pada kanvas untuk membatalkan jawaban, atau reset semua:
+                        </span>
+                        <button
+                            type="button"
+                            onClick={handleResetAll}
+                            className="text-[11px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-wider flex items-center gap-1.5 transition-colors bg-rose-950/40 px-3 py-1 rounded-xl border border-rose-800/40"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" /> Reset Semua
+                        </button>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* Ring Tokens Group */}
-                        {ringTokens.length > 0 && (
-                            <div className="flex items-center gap-2 p-2 bg-slate-800/90 rounded-2xl border border-slate-700">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Lingkaran:</span>
-                                {ringTokens.map(tok => (
-                                    <DraggableTokenItem
-                                        key={tok.id}
-                                        token={tok}
-                                        isUsed={usedTokenIds.includes(tok.id)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Check & Cross Tokens Group */}
-                        {(checkTokens.length > 0 || crossTokens.length > 0) && (
-                            <div className="flex items-center gap-2 p-2 bg-slate-800/90 rounded-2xl border border-slate-700">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Simbol Centang / Silang:</span>
-                                {checkTokens.map(tok => (
-                                    <DraggableTokenItem
-                                        key={tok.id}
-                                        token={tok}
-                                        isUsed={usedTokenIds.includes(tok.id)}
-                                    />
-                                ))}
-                                {crossTokens.map(tok => (
-                                    <DraggableTokenItem
-                                        key={tok.id}
-                                        token={tok}
-                                        isUsed={usedTokenIds.includes(tok.id)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Word Tokens Group */}
-                        {wordTokens.length > 0 && (
-                            <div className="flex items-center gap-2 p-2 bg-slate-800/90 rounded-2xl border border-slate-700 flex-wrap">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Pilihan Kata:</span>
-                                {wordTokens.map(tok => (
-                                    <DraggableTokenItem
-                                        key={tok.id}
-                                        token={tok}
-                                        isUsed={usedTokenIds.includes(tok.id)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                )}
 
                 {/* 3. Free-Form Canvas Responsive Rendering Area */}
                 <div 
@@ -594,7 +667,7 @@ export default function KidsFreeformCanvasQuestion({
                                 : tokens.find(t => t.id === assignedTokenId);
 
                             const isCorrect = tgt.type === 'ring_target'
-                                ? assignedToken?.type === 'ring'
+                                ? assignedToken?.type === 'ring' && (tgt.is_correct_answer !== false)
                                 : tgt.type === 'box_target'
                                 ? (tgt.correct_symbol ? assignedToken?.type === tgt.correct_symbol : (tgt.correct_token_id ? assignedToken?.type === (tgt.correct_token_id.includes('chk') ? 'check' : 'cross') : false))
                                 : tgt.type === 'input_target'
@@ -610,6 +683,31 @@ export default function KidsFreeformCanvasQuestion({
                                     isReview={isReview}
                                     isCorrect={isCorrect}
                                 />
+                            );
+                        })}
+
+                        {/* Render Draggable Tokens Directly on the Canvas */}
+                        {tokens.map((tok) => {
+                            const isUsed = usedTokenIds.includes(tok.id);
+                            const x = typeof tok.x === 'number' ? tok.x : 880;
+                            const y = typeof tok.y === 'number' ? tok.y : 120;
+
+                            return (
+                                <div
+                                    key={tok.id}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${x}px`,
+                                        top: `${y}px`,
+                                        zIndex: 35,
+                                    }}
+                                    className="transition-opacity duration-200"
+                                >
+                                    <DraggableTokenItem
+                                        token={tok}
+                                        isUsed={isUsed}
+                                    />
+                                </div>
                             );
                         })}
                         </div>
