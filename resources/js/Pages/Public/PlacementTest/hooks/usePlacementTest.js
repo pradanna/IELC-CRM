@@ -7,12 +7,20 @@ export function usePlacementTest({ session, pages, isReview, userAnswers }) {
     const [timeLeft, setTimeLeft] = useState(
         Math.floor(session.remaining_seconds || 0)
     );
+    const [saveStatus, setSaveStatus] = useState('saved'); // 'saving' | 'saved'
 
-    const storageKey = `pt_answers_${session.token}`;
-    const initialAnswers =
-        typeof window !== "undefined"
-            ? JSON.parse(localStorage.getItem(storageKey) || "{}")
-            : {};
+    const sessionToken = session?.session_token || session?.token || 'preview_token';
+    const storageKey = `pt_answers_${sessionToken}`;
+
+    const initialAnswers = useMemo(() => {
+        if (typeof window !== "undefined" && !isReview) {
+            try {
+                const saved = localStorage.getItem(storageKey);
+                if (saved) return JSON.parse(saved);
+            } catch (e) {}
+        }
+        return userAnswers || {};
+    }, [storageKey, isReview]);
 
     const { data, setData, post, processing } = useForm({
         answers: isReview ? userAnswers : initialAnswers,
@@ -53,44 +61,53 @@ export function usePlacementTest({ session, pages, isReview, userAnswers }) {
 
     const questionMap = useMemo(() => {
         const map = [];
-        pages.forEach((page, pIdx) => {
-            page.questions.forEach((q) => {
-                map.push({ number: q.number, id: q.id, pageIndex: pIdx });
+        (pages || []).forEach((page, pIdx) => {
+            (page?.questions || []).forEach((q) => {
+                if (q) {
+                    map.push({ number: q.number, id: q.id, pageIndex: pIdx });
+                }
             });
         });
         return map;
     }, [pages]);
 
+    const saveToLocalStorage = (newAnswers) => {
+        if (typeof window !== "undefined" && !isReview) {
+            try {
+                setSaveStatus('saving');
+                const serializable = Object.fromEntries(
+                    Object.entries(newAnswers).filter(([_, v]) => !(v instanceof File))
+                );
+                localStorage.setItem(storageKey, JSON.stringify(serializable));
+                setTimeout(() => setSaveStatus('saved'), 400);
+            } catch (e) {
+                console.error("Local storage save error", e);
+            }
+        }
+    };
+
     const handleOptionSelect = (questionId, optionId) => {
         if (isReview) return;
         const newAnswers = { ...data.answers, [questionId]: optionId };
         setData("answers", newAnswers);
-        if (typeof window !== "undefined") {
-            // Only store text/id based answers, not files in local storage
-            const serializable = Object.fromEntries(
-                Object.entries(newAnswers).filter(([_, v]) => !(v instanceof File))
-            );
-            localStorage.setItem(storageKey, JSON.stringify(serializable));
-        }
+        saveToLocalStorage(newAnswers);
     };
 
     const handleTextChange = (questionId, text) => {
         if (isReview) return;
         const newAnswers = { ...data.answers, [questionId]: text };
         setData("answers", newAnswers);
-        if (typeof window !== "undefined") {
-            localStorage.setItem(storageKey, JSON.stringify(newAnswers));
-        }
+        saveToLocalStorage(newAnswers);
     };
 
     const handleFileSelect = (questionId, file) => {
         if (isReview) return;
-        setData("answers", { ...data.answers, [questionId]: file });
-        // Files are not stored in localStorage
+        const newAnswers = { ...data.answers, [questionId]: file };
+        setData("answers", newAnswers);
     };
 
     const handleFinish = () => {
-        post(route("public.placement-test.submit", { token: session.token }), {
+        post(route("public.placement-test.submit", { token: sessionToken }), {
             onSuccess: () => {
                 if (typeof window !== "undefined") {
                     localStorage.removeItem(storageKey);
@@ -130,5 +147,6 @@ export function usePlacementTest({ session, pages, isReview, userAnswers }) {
         summaryFile: data.summary_file,
         setData,
         processing,
+        saveStatus,
     };
 }

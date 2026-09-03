@@ -21,16 +21,21 @@ class CreateLeadEnrollmentOnInvoicePaid
         $joinedAt = $invoice->start_date ?? now()->toDateString();
         $endDate = $invoice->studyClass?->end_session_date ? $invoice->studyClass->end_session_date->format('Y-m-d') : null;
 
-        LeadEnrollment::create([
-            'lead_id' => $invoice->lead_id,
-            'student_id' => $invoice->student_id,
-            'study_class_id' => $invoice->study_class_id,
-            'invoice_id' => $invoice->id,
-            'joined_at' => $joinedAt,
-            'end_date' => $endDate,
-            'status' => 'active',
-            'cycle_number' => $invoice->studyClass?->current_session_number ?? 1,
-        ]);
+        // Update existing pending_payment enrollment or create a new active enrollment
+        LeadEnrollment::updateOrCreate(
+            [
+                'invoice_id' => $invoice->id,
+            ],
+            [
+                'lead_id'        => $invoice->lead_id,
+                'student_id'     => $invoice->student_id,
+                'study_class_id' => $invoice->study_class_id,
+                'joined_at'      => $joinedAt,
+                'end_date'       => $endDate,
+                'status'         => 'active',
+                'cycle_number'   => $invoice->studyClass?->current_session_number ?? 1,
+            ]
+        );
 
         // Update leads.enrolled_at with the first enrollment date (backward compat)
         $lead = $invoice->lead;

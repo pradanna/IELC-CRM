@@ -27,8 +27,15 @@ Before starting any task, you MUST read the following skill files in `.agents/sk
 - **NO AUTO-BROWSER TEST**: Jangan melakukan pengetesan menggunakan `browser_subagent` atau alat browser lainnya kecuali diminta secara spesifik oleh Kapten.
 - Jangan pernah melompati tahapan di **Feature Implementation Checklist**.
 
-### Clean Architecture
-- **Backend**: Thin Controllers + Action Classes (`app/Actions`). No business logic in Controllers or Models.
+### Clean Architecture (Domain-Driven Design / DDD)
+- **Backend (DDD Structure)**: Seluruh kode domain inti harus berada di bawah `app/Domains/{DomainName}/`:
+  - **`app/Domains/{Domain}/Domain/Models/`**: Definisi Eloquent Model, relasi, scope, dan cast.
+  - **`app/Domains/{Domain}/Application/Actions/`**: Action classes untuk setiap use-case/business logic (single `handle()` method, dibungkus `DB::transaction`).
+  - **`app/Domains/{Domain}/Application/Services/`**: Domain services jika ada kalkulasi/logika kompleks antar-action.
+  - **`app/Domains/{Domain}/Infrastructure/`**: Repositories atau adapter eksternal jika diperlukan.
+  - **`app/Http/Controllers/`**: Thin Controllers. Controller HANYA bertugas menerima `FormRequest`, memanggil `Action` class dari domain terkait, dan mengembalikan `Inertia response` / `Resource`. Dilarang menaruh query atau business logic di Controller!
+  - **`app/Http/Requests/{Module}/`**: FormRequest untuk validasi input.
+  - **`app/Http/Resources/{Module}/`**: API Resources untuk transformasi response.
 - **Frontend**: Absolute separation of concerns. All logic MUST be in **Custom Hooks**; Page components MUST be purely JSX logic-free.
 - **Communication**: Always use **API Resources** (`app/Http/Resources`) to pass data to Inertia/React. NEVER pass raw Eloquent models.
 

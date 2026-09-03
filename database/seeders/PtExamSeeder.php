@@ -19,6 +19,7 @@ class PtExamSeeder extends Seeder
         $exams = [
             [
                 'title' => 'General English Placement Test',
+                'category' => 'General',
                 'description' => 'Tes penempatan bahasa Inggris umum yang mencakup tata bahasa (grammar), kosakata (vocabulary), pemahaman bacaan (reading), dan pemahaman mendengarkan (listening).',
                 'duration_minutes' => 60,
                 'is_active' => true,
@@ -154,6 +155,7 @@ class PtExamSeeder extends Seeder
         foreach ($exams as $examData) {
             $exam = PtExam::create([
                 'title' => $examData['title'],
+                'category' => $examData['category'] ?? 'General',
                 'slug' => Str::slug($examData['title']),
                 'description' => $examData['description'],
                 'duration_minutes' => $examData['duration_minutes'],

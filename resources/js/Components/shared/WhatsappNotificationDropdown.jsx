@@ -1,7 +1,7 @@
 import React, { useState, Fragment } from 'react';
-import { MessageSquare, ExternalLink, X, Inbox } from 'lucide-react';
+import { MessageSquare, ExternalLink, X, Inbox, ShieldCheck, PhoneCall } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
-import { formatDistanceToNow } from 'date-fns';
+import { Link } from '@inertiajs/react';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 
 export default function WhatsappNotificationDropdown({ notifications, onRemove }) {
@@ -38,20 +38,42 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
             >
-                <Menu.Items className="absolute right-0 mt-3 w-80 sm:w-96 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-gray-100">
-                    <div className="px-4 py-3 bg-white border-b border-gray-100 flex items-center justify-between">
+                <Menu.Items className="absolute right-0 mt-3 w-80 sm:w-96 origin-top-right rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-slate-100">
+                    {/* Header */}
+                    <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-sm font-bold text-emerald-900">WhatsApp Messages</h3>
+                            <h3 className="text-sm font-bold text-slate-900">Pesan WhatsApp</h3>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-tight">
-                                    Real-time WA Active
+                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-tight">
+                                    Real-time WA Aktif
                                 </span>
                             </div>
                         </div>
+
+                        {/* Direct Shortcuts Header */}
+                        <div className="flex items-center gap-1.5">
+                            <Link
+                                href={route('admin.whatsapp.inbox', { tab: 'official' })}
+                                className="px-2.5 py-1 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl flex items-center gap-1 transition-all"
+                                title="Buka WA Official Meta"
+                            >
+                                <ShieldCheck size={12} className="text-emerald-600" />
+                                <span>Official</span>
+                            </Link>
+                            <Link
+                                href={route('admin.whatsapp.inbox', { tab: 'baileys' })}
+                                className="px-2.5 py-1 text-[10px] font-black text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl flex items-center gap-1 transition-all"
+                                title="Buka WA Non-Official / Baileys Gateway"
+                            >
+                                <PhoneCall size={12} className="text-sky-600" />
+                                <span>Baileys</span>
+                            </Link>
+                        </div>
                     </div>
 
-                    <div className="max-h-[28rem] overflow-y-auto custom-scrollbar">
+                    {/* Messages Body */}
+                    <div className="max-h-[24rem] overflow-y-auto custom-scrollbar">
                         {notifications.length > 0 ? (
                             notifications.map((n) => (
                                 <Menu.Item key={n.id}>
@@ -65,7 +87,7 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
-                                                        {n.lead?.name || 'Incoming Message'}
+                                                        {n.lead?.name || 'Pesan Masuk'}
                                                     </p>
                                                     <button 
                                                         onClick={(e) => {
@@ -88,7 +110,7 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                                                         onClick={(e) => handleReply(e, n)}
                                                         className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition-all"
                                                     >
-                                                        Reply Now <ExternalLink size={10} />
+                                                        Balas Sekarang <ExternalLink size={10} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -97,14 +119,32 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                                 </Menu.Item>
                             ))
                         ) : (
-                            <div className="py-12 flex flex-col items-center justify-center text-center px-6">
-                                <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-200 mb-3">
+                            <div className="py-10 flex flex-col items-center justify-center text-center px-6">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-400 mb-3 border border-emerald-100">
                                     <Inbox size={24} />
                                 </div>
-                                <p className="text-sm font-semibold text-gray-900">No new messages</p>
-                                <p className="text-xs text-gray-500 mt-1">Waiting for incoming WhatsApp messages...</p>
+                                <p className="text-sm font-bold text-slate-800">Belum ada pesan baru</p>
+                                <p className="text-xs text-slate-400 mt-0.5">Menunggu pesan WhatsApp masuk...</p>
                             </div>
                         )}
+                    </div>
+
+                    {/* Footer Shortcuts */}
+                    <div className="p-3 bg-slate-50/80 border-t border-slate-100 grid grid-cols-2 gap-2">
+                        <Link
+                            href={route('admin.whatsapp.inbox', { tab: 'official' })}
+                            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all text-center"
+                        >
+                            <ShieldCheck size={14} />
+                            <span>WA Official</span>
+                        </Link>
+                        <Link
+                            href={route('admin.whatsapp.inbox', { tab: 'baileys' })}
+                            className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all text-center"
+                        >
+                            <PhoneCall size={14} />
+                            <span>WA Baileys</span>
+                        </Link>
                     </div>
                 </Menu.Items>
             </Transition>

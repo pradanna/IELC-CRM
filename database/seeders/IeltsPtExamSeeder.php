@@ -15,6 +15,7 @@ class IeltsPtExamSeeder extends Seeder
     {
         $exam = PtExam::create([
             'title' => 'IELTS Placement Test',
+            'category' => 'IELTS',
             'slug' => Str::slug('IELTS Placement Test'),
             'description' => 'A comprehensive placement test to assess your readiness for the IELTS exam, covering Reading, Listening, and Language Use.',
             'duration_minutes' => 90,

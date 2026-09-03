@@ -36,7 +36,7 @@ class PtSession extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
-        'final_score' => 'integer',
+        'final_score' => 'float',
         'scheduled_at' => 'datetime',
         'is_graded' => 'boolean',
     ];
@@ -54,6 +54,21 @@ class PtSession extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(PtAnswer::class);
+    }
+
+    public function generalAnswers(): HasMany
+    {
+        return $this->hasMany(PtGeneralAnswer::class, 'pt_session_id');
+    }
+
+    public function kidsAnswers(): HasMany
+    {
+        return $this->hasMany(PtKidsAnswer::class, 'pt_session_id');
+    }
+
+    public function ieltsAnswers(): HasMany
+    {
+        return $this->hasMany(PtIeltsAnswer::class, 'pt_session_id');
     }
 
     public function grader(): BelongsTo

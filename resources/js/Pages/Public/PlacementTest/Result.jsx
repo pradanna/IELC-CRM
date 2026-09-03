@@ -1,6 +1,6 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
-import { CheckCircle, Trophy, Target, Sparkles, MessageCircle, ArrowRight, ExternalLink } from "lucide-react";
+import { CheckCircle, Trophy, Target, MessageCircle, ArrowRight, ExternalLink } from "lucide-react";
 
 export default function Result({ session, exam, stats }) {
     const percentage = Math.round((stats.correct_answers / stats.total_questions) * 100);
@@ -61,7 +61,6 @@ export default function Result({ session, exam, stats }) {
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Final Score</p>
                                         <div className="flex items-center justify-center gap-1">
                                             <span className="text-5xl font-black text-slate-900 leading-none">{session.final_score}</span>
-                                            {session.final_score >= 80 && <Sparkles size={16} className="text-amber-400 self-start animate-bounce" />}
                                         </div>
                                     </div>
 

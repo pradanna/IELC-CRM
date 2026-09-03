@@ -47,6 +47,16 @@ class PtQuestion extends Model
     {
         return $this->hasMany(PtAnswer::class);
     }
+
+    public function kidCanvas()
+    {
+        return $this->hasOne(PtKidCanvas::class, 'pt_question_id');
+    }
+
+    public function kidCanvasAnswers(): HasMany
+    {
+        return $this->hasMany(PtKidCanvasAnswer::class, 'pt_question_id');
+    }
 }
 
 

@@ -68,7 +68,34 @@ class FinanceDashboardService
             ->latest()
             ->get();
 
+        // Class Plotting Requests: CS requested an extra class (status = 'pending_invoice')
+        // Finance can generate an invoice for these requests.
+        $pendingClassRequests = \App\Domains\CRM\Domain\Models\LeadEnrollment::query()
+            ->where('status', 'pending_invoice')
+            ->with([
+                'lead.branch',
+                'lead.leadRelationships',
+                'studyClass',
+                'student',
+            ])
+            ->latest()
+            ->get();
+
+        // Additional Pending Invoices: Enrollments that have an invoice generated (status = 'pending_payment')
+        $pendingAdditionalEnrollments = \App\Domains\CRM\Domain\Models\LeadEnrollment::query()
+            ->where('status', 'pending_payment')
+            ->with([
+                'lead.branch',
+                'lead.leadRelationships',
+                'studyClass',
+                'invoice.items',
+                'student',
+            ])
+            ->latest()
+            ->get();
+
         return [
+
             'leads' => $leadsForInvoicing,
             'placementTestLeads' => $placementTestLeads,
             'rejoinStudents' => $rejoinStudents,
@@ -99,6 +126,8 @@ class FinanceDashboardService
                 'placement_test_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('placement_test_fee', 100000),
             ],
             'recentInvoices' => Invoice::with(['lead', 'student', 'studyClass'])->latest()->limit(10)->get(),
+            'pendingClassRequests' => $pendingClassRequests,
+            'pendingAdditionalEnrollments' => $pendingAdditionalEnrollments,
         ];
     }
 }

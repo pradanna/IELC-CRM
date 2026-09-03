@@ -8,12 +8,11 @@ use App\Domains\Master\Domain\Models\LeadPhase;
 use App\Domains\CRM\Domain\Models\Task;
 use App\Domains\CRM\Domain\Models\MonthlyTarget;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class FetchCrmDashboardData
 {
-    public function handle(array $filters = []): array
+    public function handle(array $filters = [], ?string $userId = null, ?string $userRole = null): array
     {
         $now = \Carbon\Carbon::now();
         $month = isset($filters['month']) && $filters['month'] !== '' ? (int)$filters['month'] : null;
@@ -25,20 +24,13 @@ class FetchCrmDashboardData
         // For trend line and targets, if no filter is active, default to current month
         $trendMonth = $month ?? (int)$now->month;
         $trendYear = $year ?? (int)$now->year;
-
-        $userId = Auth::id();
-        $userRole = Auth::user()->roles->first()?->name;
         
-        // Use a versioned key to mimic tag-based flushing if the store doesn't support tags
-        $version = \Illuminate\Support\Facades\Cache::get('crm_dashboard_version', 1);
-        $cacheKey = "crm_dashboard_v{$version}_" . ($year ?? 'all') . "_" . ($month ?? 'all') . "_" . ($branchId ?? 'all') . "_user_{$userId}";
+        $startDateObj = $isFiltered ? \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth() : null;
+        $endDateObj = $isFiltered ? $startDateObj->copy()->endOfMonth() : null;
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function() use ($now, $month, $year, $trendMonth, $trendYear, $isFiltered, $branchId, $userRole, $userId) {
-            $startDateObj = $isFiltered ? \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth() : null;
-            $endDateObj = $isFiltered ? $startDateObj->copy()->endOfMonth() : null;
+        $trendStartDate = \Carbon\Carbon::createFromDate($trendYear, $trendMonth, 1)->startOfMonth();
+        $trendEndDate = $trendStartDate->copy()->endOfMonth();
 
-            $trendStartDate = \Carbon\Carbon::createFromDate($trendYear, $trendMonth, 1)->startOfMonth();
-            $trendEndDate = $trendStartDate->copy()->endOfMonth();
 
             // Helper to apply role-based filtering
             $applyRoleFilter = function ($query) use ($userRole, $userId) {
@@ -269,7 +261,7 @@ class FetchCrmDashboardData
             $enrollmentTrend = [];
             $daysInMonth = $trendStartDate->daysInMonth;
             
-            $achievedQuery = LeadEnrollment::with(['studyClass', 'lead'])
+            $achievedQuery = LeadEnrollment::with(['studyClass.branch', 'lead.branch'])
                 ->whereBetween('joined_at', [$trendStartDate, $trendEndDate]);
 
             if ($branchId) {
@@ -278,25 +270,29 @@ class FetchCrmDashboardData
 
             $enrollmentsList = $achievedQuery->get();
 
-            $dailyOfflineCounts = [];
+            $dailySoloCounts = [];
+            $dailySemarangCounts = [];
             $dailyOnlineCounts = [];
             $dailyTotalCounts = [];
 
             foreach ($enrollmentsList as $e) {
                 $day = (int) \Carbon\Carbon::parse($e->joined_at)->format('j');
                 
-                $isOnline = false;
-                if ($e->studyClass) {
-                    $isOnline = ($e->studyClass->type === 'online');
-                } elseif ($e->lead) {
-                    $isOnline = (bool) $e->lead->is_online;
+                $isOnline = ($e->studyClass?->type === 'online' || (bool) $e->lead?->is_online);
+                $branchCode = $e->lead?->branch?->code ?? $e->studyClass?->branch?->code;
+                $branchName = $e->lead?->branch?->name ?? $e->studyClass?->branch?->name;
+                $isSemarang = ($branchCode === 'SMG' || strcasecmp($branchName ?? '', 'Semarang') === 0);
+
+                if ($isSemarang) {
+                    $dailySemarangCounts[$day] = ($dailySemarangCounts[$day] ?? 0) + 1;
+                } else {
+                    $dailySoloCounts[$day] = ($dailySoloCounts[$day] ?? 0) + 1;
                 }
-                
+
                 if ($isOnline) {
                     $dailyOnlineCounts[$day] = ($dailyOnlineCounts[$day] ?? 0) + 1;
-                } else {
-                    $dailyOfflineCounts[$day] = ($dailyOfflineCounts[$day] ?? 0) + 1;
                 }
+
                 $dailyTotalCounts[$day] = ($dailyTotalCounts[$day] ?? 0) + 1;
             }
 
@@ -312,19 +308,23 @@ class FetchCrmDashboardData
             $todayDay = $isCurrentMonthYear ? (int)$today->day : null;
 
             $cumulativeTotal = 0;
-            $cumulativeOffline = 0;
+            $cumulativeSolo = 0;
+            $cumulativeSemarang = 0;
             $cumulativeOnline = 0;
 
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $cumulativeTotal += $dailyTotalCounts[$i] ?? 0;
-                $cumulativeOffline += $dailyOfflineCounts[$i] ?? 0;
+                $cumulativeSolo += $dailySoloCounts[$i] ?? 0;
+                $cumulativeSemarang += $dailySemarangCounts[$i] ?? 0;
                 $cumulativeOnline += $dailyOnlineCounts[$i] ?? 0;
 
                 $enrollmentTrend[] = [
                     'label' => $i,
                     'enrolled' => $cumulativeTotal,
-                    'enrolled_offline' => $cumulativeOffline,
+                    'enrolled_solo' => $cumulativeSolo,
+                    'enrolled_semarang' => $cumulativeSemarang,
                     'enrolled_online' => $cumulativeOnline,
+                    'enrolled_offline' => $cumulativeSolo + $cumulativeSemarang,
                     'target' => $monthlyGoal,
                     'is_today' => ($i === $todayDay),
                 ];
@@ -345,7 +345,6 @@ class FetchCrmDashboardData
                 ],
                 'success_rates' => $this->calculateSuccessRates($startDateObj, $endDateObj, $branchId, $applyRoleFilter, $isFiltered),
             ];
-        });
     }
 
     private function calculateSuccessRates($startDate, $endDate, $branchId, $applyRoleFilter, $isFiltered): array
