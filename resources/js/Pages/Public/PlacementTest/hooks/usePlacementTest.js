@@ -145,6 +145,11 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
                 if (nextPageIndex < (pages?.length || 0)) {
                     setSectionExpiryNotice(`Time for "${sectionName}" has expired. Automatically moving to the next section.`);
                     setCurrentPageIndex(nextPageIndex);
+                    if (typeof window !== "undefined") {
+                        try {
+                            localStorage.setItem(activePageKey, nextPageIndex.toString());
+                        } catch (e) {}
+                    }
                     // auto dismiss notice after 6 seconds
                     setTimeout(() => setSectionExpiryNotice(null), 6000);
                 } else {
