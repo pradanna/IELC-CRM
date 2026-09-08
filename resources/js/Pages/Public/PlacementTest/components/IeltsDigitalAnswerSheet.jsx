@@ -509,13 +509,23 @@ export default function IeltsDigitalAnswerSheet({
                             </div>
                         </div>
 
-                        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-inner h-[580px] relative">
+                        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-inner h-[580px] relative flex items-center justify-center p-2">
                             {task.question_pdf_path ? (
-                                <iframe
-                                    src={task.question_pdf_path}
-                                    title="Writing Task Booklet"
-                                    className="w-full h-full border-0"
-                                />
+                                task.question_pdf_path.match(/\.(png|jpg|jpeg|webp|gif)$/i) ? (
+                                    <div className="w-full h-full flex items-center justify-center overflow-auto p-4 bg-slate-950">
+                                        <img
+                                            src={task.question_pdf_path}
+                                            alt="Writing Task Prompt Diagram"
+                                            className="max-h-full max-w-full object-contain rounded-xl shadow-lg border border-slate-800"
+                                        />
+                                    </div>
+                                ) : (
+                                    <iframe
+                                        src={task.question_pdf_path}
+                                        title="Writing Task Booklet"
+                                        className="w-full h-full border-0"
+                                    />
+                                )
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-slate-400">
                                     <PenTool size={48} className="text-slate-600 mb-3" />
@@ -552,13 +562,21 @@ export default function IeltsDigitalAnswerSheet({
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex-1 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
-                                    <iframe
-                                        src={task.question_pdf_path}
-                                        title="Full Screen Writing Prompt Booklet"
-                                        className="w-full h-full border-0"
-                                    />
-                                </div>
+                                <div className="flex-1 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative flex items-center justify-center p-4">
+                                    {task.question_pdf_path?.match(/\.(png|jpg|jpeg|webp|gif)$/i) ? (
+                                         <img
+                                             src={task.question_pdf_path}
+                                             alt="Writing Task Prompt Diagram"
+                                             className="max-h-full max-w-full object-contain rounded-xl shadow-2xl"
+                                         />
+                                     ) : (
+                                         <iframe
+                                             src={task.question_pdf_path}
+                                             title="Full Screen Writing Prompt Booklet"
+                                             className="w-full h-full border-0"
+                                         />
+                                     )}
+                                 </div>
                             </div>
                         )}
                     </div>

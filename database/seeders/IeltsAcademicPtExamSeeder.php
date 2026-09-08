@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Domains\Academic\Domain\Models\PtExam;
 use App\Domains\Academic\Domain\Models\PtIeltsTask;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class IeltsAcademicPtExamSeeder extends Seeder
@@ -21,6 +22,24 @@ class IeltsAcademicPtExamSeeder extends Seeder
      */
     public function run(): void
     {
+        // 1. Sync IELTS media assets (Audio, PDF booklet, Prompt images) ke public storage
+        $ieltsSource = __DIR__ . '/assets/pt_exams/ielts';
+        $ieltsTarget = storage_path('app/public/pt_exams/ielts');
+        $ieltsPublic = public_path('storage/pt_exams/ielts');
+
+        if (File::exists($ieltsSource)) {
+            if (!File::exists($ieltsTarget)) {
+                File::makeDirectory($ieltsTarget, 0755, true);
+            }
+            File::copyDirectory($ieltsSource, $ieltsTarget);
+
+            if (!File::exists($ieltsPublic)) {
+                File::makeDirectory($ieltsPublic, 0755, true);
+            }
+            File::copyDirectory($ieltsSource, $ieltsPublic);
+            $this->command->info('✅ IELTS assets synced to local storage & public.');
+        }
+
         $jsonPath = __DIR__ . '/data/placement_test_ielts_academic.json';
         if (!file_exists($jsonPath)) {
             $this->command->error("❌ File JSON tidak ditemukan: {$jsonPath}");
