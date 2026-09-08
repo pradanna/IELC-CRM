@@ -120,6 +120,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
     Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
     Route::get('/crm/pt-sessions/{pt_session}/result', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'getResult'])->name('crm.pt-sessions.get-result');
+    Route::get('/crm/pt-sessions/{pt_session}/download-writing', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'downloadWritingPdf'])->name('crm.pt-sessions.download-writing-pdf');
     Route::patch('/crm/pt-sessions/{pt_session}/grade', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'updateGrade'])->name('crm.pt-sessions.update-grade');
     Route::delete('/crm/pt-sessions/{pt_session}', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'destroy'])->name('crm.pt-sessions.destroy');
 

@@ -138,6 +138,56 @@ class PtSessionController extends Controller
             'exam' => new PtExamPublicResource($ptSession->ptExam),
         ]);
     }
+
+    /**
+     * Download candidate's IELTS Writing answers as a PDF.
+     */
+    public function downloadWritingPdf(PtSession $ptSession)
+    {
+        $ptSession->load(['lead.branch', 'ptExam.ieltsTasks', 'ieltsAnswers.ptIeltsTask']);
+
+        // Filter only writing tasks
+        $writingTasks = [];
+        $ieltsTasks = $ptSession->ptExam?->ieltsTasks?->where('skill_type', 'writing') ?? collect();
+
+        foreach ($ieltsTasks as $task) {
+            $answer = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+            $rawText = '';
+            $fileUrl = null;
+
+            if ($answer) {
+                $payload = is_string($answer->essay_text) ? json_decode($answer->essay_text, true) : null;
+                if (is_array($payload) && isset($payload['text'])) {
+                    $rawText = $payload['text'];
+                } elseif (is_string($answer->essay_text)) {
+                    $rawText = $answer->essay_text;
+                }
+
+                if ($answer->answer_file_path || $answer->file_path) {
+                    $fileUrl = \Illuminate\Support\Facades\Storage::url($answer->answer_file_path ?? $answer->file_path);
+                }
+            }
+
+            $cleanText = strip_tags($rawText);
+            $words = array_filter(preg_split('/\s+/', trim($cleanText)));
+            $wordCount = count($words);
+
+            $writingTasks[] = [
+                'task' => $task,
+                'text' => $rawText,
+                'word_count' => $wordCount,
+                'file_url' => $fileUrl,
+            ];
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.ielts_writing_submission', [
+            'session' => $ptSession,
+            'writingTasks' => $writingTasks,
+        ]);
+
+        $safeName = \Illuminate\Support\Str::slug($ptSession->lead?->name ?? 'candidate');
+        return $pdf->stream("IELTS-Writing-{$safeName}-{$ptSession->id}.pdf");
+    }
 }
 
 

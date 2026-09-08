@@ -139,6 +139,28 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                     </div>
 
                                     <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                                        {/* Download Writing PDF Button */}
+                                        <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4">
+                                            <div className="flex items-center gap-2.5 mb-2">
+                                                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                                                    <FileText size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-wide">Writing Submission</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Export candidate essays</p>
+                                                </div>
+                                            </div>
+                                            <a 
+                                                href={route('admin.crm.pt-sessions.download-writing-pdf', session.id)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-2 inline-flex items-center justify-center gap-2 w-full bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98]"
+                                            >
+                                                <Download size={13} />
+                                                Download Writing PDF
+                                            </a>
+                                        </div>
+
                                         {session?.result_file_url && (
                                             <div className="animate-in fade-in slide-in-from-right-4">
                                                 <div className="bg-primary-50 border-2 border-primary-100 border-dashed rounded-2xl p-4 text-center">
