@@ -53,7 +53,7 @@ export default function InspectorTargetsTab({
                                 {tgt.type === "ring_target"
                                     ? "🟢 Target Jawaban Benar"
                                     : tgt.type === "box_target"
-                                      ? "☑️ Box Centang/Silang"
+                                      ? (tgt.box_mode === "image" || tgt.correct_token_id?.startsWith("tok_img") ? "📦 Kotak Target Gambar" : "☑️ Box Centang/Silang")
                                       : tgt.type === "input_target"
                                         ? "⌨️ Kotak Isian (Ketik)"
                                         : tgt.type === "example_circle"
@@ -64,7 +64,9 @@ export default function InspectorTargetsTab({
                                               ? "🔤 Contoh Word / Kata (Terjawab)"
                                               : tgt.type === "example_input"
                                                 ? "⌨️ Contoh Kotak Isian (Terjawab)"
-                                                : "🔤 Word Spot"}{" "}
+                                                : tgt.type === "example_image"
+                                                  ? "🖼️ Contoh Kotak Gambar (Terjawab)"
+                                                  : "🔤 Word Spot"}{" "}
                                 #{idx + 1}
                             </span>
                             <button
@@ -190,29 +192,143 @@ export default function InspectorTargetsTab({
                             )}
 
                             {tgt.type === "box_target" && (
-                                <select
-                                    value={
-                                        tgt.correct_symbol ||
-                                        (tgt.correct_token_id?.includes("chk")
-                                            ? "check"
-                                            : "cross") ||
-                                        "check"
-                                    }
-                                    onChange={(e) =>
-                                        onUpdateTarget(tgt.id, {
-                                            correct_symbol: e.target.value,
-                                            correct_token_id: e.target.value,
-                                        })
-                                    }
-                                    className="w-full bg-white border border-slate-200 text-emerald-700 text-[11px] font-black p-1.5 rounded-lg focus:border-emerald-400"
-                                >
-                                    <option value="check">
-                                        ✔ True (Centang Hijau Benar)
-                                    </option>
-                                    <option value="cross">
-                                        ✖ False (Silang Merah Benar)
-                                    </option>
-                                </select>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                onUpdateTarget(tgt.id, {
+                                                    box_mode: "symbol",
+                                                    correct_symbol: "check",
+                                                    correct_token_id: "check",
+                                                    width: tgt.width === 70 ? 36 : tgt.width || 36,
+                                                    height: tgt.height === 70 ? 36 : tgt.height || 36,
+                                                })
+                                            }
+                                            className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black transition-all ${
+                                                tgt.box_mode !== "image" && !tgt.correct_token_id?.startsWith("tok_img")
+                                                    ? "bg-white text-emerald-700 shadow-xs"
+                                                    : "text-slate-500 hover:text-slate-800"
+                                            }`}
+                                        >
+                                            ✔/✖ Centang/Silang
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const firstImgTok = (tokens || []).find((t) => t.type === "image");
+                                                onUpdateTarget(tgt.id, {
+                                                    box_mode: "image",
+                                                    correct_symbol: "",
+                                                    correct_token_id: firstImgTok ? firstImgTok.id : "",
+                                                    width: tgt.width === 36 ? 100 : tgt.width || 100,
+                                                    height: tgt.height === 36 ? 100 : tgt.height || 100,
+                                                });
+                                            }}
+                                            className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-black transition-all ${
+                                                tgt.box_mode === "image" || tgt.correct_token_id?.startsWith("tok_img")
+                                                    ? "bg-indigo-600 text-white shadow-xs"
+                                                    : "text-slate-500 hover:text-slate-800"
+                                            }`}
+                                        >
+                                            🖼️ Tarik Gambar ke Box
+                                        </button>
+                                    </div>
+
+                                    {tgt.box_mode === "image" || tgt.correct_token_id?.startsWith("tok_img") ? (
+                                        <div className="space-y-1.5 bg-indigo-50/60 p-2 rounded-xl border border-indigo-200">
+                                            <label className="text-[9px] font-black uppercase text-indigo-900 block">
+                                                Kunci Jawaban Token Gambar:
+                                            </label>
+                                            <select
+                                                value={tgt.correct_token_id || ""}
+                                                onChange={(e) =>
+                                                    onUpdateTarget(tgt.id, {
+                                                        correct_token_id: e.target.value,
+                                                        correct_symbol: "",
+                                                        box_mode: "image",
+                                                    })
+                                                }
+                                                className="w-full bg-white border border-indigo-200 text-indigo-900 text-[11px] font-bold p-1.5 rounded-lg focus:border-indigo-400"
+                                            >
+                                                <option value="">-- Pilih Token Gambar Benar --</option>
+                                                {(tokens || [])
+                                                    .filter((t) => t.type === "image")
+                                                    .map((imgTok) => (
+                                                        <option key={imgTok.id} value={imgTok.id}>
+                                                            🖼️ {imgTok.label || imgTok.id}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                            {(tokens || []).filter((t) => t.type === "image").length === 0 && (
+                                                <p className="text-[9px] text-amber-700 font-bold leading-tight">
+                                                    ⚠️ Belum ada Token Gambar. Tambahkan lewat tombol <b>[+ Token Gambar]</b> di tab Token Bank!
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <select
+                                            value={
+                                                tgt.correct_symbol ||
+                                                (tgt.correct_token_id?.includes("chk")
+                                                    ? "check"
+                                                    : "cross") ||
+                                                "check"
+                                            }
+                                            onChange={(e) =>
+                                                onUpdateTarget(tgt.id, {
+                                                    correct_symbol: e.target.value,
+                                                    correct_token_id: e.target.value,
+                                                    box_mode: "symbol",
+                                                })
+                                            }
+                                            className="w-full bg-white border border-slate-200 text-emerald-700 text-[11px] font-black p-1.5 rounded-lg focus:border-emerald-400"
+                                        >
+                                            <option value="check">
+                                                ✔ True (Centang Hijau Benar)
+                                            </option>
+                                            <option value="cross">
+                                                ✖ False (Silang Merah Benar)
+                                            </option>
+                                        </select>
+                                    )}
+
+                                    {/* Size Controls for Box */}
+                                    <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-100">
+                                        <div>
+                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
+                                                Lebar (px):
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={tgt.width || 36}
+                                                min={20}
+                                                onChange={(e) =>
+                                                    onUpdateTarget(tgt.id, {
+                                                        width: parseInt(e.target.value) || 36,
+                                                    })
+                                                }
+                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-bold text-slate-500 uppercase">
+                                                Tinggi (px):
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={tgt.height || 36}
+                                                min={20}
+                                                onChange={(e) =>
+                                                    onUpdateTarget(tgt.id, {
+                                                        height: parseInt(e.target.value) || 36,
+                                                    })
+                                                }
+                                                className="w-full bg-white border border-slate-200 text-slate-800 text-[10px] font-bold p-1 rounded-md"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             )}
 
                             {tgt.type === "ring_target" && (
@@ -507,6 +623,117 @@ export default function InspectorTargetsTab({
                                                     })
                                                 }
                                                 className="w-full bg-violet-50 border border-violet-200 text-violet-900 text-[10px] font-bold p-1 rounded-md"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {tgt.type === "example_image" && (
+                                <div className="space-y-2 bg-violet-50/70 p-2.5 rounded-xl border border-violet-200">
+                                    <div>
+                                        <label className="text-[9px] font-black uppercase text-violet-700 block mb-1">
+                                            Gambar Contoh Terjawab:
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            {tgt.example_image_url ? (
+                                                <img
+                                                    src={tgt.example_image_url}
+                                                    alt="Contoh"
+                                                    className="w-12 h-12 object-contain bg-white rounded-lg border border-violet-300 p-0.5 shrink-0"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-lg border border-dashed border-violet-300 flex items-center justify-center text-xs text-violet-400 shrink-0">
+                                                    🖼️
+                                                </div>
+                                            )}
+                                            <div className="flex-1 space-y-1">
+                                                <label className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[10px] font-black inline-flex items-center gap-1 cursor-pointer shadow-xs">
+                                                    <span>Pilih File Gambar</span>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            try {
+                                                                const formData = new FormData();
+                                                                formData.append("image", file);
+                                                                const uploadUrl = route("admin.placement-tests.upload-canvas-image");
+                                                                const res = await axios.post(uploadUrl, formData, {
+                                                                    headers: { "Content-Type": "multipart/form-data" },
+                                                                });
+                                                                if (res.data?.url) {
+                                                                    onUpdateTarget(tgt.id, { example_image_url: res.data.url });
+                                                                    return;
+                                                                }
+                                                            } catch (err) {
+                                                                console.warn("Upload gambar contoh gagal, fallback base64", err);
+                                                            }
+                                                            const reader = new FileReader();
+                                                            reader.onload = (ev) => {
+                                                                onUpdateTarget(tgt.id, { example_image_url: ev.target.result });
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+                                                {/* Atau pilih dari token gambar yang ada */}
+                                                {(tokens || []).filter((t) => t.type === "image").length > 0 && (
+                                                    <select
+                                                        value=""
+                                                        onChange={(e) => {
+                                                            const selectedTok = tokens.find((t) => t.id === e.target.value);
+                                                            if (selectedTok?.src) {
+                                                                onUpdateTarget(tgt.id, { example_image_url: selectedTok.src });
+                                                            }
+                                                        }}
+                                                        className="w-full bg-white border border-violet-200 text-violet-900 text-[10px] font-bold p-1 rounded-md"
+                                                    >
+                                                        <option value="">-- Atau Salin dari Token Gambar --</option>
+                                                        {(tokens || []).filter((t) => t.type === "image").map((it) => (
+                                                            <option key={it.id} value={it.id}>
+                                                                {it.label || it.id}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-violet-200">
+                                        <div>
+                                            <label className="text-[9px] font-bold text-violet-600 uppercase">
+                                                Lebar (px):
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={tgt.width || 100}
+                                                min={30}
+                                                onChange={(e) =>
+                                                    onUpdateTarget(tgt.id, {
+                                                        width: parseInt(e.target.value) || 100,
+                                                    })
+                                                }
+                                                className="w-full bg-white border border-violet-200 text-violet-900 text-[10px] font-bold p-1 rounded-md"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-bold text-violet-600 uppercase">
+                                                Tinggi (px):
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={tgt.height || 100}
+                                                min={30}
+                                                onChange={(e) =>
+                                                    onUpdateTarget(tgt.id, {
+                                                        height: parseInt(e.target.value) || 100,
+                                                    })
+                                                }
+                                                className="w-full bg-white border border-violet-200 text-violet-900 text-[10px] font-bold p-1 rounded-md"
                                             />
                                         </div>
                                     </div>

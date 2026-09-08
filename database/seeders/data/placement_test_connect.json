@@ -1,0 +1,1531 @@
+{
+    "exam_title": "Placement Test Connect",
+    "exam_slug": "placement-test-connect",
+    "exam_category": "General",
+    "exam_description": "General Directions\n\nThis test has three sections: Language Use, Reading, and Listening. There are 60 questions. You have 50 minutes to complete the test.\n\nSection I: Language Use has 40 items. Read each sentence or conversation. Choose the best answer. Fill in the correct letter on your Answer Sheet. You have 20 minutes to complete this section.\n\nSection II: Reading has 10 items. Read each article. Then read each sentence  and choose the best answer. Fill in the correct letter on your Answer Sheet. You have 15 minutes to complete this section.\n\nSection III: Listening has 10 items. Before each listening, read each sentence and the choices. Then listen to the conversation. Choose the best answer for each sentence. Fill in the correct letter on your Answer Sheet. You have 15 minutes to complete this section.",
+    "exam_duration": 50,
+    "standalone_questions": [
+        {
+            "number": 1,
+            "position": 1,
+            "text": "My apartment is large. ________three bedrooms.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "They’re",
+                    "correct": false
+                },
+                {
+                    "text": "It has",
+                    "correct": true
+                },
+                {
+                    "text": "It’s",
+                    "correct": false
+                },
+                {
+                    "text": "There’s",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 2,
+            "position": 2,
+            "text": "A: ______are you, John?   B: I’m 15.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "How",
+                    "correct": false
+                },
+                {
+                    "text": "What",
+                    "correct": false
+                },
+                {
+                    "text": "How old",
+                    "correct": true
+                },
+                {
+                    "text": "What time",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 3,
+            "position": 3,
+            "text": "A: What’s Pam like?   B:  She’s_____.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "fine",
+                    "correct": false
+                },
+                {
+                    "text": "from Canada",
+                    "correct": false
+                },
+                {
+                    "text": "at home",
+                    "correct": false
+                },
+                {
+                    "text": "shy",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 4,
+            "position": 4,
+            "text": "Cindy’s Restaurant is__________Center Street.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "at",
+                    "correct": false
+                },
+                {
+                    "text": "on",
+                    "correct": true
+                },
+                {
+                    "text": "to",
+                    "correct": false
+                },
+                {
+                    "text": "of",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 5,
+            "position": 5,
+            "text": "_________desks in the classroom.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "There are no",
+                    "correct": true
+                },
+                {
+                    "text": "There’s",
+                    "correct": false
+                },
+                {
+                    "text": "They aren’t",
+                    "correct": false
+                },
+                {
+                    "text": "There’s no",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 6,
+            "position": 6,
+            "text": "A: Where are your neighbors from?   B: ________from Puerto Rico.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "They’re",
+                    "correct": true
+                },
+                {
+                    "text": "There",
+                    "correct": false
+                },
+                {
+                    "text": "Their",
+                    "correct": false
+                },
+                {
+                    "text": "There are",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 7,
+            "position": 7,
+            "text": "Lisa and I are on the same soccer team. ________team is really good!",
+            "points": 1,
+            "options": [
+                {
+                    "text": "Their",
+                    "correct": false
+                },
+                {
+                    "text": "Her",
+                    "correct": false
+                },
+                {
+                    "text": "His",
+                    "correct": false
+                },
+                {
+                    "text": "Our",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 8,
+            "position": 8,
+            "text": "I ______play basketball at all. I think it’s too difficult.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "don’t like",
+                    "correct": false
+                },
+                {
+                    "text": "like",
+                    "correct": false
+                },
+                {
+                    "text": "can’t",
+                    "correct": true
+                },
+                {
+                    "text": "can",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 9,
+            "position": 9,
+            "text": "Amy comes to school on time every day. She’s _________late.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "always",
+                    "correct": false
+                },
+                {
+                    "text": "usually",
+                    "correct": false
+                },
+                {
+                    "text": "sometimes",
+                    "correct": false
+                },
+                {
+                    "text": "never",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 10,
+            "position": 10,
+            "text": "There isn’t ______milk in the refrigerator.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "a",
+                    "correct": false
+                },
+                {
+                    "text": "any",
+                    "correct": true
+                },
+                {
+                    "text": "a few",
+                    "correct": false
+                },
+                {
+                    "text": "some",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 11,
+            "position": 11,
+            "text": "A: Who plays the piano?   B: _________",
+            "points": 1,
+            "options": [
+                {
+                    "text": "Jack does.",
+                    "correct": true
+                },
+                {
+                    "text": "Jack’s.",
+                    "correct": false
+                },
+                {
+                    "text": "Jack is.",
+                    "correct": false
+                },
+                {
+                    "text": "Jack has.",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 12,
+            "position": 12,
+            "text": "A: ______you like a sandwich?    B: Yes, please.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "Are",
+                    "correct": false
+                },
+                {
+                    "text": "Do",
+                    "correct": false
+                },
+                {
+                    "text": "Would",
+                    "correct": true
+                },
+                {
+                    "text": "Can",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 13,
+            "position": 13,
+            "text": "I’m bored. Do you want _______to the movies tonight?",
+            "points": 1,
+            "options": [
+                {
+                    "text": "go",
+                    "correct": false
+                },
+                {
+                    "text": "to go",
+                    "correct": true
+                },
+                {
+                    "text": "going",
+                    "correct": false
+                },
+                {
+                    "text": "goes",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 14,
+            "position": 14,
+            "text": "A: What time do you get up?    B: ______",
+            "points": 1,
+            "options": [
+                {
+                    "text": "At 7:30.",
+                    "correct": true
+                },
+                {
+                    "text": "In the morning.",
+                    "correct": false
+                },
+                {
+                    "text": "Hardly ever.",
+                    "correct": false
+                },
+                {
+                    "text": "Every day.",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 15,
+            "position": 15,
+            "text": "A: ______study a lot?    B: Yes. They’re very good students.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "Is there",
+                    "correct": false
+                },
+                {
+                    "text": "Are there",
+                    "correct": false
+                },
+                {
+                    "text": "Are they",
+                    "correct": false
+                },
+                {
+                    "text": "Do they",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 16,
+            "position": 16,
+            "text": "Donna loves dancing, but she ________like to play sports.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "doesn’t",
+                    "correct": true
+                },
+                {
+                    "text": "don’t",
+                    "correct": false
+                },
+                {
+                    "text": "not",
+                    "correct": false
+                },
+                {
+                    "text": "no",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 17,
+            "position": 17,
+            "text": "A: Does Carlos like rock music?    B: Yes, he likes ______a lot.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "her",
+                    "correct": false
+                },
+                {
+                    "text": "him",
+                    "correct": false
+                },
+                {
+                    "text": "it",
+                    "correct": true
+                },
+                {
+                    "text": "them",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 18,
+            "position": 18,
+            "text": "My mom usually cooks, but my father _________dinner today.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "cook",
+                    "correct": false
+                },
+                {
+                    "text": "cooks",
+                    "correct": false
+                },
+                {
+                    "text": "is cooking",
+                    "correct": true
+                },
+                {
+                    "text": "are cooking",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 19,
+            "position": 19,
+            "text": "While we were driving home yesterday, it _______to rain.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "begins",
+                    "correct": false
+                },
+                {
+                    "text": "begin",
+                    "correct": false
+                },
+                {
+                    "text": "began",
+                    "correct": true
+                },
+                {
+                    "text": "beginning",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 20,
+            "position": 20,
+            "text": "Tokyo is ________city in Asia.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "expensive",
+                    "correct": false
+                },
+                {
+                    "text": "more expensive",
+                    "correct": false
+                },
+                {
+                    "text": "most expensive",
+                    "correct": false
+                },
+                {
+                    "text": "the most expensive",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 21,
+            "position": 21,
+            "text": "San Francisco is _________than Los Angeles.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "smaller",
+                    "correct": true
+                },
+                {
+                    "text": "the smaller",
+                    "correct": false
+                },
+                {
+                    "text": "smallest",
+                    "correct": false
+                },
+                {
+                    "text": "the smallest",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 22,
+            "position": 22,
+            "text": "Why ________take the subway to the museum?",
+            "points": 1,
+            "options": [
+                {
+                    "text": "we don’t",
+                    "correct": false
+                },
+                {
+                    "text": "don’t we",
+                    "correct": true
+                },
+                {
+                    "text": "we aren’t",
+                    "correct": false
+                },
+                {
+                    "text": "aren’t we",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 23,
+            "position": 23,
+            "text": "A: ________do you exercise?    B: Three times a week.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "When",
+                    "correct": false
+                },
+                {
+                    "text": "How often",
+                    "correct": true
+                },
+                {
+                    "text": "How many",
+                    "correct": false
+                },
+                {
+                    "text": "What time",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 24,
+            "position": 24,
+            "text": "A: Whose gloves are these?    B:  They’re _______.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "ours",
+                    "correct": true
+                },
+                {
+                    "text": "my",
+                    "correct": false
+                },
+                {
+                    "text": "Maria",
+                    "correct": false
+                },
+                {
+                    "text": "us",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 25,
+            "position": 25,
+            "text": "I didn’t _________a good weekend.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "had",
+                    "correct": false
+                },
+                {
+                    "text": "has",
+                    "correct": false
+                },
+                {
+                    "text": "have",
+                    "correct": true
+                },
+                {
+                    "text": "having",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 26,
+            "position": 26,
+            "text": "Where __________you go last summer?",
+            "points": 1,
+            "options": [
+                {
+                    "text": "were",
+                    "correct": false
+                },
+                {
+                    "text": "was",
+                    "correct": false
+                },
+                {
+                    "text": "went",
+                    "correct": false
+                },
+                {
+                    "text": "did",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 27,
+            "position": 27,
+            "text": "You shouldn’t __________so late.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "stay up",
+                    "correct": true
+                },
+                {
+                    "text": "to stay up",
+                    "correct": false
+                },
+                {
+                    "text": "staying up",
+                    "correct": false
+                },
+                {
+                    "text": "stayed up",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 28,
+            "position": 28,
+            "text": "I __________worried about the exam.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "don’t",
+                    "correct": false
+                },
+                {
+                    "text": "didn’t",
+                    "correct": false
+                },
+                {
+                    "text": "wasn’t",
+                    "correct": true
+                },
+                {
+                    "text": "weren’t",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 29,
+            "position": 29,
+            "text": "I used to have short hair, but __________anymore.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "I’m not",
+                    "correct": false
+                },
+                {
+                    "text": "I don’t",
+                    "correct": true
+                },
+                {
+                    "text": "I didn’t",
+                    "correct": false
+                },
+                {
+                    "text": "I wasn’t",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 30,
+            "position": 30,
+            "text": "If the weather __________nice on Saturday, I’ll probably go to the beach.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "is",
+                    "correct": true
+                },
+                {
+                    "text": "was",
+                    "correct": false
+                },
+                {
+                    "text": "will be",
+                    "correct": false
+                },
+                {
+                    "text": "would be",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 31,
+            "position": 31,
+            "text": "Not everyone enjoys _________for clothes.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "shop",
+                    "correct": false
+                },
+                {
+                    "text": "shopping",
+                    "correct": true
+                },
+                {
+                    "text": "to shop",
+                    "correct": false
+                },
+                {
+                    "text": "they shop",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 32,
+            "position": 32,
+            "text": "I have a friend _________\tspeaks Portuguese.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "she",
+                    "correct": false
+                },
+                {
+                    "text": "will",
+                    "correct": false
+                },
+                {
+                    "text": "who",
+                    "correct": true
+                },
+                {
+                    "text": "whose",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 33,
+            "position": 33,
+            "text": "__________lots of pictures while I’m in Rome next week.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "I’m taking",
+                    "correct": false
+                },
+                {
+                    "text": "I’d take",
+                    "correct": false
+                },
+                {
+                    "text": "I’ll take",
+                    "correct": true
+                },
+                {
+                    "text": "I take",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 34,
+            "position": 34,
+            "text": "Gary isn’t _______as I am.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "tallest",
+                    "correct": false
+                },
+                {
+                    "text": "the tallest",
+                    "correct": false
+                },
+                {
+                    "text": "taller than",
+                    "correct": false
+                },
+                {
+                    "text": "as tall",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 35,
+            "position": 35,
+            "text": "If I could take a trip anywhere in the world, ___________to Australia.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "I’ll go",
+                    "correct": false
+                },
+                {
+                    "text": "I’d go",
+                    "correct": true
+                },
+                {
+                    "text": "I’ve gone",
+                    "correct": false
+                },
+                {
+                    "text": "I’m going",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 36,
+            "position": 36,
+            "text": "Susan is only 15. She ___________\thigh school yet.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "hasn’t finished",
+                    "correct": true
+                },
+                {
+                    "text": "is going to finish",
+                    "correct": false
+                },
+                {
+                    "text": "wouldn’t finish",
+                    "correct": false
+                },
+                {
+                    "text": "finished",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 37,
+            "position": 37,
+            "text": "A:  How _________have you studied Spanish?    B:  Three years.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "many",
+                    "correct": false
+                },
+                {
+                    "text": "much",
+                    "correct": false
+                },
+                {
+                    "text": "often",
+                    "correct": false
+                },
+                {
+                    "text": "long",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 38,
+            "position": 38,
+            "text": "____________ you rather read a book or watch TV?",
+            "points": 1,
+            "options": [
+                {
+                    "text": "Do",
+                    "correct": false
+                },
+                {
+                    "text": "Did",
+                    "correct": false
+                },
+                {
+                    "text": "Will",
+                    "correct": false
+                },
+                {
+                    "text": "Would",
+                    "correct": true
+                }
+            ]
+        },
+        {
+            "number": 39,
+            "position": 39,
+            "text": "__________in Chicago since 2000.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "I’m living",
+                    "correct": false
+                },
+                {
+                    "text": "I’d live",
+                    "correct": false
+                },
+                {
+                    "text": "I’ve lived",
+                    "correct": true
+                },
+                {
+                    "text": "I was living",
+                    "correct": false
+                }
+            ]
+        },
+        {
+            "number": 40,
+            "position": 40,
+            "text": "A: What are your plans for the summer?    B: ________travel. I can’t decide.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "I might",
+                    "correct": true
+                },
+                {
+                    "text": "I’ll",
+                    "correct": false
+                },
+                {
+                    "text": "I’m going to",
+                    "correct": false
+                },
+                {
+                    "text": "I won’t",
+                    "correct": false
+                }
+            ]
+        }
+    ],
+    "groups": [
+        {
+            "position": 41,
+            "instruction": "Section II: Reading. Read the text\/notice and choose the best answer.",
+            "section_type": "reading",
+            "file_path": "pt_exams\/general_reading\/reading_group_1.png",
+            "audio_path": null,
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 41,
+                    "position": 1,
+                    "text": "Steve’s geography class is _______.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "his favorite",
+                            "correct": false
+                        },
+                        {
+                            "text": "in the morning",
+                            "correct": false
+                        },
+                        {
+                            "text": "at 10:00",
+                            "correct": false
+                        },
+                        {
+                            "text": "difficult",
+                            "correct": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "position": 42,
+            "instruction": "Section II: Reading. Read the text and choose the best answer for questions 42-43.",
+            "section_type": "reading",
+            "file_path": "pt_exams\/general_reading\/reading_group_2.png",
+            "audio_path": null,
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 42,
+                    "position": 1,
+                    "text": "Pedro plays sports _________at camp.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "every day",
+                            "correct": false
+                        },
+                        {
+                            "text": "in the afternoon",
+                            "correct": false
+                        },
+                        {
+                            "text": "three days a week",
+                            "correct": true
+                        },
+                        {
+                            "text": "on Tuesday and Thursday",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 43,
+                    "position": 2,
+                    "text": "Right now, Pedro’s friends aren’t _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "eating dinner",
+                            "correct": true
+                        },
+                        {
+                            "text": "in their room",
+                            "correct": false
+                        },
+                        {
+                            "text": "tired and hungry",
+                            "correct": false
+                        },
+                        {
+                            "text": "hanging out",
+                            "correct": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "position": 43,
+            "instruction": "Section II: Reading. Read the text and choose the best answer for questions 44-46.",
+            "section_type": "reading",
+            "file_path": "pt_exams\/general_reading\/reading_group_3.png",
+            "audio_path": null,
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 44,
+                    "position": 1,
+                    "text": "Lewis and Clark went from  St. Louis to _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "the Mississippi River",
+                            "correct": false
+                        },
+                        {
+                            "text": "the Atlantic Ocean",
+                            "correct": false
+                        },
+                        {
+                            "text": "the Missouri River",
+                            "correct": false
+                        },
+                        {
+                            "text": "the Pacific Ocean",
+                            "correct": true
+                        }
+                    ]
+                },
+                {
+                    "number": 45,
+                    "position": 2,
+                    "text": "Lewis and Clark’s trip took _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "less than one year",
+                            "correct": false
+                        },
+                        {
+                            "text": "exactly two years",
+                            "correct": false
+                        },
+                        {
+                            "text": "between two and three years",
+                            "correct": true
+                        },
+                        {
+                            "text": "more than three years",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 46,
+                    "position": 3,
+                    "text": "Sacagawea helped Lewis and Clark  because she __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "made maps",
+                            "correct": false
+                        },
+                        {
+                            "text": "was an American",
+                            "correct": false
+                        },
+                        {
+                            "text": "spoke different languages",
+                            "correct": true
+                        },
+                        {
+                            "text": "walked very fast",
+                            "correct": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "position": 44,
+            "instruction": "Section II: Reading. Read the article and choose the best answer for questions 47-50.",
+            "section_type": "reading",
+            "file_path": "pt_exams\/general_reading\/reading_group_4.png",
+            "audio_path": null,
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 47,
+                    "position": 1,
+                    "text": "Freddy Adu started playing soccer _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "when he was very young",
+                            "correct": true
+                        },
+                        {
+                            "text": "at age 8",
+                            "correct": false
+                        },
+                        {
+                            "text": "in the United States",
+                            "correct": false
+                        },
+                        {
+                            "text": "as a high school student",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 48,
+                    "position": 2,
+                    "text": "Freddy didn’t join Inter Milan because __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "he didn’t like the team",
+                            "correct": false
+                        },
+                        {
+                            "text": "his mother didn’t want him to",
+                            "correct": true
+                        },
+                        {
+                            "text": "his family doesn’t speak Italian",
+                            "correct": false
+                        },
+                        {
+                            "text": "Italy was too far away",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 49,
+                    "position": 3,
+                    "text": "Now Freddy is __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "living in Africa",
+                            "correct": false
+                        },
+                        {
+                            "text": "studying in high school",
+                            "correct": false
+                        },
+                        {
+                            "text": "working in Italy",
+                            "correct": false
+                        },
+                        {
+                            "text": "playing with D.C. United",
+                            "correct": true
+                        }
+                    ]
+                },
+                {
+                    "number": 50,
+                    "position": 4,
+                    "text": "Freddy is a normal teen  because he _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "is very talented",
+                            "correct": false
+                        },
+                        {
+                            "text": "has a lot of free time",
+                            "correct": false
+                        },
+                        {
+                            "text": "likes teen activities",
+                            "correct": true
+                        },
+                        {
+                            "text": "goes to high school",
+                            "correct": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "position": 45,
+            "instruction": "Listening 1: Barb and Julia talk about some photos. Please listen to the audio track and answer question 51.",
+            "section_type": "listening",
+            "file_path": null,
+            "audio_path": "pt_exams\/general_listening\/listening_1.mp3",
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 51,
+                    "position": 1,
+                    "text": "Matt is _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "a little short",
+                            "correct": false
+                        },
+                        {
+                            "text": "very smart",
+                            "correct": false
+                        },
+                        {
+                            "text": "a basketball player",
+                            "correct": true
+                        },
+                        {
+                            "text": "Julia’s brother",
+                            "correct": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "position": 46,
+            "instruction": "Listening 2: Robbie calls Michelle at home. Please listen to the audio track and answer questions 52-53.",
+            "section_type": "listening",
+            "file_path": null,
+            "audio_path": "pt_exams\/general_listening\/listening_2.mp3",
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 52,
+                    "position": 1,
+                    "text": "Michelle is _________tonight.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "playing video games",
+                            "correct": false
+                        },
+                        {
+                            "text": "staying at home",
+                            "correct": false
+                        },
+                        {
+                            "text": "making dinner",
+                            "correct": false
+                        },
+                        {
+                            "text": "going to a restaurant",
+                            "correct": true
+                        }
+                    ]
+                },
+                {
+                    "number": 53,
+                    "position": 2,
+                    "text": "Robbie usually __________on Sunday afternoon.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "sees friends",
+                            "correct": true
+                        },
+                        {
+                            "text": "stays home",
+                            "correct": false
+                        },
+                        {
+                            "text": "goes shopping",
+                            "correct": false
+                        },
+                        {
+                            "text": "does his homework",
+                            "correct": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "position": 47,
+            "instruction": "Listening 3: Three teens talk about their homestays. Please listen to the audio track and answer questions 54-56.",
+            "section_type": "listening",
+            "file_path": null,
+            "audio_path": "pt_exams\/general_listening\/listening_3.mp3",
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 54,
+                    "position": 1,
+                    "text": "Rich didn’t _______while he was in Japan.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "go to many places",
+                            "correct": false
+                        },
+                        {
+                            "text": "learn about the culture",
+                            "correct": false
+                        },
+                        {
+                            "text": "meet a lot of people",
+                            "correct": false
+                        },
+                        {
+                            "text": "learn the language well",
+                            "correct": true
+                        }
+                    ]
+                },
+                {
+                    "number": 55,
+                    "position": 2,
+                    "text": "While she was in Chile,  Brenda missed ________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "American food",
+                            "correct": false
+                        },
+                        {
+                            "text": "her friends",
+                            "correct": true
+                        },
+                        {
+                            "text": "her brothers",
+                            "correct": false
+                        },
+                        {
+                            "text": "her parents",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 56,
+                    "position": 3,
+                    "text": "David thought his homestay in  England was ___________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "difficult",
+                            "correct": false
+                        },
+                        {
+                            "text": "fun",
+                            "correct": false
+                        },
+                        {
+                            "text": "boring",
+                            "correct": true
+                        },
+                        {
+                            "text": "exciting",
+                            "correct": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "position": 48,
+            "instruction": "Listening 4: Brian and Sarah talk about their classes this year. Please listen to the audio track and answer questions 57-60.",
+            "section_type": "listening",
+            "file_path": null,
+            "audio_path": "pt_exams\/general_listening\/listening_4.mp3",
+            "reading_text": null,
+            "questions": [
+                {
+                    "number": 57,
+                    "position": 1,
+                    "text": "Sarah doesn’t want to take another _______class this year.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "computer",
+                            "correct": true
+                        },
+                        {
+                            "text": "history",
+                            "correct": false
+                        },
+                        {
+                            "text": "photography",
+                            "correct": false
+                        },
+                        {
+                            "text": "language",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 58,
+                    "position": 2,
+                    "text": "Brian has studied __________for two years.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "world cultures",
+                            "correct": false
+                        },
+                        {
+                            "text": "history",
+                            "correct": false
+                        },
+                        {
+                            "text": "French",
+                            "correct": true
+                        },
+                        {
+                            "text": "Spanish",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 59,
+                    "position": 3,
+                    "text": "Brian isn’t going to _________this year.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "play sports",
+                            "correct": false
+                        },
+                        {
+                            "text": "be in a club",
+                            "correct": true
+                        },
+                        {
+                            "text": "study hard",
+                            "correct": false
+                        },
+                        {
+                            "text": "study a language",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "number": 60,
+                    "position": 4,
+                    "text": "Sarah is going to __________for the school newspaper this year.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "do interviews",
+                            "correct": false
+                        },
+                        {
+                            "text": "take pictures",
+                            "correct": false
+                        },
+                        {
+                            "text": "be the editor",
+                            "correct": true
+                        },
+                        {
+                            "text": "write stories",
+                            "correct": false
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

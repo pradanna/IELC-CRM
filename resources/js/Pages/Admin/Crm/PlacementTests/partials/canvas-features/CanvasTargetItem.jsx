@@ -1,8 +1,25 @@
 import React from "react";
-import { Group, Circle, Rect, Text as KonvaText } from "react-konva";
+import { Group, Circle, Rect, Text as KonvaText, Image as KonvaImage } from "react-konva";
+import { useKonvaImage } from "./CanvasImageItem";
+
+function TargetImagePreview({ src, width, height }) {
+    const image = useKonvaImage(src);
+    if (!image) return null;
+    return (
+        <KonvaImage
+            image={image}
+            x={4}
+            y={4}
+            width={width - 8}
+            height={height - 8}
+            listening={false}
+        />
+    );
+}
 
 export default function CanvasTargetItem({
     tgt,
+    tokens = [],
     isSelected,
     isEditing,
     dragBoundFunc,
@@ -60,7 +77,7 @@ export default function CanvasTargetItem({
                     stroke="#22c55e"
                     strokeWidth={isSelected ? 4 : 2.5}
                     dash={[6, 4]}
-                    fill="rgba(34, 197, 94, 0.08)"
+                    fill={isSelected ? "rgba(34, 197, 94, 0.2)" : "rgba(34, 197, 94, 0.08)"}
                 />
                 {/* Plain black text inside the ring */}
                 <KonvaText
@@ -74,14 +91,32 @@ export default function CanvasTargetItem({
                     offsetY={Math.round(fontSize * 0.6)}
                     align="center"
                 />
+                {/* Centang di tengah saat ring target terpilih (Selected) */}
+                {isSelected && (
+                    <KonvaText
+                        text="✔"
+                        fontSize={Math.max(18, Math.round(fontSize * 1.3))}
+                        fontStyle="bold"
+                        fill="#16a34a"
+                        width={textWidth}
+                        offsetX={textWidth / 2}
+                        offsetY={Math.round(Math.max(18, fontSize * 1.3) * 0.6)}
+                        align="center"
+                        listening={false}
+                    />
+                )}
             </Group>
         );
     }
 
     if (tgt.type === "box_target") {
+        const isImageMode = tgt.box_mode === "image" || tgt.correct_token_id?.startsWith("tok_img");
+        const matchedToken = isImageMode ? tokens.find((t) => t.id === tgt.correct_token_id) : null;
         const isCross =
             tgt.correct_symbol === "cross" ||
             tgt.correct_token_id?.includes("crs");
+        const boxWidth = tgt.width || (isImageMode ? 100 : 36);
+        const boxHeight = tgt.height || (isImageMode ? 100 : 36);
 
         return (
             <Group
@@ -107,10 +142,10 @@ export default function CanvasTargetItem({
                     node.scaleX(1);
                     node.scaleY(1);
                     const newWidth = Math.round(
-                        Math.max(20, (tgt.width || 36) * scaleX)
+                        Math.max(20, (tgt.width || (isImageMode ? 100 : 36)) * scaleX)
                     );
                     const newHeight = Math.round(
-                        Math.max(20, (tgt.height || 36) * scaleY)
+                        Math.max(20, (tgt.height || (isImageMode ? 100 : 36)) * scaleY)
                     );
                     onUpdateTarget(tgt.id, {
                         x: node.x(),
@@ -121,23 +156,43 @@ export default function CanvasTargetItem({
                 }}
             >
                 <Rect
-                    width={tgt.width || 36}
-                    height={tgt.height || 36}
-                    stroke="#16a34a"
+                    width={boxWidth}
+                    height={boxHeight}
+                    stroke={isImageMode ? "#6366f1" : "#16a34a"}
                     strokeWidth={isSelected ? 3 : 2}
                     dash={[4, 3]}
-                    cornerRadius={6}
-                    fill="rgba(22, 163, 74, 0.08)"
+                    cornerRadius={8}
+                    fill={isImageMode ? "rgba(99, 102, 241, 0.08)" : "rgba(22, 163, 74, 0.08)"}
                 />
-                <KonvaText
-                    text={isCross ? "✖" : "✔"}
-                    fontSize={16}
-                    fontStyle="bold"
-                    fill={isCross ? "#dc2626" : "#16a34a"}
-                    width={tgt.width || 36}
-                    align="center"
-                    y={9}
-                />
+                {isImageMode ? (
+                    matchedToken?.src ? (
+                        <TargetImagePreview
+                            src={matchedToken.src}
+                            width={boxWidth}
+                            height={boxHeight}
+                        />
+                    ) : (
+                        <KonvaText
+                            text="🖼️ [Target]"
+                            fontSize={11}
+                            fontStyle="bold"
+                            fill="#6366f1"
+                            width={boxWidth}
+                            align="center"
+                            y={Math.max(2, Math.round((boxHeight - 14) / 2))}
+                        />
+                    )
+                ) : (
+                    <KonvaText
+                        text={isCross ? "✖" : "✔"}
+                        fontSize={Math.round(Math.min(boxWidth, boxHeight) * 0.55)}
+                        fontStyle="bold"
+                        fill={isCross ? "#dc2626" : "#16a34a"}
+                        width={boxWidth}
+                        align="center"
+                        y={Math.max(2, Math.round((boxHeight - Math.min(boxWidth, boxHeight) * 0.55 * 1.2) / 2))}
+                    />
+                )}
             </Group>
         );
     }
@@ -574,6 +629,87 @@ export default function CanvasTargetItem({
                         Math.round(((height) - (tgt.fontSize || 11) * 1.2) / 2)
                     )}
                 />
+                <KonvaText
+                    text="CONTOH"
+                    fontSize={7}
+                    fontStyle="bold"
+                    fill="#7c3aed"
+                    width={width}
+                    align="center"
+                    y={-10}
+                />
+            </Group>
+        );
+    }
+
+    if (tgt.type === "example_image") {
+        const width = tgt.width || 100;
+        const height = tgt.height || 100;
+
+        return (
+            <Group
+                id={tgt.id}
+                x={tgt.x}
+                y={tgt.y}
+                draggable={!isEditing}
+                visible={!isEditing}
+                dragBoundFunc={dragBoundFunc}
+                onDragStart={onDragStart}
+                onClick={(e) => onSelect(e)}
+                onTap={(e) => onSelect(e)}
+                onDblClick={onDoubleClick}
+                onDblTap={onDoubleClick}
+                onDragEnd={(e) => {
+                    onDragEndClean();
+                    onUpdateTarget(tgt.id, {
+                        x: e.target.x(),
+                        y: e.target.y(),
+                    });
+                }}
+                onTransformEnd={(e) => {
+                    const node = e.target;
+                    const scaleX = node.scaleX();
+                    const scaleY = node.scaleY();
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    onUpdateTarget(tgt.id, {
+                        x: node.x(),
+                        y: node.y(),
+                        width: Math.round(
+                            Math.max(30, width * scaleX)
+                        ),
+                        height: Math.round(
+                            Math.max(30, height * scaleY)
+                        ),
+                    });
+                }}
+            >
+                <Rect
+                    width={width}
+                    height={height}
+                    stroke="#7c3aed"
+                    strokeWidth={isSelected ? 3 : 2}
+                    dash={[4, 3]}
+                    cornerRadius={10}
+                    fill="rgba(124, 58, 237, 0.08)"
+                />
+                {tgt.example_image_url ? (
+                    <TargetImagePreview
+                        src={tgt.example_image_url}
+                        width={width}
+                        height={height}
+                    />
+                ) : (
+                    <KonvaText
+                        text="🖼️ [Upload Gambar Contoh]"
+                        fontSize={9}
+                        fontStyle="bold"
+                        fill="#7c3aed"
+                        width={width}
+                        align="center"
+                        y={Math.max(2, Math.round((height - 12) / 2))}
+                    />
+                )}
                 <KonvaText
                     text="CONTOH"
                     fontSize={7}

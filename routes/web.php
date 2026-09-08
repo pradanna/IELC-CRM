@@ -170,6 +170,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/', [PtExamController::class, 'index'])->name('index');
         Route::post('/', [PtExamController::class, 'store'])->name('store');
         Route::post('/upload-canvas-image', [PtExamController::class, 'uploadCanvasImage'])->name('upload-canvas-image');
+        Route::post('/upload-canvas-audio', [PtExamController::class, 'uploadCanvasAudio'])->name('upload-canvas-audio');
         Route::get('/{pt_exam}', [PtExamController::class, 'show'])->name('show');
         Route::put('/{pt_exam}', [PtExamController::class, 'update'])->name('update');
         Route::delete('/{pt_exam}', [PtExamController::class, 'destroy'])->name('destroy');

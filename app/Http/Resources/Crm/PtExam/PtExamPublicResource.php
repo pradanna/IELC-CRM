@@ -114,8 +114,14 @@ class PtExamPublicResource extends JsonResource
             $totalQuestions = $questionNumber - 1;
         } else {
             // GENERAL PLACEMENT TEST (Fallback / Legacy compatible)
-            $generalGroups = $this->generalGroups ?? $this->ptQuestionGroups ?? collect();
-            $generalQuestions = $this->generalQuestions ?? $this->questions ?? collect();
+            $generalGroups = ($this->relationLoaded('generalGroups') && $this->generalGroups->isNotEmpty()) 
+                ? $this->generalGroups 
+                : ($this->generalGroups()->exists() ? $this->generalGroups : $this->ptQuestionGroups);
+
+            $generalQuestions = ($this->relationLoaded('generalQuestions') && $this->generalQuestions->isNotEmpty()) 
+                ? $this->generalQuestions 
+                : ($this->generalQuestions()->exists() ? $this->generalQuestions : $this->questions);
+
             $standaloneQuestions = $generalQuestions->whereNull('pt_general_question_group_id')->whereNull('pt_question_group_id');
 
             $items = collect();
@@ -135,7 +141,7 @@ class PtExamPublicResource extends JsonResource
                         'type' => 'standalone',
                         'questions' => [[
                             'id' => $q->id,
-                            'number' => $questionNumber++,
+                            'number' => $q->number ?? $questionNumber++,
                             'type' => $q->type,
                             'text' => $q->question_text,
                             'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
@@ -151,10 +157,13 @@ class PtExamPublicResource extends JsonResource
                 } else {
                     $g = $item->data;
                     $groupQuestions = [];
-                    foreach ($g->questions as $q) {
+                    $sortedGroupQuestions = $g->questions->sortBy(function($q) {
+                        return [$q->position ?? 0, $q->number ?? 0];
+                    });
+                    foreach ($sortedGroupQuestions as $q) {
                         $groupQuestions[] = [
                             'id' => $q->id,
-                            'number' => $questionNumber++,
+                            'number' => $q->number ?? $questionNumber++,
                             'type' => $q->type,
                             'text' => $q->question_text,
                             'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,

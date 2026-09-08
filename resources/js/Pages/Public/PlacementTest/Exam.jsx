@@ -279,8 +279,14 @@ export default function Exam({
                                 )}
 
                                 {activePage.audio_path && (
-                                    <audio controls className="w-full max-w-sm mb-6 h-10">
+                                    <audio 
+                                        key={activePage.audio_path} 
+                                        controls 
+                                        preload="auto"
+                                        className="w-full max-w-sm mb-6 h-10"
+                                    >
                                         <source src={activePage.audio_path} type="audio/mpeg" />
+                                        Browser Anda tidak mendukung pemutar audio.
                                     </audio>
                                 )}
                                 {activePage.reading_text && (

@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             TaskSeeder::class,
             ChatTemplateSeeder::class,
             PtExamSeeder::class,
+            PlacementTestConnectSeeder::class,
+            PlacementTestInterchangeSeeder::class,
             KidsPtExamSeeder::class,
             IeltsPtExamSeeder::class,
             LoyaltySettingSeeder::class,

@@ -75,19 +75,20 @@ class KidsPtExamSeeder extends Seeder
         foreach ($questions as $index => $qData) {
             $canvasPayload = $qData['canvas'] ?? [];
             $canvasData    = $canvasPayload['canvas_data'] ?? [];
+            $pos           = $qData['position'] ?? ($index + 1);
 
-            // Buat / perbarui PtQuestion
+            // Buat / perbarui PtQuestion berdasarkan exam dan position agar soal dengan judul sama (seperti Part B.3, Part B.5) tidak saling menimpa
             $question = PtQuestion::updateOrCreate(
                 [
-                    'pt_exam_id'    => $exam->id,
-                    'question_text' => $qData['question_text'],
+                    'pt_exam_id' => $exam->id,
+                    'position'   => $pos,
                 ],
                 [
-                    'type'       => $qData['type']       ?? 'drag_drop',
-                    'points'     => $qData['points']     ?? 1,
-                    'number'     => $qData['number']     ?? ($index + 1),
-                    'position'   => $qData['position']   ?? ($index + 1),
-                    'audio_path' => $qData['audio_path'] ?? null,
+                    'question_text' => $qData['question_text'],
+                    'type'          => $qData['type']       ?? 'drag_drop',
+                    'points'        => $qData['points']     ?? 1,
+                    'number'        => $qData['number']     ?? ($index + 1),
+                    'audio_path'    => $qData['audio_path'] ?? null,
                 ]
             );
 

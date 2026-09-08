@@ -69,9 +69,18 @@ class SubmitPlacementTestAction
                                             $isTargetCorrect = true;
                                         }
                                     } elseif ($tgtType === 'box_target') {
-                                        $expectedSymbol = $tgt['correct_symbol'] ?? ($tgt['correct_token_id'] ?? 'check');
+                                        $expectedSymbol = $tgt['correct_symbol'] ?? null;
+                                        $expectedTokenId = $tgt['correct_token_id'] ?? null;
                                         $userTokenType = $userToken['type'] ?? '';
-                                        if ($userTokenType === $expectedSymbol || ($expectedSymbol === 'check' && $userTokenType === 'check') || ($expectedSymbol === 'cross' && $userTokenType === 'cross')) {
+
+                                        // If box target is set with an image token (or token ID match)
+                                        if ($expectedTokenId && $userAssignedTokenId === $expectedTokenId) {
+                                            $isTargetCorrect = true;
+                                        } elseif ($expectedSymbol) {
+                                            if ($userTokenType === $expectedSymbol || ($expectedSymbol === 'check' && $userTokenType === 'check') || ($expectedSymbol === 'cross' && $userTokenType === 'cross')) {
+                                                $isTargetCorrect = true;
+                                            }
+                                        } elseif ($expectedTokenId && ($userTokenType === $expectedTokenId || ($expectedTokenId === 'check' && $userTokenType === 'check') || ($expectedTokenId === 'cross' && $userTokenType === 'cross'))) {
                                             $isTargetCorrect = true;
                                         }
                                     } elseif ($tgtType === 'input_target') {

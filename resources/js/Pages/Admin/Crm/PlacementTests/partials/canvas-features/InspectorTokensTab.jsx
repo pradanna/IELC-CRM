@@ -10,6 +10,7 @@ export default function InspectorTokensTab({
     onAddCheckToken,
     onAddCrossToken,
     onAddRingToken,
+    onAddImageToken,
     onUpdateToken,
     onDeleteToken,
 }) {
@@ -44,6 +45,17 @@ export default function InspectorTokensTab({
                 >
                     <span>🟢</span> + Tarik ke Jawaban Benar
                 </button>
+                {onAddImageToken && (
+                    <label className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black flex items-center gap-1 shadow-sm cursor-pointer">
+                        <span>🖼️</span> + Token Gambar
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={onAddImageToken}
+                            className="hidden"
+                        />
+                    </label>
+                )}
             </div>
 
             {/* Add Word Input */}
@@ -71,6 +83,7 @@ export default function InspectorTokensTab({
             <div className="space-y-2.5 pt-2 max-h-[850px] overflow-y-auto pr-1">
                 {tokens.map((tok) => {
                     const isRing = tok.type === "ring";
+                    const isImage = tok.type === "image";
                     const ringTargets = (targets || []).filter(
                         (t) => t.type === "ring_target"
                     );
@@ -90,25 +103,48 @@ export default function InspectorTokensTab({
                                       ? "bg-rose-50/70 border-rose-200 text-rose-900"
                                       : tok.type === "ring"
                                         ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
-                                        : "bg-orange-50/70 border-orange-200 text-orange-950"
+                                        : tok.type === "image"
+                                          ? "bg-indigo-50/70 border-indigo-200 text-indigo-950"
+                                          : "bg-orange-50/70 border-orange-200 text-orange-950"
                             }`}
                         >
                             <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className="font-black text-xs shrink-0">
-                                        {tok.symbol ? `${tok.symbol} ` : ""}
-                                    </span>
-                                    {tok.type === "word" ? (
-                                        <input
-                                            type="text"
-                                            value={tok.text || ""}
-                                            onChange={(e) =>
-                                                onUpdateToken(tok.id, {
-                                                    text: e.target.value,
-                                                })
-                                            }
-                                            className="bg-white border border-slate-200 text-slate-800 text-xs font-bold px-2 py-1 rounded-lg flex-1 min-w-[80px]"
-                                        />
+                                    {tok.type === "image" ? (
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <img
+                                                src={tok.src}
+                                                alt={tok.label || "Token"}
+                                                className="w-9 h-9 object-contain rounded-lg border border-indigo-200 bg-white shrink-0 shadow-xs"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={tok.label || ""}
+                                                onChange={(e) =>
+                                                    onUpdateToken(tok.id, {
+                                                        label: e.target.value,
+                                                    })
+                                                }
+                                                placeholder="Label token gambar..."
+                                                className="bg-white border border-indigo-200 text-slate-800 text-xs font-bold px-2 py-1 rounded-lg flex-1 min-w-[70px]"
+                                            />
+                                        </div>
+                                    ) : tok.type === "word" ? (
+                                        <>
+                                            <span className="font-black text-xs shrink-0">
+                                                {tok.symbol ? `${tok.symbol} ` : ""}
+                                            </span>
+                                            <input
+                                                type="text"
+                                                value={tok.text || ""}
+                                                onChange={(e) =>
+                                                    onUpdateToken(tok.id, {
+                                                        text: e.target.value,
+                                                    })
+                                                }
+                                                className="bg-white border border-slate-200 text-slate-800 text-xs font-bold px-2 py-1 rounded-lg flex-1 min-w-[80px]"
+                                            />
+                                        </>
                                     ) : (
                                         <span className="text-xs font-bold truncate">
                                             {tok.label || (tok.type === "ring" ? "🟢 Token Ring (Polos)" : tok.text || tok.type)}
@@ -143,6 +179,34 @@ export default function InspectorTokensTab({
                                             title="Posisi Y di kanvas"
                                         />
                                     </div>
+                                    {tok.type === "image" && (
+                                        <div className="flex items-center gap-1 bg-white border border-indigo-200 rounded-md px-1 py-0.5 text-[9px] font-bold text-slate-500">
+                                            <span>W:</span>
+                                            <input
+                                                type="number"
+                                                value={tok.width || 100}
+                                                onChange={(e) =>
+                                                    onUpdateToken(tok.id, {
+                                                        width: parseInt(e.target.value) || 30,
+                                                    })
+                                                }
+                                                className="w-8 text-slate-800 text-center font-bold outline-none"
+                                                title="Lebar gambar token (px)"
+                                            />
+                                            <span>H:</span>
+                                            <input
+                                                type="number"
+                                                value={tok.height || 100}
+                                                onChange={(e) =>
+                                                    onUpdateToken(tok.id, {
+                                                        height: parseInt(e.target.value) || 30,
+                                                    })
+                                                }
+                                                className="w-8 text-slate-800 text-center font-bold outline-none"
+                                                title="Tinggi gambar token (px)"
+                                            />
+                                        </div>
+                                    )}
                                     {tok.type === "word" && (
                                         <>
                                             <label className="text-[9px] font-bold text-slate-500 uppercase">

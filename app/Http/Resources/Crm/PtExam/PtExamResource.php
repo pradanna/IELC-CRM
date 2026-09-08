@@ -33,6 +33,7 @@ class PtExamResource extends JsonResource
                     return $groups->map(fn($g) => [
                         'id' => $g->id,
                         'instruction' => $g->instruction,
+                        'section_type' => $g->section_type ?? null,
                         'reading_text' => $g->reading_text,
                         'audio_path' => $g->audio_path ? (str_starts_with($g->audio_path, 'http') ? $g->audio_path : Storage::url($g->audio_path)) : null,
                         'file_path' => $g->file_path ? (str_starts_with($g->file_path, 'http') ? $g->file_path : Storage::url($g->file_path)) : null,

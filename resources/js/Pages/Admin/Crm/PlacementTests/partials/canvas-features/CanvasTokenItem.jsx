@@ -1,5 +1,81 @@
 import React from "react";
-import { Group, Circle, Rect, Text as KonvaText } from "react-konva";
+import { Group, Circle, Rect, Text as KonvaText, Image as KonvaImage } from "react-konva";
+import { useKonvaImage } from "./CanvasImageItem";
+
+function CanvasImageTokenItem({
+    tok,
+    x,
+    y,
+    width,
+    height,
+    isSelected,
+    isEditing,
+    dragBoundFunc,
+    onDragStart,
+    onSelect,
+    onDoubleClick,
+    onDragEndClean,
+    onUpdateToken,
+}) {
+    const image = useKonvaImage(tok.src);
+
+    return (
+        <Group
+            id={tok.id}
+            x={x}
+            y={y}
+            draggable={!isEditing}
+            visible={!isEditing}
+            dragBoundFunc={dragBoundFunc}
+            onDragStart={onDragStart}
+            onClick={(e) => onSelect(e)}
+            onTap={(e) => onSelect(e)}
+            onDblClick={onDoubleClick}
+            onDblTap={onDoubleClick}
+            onDragEnd={(e) => {
+                onDragEndClean();
+                onUpdateToken(tok.id, {
+                    x: Math.round(e.target.x()),
+                    y: Math.round(e.target.y()),
+                });
+            }}
+        >
+            <Rect
+                width={width}
+                height={height}
+                cornerRadius={12}
+                fill={isSelected ? "#e0e7ff" : "#ffffff"}
+                stroke={isSelected ? "#4f46e5" : "#a5b4fc"}
+                strokeWidth={isSelected ? 3 : 2}
+                shadowColor="rgba(0,0,0,0.12)"
+                shadowBlur={5}
+            />
+            {image && (
+                <KonvaImage
+                    image={image}
+                    x={4}
+                    y={4}
+                    width={width - 8}
+                    height={height - 8}
+                    listening={false}
+                />
+            )}
+            {tok.label && (
+                <KonvaText
+                    text={tok.label}
+                    x={-10}
+                    y={height + 2}
+                    width={width + 20}
+                    align="center"
+                    fontSize={10}
+                    fontStyle="bold"
+                    fill="#4338ca"
+                    listening={false}
+                />
+            )}
+        </Group>
+    );
+}
 
 export default function CanvasTokenItem({
     tok,
@@ -66,12 +142,26 @@ export default function CanvasTokenItem({
                         listening={false}
                     />
                 ) : null}
+                {/* Centang di tengah saat ring token terpilih (Selected) */}
+                {isSelected && (
+                    <KonvaText
+                        text="✔"
+                        fontSize={20}
+                        fontStyle="bold"
+                        fill="#0284c7"
+                        width={textWidth}
+                        offsetX={textWidth / 2}
+                        offsetY={12}
+                        align="center"
+                        listening={false}
+                    />
+                )}
                 {/* Drag Handle Indicator */}
                 <Circle
                     radius={3}
                     x={0}
                     y={radius * 0.8}
-                    fill="#10b981"
+                    fill={isSelected ? "#0284c7" : "#10b981"}
                     listening={false}
                 />
             </Group>
@@ -173,6 +263,29 @@ export default function CanvasTokenItem({
                     listening={false}
                 />
             </Group>
+        );
+    }
+
+    // 3. Image Token
+    if (tok.type === "image") {
+        const width = tok.width || 100;
+        const height = tok.height || 100;
+        return (
+            <CanvasImageTokenItem
+                tok={tok}
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                isSelected={isSelected}
+                isEditing={isEditing}
+                dragBoundFunc={dragBoundFunc}
+                onDragStart={onDragStart}
+                onSelect={onSelect}
+                onDoubleClick={onDoubleClick}
+                onDragEndClean={onDragEndClean}
+                onUpdateToken={onUpdateToken}
+            />
         );
     }
 

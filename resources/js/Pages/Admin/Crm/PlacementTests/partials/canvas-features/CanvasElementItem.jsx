@@ -1,6 +1,7 @@
 import React from "react";
 import { Text as KonvaText } from "react-konva";
 import CanvasImageItem from "./CanvasImageItem";
+import CanvasAudioItem from "./CanvasAudioItem";
 
 export default function CanvasElementItem({
     element,
@@ -61,6 +62,22 @@ export default function CanvasElementItem({
     if (element.type === "image") {
         return (
             <CanvasImageItem
+                element={element}
+                isSelected={isSelected}
+                dragBoundFunc={dragBoundFunc}
+                onDragStart={onDragStart}
+                onSelect={onSelect}
+                onChange={(newProps) => {
+                    onDragEndClean();
+                    onUpdateElement(element.id, newProps);
+                }}
+            />
+        );
+    }
+
+    if (element.type === "audio") {
+        return (
+            <CanvasAudioItem
                 element={element}
                 isSelected={isSelected}
                 dragBoundFunc={dragBoundFunc}

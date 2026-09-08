@@ -136,6 +136,9 @@ export default function KidsCanvasModal({
                             onChange={(canvas) =>
                                 form.setData("canvas_data", canvas)
                             }
+                            audioFile={form.data.media}
+                            audioUrl={editingQuestion?.audio_path}
+                            onAudioChange={(file) => form.setData("media", file)}
                         />
                     </div>
 
@@ -221,6 +224,11 @@ export default function KidsCanvasModal({
                             text:
                                 form.data.question_text ||
                                 "Placement Test Question",
+                            audio_path: form.data.media
+                                ? typeof form.data.media === "string"
+                                    ? form.data.media
+                                    : URL.createObjectURL(form.data.media)
+                                : editingQuestion?.audio_path || null,
                             options: [
                                 {
                                     id: "preview_opt",

@@ -22,9 +22,15 @@ import InspectorElementsTab from "./canvas-features/InspectorElementsTab";
 import InspectorTargetsTab from "./canvas-features/InspectorTargetsTab";
 import InspectorTokensTab from "./canvas-features/InspectorTokensTab";
 
-export default function KidsFreeformCanvasStudio({ value, onChange }) {
+export default function KidsFreeformCanvasStudio({
+    value,
+    onChange,
+    audioFile,
+    audioUrl,
+    onAudioChange,
+}) {
     const stageWidth = 1100;
-    const stageHeight = 1000;
+    const stageHeight = 1500;
 
     // Normalization helper
     const normalizeState = (raw) => {
@@ -70,7 +76,9 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 x: Number.isFinite(parsedX) ? parsedX : 50,
                 y: Number.isFinite(parsedY) ? parsedY : 50,
                 ...(Number.isFinite(parsedWidth) ? { width: parsedWidth } : {}),
-                ...(Number.isFinite(parsedHeight) ? { height: parsedHeight } : {}),
+                ...(Number.isFinite(parsedHeight)
+                    ? { height: parsedHeight }
+                    : {}),
                 ...(Number.isFinite(parsedFontSize)
                     ? { fontSize: parsedFontSize }
                     : {}),
@@ -93,8 +101,12 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 x: Number.isFinite(parsedX) ? parsedX : 100,
                 y: Number.isFinite(parsedY) ? parsedY : 100,
                 ...(Number.isFinite(parsedWidth) ? { width: parsedWidth } : {}),
-                ...(Number.isFinite(parsedHeight) ? { height: parsedHeight } : {}),
-                ...(Number.isFinite(parsedRadius) ? { radius: parsedRadius } : {}),
+                ...(Number.isFinite(parsedHeight)
+                    ? { height: parsedHeight }
+                    : {}),
+                ...(Number.isFinite(parsedRadius)
+                    ? { radius: parsedRadius }
+                    : {}),
                 ...(Number.isFinite(parsedFontSize)
                     ? { fontSize: parsedFontSize }
                     : {}),
@@ -102,28 +114,28 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         });
 
         // Parse Tokens with safe numeric coordinates & fontSize & allowed_target_ids
-        const tokens = (
-            Array.isArray(parsed.tokens) ? parsed.tokens : []
-        ).map((tok, idx) => {
-            const parsedFontSize = Number(tok.fontSize);
-            const parsedX = Number(tok.x);
-            const parsedY = Number(tok.y);
-            const allowedIds = Array.isArray(tok.allowed_target_ids)
-                ? tok.allowed_target_ids
-                : tok.allowed_target_id
-                ? [tok.allowed_target_id]
-                : [];
+        const tokens = (Array.isArray(parsed.tokens) ? parsed.tokens : []).map(
+            (tok, idx) => {
+                const parsedFontSize = Number(tok.fontSize);
+                const parsedX = Number(tok.x);
+                const parsedY = Number(tok.y);
+                const allowedIds = Array.isArray(tok.allowed_target_ids)
+                    ? tok.allowed_target_ids
+                    : tok.allowed_target_id
+                      ? [tok.allowed_target_id]
+                      : [];
 
-            return {
-                ...tok,
-                allowed_target_ids: allowedIds,
-                x: Number.isFinite(parsedX) ? parsedX : 880,
-                y: Number.isFinite(parsedY) ? parsedY : 120 + idx * 55,
-                ...(Number.isFinite(parsedFontSize)
-                    ? { fontSize: parsedFontSize }
-                    : {}),
-            };
-        });
+                return {
+                    ...tok,
+                    allowed_target_ids: allowedIds,
+                    x: Number.isFinite(parsedX) ? parsedX : 880,
+                    y: Number.isFinite(parsedY) ? parsedY : 120 + idx * 55,
+                    ...(Number.isFinite(parsedFontSize)
+                        ? { fontSize: parsedFontSize }
+                        : {}),
+                };
+            },
+        );
 
         return {
             mode: parsed.mode || "freeform_canvas",
@@ -159,6 +171,36 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             setHistoryStep(0);
         }
     }, [value]);
+
+    // Audio guide source and file info
+    const effectiveAudioSrc = audioFile
+        ? typeof audioFile === "string"
+            ? audioFile
+            : URL.createObjectURL(audioFile)
+        : audioUrl || null;
+
+    const effectiveAudioName = audioFile
+        ? typeof audioFile === "object"
+            ? audioFile.name
+            : "Audio Panduan"
+        : audioUrl
+          ? "Audio Tersimpan"
+          : null;
+
+    const handleAddAudioFile = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (onAudioChange) {
+            onAudioChange(file);
+        }
+        e.target.value = "";
+    };
+
+    const handleRemoveAudioFile = () => {
+        if (onAudioChange) {
+            onAudioChange(null);
+        }
+    };
 
     const [selectedIds, setSelectedIds] = useState([]); // Array of selected element IDs
     const [selectedTargetIds, setSelectedTargetIds] = useState([]); // Array of selected target IDs
@@ -260,7 +302,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
     const pushHistory = (newState) => {
         const nextHistory = historyRef.current.slice(
             0,
-            historyStepRef.current + 1
+            historyStepRef.current + 1,
         );
         nextHistory.push(newState);
         if (nextHistory.length > 50) {
@@ -326,10 +368,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
     // Selection click handlers supporting Shift + Click multi-selection
     const handleSelectElementItem = (id, e) => {
-        const isShift = e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
+        const isShift =
+            e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
         if (isShift) {
             setSelectedIds((prev) =>
-                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                prev.includes(id)
+                    ? prev.filter((item) => item !== id)
+                    : [...prev, id],
             );
         } else {
             setSelectedIds([id]);
@@ -340,10 +385,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
     };
 
     const handleSelectTargetItem = (id, e) => {
-        const isShift = e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
+        const isShift =
+            e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
         if (isShift) {
             setSelectedTargetIds((prev) =>
-                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                prev.includes(id)
+                    ? prev.filter((item) => item !== id)
+                    : [...prev, id],
             );
         } else {
             setSelectedTargetIds([id]);
@@ -354,10 +402,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
     };
 
     const handleSelectTokenItem = (id, e) => {
-        const isShift = e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
+        const isShift =
+            e?.evt?.shiftKey || e?.shiftKey || isShiftPressedRef.current;
         if (isShift) {
             setSelectedTokenIds((prev) =>
-                prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                prev.includes(id)
+                    ? prev.filter((item) => item !== id)
+                    : [...prev, id],
             );
         } else {
             setSelectedTokenIds([id]);
@@ -459,7 +510,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
     const handleFinishEditTarget = () => {
         if (editingTargetId) {
             const tgt = canvasState.targets.find(
-                (t) => t.id === editingTargetId
+                (t) => t.id === editingTargetId,
             );
             if (tgt) {
                 if (tgt.type === "input_target") {
@@ -510,12 +561,14 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 file,
                 2 * 1024 * 1024,
                 1920,
-                1920
+                1920,
             );
             const formData = new FormData();
             formData.append("image", compressedFile);
 
-            const uploadUrl = route("admin.placement-tests.upload-canvas-image");
+            const uploadUrl = route(
+                "admin.placement-tests.upload-canvas-image",
+            );
             const res = await axios.post(uploadUrl, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
@@ -526,7 +579,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         } catch (err) {
             console.warn(
                 "Gagal auto-upload gambar ke server, fallback ke Base64 lokal:",
-                err
+                err,
             );
         }
 
@@ -559,11 +612,11 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
 
             const finalX = Math.max(
                 10,
-                Math.min(stageWidth - w - 10, dropX - w / 2)
+                Math.min(stageWidth - w - 10, dropX - w / 2),
             );
             const finalY = Math.max(
                 10,
-                Math.min(stageHeight - h - 10, dropY - h / 2)
+                Math.min(stageHeight - h - 10, dropY - h / 2),
             );
 
             const newId = `img_${Date.now()}`;
@@ -585,6 +638,67 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         };
     };
 
+    // Process Audio File with auto-upload and place as draggable audio element on Canvas
+    const processAudioFile = async (file, dropX = 200, dropY = 200) => {
+        if (
+            !file ||
+            (!file.type.startsWith("audio/") && !file.type.startsWith("video/"))
+        )
+            return;
+
+        let audioUrl = null;
+        let audioFileName = file.name || "Audio Track";
+
+        try {
+            const formData = new FormData();
+            formData.append("audio", file);
+
+            const uploadUrl = route(
+                "admin.placement-tests.upload-canvas-audio",
+            );
+            const res = await axios.post(uploadUrl, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            if (res.data?.url) {
+                audioUrl = res.data.url;
+                if (res.data.name) audioFileName = res.data.name;
+            }
+        } catch (err) {
+            console.warn(
+                "Gagal upload audio ke server, fallback ke ObjectURL lokal:",
+                err,
+            );
+        }
+
+        if (!audioUrl) {
+            audioUrl = URL.createObjectURL(file);
+        }
+
+        const cleanLabel = audioFileName
+            .replace(/\.[^/.]+$/, "")
+            .substring(0, 30);
+        const newId = `audio_${Date.now()}`;
+        const newElem = {
+            id: newId,
+            type: "audio",
+            src: audioUrl,
+            name: audioFileName,
+            label: cleanLabel,
+            x: Math.max(10, Math.min(stageWidth - 200, dropX)),
+            y: Math.max(10, Math.min(stageHeight - 60, dropY)),
+            width: 180,
+            height: 48,
+        };
+
+        updateCanvasStateWithHistory((prev) => ({
+            ...prev,
+            elements: [...prev.elements, newElem],
+        }));
+        setSelectedId(newId);
+        setActiveTab("elements");
+    };
+
     // Select All Elements & Targets (Ctrl+A)
     const handleSelectAll = () => {
         const allElementIds = canvasState.elements.map((el) => el.id);
@@ -604,11 +718,21 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         if (selectedIds.length > 0) {
             canvasState.elements.forEach((el) => {
                 if (selectedIds.includes(el.id)) {
-                    const newId = `${el.type === "text" ? "txt" : "img"}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+                    const prefix =
+                        el.type === "text"
+                            ? "txt"
+                            : el.type === "audio"
+                              ? "audio"
+                              : "img";
+                    const newId = `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
                     newElementIds.push(newId);
                     duplicatedElements.push({
                         ...el,
                         id: newId,
+                        label:
+                            el.type === "audio" && el.label
+                                ? `${el.label} (Copy)`
+                                : el.label,
                         x: Math.min(stageWidth - (el.width || 120), el.x + 20),
                         y: Math.min(stageHeight - (el.height || 40), el.y + 20),
                     });
@@ -628,7 +752,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                         x: Math.min(stageWidth - (tgt.width || 60), tgt.x + 20),
                         y: Math.min(
                             stageHeight - (tgt.height || 40),
-                            tgt.y + 20
+                            tgt.y + 20,
                         ),
                     });
                 }
@@ -771,10 +895,10 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                     updateCanvasStateWithHistory((prev) => ({
                         ...prev,
                         elements: prev.elements.filter(
-                            (el) => !selectedIds.includes(el.id)
+                            (el) => !selectedIds.includes(el.id),
                         ),
                         targets: prev.targets.filter(
-                            (tgt) => !selectedTargetIds.includes(tgt.id)
+                            (tgt) => !selectedTargetIds.includes(tgt.id),
                         ),
                     }));
                     setSelectedIds([]);
@@ -852,10 +976,15 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         const files = e.dataTransfer?.files;
         if (files && files.length > 0) {
             for (let i = 0; i < files.length; i++) {
+                const offsetX = pointerPos.x + i * 20;
+                const offsetY = pointerPos.y + i * 20;
                 if (files[i].type.startsWith("image/")) {
-                    const offsetX = pointerPos.x + i * 20;
-                    const offsetY = pointerPos.y + i * 20;
                     processImageFile(files[i], offsetX, offsetY);
+                } else if (
+                    files[i].type.startsWith("audio/") ||
+                    files[i].type.startsWith("video/")
+                ) {
+                    processAudioFile(files[i], offsetX, offsetY);
                 }
             }
         }
@@ -878,6 +1007,14 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         const file = e.target.files?.[0];
         if (!file) return;
         processImageFile(file, 150, 150);
+        e.target.value = "";
+    };
+
+    // Add Audio Track Element to Canvas via file input button
+    const handleAddAudioElement = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        processAudioFile(file, 150, 150);
         e.target.value = "";
     };
 
@@ -976,6 +1113,18 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 height: 32,
                 label: "Contoh Kata",
             };
+        } else if (type === "example_image") {
+            newTarget = {
+                id: newId,
+                type: "example_image",
+                is_example: true,
+                example_image_url: "",
+                x: 350,
+                y: 250,
+                width: 100,
+                height: 100,
+                label: "Contoh Gambar",
+            };
         } else if (type === "example_input") {
             newTarget = {
                 id: newId,
@@ -1016,7 +1165,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             elements: prev.elements.map((el) =>
-                el.id === id ? { ...el, ...newProps } : el
+                el.id === id ? { ...el, ...newProps } : el,
             ),
         }));
     };
@@ -1091,7 +1240,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             targets: prev.targets.map((t) =>
-                t.id === id ? { ...t, ...newProps } : t
+                t.id === id ? { ...t, ...newProps } : t,
             ),
         }));
     };
@@ -1204,12 +1353,80 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
         setActiveTab("tokens");
     };
 
-    // 9d. Update Token Properties
+    // 9d. Add Image Token (Token Gambar untuk Ditarik ke Kotak Jawaban)
+    const handleAddImageToken = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !file.type.startsWith("image/")) return;
+
+        let imageUrl = null;
+        try {
+            const compressedFile = await compressImageIfNeeded(
+                file,
+                2 * 1024 * 1024,
+                800,
+                800,
+            );
+            const formData = new FormData();
+            formData.append("image", compressedFile);
+
+            const uploadUrl = route(
+                "admin.placement-tests.upload-canvas-image",
+            );
+            const res = await axios.post(uploadUrl, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            if (res.data?.url) {
+                imageUrl = res.data.url;
+            }
+        } catch (err) {
+            console.warn("Gagal upload token gambar, fallback lokal:", err);
+        }
+
+        if (!imageUrl) {
+            imageUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => resolve(ev.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (!imageUrl) return;
+
+        const totalCount = canvasState.tokens.length;
+        const newId = `tok_img_${Date.now()}`;
+        const cleanName = file.name
+            ? file.name.replace(/\.[^/.]+$/, "")
+            : "Gambar";
+
+        updateCanvasStateWithHistory((prev) => ({
+            ...prev,
+            tokens: [
+                ...prev.tokens,
+                {
+                    id: newId,
+                    type: "image",
+                    src: imageUrl,
+                    label: cleanName,
+                    width: 100,
+                    height: 100,
+                    x: 880,
+                    y: 120 + totalCount * 105,
+                },
+            ],
+        }));
+
+        setSelectedTokenIds([newId]);
+        setActiveTab("tokens");
+        e.target.value = "";
+    };
+
+    // 9e. Update Token Properties
     const handleUpdateToken = (id, newProps) => {
         updateCanvasStateWithHistory((prev) => ({
             ...prev,
             tokens: prev.tokens.map((tok) =>
-                tok.id === id ? { ...tok, ...newProps } : tok
+                tok.id === id ? { ...tok, ...newProps } : tok,
             ),
         }));
     };
@@ -1222,7 +1439,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
             targets: prev.targets.map((tgt) =>
                 tgt.correct_token_id === id
                     ? { ...tgt, correct_token_id: "" }
-                    : tgt
+                    : tgt,
             ),
         }));
     };
@@ -1244,9 +1461,11 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                 onRedo={handleRedo}
                 onAddText={handleAddText}
                 onAddImage={handleAddImage}
+                onAddAudio={handleAddAudioElement}
                 onAddTarget={handleAddTarget}
                 onAddRingToken={handleAddRingToken}
                 onAddCheckToken={handleAddCheckToken}
+                onAddImageToken={handleAddImageToken}
             />
 
             {/* Instruction Banner */}
@@ -1294,11 +1513,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                     <ImageIcon className="w-8 h-8 text-amber-600" />
                                     <div>
                                         <p className="text-sm font-black text-slate-800">
-                                            Lepaskan File Gambar Di Sini
+                                            Lepaskan File Gambar atau Audio Di
+                                            Sini
                                         </p>
                                         <p className="text-xs text-slate-500">
-                                            Gambar akan langsung ditempelkan ke
-                                            titik kursor Anda
+                                            Objek gambar / player audio akan
+                                            langsung ditempelkan ke titik kursor
+                                            Anda
                                         </p>
                                     </div>
                                 </div>
@@ -1362,11 +1583,11 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             key={el.id}
                                             element={el}
                                             isSelected={selectedIds.includes(
-                                                el.id
+                                                el.id,
                                             )}
                                             isEditing={editingTextId === el.id}
                                             dragBoundFunc={createDragBoundFunc(
-                                                el.id
+                                                el.id,
                                             )}
                                             onDragStart={(e) =>
                                                 handleItemDragStart(el.id, e)
@@ -1374,7 +1595,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             onSelect={(e) =>
                                                 handleSelectElementItem(
                                                     el.id,
-                                                    e
+                                                    e,
                                                 )
                                             }
                                             onDoubleClick={() =>
@@ -1395,13 +1616,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             key={tgt.id}
                                             tgt={tgt}
                                             isSelected={selectedTargetIds.includes(
-                                                tgt.id
+                                                tgt.id,
                                             )}
                                             isEditing={
                                                 editingTargetId === tgt.id
                                             }
                                             dragBoundFunc={createDragBoundFunc(
-                                                tgt.id
+                                                tgt.id,
                                             )}
                                             onDragStart={(e) =>
                                                 handleItemDragStart(tgt.id, e)
@@ -1409,7 +1630,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             onSelect={(e) =>
                                                 handleSelectTargetItem(
                                                     tgt.id,
-                                                    e
+                                                    e,
                                                 )
                                             }
                                             onDoubleClick={() =>
@@ -1419,6 +1640,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                 handleItemDragEndClean(tgt.id)
                                             }
                                             onUpdateTarget={handleUpdateTarget}
+                                            tokens={canvasState.tokens}
                                         />
                                     ))}
 
@@ -1428,27 +1650,26 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             key={tok.id}
                                             tok={tok}
                                             isSelected={selectedTokenIds.includes(
-                                                tok.id
+                                                tok.id,
                                             )}
                                             isEditing={
                                                 editingTokenId === tok.id
                                             }
                                             dragBoundFunc={createDragBoundFunc(
-                                                tok.id
+                                                tok.id,
                                             )}
                                             onDragStart={(e) =>
                                                 handleItemDragStart(tok.id, e)
                                             }
                                             onSelect={(e) =>
-                                                handleSelectTokenItem(
-                                                    tok.id,
-                                                    e
-                                                )
+                                                handleSelectTokenItem(tok.id, e)
                                             }
                                             onDoubleClick={() => {
                                                 if (tok.type === "word") {
                                                     setEditingTokenId(tok.id);
-                                                    setEditingTokenValue(tok.text || "");
+                                                    setEditingTokenValue(
+                                                        tok.text || "",
+                                                    );
                                                 }
                                             }}
                                             onDragEndClean={() =>
@@ -1495,12 +1716,11 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             {/* Floating Direct Inline Text Editor */}
                             {editingTextId &&
                                 (() => {
-                                    const editingEl =
-                                        canvasState.elements.find(
-                                            (el) =>
-                                                el.id === editingTextId &&
-                                                el.type === "text"
-                                        );
+                                    const editingEl = canvasState.elements.find(
+                                        (el) =>
+                                            el.id === editingTextId &&
+                                            el.type === "text",
+                                    );
                                     if (!editingEl) return null;
 
                                     return (
@@ -1509,13 +1729,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             value={editingTextValue}
                                             onChange={(e) => {
                                                 setEditingTextValue(
-                                                    e.target.value
+                                                    e.target.value,
                                                 );
                                                 handleUpdateElement(
                                                     editingTextId,
                                                     {
                                                         text: e.target.value,
-                                                    }
+                                                    },
                                                 );
                                             }}
                                             onBlur={handleFinishEditText}
@@ -1537,13 +1757,13 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                 fontSize: `${editingEl.fontSize || 18}px`,
                                                 fontStyle:
                                                     editingEl.fontStyle?.includes(
-                                                        "italic"
+                                                        "italic",
                                                     )
                                                         ? "italic"
                                                         : "normal",
                                                 fontWeight:
                                                     editingEl.fontStyle?.includes(
-                                                        "bold"
+                                                        "bold",
                                                     )
                                                         ? "bold"
                                                         : "normal",
@@ -1568,7 +1788,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             {editingTargetId &&
                                 (() => {
                                     const editingTgt = canvasState.targets.find(
-                                        (t) => t.id === editingTargetId
+                                        (t) => t.id === editingTargetId,
                                     );
                                     if (!editingTgt) return null;
 
@@ -1582,7 +1802,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             value={editingTargetValue}
                                             onChange={(e) => {
                                                 setEditingTargetValue(
-                                                    e.target.value
+                                                    e.target.value,
                                                 );
                                                 if (isInputTgt) {
                                                     handleUpdateTarget(
@@ -1594,7 +1814,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                                 e.target
                                                                     .value ||
                                                                 editingTgt.label,
-                                                        }
+                                                        },
                                                     );
                                                 } else {
                                                     handleUpdateTarget(
@@ -1602,7 +1822,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                                         {
                                                             label: e.target
                                                                 .value,
-                                                        }
+                                                        },
                                                     );
                                                 }
                                             }}
@@ -1619,23 +1839,28 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             style={{
                                                 position: "absolute",
                                                 left:
-                                                    editingTgt.type === "ring_target"
+                                                    editingTgt.type ===
+                                                    "ring_target"
                                                         ? `${editingTgt.x - (editingTgt.radius || 24) * 1.5}px`
                                                         : `${editingTgt.x}px`,
                                                 top:
-                                                    editingTgt.type === "ring_target"
+                                                    editingTgt.type ===
+                                                    "ring_target"
                                                         ? `${editingTgt.y - (editingTgt.radius || 24)}px`
                                                         : `${editingTgt.y}px`,
                                                 width:
-                                                    editingTgt.type === "ring_target"
+                                                    editingTgt.type ===
+                                                    "ring_target"
                                                         ? `${(editingTgt.radius || 24) * 3}px`
                                                         : `${editingTgt.width || 100}px`,
                                                 height:
-                                                    editingTgt.type === "ring_target"
+                                                    editingTgt.type ===
+                                                    "ring_target"
                                                         ? `${(editingTgt.radius || 24) * 2}px`
                                                         : `${editingTgt.height || 32}px`,
                                                 fontSize:
-                                                    editingTgt.type === "ring_target"
+                                                    editingTgt.type ===
+                                                    "ring_target"
                                                         ? `${editingTgt.fontSize || 16}px`
                                                         : undefined,
                                                 zIndex: 40,
@@ -1643,14 +1868,16 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             className={`bg-white border-2 rounded-lg px-2 text-xs font-black text-center shadow-2xl outline-none ring-4 ${
                                                 isInputTgt
                                                     ? "border-sky-500 text-sky-950 ring-sky-500/20"
-                                                    : editingTgt.type === "ring_target"
+                                                    : editingTgt.type ===
+                                                        "ring_target"
                                                       ? "border-emerald-500 text-slate-900 ring-emerald-500/20"
                                                       : "border-amber-500 text-amber-950 ring-amber-500/20"
                                             }`}
                                             placeholder={
                                                 isInputTgt
                                                     ? "Kunci jawaban..."
-                                                    : editingTgt.type === "ring_target"
+                                                    : editingTgt.type ===
+                                                        "ring_target"
                                                       ? "Teks ring..."
                                                       : "Label Word Spot..."
                                             }
@@ -1662,7 +1889,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             {editingTokenId &&
                                 (() => {
                                     const editingTok = canvasState.tokens.find(
-                                        (t) => t.id === editingTokenId
+                                        (t) => t.id === editingTokenId,
                                     );
                                     if (!editingTok) return null;
 
@@ -1672,11 +1899,16 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                                             type="text"
                                             value={editingTokenValue}
                                             onChange={(e) => {
-                                                setEditingTokenValue(e.target.value);
-                                                handleUpdateToken(editingTokenId, {
-                                                    text: e.target.value,
-                                                    label: e.target.value,
-                                                });
+                                                setEditingTokenValue(
+                                                    e.target.value,
+                                                );
+                                                handleUpdateToken(
+                                                    editingTokenId,
+                                                    {
+                                                        text: e.target.value,
+                                                        label: e.target.value,
+                                                    },
+                                                );
                                             }}
                                             onBlur={() => {
                                                 setEditingTokenId(null);
@@ -1795,6 +2027,7 @@ export default function KidsFreeformCanvasStudio({ value, onChange }) {
                             onAddCheckToken={handleAddCheckToken}
                             onAddCrossToken={handleAddCrossToken}
                             onAddRingToken={handleAddRingToken}
+                            onAddImageToken={handleAddImageToken}
                             onUpdateToken={handleUpdateToken}
                             onDeleteToken={handleDeleteToken}
                         />

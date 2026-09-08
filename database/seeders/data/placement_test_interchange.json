@@ -1,0 +1,1861 @@
+{
+    "exam_title": "Placement Test Interchange",
+    "exam_slug": "placement-test-interchange",
+    "exam_category": "General",
+    "exam_description": "Jumlah soal: 70\nJenis soal: pilihan ganda\nTotal waktu pengerjaan: 50 menit.\n\nBagian I: Listening\nTerdiri dari: 9 percakapan, 20 soal.\nWaktu pengerjaan: 15 menit.\n\nBagian II: Reading\nTerdiri dari: 8 bacaan, 20 soal\nWaktu pengerjaan: 20 menit\n\nBagian III: Language Use\nTerdiri dari: 30 soal\nWaktu pengerjaan: 15 menit",
+    "exam_duration": 50,
+    "groups": [
+        {
+            "position": 1,
+            "section_type": "listening",
+            "instruction": "Situation 1: David is talking with Tomomi when Monica comes into the room. Please listen to the audio track and answer question 1.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_1.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 1,
+                    "text": "____________ are meeting for the first time.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "David and Monica",
+                            "correct": false
+                        },
+                        {
+                            "text": "David and Tomomi",
+                            "correct": false
+                        },
+                        {
+                            "text": "Tomomi and Monica",
+                            "correct": true
+                        },
+                        {
+                            "text": "David, Monica, and Tomomi",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                }
+            ]
+        },
+        {
+            "position": 2,
+            "section_type": "listening",
+            "instruction": "Situation 2: Ken and Nancy are at a restaurant. Please listen to the audio track and answer question 2.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_2.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 2,
+                    "text": "Ken ________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "is having steak tonight",
+                            "correct": false
+                        },
+                        {
+                            "text": "stopped eating steak",
+                            "correct": false
+                        },
+                        {
+                            "text": "eats steak a lot",
+                            "correct": true
+                        },
+                        {
+                            "text": "prefers chicken to steak",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                }
+            ]
+        },
+        {
+            "position": 3,
+            "section_type": "listening",
+            "instruction": "Situation 3: Karen calls Jason’s home. Jason’s father answers the telephone. Please listen to the audio track and answer question 3.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_3.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 3,
+                    "text": "Karen is going to _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "speak with Jason at work",
+                            "correct": false
+                        },
+                        {
+                            "text": "call back in an hour",
+                            "correct": false
+                        },
+                        {
+                            "text": "wait for Jason to call",
+                            "correct": true
+                        },
+                        {
+                            "text": "send a written message",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                }
+            ]
+        },
+        {
+            "position": 4,
+            "section_type": "listening",
+            "instruction": "Situation 4: A reporter is giving today’s weather forecast. Please listen to the audio track and answer questions 4-5.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_4.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 4,
+                    "text": "It will be clear in _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "the Northeast",
+                            "correct": false
+                        },
+                        {
+                            "text": "Seattle",
+                            "correct": false
+                        },
+                        {
+                            "text": "Boston",
+                            "correct": false
+                        },
+                        {
+                            "text": "Miami",
+                            "correct": true
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 5,
+                    "text": "In Seattle, the weather is ________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "hot",
+                            "correct": false
+                        },
+                        {
+                            "text": "snowy",
+                            "correct": false
+                        },
+                        {
+                            "text": "cool",
+                            "correct": true
+                        },
+                        {
+                            "text": "rainy",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                }
+            ]
+        },
+        {
+            "position": 5,
+            "section_type": "listening",
+            "instruction": "Situation 5: Bill invites Jennifer to go to dinner and a movie. Please listen to the audio track and answer questions 6-7.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_5.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 6,
+                    "text": "Jennifer doesn’t accept right away because she can’t __________\t.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "eat a late lunch",
+                            "correct": false
+                        },
+                        {
+                            "text": "leave work early",
+                            "correct": true
+                        },
+                        {
+                            "text": "go to dinner",
+                            "correct": false
+                        },
+                        {
+                            "text": "see the movie",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 7,
+                    "text": "They’re going to __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "leave work a little early",
+                            "correct": false
+                        },
+                        {
+                            "text": "go to the movie before dinner",
+                            "correct": true
+                        },
+                        {
+                            "text": "see the movie tomorrow",
+                            "correct": false
+                        },
+                        {
+                            "text": "have dinner at 7:00",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                }
+            ]
+        },
+        {
+            "position": 6,
+            "section_type": "listening",
+            "instruction": "Situation 6: Linda is asking Jim about his plans for the summer. Please listen to the audio track and answer questions 8-9.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_6.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 8,
+                    "text": "In the summer, Jim usually __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "stays in the mountains",
+                            "correct": false
+                        },
+                        {
+                            "text": "takes trips with his family",
+                            "correct": false
+                        },
+                        {
+                            "text": "visits his parents",
+                            "correct": false
+                        },
+                        {
+                            "text": "goes to the beach",
+                            "correct": true
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 9,
+                    "text": "This summer he’s planning to ___________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "stay at home",
+                            "correct": false
+                        },
+                        {
+                            "text": "go to the beach",
+                            "correct": false
+                        },
+                        {
+                            "text": "fish with his dad",
+                            "correct": false
+                        },
+                        {
+                            "text": "hike in the mountains",
+                            "correct": true
+                        }
+                    ],
+                    "position": 2
+                }
+            ]
+        },
+        {
+            "position": 7,
+            "section_type": "listening",
+            "instruction": "Situation 7: Phil is talking with Susie about money. Please listen to the audio track and answer questions 10-12.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_7.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 10,
+                    "text": "Phil is upset because __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "Susie can’t lend him any money",
+                            "correct": false
+                        },
+                        {
+                            "text": "his parents won’t give him money",
+                            "correct": false
+                        },
+                        {
+                            "text": "Albert hasn’t returned his money",
+                            "correct": true
+                        },
+                        {
+                            "text": "his friends never lend him money",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 11,
+                    "text": "Albert _______.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "didn’t borrow $100",
+                            "correct": false
+                        },
+                        {
+                            "text": "isn’t working now",
+                            "correct": false
+                        },
+                        {
+                            "text": "doesn’t need the money",
+                            "correct": false
+                        },
+                        {
+                            "text": "can’t return the money yet",
+                            "correct": true
+                        }
+                    ],
+                    "position": 2
+                },
+                {
+                    "number": 12,
+                    "text": "Susie doesn’t lend money to friends because _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "she has just enough for herself",
+                            "correct": false
+                        },
+                        {
+                            "text": "lending money can change a friendship",
+                            "correct": true
+                        },
+                        {
+                            "text": "people won’t lend her money",
+                            "correct": false
+                        },
+                        {
+                            "text": "her friends don’t need it",
+                            "correct": false
+                        }
+                    ],
+                    "position": 3
+                }
+            ]
+        },
+        {
+            "position": 8,
+            "section_type": "listening",
+            "instruction": "Situation 8: Natalie and Chuck are talking about their experiences abroad. Please listen to the audio track and answer questions 13-16.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_8.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 13,
+                    "text": "Chuck went backpacking __________\t.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "in Brazil",
+                            "correct": false
+                        },
+                        {
+                            "text": "by himself",
+                            "correct": false
+                        },
+                        {
+                            "text": "after high school",
+                            "correct": true
+                        },
+                        {
+                            "text": "with his father",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 14,
+                    "text": "Chuck says he “would have liked to have seen Portugal.” He means that he _____________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "went there, and he liked it",
+                            "correct": false
+                        },
+                        {
+                            "text": "didn’t go there, but he wanted to",
+                            "correct": true
+                        },
+                        {
+                            "text": "went there, but he didn’t like it",
+                            "correct": false
+                        },
+                        {
+                            "text": "didn’t go there, and he didn’t want to",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                },
+                {
+                    "number": 15,
+                    "text": "While Natalie was in Japan, she _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "traveled all over the country",
+                            "correct": false
+                        },
+                        {
+                            "text": "lived with a Japanese family",
+                            "correct": true
+                        },
+                        {
+                            "text": "learned Japanese quickly",
+                            "correct": false
+                        },
+                        {
+                            "text": "got very homesick",
+                            "correct": false
+                        }
+                    ],
+                    "position": 3
+                },
+                {
+                    "number": 16,
+                    "text": "Chuck doesn’t want to __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "travel anymore",
+                            "correct": false
+                        },
+                        {
+                            "text": "learn a foreign language",
+                            "correct": false
+                        },
+                        {
+                            "text": "stay at home",
+                            "correct": false
+                        },
+                        {
+                            "text": "live abroad",
+                            "correct": true
+                        }
+                    ],
+                    "position": 4
+                }
+            ]
+        },
+        {
+            "position": 9,
+            "section_type": "listening",
+            "instruction": "Situation 9: Diane and Conrad are talking about their careers. Please listen to the audio track and answer questions 17-20.",
+            "audio_path": "pt_exams/interchange_listening/interchange_listening_9.mp3",
+            "reading_text": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 17,
+                    "text": "Conrad got into advertising because he __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "studied advertising in college",
+                            "correct": false
+                        },
+                        {
+                            "text": "heard about a job opening",
+                            "correct": true
+                        },
+                        {
+                            "text": "liked to help people",
+                            "correct": false
+                        },
+                        {
+                            "text": "was tired of his old job",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 18,
+                    "text": "When he was young, Conrad wanted to _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "work in advertising",
+                            "correct": false
+                        },
+                        {
+                            "text": "become a doctor",
+                            "correct": true
+                        },
+                        {
+                            "text": "stay in school",
+                            "correct": false
+                        },
+                        {
+                            "text": "go into business",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                },
+                {
+                    "number": 19,
+                    "text": "Diane’s parents didn’t want her to _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "start her own business",
+                            "correct": true
+                        },
+                        {
+                            "text": "finish college",
+                            "correct": false
+                        },
+                        {
+                            "text": "be too successful",
+                            "correct": false
+                        },
+                        {
+                            "text": "change her career",
+                            "correct": false
+                        }
+                    ],
+                    "position": 3
+                },
+                {
+                    "number": 20,
+                    "text": "Conrad _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "owns his own company",
+                            "correct": false
+                        },
+                        {
+                            "text": "enjoys working in advertising",
+                            "correct": true
+                        },
+                        {
+                            "text": "thinks his job is boring",
+                            "correct": false
+                        },
+                        {
+                            "text": "wants to leave his job",
+                            "correct": false
+                        }
+                    ],
+                    "position": 4
+                }
+            ]
+        },
+        {
+            "position": 10,
+            "section_type": "reading",
+            "instruction": "Passage 1: What are you doing today?. Read the passage and answer the question(s).",
+            "reading_text": "Betty Chan: I usually stay home on Sundays and take it easy – read, clean the house, do stuff like that. But today I’m at the mall. I’m buying some things for my kids.",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 21,
+                    "text": "Betty is __________today.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "shopping",
+                            "correct": true
+                        },
+                        {
+                            "text": "reading",
+                            "correct": false
+                        },
+                        {
+                            "text": "cleaning",
+                            "correct": false
+                        },
+                        {
+                            "text": "resting",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                }
+            ]
+        },
+        {
+            "position": 11,
+            "section_type": "reading",
+            "instruction": "Passage 2: What do you do?. Read the passage and answer the question(s).",
+            "reading_text": "Tony Perez: I’m a flight attendant with a major airline. Flying isn’t dangerous, but it can be stressful. When I’m up in the air working, I always have something to do. I like it because I meet a lot of interesting people.",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 22,
+                    "text": "Tony’s job is ________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "busy",
+                            "correct": true
+                        },
+                        {
+                            "text": "easy",
+                            "correct": false
+                        },
+                        {
+                            "text": "relaxing",
+                            "correct": false
+                        },
+                        {
+                            "text": "boring",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                }
+            ]
+        },
+        {
+            "position": 12,
+            "section_type": "reading",
+            "instruction": "Passage 3: A vacation postcard. Read the passage and answer the question(s).",
+            "reading_text": "Dear Sal,\n\nGreetings from France – it’s so good to be back here again! We left the kids with their grandparents in Chicago, and we’re biking across the French countryside by ourselves. We brought a tent and sleeping bags, so we can camp out if we want to, but we’re really enjoying the small hotels we find along the way.\n\nLove,\nMichael and Paula",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 23,
+                    "text": "Michael and Paula __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "have been to France before",
+                            "correct": true
+                        },
+                        {
+                            "text": "took their children with them",
+                            "correct": false
+                        },
+                        {
+                            "text": "are visiting their grandparents",
+                            "correct": false
+                        },
+                        {
+                            "text": "prefer to sleep outside",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                }
+            ]
+        },
+        {
+            "position": 13,
+            "section_type": "reading",
+            "instruction": "Passage 4: The “zone”. Read the passage and answer the question(s).",
+            "reading_text": "You’re deeply involved in a task and can ignore everything around you – ringing telephones, your neighbor’s TV, even your own hunger – and still do things in record time. This is similar to what athletes call the “zone”: the power to concentrate so hard that you can ignore everything else. This ability can bring success in any field, but in athletics it can mean all the difference between winning and losing a game or event.",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 24,
+                    "text": "In this reading, the “zone” refers to a person’s _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "state of mind",
+                            "correct": true
+                        },
+                        {
+                            "text": "neighborhood",
+                            "correct": false
+                        },
+                        {
+                            "text": "physical condition",
+                            "correct": false
+                        },
+                        {
+                            "text": "intelligence",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 25,
+                    "text": "Athletes in the “zone” are more likely to __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "fall",
+                            "correct": false
+                        },
+                        {
+                            "text": "compete",
+                            "correct": false
+                        },
+                        {
+                            "text": "win",
+                            "correct": true
+                        },
+                        {
+                            "text": "relax",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                }
+            ]
+        },
+        {
+            "position": 14,
+            "section_type": "reading",
+            "instruction": "Passage 5: Henry Ford and the Model-T. Read the passage and answer the question(s).",
+            "reading_text": "Henry Ford became famous and rich because he found a better, faster way to build cars. This is shown in the history of the Model-T. When the Model-T was first introduced in 1908, it took 14 hours to build and cost $850. After Ford introduced into his own factory the mass-production techniques that he saw in a meat-packing plant, the time for building a Model-T was reduced to less than two hours. As a result, Ford was able to drop the price of the car to $265. By 1927, he had sold over 15 million Model-Ts.",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 26,
+                    "text": "The first Model-T was expensive because it _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "was new",
+                            "correct": false
+                        },
+                        {
+                            "text": "was very popular",
+                            "correct": false
+                        },
+                        {
+                            "text": "took a long time to build",
+                            "correct": true
+                        },
+                        {
+                            "text": "was built in a factory",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 27,
+                    "text": "The Model-T became so popular because it was _______than other cars.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "newer",
+                            "correct": false
+                        },
+                        {
+                            "text": "faster",
+                            "correct": false
+                        },
+                        {
+                            "text": "better",
+                            "correct": false
+                        },
+                        {
+                            "text": "cheaper",
+                            "correct": true
+                        }
+                    ],
+                    "position": 2
+                }
+            ]
+        },
+        {
+            "position": 15,
+            "section_type": "reading",
+            "instruction": "Passage 6: It’s a big country!. Read the passage and answer the question(s).",
+            "reading_text": "When it comes to body weight, Americans stand out. Most visitors to the United States, no matter where they go across this vast country, comment on the size of many Americans. In fact, these impressions are backed by numerous statistics. For example, the average 5' 4\" American weighs 162 pounds, or 15 pounds more than the average person of the same height from Western or Central Europe. Another comparison: At 150 pounds, the average 5’ 4” American woman is 24 pounds heavier than her Japanese counterpart.\n\nWhy are Americans so heavy? Some blame the American diet. Certainly it’s true that Americans eat more high-fat foods – meat, dairy products, and processed food – and fewer grains and vegetables than people in other countries. But fat isn’t the whole story. Lifestyle factors – including the tendency for Americans to drive rather than walk or ride a bicycle to work, to snack throughout the day, and to have so many labor-saving devices in the home – appear to contribute to the problem.",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 28,
+                    "text": "According to the article, visitors to the United States often comment on the size of the _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "population",
+                            "correct": false
+                        },
+                        {
+                            "text": "cities",
+                            "correct": false
+                        },
+                        {
+                            "text": "country",
+                            "correct": false
+                        },
+                        {
+                            "text": "people",
+                            "correct": true
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 29,
+                    "text": "According to the article, the average Western European weighs _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "more than an American",
+                            "correct": false
+                        },
+                        {
+                            "text": "more than a Central European",
+                            "correct": false
+                        },
+                        {
+                            "text": "less than an American",
+                            "correct": true
+                        },
+                        {
+                            "text": "less than a Japanese person",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                },
+                {
+                    "number": 30,
+                    "text": "In comparison with Americans, people in other countries eat more ___________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "meat",
+                            "correct": false
+                        },
+                        {
+                            "text": "dairy products",
+                            "correct": false
+                        },
+                        {
+                            "text": "processed food",
+                            "correct": false
+                        },
+                        {
+                            "text": "grains",
+                            "correct": true
+                        }
+                    ],
+                    "position": 3
+                },
+                {
+                    "number": 31,
+                    "text": "The article implies that Americans would lose weight if they ___________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "snacked more often",
+                            "correct": false
+                        },
+                        {
+                            "text": "rode bicycles to work",
+                            "correct": true
+                        },
+                        {
+                            "text": "stayed at home more",
+                            "correct": false
+                        },
+                        {
+                            "text": "ate fewer vegetables",
+                            "correct": false
+                        }
+                    ],
+                    "position": 4
+                }
+            ]
+        },
+        {
+            "position": 16,
+            "section_type": "reading",
+            "instruction": "Passage 7: Small talk isn’t so “small”. Read the passage and answer the question(s).",
+            "reading_text": "Small talk may not be about serious issues; nevertheless, researchers into the subject have concluded that it’s important. That’s because small talk keeps us connected to one another and can lead to bigger things, such as a job or a new friendship. Yet people who find themselves alone with another person often don’t know what to say. Here are a few tips to help you start a conversation, and to keep the conversational ball rolling:\n\n• Start with the obvious. If you have something in common with another person (your job, hobbies, a person you both know, etc.), begin with that. If you don’t know the person, it’s always acceptable to bring up a neutral topic such as the weather or a recent news event. It isn’t necessary to be clever – all that’s required is to show interest in the other person and to be willing to talk.\n\n• Compliment where appropriate. If the other person has done something you like or is wearing something attractive, it’s always appropriate to compliment. But avoid talking about the specifics of a person’s physical appearance (people can’t usually change how they look) and keep your compliments short and to the point (“What a great tie!” or “You look great tonight!”) and continue with another topic.\n\n• Talk about yourself – then return to your partner. It’s perfectly OK to talk about your own interests for a while, but keep your conversation from becoming a monolog. It’s only polite, for example, that after talking about your own children, you turn the conversation back to your partner by asking about his or her children.",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 32,
+                    "text": "According to the article, the main function of small talk is to __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "show our own importance",
+                            "correct": false
+                        },
+                        {
+                            "text": "get valuable information",
+                            "correct": false
+                        },
+                        {
+                            "text": "relate to other people",
+                            "correct": true
+                        },
+                        {
+                            "text": "talk about major issues",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 33,
+                    "text": "“Start with the obvious” means that you should talk about things that you ____________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "have in common",
+                            "correct": true
+                        },
+                        {
+                            "text": "enjoy doing",
+                            "correct": false
+                        },
+                        {
+                            "text": "want to understand",
+                            "correct": false
+                        },
+                        {
+                            "text": "know everything about",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                },
+                {
+                    "number": 34,
+                    "text": "You need to be careful when complimenting someone because most people __________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "don’t like compliments",
+                            "correct": false
+                        },
+                        {
+                            "text": "can’t change how they look",
+                            "correct": true
+                        },
+                        {
+                            "text": "don’t dress very well",
+                            "correct": false
+                        },
+                        {
+                            "text": "haven’t done anything interesting",
+                            "correct": false
+                        }
+                    ],
+                    "position": 3
+                },
+                {
+                    "number": 35,
+                    "text": "You should avoid monologs because other people _______.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "have no interest in what you say",
+                            "correct": false
+                        },
+                        {
+                            "text": "already know a lot about you",
+                            "correct": false
+                        },
+                        {
+                            "text": "like to talk about themselves, too",
+                            "correct": true
+                        },
+                        {
+                            "text": "prefer to discuss neutral subjects",
+                            "correct": false
+                        }
+                    ],
+                    "position": 4
+                }
+            ]
+        },
+        {
+            "position": 17,
+            "section_type": "reading",
+            "instruction": "Passage 8: Headaches. Read the passage and answer the question(s).",
+            "reading_text": "Everyone has experienced headaches, but only recently have medical researchers begun to learn more specifically about the causes and possible treatments for different types of headache pain.\n\nThe most common type of headache is the simple tension headache. Tension headaches are usually mild and short-lasting and can result from various factors, such as stress caused by worry or noise. Tension headaches are caused by a tightening of the neck or back muscles, which slows the flow of blood and, therefore, oxygen to the brain. It is the lack of oxygen that causes the pain. Most headaches can be relieved by taking a mild analgesic such as aspirin. Analgesics expand the blood vessels and restore the normal flow of blood and oxygen to the brain.\n\nA more serious type of headache is the migraine. Migraine headaches are often extremely painful and can last for hours or days. Like tension headaches, they can be the result of different factors, including stress, hormonal changes, and allergies. Unlike tension headaches, however, they are caused by an abnormal expansion or swelling (rather than a contraction) of the blood vessels within the head. Medicines that shrink swollen blood vessels can be used to treat migraine headaches.\n\nA tiny minority of headaches can be linked to severe physical problems such as head injury or brain tumors. For these types of headaches, there are medicines to treat the symptoms, but there is no cure unless the underlying problem is removed.",
+            "audio_path": null,
+            "file_path": null,
+            "questions": [
+                {
+                    "number": 36,
+                    "text": "This article discusses the _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "tiny minority of people who have headaches",
+                            "correct": false
+                        },
+                        {
+                            "text": "history of medical research into headaches",
+                            "correct": false
+                        },
+                        {
+                            "text": "causes and remedies for headaches",
+                            "correct": true
+                        },
+                        {
+                            "text": "physical problems caused by headaches",
+                            "correct": false
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "number": 37,
+                    "text": "A tension headache can result when _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "the neck and back muscles relax",
+                            "correct": false
+                        },
+                        {
+                            "text": "people get injured in an accident",
+                            "correct": false
+                        },
+                        {
+                            "text": "the flow of blood is restricted",
+                            "correct": true
+                        },
+                        {
+                            "text": "too much oxygen goes to the brain",
+                            "correct": false
+                        }
+                    ],
+                    "position": 2
+                },
+                {
+                    "number": 38,
+                    "text": "Migraine headaches ___________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "are the most common kind of headache",
+                            "correct": false
+                        },
+                        {
+                            "text": "usually last only a few minutes",
+                            "correct": false
+                        },
+                        {
+                            "text": "can cause extreme pain",
+                            "correct": true
+                        },
+                        {
+                            "text": "have one main cause",
+                            "correct": false
+                        }
+                    ],
+                    "position": 3
+                },
+                {
+                    "number": 39,
+                    "text": "Medicines for migraines _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "relax the head and neck",
+                            "correct": false
+                        },
+                        {
+                            "text": "generally relieve tension",
+                            "correct": false
+                        },
+                        {
+                            "text": "increase the flow of blood",
+                            "correct": false
+                        },
+                        {
+                            "text": "cause blood vessels to contract",
+                            "correct": true
+                        }
+                    ],
+                    "position": 4
+                },
+                {
+                    "number": 40,
+                    "text": "Headaches caused by serious physical problems _________.",
+                    "points": 1,
+                    "options": [
+                        {
+                            "text": "can’t be treated",
+                            "correct": false
+                        },
+                        {
+                            "text": "don’t cause much pain",
+                            "correct": false
+                        },
+                        {
+                            "text": "have no symptoms",
+                            "correct": false
+                        },
+                        {
+                            "text": "are not very common",
+                            "correct": true
+                        }
+                    ],
+                    "position": 5
+                }
+            ]
+        }
+    ],
+    "standalone_questions": [
+        {
+            "number": 41,
+            "text": "____________ several good restaurants in our neighborhood.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "There",
+                    "correct": false
+                },
+                {
+                    "text": "They’re",
+                    "correct": false
+                },
+                {
+                    "text": "There are",
+                    "correct": true
+                },
+                {
+                    "text": "Their",
+                    "correct": false
+                }
+            ],
+            "position": 18
+        },
+        {
+            "number": 42,
+            "text": "The gas station is _________Main Street.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "on",
+                    "correct": true
+                },
+                {
+                    "text": "at",
+                    "correct": false
+                },
+                {
+                    "text": "next",
+                    "correct": false
+                },
+                {
+                    "text": "close",
+                    "correct": false
+                }
+            ],
+            "position": 19
+        },
+        {
+            "number": 43,
+            "text": "“I can’t swim very well.”     “I can’t _______.”",
+            "points": 1,
+            "options": [
+                {
+                    "text": "too",
+                    "correct": false
+                },
+                {
+                    "text": "either",
+                    "correct": true
+                },
+                {
+                    "text": "so",
+                    "correct": false
+                },
+                {
+                    "text": "neither",
+                    "correct": false
+                }
+            ],
+            "position": 20
+        },
+        {
+            "number": 44,
+            "text": "I enjoy _________out two or three times a week.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "to eat",
+                    "correct": false
+                },
+                {
+                    "text": "eating",
+                    "correct": true
+                },
+                {
+                    "text": "eat",
+                    "correct": false
+                },
+                {
+                    "text": "I eat",
+                    "correct": false
+                }
+            ],
+            "position": 21
+        },
+        {
+            "number": 45,
+            "text": "These days, __________women keep working after they get married.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "most",
+                    "correct": true
+                },
+                {
+                    "text": "most of",
+                    "correct": false
+                },
+                {
+                    "text": "almost",
+                    "correct": false
+                },
+                {
+                    "text": "the most",
+                    "correct": false
+                }
+            ],
+            "position": 22
+        },
+        {
+            "number": 46,
+            "text": "My new job is very __________.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "excitement",
+                    "correct": false
+                },
+                {
+                    "text": "excited",
+                    "correct": false
+                },
+                {
+                    "text": "exciting",
+                    "correct": true
+                },
+                {
+                    "text": "excite",
+                    "correct": false
+                }
+            ],
+            "position": 23
+        },
+        {
+            "number": 47,
+            "text": "After finishing college, I hope ________married.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "get",
+                    "correct": false
+                },
+                {
+                    "text": "that get",
+                    "correct": false
+                },
+                {
+                    "text": "getting",
+                    "correct": false
+                },
+                {
+                    "text": "to get",
+                    "correct": true
+                }
+            ],
+            "position": 24
+        },
+        {
+            "number": 48,
+            "text": "Mt. Everest is ________mountain in the world.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "the high",
+                    "correct": false
+                },
+                {
+                    "text": "high as",
+                    "correct": false
+                },
+                {
+                    "text": "higher than",
+                    "correct": false
+                },
+                {
+                    "text": "the highest",
+                    "correct": true
+                }
+            ],
+            "position": 25
+        },
+        {
+            "number": 49,
+            "text": "Bob’s never been bungee jumping, __________he?",
+            "points": 1,
+            "options": [
+                {
+                    "text": "is",
+                    "correct": false
+                },
+                {
+                    "text": "has",
+                    "correct": true
+                },
+                {
+                    "text": "does",
+                    "correct": false
+                },
+                {
+                    "text": "was",
+                    "correct": false
+                }
+            ],
+            "position": 26
+        },
+        {
+            "number": 50,
+            "text": "I’ve run out of money. I wish I ________more.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "am saving",
+                    "correct": false
+                },
+                {
+                    "text": "have saved",
+                    "correct": false
+                },
+                {
+                    "text": "had saved",
+                    "correct": true
+                },
+                {
+                    "text": "will save",
+                    "correct": false
+                }
+            ],
+            "position": 27
+        },
+        {
+            "number": 51,
+            "text": "Could you tell me where _________?",
+            "points": 1,
+            "options": [
+                {
+                    "text": "is the post office",
+                    "correct": false
+                },
+                {
+                    "text": "the post office is",
+                    "correct": true
+                },
+                {
+                    "text": "is it the post office",
+                    "correct": false
+                },
+                {
+                    "text": "it is the post office",
+                    "correct": false
+                }
+            ],
+            "position": 28
+        },
+        {
+            "number": 52,
+            "text": "If I had known about the accident, I _________it to the police.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "reported",
+                    "correct": false
+                },
+                {
+                    "text": "would have reported",
+                    "correct": true
+                },
+                {
+                    "text": "was reporting",
+                    "correct": false
+                },
+                {
+                    "text": "have been reporting",
+                    "correct": false
+                }
+            ],
+            "position": 29
+        },
+        {
+            "number": 53,
+            "text": "Yolanda __________part time for several years now.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "has been working",
+                    "correct": true
+                },
+                {
+                    "text": "is working",
+                    "correct": false
+                },
+                {
+                    "text": "works",
+                    "correct": false
+                },
+                {
+                    "text": "was working",
+                    "correct": false
+                }
+            ],
+            "position": 30
+        },
+        {
+            "number": 54,
+            "text": "The Taj Mahal is really worth _________.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "to see it",
+                    "correct": false
+                },
+                {
+                    "text": "seeing",
+                    "correct": true
+                },
+                {
+                    "text": "you see it",
+                    "correct": false
+                },
+                {
+                    "text": "see",
+                    "correct": false
+                }
+            ],
+            "position": 31
+        },
+        {
+            "number": 55,
+            "text": "If I went to live in a foreign country, _________my friends.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "I’d miss",
+                    "correct": true
+                },
+                {
+                    "text": "I’m missing",
+                    "correct": false
+                },
+                {
+                    "text": "I missed",
+                    "correct": false
+                },
+                {
+                    "text": "I miss",
+                    "correct": false
+                }
+            ],
+            "position": 32
+        },
+        {
+            "number": 56,
+            "text": "Would you mind __________the window?",
+            "points": 1,
+            "options": [
+                {
+                    "text": "open",
+                    "correct": false
+                },
+                {
+                    "text": "opening",
+                    "correct": true
+                },
+                {
+                    "text": "to open",
+                    "correct": false
+                },
+                {
+                    "text": "I open",
+                    "correct": false
+                }
+            ],
+            "position": 33
+        },
+        {
+            "number": 57,
+            "text": "I was interested ____________the violin.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "to study",
+                    "correct": false
+                },
+                {
+                    "text": "study",
+                    "correct": false
+                },
+                {
+                    "text": "in studying",
+                    "correct": true
+                },
+                {
+                    "text": "studied",
+                    "correct": false
+                }
+            ],
+            "position": 34
+        },
+        {
+            "number": 58,
+            "text": "Before a film is finished, it needs ________.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "they edit it",
+                    "correct": false
+                },
+                {
+                    "text": "to edit",
+                    "correct": false
+                },
+                {
+                    "text": "to be edited",
+                    "correct": true
+                },
+                {
+                    "text": "being edited",
+                    "correct": false
+                }
+            ],
+            "position": 35
+        },
+        {
+            "number": 59,
+            "text": "By 2030, scientists _________a cure for cancer.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "had found",
+                    "correct": false
+                },
+                {
+                    "text": "will have found",
+                    "correct": true
+                },
+                {
+                    "text": "are finding",
+                    "correct": false
+                },
+                {
+                    "text": "have been finding",
+                    "correct": false
+                }
+            ],
+            "position": 36
+        },
+        {
+            "number": 60,
+            "text": "“What happened to Kate?”     “She must ________about our appointment.”",
+            "points": 1,
+            "options": [
+                {
+                    "text": "forget",
+                    "correct": false
+                },
+                {
+                    "text": "be forgetting",
+                    "correct": false
+                },
+                {
+                    "text": "forgot",
+                    "correct": false
+                },
+                {
+                    "text": "have forgotten",
+                    "correct": true
+                }
+            ],
+            "position": 37
+        },
+        {
+            "number": 61,
+            "text": "We’re not used _________our own meals.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "cook",
+                    "correct": false
+                },
+                {
+                    "text": "to cook",
+                    "correct": false
+                },
+                {
+                    "text": "cooking",
+                    "correct": false
+                },
+                {
+                    "text": "to cooking",
+                    "correct": true
+                }
+            ],
+            "position": 38
+        },
+        {
+            "number": 62,
+            "text": "Chicago, _________is nicknamed the Windy City, is the largest city in Illinois.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "it",
+                    "correct": false
+                },
+                {
+                    "text": "which",
+                    "correct": true
+                },
+                {
+                    "text": "what",
+                    "correct": false
+                },
+                {
+                    "text": "that",
+                    "correct": false
+                }
+            ],
+            "position": 39
+        },
+        {
+            "number": 63,
+            "text": "_______ John, I like to cook.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "Unless",
+                    "correct": false
+                },
+                {
+                    "text": "Except",
+                    "correct": false
+                },
+                {
+                    "text": "Instead",
+                    "correct": false
+                },
+                {
+                    "text": "Unlike",
+                    "correct": true
+                }
+            ],
+            "position": 40
+        },
+        {
+            "number": 64,
+            "text": "Before _________breakfast, I usually take a shower.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "eat",
+                    "correct": false
+                },
+                {
+                    "text": "to eat",
+                    "correct": false
+                },
+                {
+                    "text": "eating",
+                    "correct": true
+                },
+                {
+                    "text": "that eat",
+                    "correct": false
+                }
+            ],
+            "position": 41
+        },
+        {
+            "number": 65,
+            "text": "I’m taking a class _________learn more about my computer.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "so that",
+                    "correct": false
+                },
+                {
+                    "text": "in order",
+                    "correct": false
+                },
+                {
+                    "text": "in order to",
+                    "correct": true
+                },
+                {
+                    "text": "that",
+                    "correct": false
+                }
+            ],
+            "position": 42
+        },
+        {
+            "number": 66,
+            "text": "For me, mathematics is _________difficult than biology.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "more",
+                    "correct": true
+                },
+                {
+                    "text": "the more",
+                    "correct": false
+                },
+                {
+                    "text": "most",
+                    "correct": false
+                },
+                {
+                    "text": "the most",
+                    "correct": false
+                }
+            ],
+            "position": 43
+        },
+        {
+            "number": 67,
+            "text": "I would rather ________evening classes.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "don’t take",
+                    "correct": false
+                },
+                {
+                    "text": "not take",
+                    "correct": true
+                },
+                {
+                    "text": "no taking",
+                    "correct": false
+                },
+                {
+                    "text": "not taking",
+                    "correct": false
+                }
+            ],
+            "position": 44
+        },
+        {
+            "number": 68,
+            "text": "I feel sick. I shouldn’t _________so much.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "to eat",
+                    "correct": false
+                },
+                {
+                    "text": "eaten",
+                    "correct": false
+                },
+                {
+                    "text": "have eaten",
+                    "correct": true
+                },
+                {
+                    "text": "eating",
+                    "correct": false
+                }
+            ],
+            "position": 45
+        },
+        {
+            "number": 69,
+            "text": "Jim’s boss demanded that he ____________to work earlier.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "has come",
+                    "correct": false
+                },
+                {
+                    "text": "coming",
+                    "correct": false
+                },
+                {
+                    "text": "is come",
+                    "correct": false
+                },
+                {
+                    "text": "come",
+                    "correct": true
+                }
+            ],
+            "position": 46
+        },
+        {
+            "number": 70,
+            "text": "The earlier children learn to read, _________for their education.",
+            "points": 1,
+            "options": [
+                {
+                    "text": "good",
+                    "correct": false
+                },
+                {
+                    "text": "the good",
+                    "correct": false
+                },
+                {
+                    "text": "the better",
+                    "correct": true
+                },
+                {
+                    "text": "the best",
+                    "correct": false
+                }
+            ],
+            "position": 47
+        }
+    ]
+}

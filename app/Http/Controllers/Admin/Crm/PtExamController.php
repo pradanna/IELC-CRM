@@ -97,6 +97,23 @@ class PtExamController extends Controller
             'url' => $url,
         ]);
     }
+
+    public function uploadCanvasAudio(Request $request): JsonResponse
+    {
+        $request->validate([
+            'audio' => 'required|file|mimes:mp3,wav,ogg,m4a,aac,webm,flac|max:20480', // Max 20MB
+        ]);
+
+        $file = $request->file('audio');
+        $path = $file->store('pt_exams/kids_canvas_audio', 'public');
+        $url = Storage::url($path);
+
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+            'name' => $file->getClientOriginalName(),
+        ]);
+    }
 }
 
 

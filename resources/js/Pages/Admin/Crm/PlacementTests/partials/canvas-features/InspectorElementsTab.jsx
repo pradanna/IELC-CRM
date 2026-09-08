@@ -28,9 +28,9 @@ export default function InspectorElementsTab({
                 <div className="space-y-4 bg-white p-4 rounded-2xl border border-amber-300 shadow-md ring-2 ring-amber-400/20">
                     <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 pb-2 border-b border-slate-100 flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-amber-700">
-                            <span>{selectedElement.type === "text" ? "📝" : "🖼️"}</span>
+                            <span>{selectedElement.type === "text" ? "📝" : selectedElement.type === "audio" ? "🔊" : "🖼️"}</span>
                             <span>
-                                Edit {selectedElement.type === "text" ? "Teks" : "Gambar"} Aktif
+                                Edit {selectedElement.type === "text" ? "Teks" : selectedElement.type === "audio" ? "Audio Track" : "Gambar"} Aktif
                             </span>
                         </span>
                         <button
@@ -159,6 +159,67 @@ export default function InspectorElementsTab({
                                     </div>
                                 </div>
                             </>
+                        ) : selectedElement.type === "audio" ? (
+                            <div className="space-y-3">
+                                <div className="p-3 bg-violet-50 rounded-xl border border-violet-100 space-y-1">
+                                    <span className="text-[10px] font-black uppercase text-violet-700">
+                                        🔊 Audio Player Element
+                                    </span>
+                                    <p className="text-[10px] text-violet-600">
+                                        Audio ini dapat digeser secara bebas ke samping soal/nomor di kanvas. Siswa dapat menekan tombol play langsung pada kanvas.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase">
+                                        Label / Nama Audio:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedElement.label || selectedElement.name || ""}
+                                        onChange={(e) =>
+                                            onUpdateElement(selectedElement.id, {
+                                                label: e.target.value,
+                                            })
+                                        }
+                                        placeholder="Contoh: Soal No. 1 / Audio A"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-violet-400"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">
+                                            Lebar Kartu (Width px):
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={selectedElement.width || 180}
+                                            onChange={(e) =>
+                                                onUpdateElement(selectedElement.id, {
+                                                    width: parseInt(e.target.value) || 120,
+                                                })
+                                            }
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-violet-400"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">
+                                            Tinggi (Height px):
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={selectedElement.height || 48}
+                                            onChange={(e) =>
+                                                onUpdateElement(selectedElement.id, {
+                                                    height: parseInt(e.target.value) || 36,
+                                                })
+                                            }
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-bold mt-1 focus:bg-white focus:border-violet-400"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 space-y-1">
@@ -319,13 +380,19 @@ export default function InspectorElementsTab({
                                 >
                                     <div className="flex items-center gap-2 min-w-0 flex-1">
                                         <span className="text-xs shrink-0">
-                                            {el.type === "text" ? "📝" : "🖼️"}
+                                            {el.type === "text"
+                                                ? "📝"
+                                                : el.type === "audio"
+                                                  ? "🔊"
+                                                  : "🖼️"}
                                         </span>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-xs font-bold text-slate-800 truncate">
                                                 {el.type === "text"
                                                     ? el.text || "(Teks Kosong)"
-                                                    : `Gambar (${el.width || 120}x${el.height || 100}px)`}
+                                                    : el.type === "audio"
+                                                      ? `Audio: ${el.label || el.name || "Track"}`
+                                                      : `Gambar (${el.width || 120}x${el.height || 100}px)`}
                                             </p>
                                             <p className="text-[9px] text-slate-400 font-medium">
                                                 Posisi: X:{el.x}, Y:{el.y}

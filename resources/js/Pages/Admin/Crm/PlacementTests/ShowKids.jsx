@@ -60,17 +60,30 @@ export default function ShowKids({ exam }) {
         previewPages,
     } = usePtExamShow(examData);
 
+        // Helper menghitung total kotak/target soal aktif di dalam canvas
+    const getCanvasItemCount = (row) => {
+        const rawCanvas = row.kid_canvas?.canvas_data || row.canvas_data;
+        if (!rawCanvas) return 0;
+        try {
+            const parsed = typeof rawCanvas === 'string' ? JSON.parse(rawCanvas) : rawCanvas;
+            if (parsed.targets && Array.isArray(parsed.targets)) {
+                return parsed.targets.filter((tgt) => {
+                    const isEx = !tgt || tgt.is_example || tgt.type === 'example_circle' || tgt.type === 'example_box';
+                    if (isEx) return false;
+                    if (tgt.type === 'ring_target' && tgt.is_correct_answer === false) return false;
+                    return true;
+                }).length;
+            }
+            if (parsed.drop_zones && Array.isArray(parsed.drop_zones)) {
+                return parsed.drop_zones.length;
+            }
+        } catch (e) {
+            console.error('Error parsing canvas data:', e);
+        }
+        return 0;
+    };
+
     const columns = [
-        {
-            header: "#",
-            accessor: "number",
-            className: "w-12 text-slate-400 font-bold",
-            render: (row) => (
-                <span className="text-[10px] uppercase font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
-                    K{row.number}
-                </span>
-            ),
-        },
         {
             header: "Canvas Interaktif / Task Anak",
             accessor: "text",
@@ -123,17 +136,26 @@ export default function ShowKids({ exam }) {
             },
         },
         {
-            header: "Poin / Item",
+            header: "Jumlah Soal & Poin",
             accessor: "points",
-            className: "w-28 text-center whitespace-nowrap",
-            render: (row) =>
-                row.isGroupHeader ? (
-                    ""
-                ) : (
-                    <span className="inline-flex items-center justify-center whitespace-nowrap text-xs font-black text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
-                        {row.points || 1} pt
-                    </span>
-                ),
+            className: "w-36 text-center whitespace-nowrap",
+            render: (row) => {
+                if (row.isGroupHeader) return "";
+                const itemCount = getCanvasItemCount(row);
+                const pointsPerItem = row.points || 1;
+                const totalPoints = itemCount > 0 ? itemCount * pointsPerItem : pointsPerItem;
+
+                return (
+                    <div className="inline-flex flex-col items-center gap-1">
+                        <span className="inline-flex items-center justify-center text-xs font-black text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">
+                            {itemCount > 0 ? `${itemCount} Soal` : '1 Soal'}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                            {itemCount > 0 ? `${totalPoints} pt (${pointsPerItem} pt/item)` : `${pointsPerItem} pt`}
+                        </span>
+                    </div>
+                );
+            },
         },
         {
             header: "Actions",

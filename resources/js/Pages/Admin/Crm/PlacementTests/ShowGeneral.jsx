@@ -149,20 +149,21 @@ export default function ShowGeneral({ exam }) {
             accessor: "audio_path",
             className: "w-24",
             render: (row) => {
-                if (!row.audio_path)
+                const mediaUrl = row.audio_path || row.file_path;
+                if (!mediaUrl)
                     return (
                         <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest ml-2">
                             —
                         </span>
                     );
 
-                const isMedia = row.audio_path
+                const isMedia = mediaUrl
                     .toLowerCase()
                     .match(/\.(mp3|wav|mp4|mpeg|webm)$/);
 
                 return (
                     <button
-                        onClick={() => openMediaModal(row.audio_path)}
+                        onClick={() => openMediaModal(mediaUrl)}
                         className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border w-fit transition-all group ${
                             isMedia
                                 ? "text-blue-600 bg-blue-50 border-blue-100 hover:bg-blue-600 hover:text-white"

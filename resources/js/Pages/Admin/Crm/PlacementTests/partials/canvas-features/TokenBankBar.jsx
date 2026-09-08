@@ -30,13 +30,27 @@ export default function TokenBankBar({ tokens = [] }) {
                                       ? "bg-rose-50 border-rose-300 text-rose-700"
                                       : tok.type === "ring"
                                         ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                                        : "bg-orange-50 border-orange-300 text-orange-800"
+                                        : tok.type === "image"
+                                          ? "bg-indigo-50 border-indigo-300 text-indigo-900"
+                                          : "bg-orange-50 border-orange-300 text-orange-800"
                             }`}
                         >
-                            <span>
-                                {tok.symbol ? `${tok.symbol} ` : ""}
-                                {tok.text || tok.label}
-                            </span>
+                            {tok.type === "image" ? (
+                                <div className="flex items-center gap-1.5">
+                                    <img
+                                        src={tok.src}
+                                        alt={tok.label || "Token"}
+                                        className="w-5 h-5 object-contain rounded-md bg-white border border-indigo-200"
+                                    />
+                                    <span>{tok.label || "Gambar"}</span>
+                                </div>
+                            ) : (
+                                <span>
+                                    {tok.text
+                                        ? `${tok.symbol ? `${tok.symbol} ` : ""}${tok.text}`
+                                        : (tok.label || tok.symbol || tok.type)}
+                                </span>
+                            )}
                         </div>
                     ))}
                 </div>

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import {
     Type,
     Image as ImageIcon,
+    Volume2,
     Undo2,
     Redo2,
     ChevronDown,
@@ -15,9 +16,11 @@ export default function CanvasToolbar({
     onRedo,
     onAddText,
     onAddImage,
+    onAddAudio,
     onAddTarget,
     onAddRingToken,
     onAddCheckToken,
+    onAddImageToken,
 }) {
     const [isExampleMenuOpen, setIsExampleMenuOpen] = useState(false);
     const exampleDropdownRef = useRef(null);
@@ -102,6 +105,21 @@ export default function CanvasToolbar({
                         type="file"
                         accept="image/*"
                         onChange={onAddImage}
+                        className="hidden"
+                    />
+                </label>
+
+                {/* Add Audio Element to Canvas */}
+                <label
+                    className="px-3.5 py-2 bg-white hover:bg-violet-50 text-slate-700 hover:text-violet-900 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-300 hover:border-violet-300 transition-all shadow-sm cursor-pointer"
+                    title="Tambah pemutar audio yang bisa di-drag bebas di atas kanvas"
+                >
+                    <Volume2 className="w-4 h-4 text-violet-600" />
+                    <span>+ Audio</span>
+                    <input
+                        type="file"
+                        accept="audio/*,video/*"
+                        onChange={onAddAudio}
                         className="hidden"
                     />
                 </label>
@@ -288,6 +306,28 @@ export default function CanvasToolbar({
                                     </p>
                                 </div>
                             </button>
+
+                            {/* 6. Contoh Kotak Gambar (Terjawab) */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onAddTarget("example_image");
+                                    setIsExampleMenuOpen(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-violet-50/80 rounded-xl transition-colors flex items-center gap-3 group"
+                            >
+                                <div className="w-8 h-8 rounded-xl border-2 border-indigo-500 bg-indigo-50 flex items-center justify-center shrink-0">
+                                    <span className="text-indigo-600 text-xs font-black">🖼️</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 group-hover:text-violet-700">
+                                        Contoh Kotak Gambar (Terjawab)
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 truncate">
+                                        Kotak target sudah terisi gambar contoh
+                                    </p>
+                                </div>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -315,6 +355,23 @@ export default function CanvasToolbar({
                     <span className="text-emerald-600 font-bold">✔</span>
                     <span>+ Token Centang</span>
                 </button>
+
+                {/* Direct Image Token Add Button */}
+                {onAddImageToken && (
+                    <label
+                        className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-xl text-xs font-black flex items-center gap-1 border border-indigo-300 transition-all shadow-sm cursor-pointer"
+                        title="Tambah Token Gambar ke Bank Token untuk ditarik siswa ke kotak"
+                    >
+                        <span className="text-indigo-600 font-bold">🖼️</span>
+                        <span>+ Token Gambar</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={onAddImageToken}
+                            className="hidden"
+                        />
+                    </label>
+                )}
             </div>
         </div>
     );

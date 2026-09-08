@@ -120,6 +120,9 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                             key={editingQuestion ? editingQuestion.id : "new_canvas"}
                             value={form.data.canvas_data}
                             onChange={(canvas) => form.setData('canvas_data', canvas)}
+                            audioFile={form.data.media}
+                            audioUrl={editingQuestion?.audio_path}
+                            onAudioChange={(file) => form.setData('media', file)}
                         />
                     )}
 
@@ -221,6 +224,11 @@ export default function QuestionModal({ show, onClose, form, onSubmit, editingQu
                             number: 1,
                             type: 'drag_drop',
                             text: form.data.question_text || 'Placement Test Question',
+                            audio_path: form.data.media
+                                ? typeof form.data.media === "string"
+                                    ? form.data.media
+                                    : URL.createObjectURL(form.data.media)
+                                : editingQuestion?.audio_path || null,
                             options: [
                                 {
                                     id: 'preview_opt',
