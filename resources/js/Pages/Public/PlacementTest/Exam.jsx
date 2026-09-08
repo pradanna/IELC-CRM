@@ -55,6 +55,7 @@ export default function Exam({
         handleOptionSelect,
         handleTextChange,
         handleFileSelect,
+        handleCustomAnswer,
         confirmFinish,
         getTimerColorClass,
         saveStatus,
@@ -160,6 +161,18 @@ export default function Exam({
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* Real-time Save Indicator */}
+                    {!is_review && (
+                        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-500">
+                            <span className={`w-2 h-2 rounded-full transition-all ${
+                                saveStatus === 'saving' 
+                                    ? 'bg-amber-400 animate-ping' 
+                                    : 'bg-emerald-500'
+                            }`} />
+                            <span>{saveStatus === 'saving' ? 'Saving locally...' : 'Auto-saved'}</span>
+                        </div>
+                    )}
+
                     <button
                         onClick={toggleFullscreen}
                         type="button"
@@ -347,11 +360,7 @@ export default function Exam({
                                             answer={answers[q.id]}
                                             onAnswerChange={(taskId, newAnswer) => {
                                                 if (is_review) return;
-                                                const updatedAnswers = {
-                                                    ...answers,
-                                                    [taskId]: newAnswer,
-                                                };
-                                                setData('answers', updatedAnswers);
+                                                handleCustomAnswer(taskId, newAnswer);
                                             }}
                                             onFileSelect={handleFileSelect}
                                             isReview={is_review}

@@ -6,10 +6,22 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
     const sessionToken = session?.session_token || session?.token || 'preview_token';
     const storageKey = `pt_answers_${sessionToken}`;
     const sectionTimersKey = `pt_section_timers_${sessionToken}`;
+    const activePageKey = `pt_active_page_${sessionToken}`;
     const mainRef = useRef(null);
 
-    // Initial page index (can restore from previous active section if saved)
-    const [currentPageIndex, setCurrentPageIndex] = useState(0);
+    // Initial page index (restored from localStorage if candidate previously opened a section)
+    const [currentPageIndex, setCurrentPageIndex] = useState(() => {
+        if (typeof window !== "undefined" && !isReview) {
+            try {
+                const savedPage = localStorage.getItem(activePageKey);
+                if (savedPage !== null) {
+                    const parsed = parseInt(savedPage, 10);
+                    if (!isNaN(parsed) && parsed >= 0) return parsed;
+                }
+            } catch (e) {}
+        }
+        return 0;
+    });
     const [saveStatus, setSaveStatus] = useState('saved'); // 'saving' | 'saved'
     const [sectionExpiryNotice, setSectionExpiryNotice] = useState(null); // notification string when section expires
 
@@ -252,12 +264,20 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
         setData("answers", newAnswers);
     };
 
+    const handleCustomAnswer = (questionId, newAnswer) => {
+        if (isReview || isCurrentSectionLocked) return;
+        const newAnswers = { ...data.answers, [questionId]: newAnswer };
+        setData("answers", newAnswers);
+        saveToLocalStorage(newAnswers);
+    };
+
     const handleFinish = () => {
         post(route("public.placement-test.submit", { token: sessionToken }), {
             onSuccess: () => {
                 if (typeof window !== "undefined") {
                     localStorage.removeItem(storageKey);
                     localStorage.removeItem(sectionTimersKey);
+                    localStorage.removeItem(activePageKey);
                 }
             },
         });
@@ -295,6 +315,11 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
             return;
         }
         setCurrentPageIndex(targetPageIndex);
+        if (typeof window !== "undefined" && !isReview) {
+            try {
+                localStorage.setItem(activePageKey, targetPageIndex.toString());
+            } catch (e) {}
+        }
     };
 
     return {
@@ -312,6 +337,7 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
         handleOptionSelect,
         handleTextChange,
         handleFileSelect,
+        handleCustomAnswer,
         confirmFinish,
         getTimerColorClass,
         answers: data.answers,
