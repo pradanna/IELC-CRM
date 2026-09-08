@@ -97,10 +97,45 @@ export default function Exam({
         );
     };
 
+    const handleIndicatorClick = (q) => {
+        if (is_review) {
+            setCurrentPageIndex(q.pageIndex);
+            return;
+        }
+
+        if (q.pageIndex === currentPageIndex) return;
+
+        // If IELTS
+        if (exam_category === 'IELTS') {
+            // Cannot go back to previous sections if locked
+            if (q.pageIndex < currentPageIndex) {
+                alert("This section has been locked and submitted. You cannot return to previous sections in IELTS.");
+                return;
+            }
+
+            // If jumping forward, require confirmation because current section will be locked
+            const currentTitle = activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
+            const targetSection = pages[q.pageIndex];
+            const targetTask = targetSection?.questions?.[0] || {};
+            const nextTitle = targetTask.title || `Section ${q.pageIndex + 1}`;
+            const nextSkill = targetTask.skill_type || 'Section';
+
+            setPendingNextPage({
+                nextIndex: q.pageIndex,
+                currentTitle,
+                nextTitle,
+                nextSkill,
+            });
+            return;
+        }
+
+        setCurrentPageIndex(q.pageIndex);
+    };
+
     const qMapIndicator = (q) => {
         const isAnswered = answers[q.id] !== undefined && answers[q.id] !== null && answers[q.id] !== '';
         const isCurrentPage = currentPageIndex === q.pageIndex;
-        const isLocked = q.isLocked;
+        const isLocked = q.isLocked || (exam_category === 'IELTS' && !is_review && q.pageIndex < currentPageIndex);
 
         let buttonClass = "";
         if (is_review) {
@@ -119,7 +154,7 @@ export default function Exam({
                 buttonClass = "bg-blue-100 text-blue-800 border-blue-300";
             }
         } else if (isLocked) {
-            buttonClass = "bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed";
+            buttonClass = "bg-slate-100 text-slate-400 border-slate-200 opacity-50 cursor-not-allowed";
         } else {
             buttonClass = isAnswered
                 ? "bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100 shadow-sm"
@@ -129,9 +164,14 @@ export default function Exam({
         return (
             <button
                 key={q.number}
-                onClick={() => setCurrentPageIndex(q.pageIndex)}
-                disabled={isLocked}
-                title={isLocked ? "This section has been locked because time expired" : undefined}
+                type="button"
+                onClick={() => handleIndicatorClick(q)}
+                disabled={isLocked && !is_review}
+                title={
+                    isLocked 
+                        ? (exam_category === 'IELTS' ? "Section closed and locked" : "Section locked") 
+                        : undefined
+                }
                 className={`h-11 w-full flex items-center justify-center rounded-xl text-xs font-bold border transition-all duration-200 ${
                     isCurrentPage
                         ? "ring-4 ring-primary-500/10 border-primary-500 shadow-md transform scale-105 z-10"
@@ -211,13 +251,23 @@ export default function Exam({
                 <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
                     <div className="p-5 border-b border-gray-100 bg-gray-50/30">
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
-                            Question Map
+                            {exam_category === 'IELTS' ? 'Module / Section Map' : 'Question Map'}
                         </p>
                     </div>
                     <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-                        <div className="grid grid-cols-4 gap-2.5">
+                        <div className="grid grid-cols-4 gap-2.5 mb-4">
                             {questionMap.map((q) => qMapIndicator(q))}
                         </div>
+
+                        {exam_category === 'IELTS' && !is_review && (
+                            <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 leading-relaxed">
+                                <div className="flex items-center gap-1.5 font-black text-amber-800 uppercase tracking-wider text-[10px] mb-1">
+                                    <AlertCircle size={13} className="text-amber-600 shrink-0" />
+                                    <span>Peringatan Sesi</span>
+                                </div>
+                                Setiap bagian dikerjakan berurutan sesuai batas waktu. Jika Anda berpindah ke bagian selanjutnya, bagian sebelumnya akan <strong>dikunci permanen</strong>.
+                            </div>
+                        )}
                     </div>
                     <div className="p-5 border-t border-gray-200 bg-gray-50/30">
                         {!is_review && (
