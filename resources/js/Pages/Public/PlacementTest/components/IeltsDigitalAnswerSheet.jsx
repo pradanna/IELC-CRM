@@ -196,9 +196,10 @@ export default function IeltsDigitalAnswerSheet({
                     <audio 
                         controls 
                         preload="auto"
-                        src={task.audio_path}
                         className="w-full h-10 rounded-xl"
                     >
+                        <source src={task.audio_path} type="audio/mpeg" />
+                        <source src={task.audio_path} />
                         Your browser does not support direct audio playback. Please click 'Open Audio Separately'.
                     </audio>
                 </div>

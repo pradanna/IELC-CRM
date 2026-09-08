@@ -10,7 +10,7 @@
             "skill_type": "listening",
             "title": "IELTS Academic Listening Section (4 Sections, 40 Questions)",
             "description": "<p><strong>The IELTS® Listening Section</strong> is designed to measure your ability to understand conversations and lectures in English.</p><ul><li>There are <strong>4 sections</strong> in the Listening test (40 Questions in total).</li><li>The test duration is approximately <strong>30 minutes</strong> under real test conditions.</li><li>Listen carefully, as the audio track will be played <strong>only once</strong>.</li><li>Follow the question booklet on the left and enter your answers in the digital answer sheet (1–40) on the right.</li></ul>",
-            "audio_path": "https://drive.google.com/file/d/1fieiBYEpp7lAt-elVeBpIDXPl45lUF_J/preview",
+            "audio_path": "pt_exams/ielts/audio/IELTS Placement Test Listening Audio.mp3",
             "question_pdf_path": "https://drive.google.com/file/d/1sZNHPPb-Pc6cn54HSkCN8LVFcf6Z4n7C/preview",
             "answer_sheet_pdf_path": "https://drive.google.com/file/d/1f3wa4ilNH5xnG05Mtc8OcyZtklOTUoZv/preview",
             "duration_minutes": 30,
