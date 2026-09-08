@@ -576,16 +576,6 @@ export default function IeltsDigitalAnswerSheet({
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {isReview && (
-                                        <button
-                                            type="button"
-                                            onClick={() => window.print()}
-                                            className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
-                                        >
-                                            <Download size={13} />
-                                            <span>Print / Save</span>
-                                        </button>
-                                    )}
                                     <span className={`px-3 py-1 rounded-xl text-xs font-black border ${
                                         wordCount >= minWordsTarget 
                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
