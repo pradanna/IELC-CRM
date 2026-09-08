@@ -6,6 +6,7 @@ import { Upload, File as FileIcon, Type } from "lucide-react";
 import KidsCanvasQuestion from "./components/KidsCanvasQuestion";
 import KidsImagePinQuestion from "./components/KidsImagePinQuestion";
 import KidsFreeformCanvasQuestion from "./components/KidsFreeformCanvasQuestion";
+import IeltsDigitalAnswerSheet from "./components/IeltsDigitalAnswerSheet";
 import RichTextEditor from "@/Components/ui/RichTextEditor";
 
 export default function Exam({
@@ -22,6 +23,11 @@ export default function Exam({
         setCurrentPageIndex,
         mainRef,
         timeLeft,
+        activeSectionTimer,
+        isSectionTimer,
+        isCurrentSectionLocked,
+        sectionExpiryNotice,
+        setSectionExpiryNotice,
         formatTime,
         questionMap,
         handleOptionSelect,
@@ -34,7 +40,7 @@ export default function Exam({
         summaryFile,
         setData,
         processing,
-    } = usePlacementTest({ session, pages, isReview: is_review, userAnswers: user_answers });
+    } = usePlacementTest({ session, pages, isReview: is_review, userAnswers: user_answers, examCategory: exam_category });
 
     const activePage = (pages && pages.length > 0) ? pages[currentPageIndex] : null;
 
@@ -66,6 +72,7 @@ export default function Exam({
     const qMapIndicator = (q) => {
         const isAnswered = answers[q.id] !== undefined && answers[q.id] !== null && answers[q.id] !== '';
         const isCurrentPage = currentPageIndex === q.pageIndex;
+        const isLocked = q.isLocked;
 
         let buttonClass = "";
         if (is_review) {
@@ -83,6 +90,8 @@ export default function Exam({
             } else {
                 buttonClass = "bg-blue-100 text-blue-800 border-blue-300";
             }
+        } else if (isLocked) {
+            buttonClass = "bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed";
         } else {
             buttonClass = isAnswered
                 ? "bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100 shadow-sm"
@@ -93,6 +102,8 @@ export default function Exam({
             <button
                 key={q.number}
                 onClick={() => setCurrentPageIndex(q.pageIndex)}
+                disabled={isLocked}
+                title={isLocked ? "Sesi ini telah terkunci karena waktu habis" : undefined}
                 className={`h-11 w-full flex items-center justify-center rounded-xl text-xs font-bold border transition-all duration-200 ${
                     isCurrentPage
                         ? "ring-4 ring-primary-500/10 border-primary-500 shadow-md transform scale-105 z-10"
@@ -114,14 +125,34 @@ export default function Exam({
                     <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white shadow-md shadow-primary-500/20">
                         <Check size={18} strokeWidth={3} />
                     </div>
-                    <div className="font-bold text-gray-900 tracking-tight">
-                        {exam_title}
+                    <div>
+                        <div className="font-bold text-gray-900 tracking-tight leading-none">
+                            {exam_title}
+                        </div>
+                        {isSectionTimer && activeSectionTimer && (
+                            <div className="text-[10px] font-bold text-primary-600 uppercase tracking-wider mt-1">
+                                {activeSectionTimer.title} ({activeSectionTimer.skillType})
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-mono text-sm font-bold shadow-sm transition-all duration-300 ${getTimerColorClass()}`}>
-                    <Clock size={16} />
-                    <span>{formatTime(timeLeft)}</span>
+                <div className="flex items-center gap-3">
+                    {isSectionTimer && activeSectionTimer?.skillType === 'speaking' ? (
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 font-mono text-xs font-black uppercase tracking-wider shadow-sm">
+                            <span>Live Interview</span>
+                        </div>
+                    ) : (
+                        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-mono text-sm font-bold shadow-sm transition-all duration-300 ${getTimerColorClass()}`}>
+                            <Clock size={16} />
+                            <span>{formatTime(timeLeft)}</span>
+                            {isSectionTimer && (
+                                <span className="text-[10px] uppercase font-bold opacity-75 ml-1 border-l pl-2 border-current">
+                                    Section Timer
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -162,6 +193,36 @@ export default function Exam({
                 {/* Main Content */}
                 <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-8">
                     <div className="max-w-3xl mx-auto py-12 pb-32">
+                        {/* Section Expiry Notice Banner */}
+                        {sectionExpiryNotice && (
+                            <div className="mb-8 p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-amber-900 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                        <AlertCircle size={18} />
+                                    </div>
+                                    <p className="text-xs font-bold leading-snug">
+                                        {sectionExpiryNotice}
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => setSectionExpiryNotice(null)}
+                                    className="text-xs font-bold text-amber-700 hover:text-amber-900 px-2 py-1"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Current Section Locked Warning (if expired) */}
+                        {isCurrentSectionLocked && !is_review && (
+                            <div className="mb-8 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800">
+                                <AlertCircle size={20} className="shrink-0 text-rose-600" />
+                                <div className="text-xs">
+                                    <span className="font-bold uppercase tracking-wider">Sesi Terkunci:</span> Waktu pengerjaan untuk sesi ini telah habis. Jawaban pada sesi ini telah tersimpan otomatis dan tidak dapat diubah lagi.
+                                </div>
+                            </div>
+                        )}
+
                         {/* Final Submission Step (IELTS) */}
                         {showFinalStep ? (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -331,162 +392,22 @@ export default function Exam({
                                             </div>
                                         )}
                                         
-                                        {/* Question Content */}
-                                        {/* IELTS Task Multi-Modal (Audio, PDF Soal, Answer Sheet, Essay Input & Upload) */}
+                                        {/* IELTS Task Multi-Modal (Split-screen PDF, Audio Player & Digital 1-40 Answer Sheet) */}
                                         {q.type === 'ielts_task' && (
-                                            <div className="space-y-6">
-                                                {/* Description / Instructions (Rendered HTML) */}
-                                                {q.description && (
-                                                    <div 
-                                                        className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-5 text-xs text-indigo-950 font-medium leading-relaxed prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-indigo-950 prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5"
-                                                        dangerouslySetInnerHTML={{ __html: q.description }}
-                                                    />
-                                                )}
-
-                                                {/* Audio Player (Listening) with Direct Player & Open Link */}
-                                                {q.audio_path && (
-                                                    <div className="bg-sky-50/90 border border-sky-200 rounded-2xl p-4 flex flex-col gap-3 shadow-xs">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                                                                    <Music size={16} />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs font-black uppercase tracking-wider text-sky-950 leading-none">
-                                                                        Audio Listening Track
-                                                                    </p>
-                                                                    <p className="text-[10px] font-medium text-sky-700 mt-0.5">
-                                                                        Putar audio langsung di bawah atau buka di tab baru
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <a
-                                                                href={q.audio_path}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-xs font-bold hover:bg-sky-100/70 transition-all shadow-xs"
-                                                            >
-                                                                <span>Buka Audio File</span>
-                                                                <ExternalLink size={13} />
-                                                            </a>
-                                                        </div>
-                                                        <div className="pt-1">
-                                                            <audio 
-                                                                controls 
-                                                                preload="auto"
-                                                                src={q.audio_path} 
-                                                                className="w-full h-10 rounded-xl"
-                                                            >
-                                                                Browser Anda tidak mendukung pemutar audio langsung. Silakan klik tombol Buka Audio File di atas.
-                                                            </audio>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Downloadable PDF Resources (Buku Soal & Answer Sheet) */}
-                                                {(q.question_pdf_path || q.answer_sheet_pdf_path) && (
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                                        {q.question_pdf_path && (
-                                                            <a
-                                                                href={q.question_pdf_path}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="flex items-center justify-between p-4 rounded-2xl bg-white border border-rose-200/80 hover:border-rose-400 hover:shadow-md transition-all group"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                                                                        <FileText size={20} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-xs font-black text-slate-900 group-hover:text-rose-600 transition-colors">Buku Soal (PDF)</p>
-                                                                        <p className="text-[10px] font-medium text-slate-400">Klik untuk membaca / unduh soal</p>
-                                                                    </div>
-                                                                </div>
-                                                                <ExternalLink size={16} className="text-slate-400 group-hover:text-rose-600" />
-                                                            </a>
-                                                        )}
-
-                                                        {q.answer_sheet_pdf_path && (
-                                                            <a
-                                                                href={q.answer_sheet_pdf_path}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="flex items-center justify-between p-4 rounded-2xl bg-white border border-emerald-200/80 hover:border-emerald-400 hover:shadow-md transition-all group"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                                                                        <FileText size={20} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-xs font-black text-slate-900 group-hover:text-emerald-600 transition-colors">Template Answer Sheet (PDF)</p>
-                                                                        <p className="text-[10px] font-medium text-slate-400">Klik untuk membuka lembar jawaban di tab baru</p>
-                                                                    </div>
-                                                                </div>
-                                                                <ExternalLink size={16} className="text-slate-400 group-hover:text-emerald-600" />
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Candidate Response: Essay Text Input AND/OR File Upload */}
-                                                <div className="space-y-4 pt-2 border-t border-slate-100">
-                                                    <div className="space-y-2">
-                                                        <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
-                                                            Ketik Tanggapan / Esai Online
-                                                        </label>
-                                                        {is_review ? (
-                                                            <div 
-                                                                className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm text-slate-800 leading-relaxed font-medium prose prose-sm max-w-none"
-                                                                dangerouslySetInnerHTML={{ __html: answers[q.id]?.essay_text || answers[q.id]?.answer_text || "(Tidak ada esai teks)" }}
-                                                            />
-                                                        ) : (
-                                                            <RichTextEditor
-                                                                value={typeof answers[q.id] === 'string' ? answers[q.id] : (answers[q.id]?.text || '')}
-                                                                onChange={(val) => handleTextChange(q.id, val)}
-                                                                placeholder="Ketik esai / jawaban lengkap Anda di sini..."
-                                                                minHeight="180px"
-                                                            />
-                                                        )}
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
-                                                            Unggah Berkas Lembar Jawaban / Scan (PDF/Docx/Foto)
-                                                        </label>
-                                                        {is_review ? (
-                                                            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
-                                                                <span className="text-xs font-bold text-slate-700">
-                                                                    {answers[q.id]?.file_path ? 'Berkas Telah Diunggah' : 'Tidak ada berkas diunggah'}
-                                                                </span>
-                                                                {answers[q.id]?.file_path && (
-                                                                    <a href={answers[q.id].file_path} target="_blank" className="text-xs font-bold text-indigo-600 hover:underline">
-                                                                        Unduh Berkas
-                                                                    </a>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="relative group">
-                                                                <input
-                                                                    type="file"
-                                                                    accept=".pdf,.doc,.docx,image/*"
-                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                                    onChange={(e) => handleFileSelect(q.id, e.target.files[0])}
-                                                                />
-                                                                <div className={`border-2 border-dashed rounded-2xl p-6 flex items-center justify-center gap-3 transition-all ${
-                                                                    answers[q.id] instanceof File
-                                                                        ? 'border-emerald-300 bg-emerald-50/50'
-                                                                        : 'border-slate-200 bg-slate-50/50 hover:border-indigo-300 hover:bg-indigo-50/30'
-                                                                }`}>
-                                                                    <Upload size={18} className={answers[q.id] instanceof File ? 'text-emerald-600' : 'text-slate-400'} />
-                                                                    <span className="text-xs font-bold text-slate-700">
-                                                                        {answers[q.id] instanceof File ? answers[q.id].name : 'Pilih File Answer Sheet (PDF, DOCX, JPG)'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <IeltsDigitalAnswerSheet
+                                                task={q}
+                                                answer={answers[q.id]}
+                                                onAnswerChange={(taskId, newAnswer) => {
+                                                    if (is_review) return;
+                                                    const updatedAnswers = {
+                                                        ...answers,
+                                                        [taskId]: newAnswer,
+                                                    };
+                                                    setData('answers', updatedAnswers);
+                                                }}
+                                                onFileSelect={handleFileSelect}
+                                                isReview={is_review}
+                                            />
                                         )}
 
                                         {/* MCQ Rendering */}
@@ -688,17 +609,23 @@ export default function Exam({
 
                         {/* Pagination Footer */}
                         <div className="mt-12 flex items-center justify-between border-t border-gray-100 pt-8 pb-20">
-                            <button
-                                onClick={() => setCurrentPageIndex((prev) => Math.max(0, prev - 1))}
-                                disabled={currentPageIndex === 0}
-                                className={`inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-2xl transition-all ${
-                                    currentPageIndex === 0
-                                        ? "opacity-0 invisible pointer-events-none"
-                                        : "bg-white text-gray-700 border border-gray-200 shadow-lg shadow-gray-200/50 hover:bg-gray-50 active:scale-95"
-                                }`}
-                            >
-                                <ChevronLeft size={18} /> Previous
-                            </button>
+                            {(() => {
+                                const prevIndex = currentPageIndex - 1;
+                                const isPrevLocked = isSectionTimer && prevIndex >= 0 && (questionMap.find(q => q.pageIndex === prevIndex)?.isLocked);
+                                return (
+                                    <button
+                                        onClick={() => setCurrentPageIndex(Math.max(0, currentPageIndex - 1))}
+                                        disabled={currentPageIndex === 0 || isPrevLocked}
+                                        className={`inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-2xl transition-all ${
+                                            currentPageIndex === 0 || isPrevLocked
+                                                ? "opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200"
+                                                : "bg-white text-gray-700 border border-gray-200 shadow-lg shadow-gray-200/50 hover:bg-gray-50 active:scale-95"
+                                        }`}
+                                    >
+                                        <ChevronLeft size={18} /> Previous {isPrevLocked ? '(Locked)' : ''}
+                                    </button>
+                                );
+                            })()}
 
                             {currentPageIndex < pages.length - 1 ? (
                                 <button

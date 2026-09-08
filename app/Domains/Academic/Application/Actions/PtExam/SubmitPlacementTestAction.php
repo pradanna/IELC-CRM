@@ -167,7 +167,7 @@ class SubmitPlacementTestAction
                         'pt_session_id' => $session->id,
                         'pt_ielts_task_id' => $task->id,
                         'essay_text' => $essayText,
-                        'file_path' => $filePath,
+                        'answer_file_path' => $filePath,
                     ]);
                 }
             } else {

@@ -98,13 +98,13 @@ class PtSessionController extends Controller
             $answers->put($answer->pt_ielts_task_id, [
                 'essay_text' => $answer->essay_text,
                 'answer_text' => $answer->essay_text,
-                'file_path' => $answer->file_path ? \Illuminate\Support\Facades\Storage::url($answer->file_path) : null,
+                'file_path' => ($answer->answer_file_path ?? $answer->file_path) ? \Illuminate\Support\Facades\Storage::url($answer->answer_file_path ?? $answer->file_path) : null,
                 'score_tr' => $answer->score_tr,
                 'score_cc' => $answer->score_cc,
                 'score_lr' => $answer->score_lr,
                 'score_gra' => $answer->score_gra,
                 'band_score' => $answer->band_score,
-                'evaluator_notes' => $answer->evaluator_notes,
+                'evaluator_notes' => $answer->teacher_notes ?? $answer->evaluator_notes,
             ]);
         }
 
