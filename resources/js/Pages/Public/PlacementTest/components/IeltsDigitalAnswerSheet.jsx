@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
     Headphones, BookOpen, PenTool, Mic, FileText, Music, 
-    ExternalLink, Upload, CheckCircle2, AlertCircle, Maximize2, 
+    ExternalLink, Upload, Download, CheckCircle2, AlertCircle, Maximize2, 
     Minimize2, ChevronDown, ChevronUp, Save, Eye, Sparkles
 } from 'lucide-react';
 import RichTextEditor from '@/Components/ui/RichTextEditor';
