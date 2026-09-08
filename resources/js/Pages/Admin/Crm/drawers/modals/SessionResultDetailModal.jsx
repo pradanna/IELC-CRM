@@ -121,12 +121,15 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
     };
 
     const handleSaveGrade = () => {
+        if (!session?.id) return;
         patch(route('admin.crm.pt-sessions.update-grade', session.id), {
             onSuccess: () => {
                 // We might want to refresh the local state or lead data
             }
         });
     };
+
+    if (!show && !session) return null;
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="screen">
@@ -218,7 +221,7 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                                 </div>
                                             </div>
                                             <a 
-                                                href={route('admin.crm.pt-sessions.download-writing-pdf', session.id)}
+                                                href={session?.id ? route('admin.crm.pt-sessions.download-writing-pdf', session.id) : '#'}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="mt-2 inline-flex items-center justify-center gap-2 w-full bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98]"
