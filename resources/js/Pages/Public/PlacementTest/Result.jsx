@@ -111,17 +111,22 @@ export default function Result({ session, exam, stats, ielts_modules = {} }) {
                                         <div className="mt-2 flex items-baseline gap-2">
                                             <span className="text-4xl font-black text-slate-900 tracking-tight">
                                                 {listeningData?.band_score !== null && listeningData?.band_score !== undefined
-                                                    ? `Band ${listeningData.band_score}`
-                                                    : 'Evaluating...'}
+                                                    ? `Band ${parseFloat(listeningData.band_score)}`
+                                                    : (listeningData?.has_attempted === false ? 'Not Attempted' : 'Evaluating...')}
                                             </span>
                                         </div>
 
-                                        {listeningData?.raw_score && (
+                                        {listeningData?.raw_score ? (
                                             <div className="mt-3 pt-3 border-t border-sky-100 flex items-center justify-between text-xs font-bold text-slate-500">
                                                 <span>Raw Accuracy:</span>
                                                 <span className="text-sky-700 font-black">
                                                     {listeningData.raw_score.correct} / {listeningData.raw_score.total} Correct
                                                 </span>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-3 pt-3 border-t border-sky-100/60 flex items-center justify-between text-xs font-semibold text-slate-400">
+                                                <span>40 Questions</span>
+                                                <span>Objective Graded</span>
                                             </div>
                                         )}
                                     </div>
@@ -141,17 +146,22 @@ export default function Result({ session, exam, stats, ielts_modules = {} }) {
                                         <div className="mt-2 flex items-baseline gap-2">
                                             <span className="text-4xl font-black text-slate-900 tracking-tight">
                                                 {readingData?.band_score !== null && readingData?.band_score !== undefined
-                                                    ? `Band ${readingData.band_score}`
-                                                    : 'Evaluating...'}
+                                                    ? `Band ${parseFloat(readingData.band_score)}`
+                                                    : (readingData?.has_attempted === false ? 'Not Attempted' : 'Evaluating...')}
                                             </span>
                                         </div>
 
-                                        {readingData?.raw_score && (
+                                        {readingData?.raw_score ? (
                                             <div className="mt-3 pt-3 border-t border-emerald-100 flex items-center justify-between text-xs font-bold text-slate-500">
                                                 <span>Raw Accuracy:</span>
                                                 <span className="text-emerald-700 font-black">
                                                     {readingData.raw_score.correct} / {readingData.raw_score.total} Correct
                                                 </span>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-3 pt-3 border-t border-emerald-100/60 flex items-center justify-between text-xs font-semibold text-slate-400">
+                                                <span>40 Questions</span>
+                                                <span>Objective Graded</span>
                                             </div>
                                         )}
                                     </div>

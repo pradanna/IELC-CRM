@@ -133,18 +133,21 @@ class PublicPlacementTestController extends Controller
         } elseif ($category === 'IELTS') {
             $correctAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::where('pt_session_id', $session->id)
                 ->count();
+            
+            $session->load(['ptExam.ieltsTasks']);
             $ieltsAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::with('ptIeltsTask')
                 ->where('pt_session_id', $session->id)
-                ->get();
+                ->get()
+                ->keyBy('pt_ielts_task_id');
             
             $ieltsModules = [];
-            foreach ($ieltsAnswers as $ans) {
-                $task = $ans->ptIeltsTask;
-                $skill = $task?->skill_type ?? 'other';
-                
+            foreach ($session->ptExam->ieltsTasks as $task) {
+                $skill = $task->skill_type ?? 'other';
+                $ans = $ieltsAnswers->get($task->id);
+
                 // Parse raw score from teacher notes e.g. "Auto-graded: 32/40 correct (Band 7.5)"
                 $rawScore = null;
-                if ($ans->teacher_notes && preg_match('/Auto-graded:\s*(\d+)\/(\d+)/', $ans->teacher_notes, $matches)) {
+                if ($ans && $ans->teacher_notes && preg_match('/Auto-graded:\s*(\d+)\/(\d+)/', $ans->teacher_notes, $matches)) {
                     $rawScore = [
                         'correct' => (int)$matches[1],
                         'total' => (int)$matches[2],
@@ -152,12 +155,13 @@ class PublicPlacementTestController extends Controller
                 }
 
                 $ieltsModules[$skill] = [
-                    'title' => $task?->title ?? ucfirst($skill),
+                    'title' => $task->title ?? ucfirst($skill),
                     'skill_type' => $skill,
-                    'band_score' => $ans->band_score,
+                    'band_score' => $ans?->band_score,
                     'raw_score' => $rawScore,
                     'is_auto_graded' => in_array($skill, ['listening', 'reading']),
-                    'status' => $ans->band_score !== null ? 'graded' : 'pending_review',
+                    'has_attempted' => $ans !== null,
+                    'status' => $ans?->band_score !== null ? 'graded' : ($ans ? 'pending_review' : 'not_attempted'),
                 ];
             }
         } else {
