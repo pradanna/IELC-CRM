@@ -131,13 +131,13 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
                 const sectionName = currentTimer.title || 'Sesi ini';
 
                 if (nextPageIndex < (pages?.length || 0)) {
-                    setSectionExpiryNotice(`Waktu untuk "${sectionName}" telah habis. Otomatis beralih ke sesi berikutnya.`);
+                    setSectionExpiryNotice(`Time for "${sectionName}" has expired. Automatically moving to the next section.`);
                     setCurrentPageIndex(nextPageIndex);
                     // auto dismiss notice after 6 seconds
                     setTimeout(() => setSectionExpiryNotice(null), 6000);
                 } else {
                     // All sections finished!
-                    setSectionExpiryNotice(`Waktu seluruh sesi ujian telah selesai.`);
+                    setSectionExpiryNotice(`All test sections have concluded.`);
                     handleFinish();
                 }
             }
@@ -291,7 +291,7 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
 
     const navigateToPage = (targetPageIndex) => {
         if (!canNavigateToPage(targetPageIndex)) {
-            alert("Sesi tersebut sudah berakhir dan terkunci. Anda tidak dapat mengubah jawaban sesi yang sudah lewat.");
+            alert("This section has expired and is locked. You cannot modify answers for previous sections.");
             return;
         }
         setCurrentPageIndex(targetPageIndex);

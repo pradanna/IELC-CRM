@@ -133,7 +133,7 @@ export default function IeltsDigitalAnswerSheet({
                         </div>
                         <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                {skill.toUpperCase()} MODULE • {task.duration_minutes ? `${task.duration_minutes} MENIT` : 'DIAGNOSTIC'}
+                                {skill.toUpperCase()} MODULE • {task.duration_minutes ? `${task.duration_minutes} MINS` : 'DIAGNOSTIC'}
                             </span>
                             <h2 className="text-lg font-black text-slate-900 tracking-tight leading-snug">
                                 {task.title}
@@ -144,7 +144,7 @@ export default function IeltsDigitalAnswerSheet({
                     {/* Progress Indicator */}
                     {isObjectiveModule && (
                         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-black">
-                            <span className="text-slate-500">Terjawab:</span>
+                            <span className="text-slate-500">Answered:</span>
                             <span className={`font-black ${filledGridCount === 40 ? 'text-emerald-600' : 'text-indigo-600'}`}>
                                 {filledGridCount} / 40
                             </span>
@@ -153,9 +153,9 @@ export default function IeltsDigitalAnswerSheet({
 
                     {isWritingModule && (
                         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-black">
-                            <span className="text-slate-500">Jumlah Kata:</span>
+                            <span className="text-slate-500">Word Count:</span>
                             <span className={`font-black ${wordCount >= minWordsTarget ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                {wordCount} {minWordsTarget ? `/ ${minWordsTarget}` : 'kata'}
+                                {wordCount} {minWordsTarget ? `/ ${minWordsTarget}` : 'words'}
                             </span>
                         </div>
                     )}
@@ -179,8 +179,8 @@ export default function IeltsDigitalAnswerSheet({
                                 <Music size={18} className="text-white" />
                             </div>
                             <div>
-                                <h3 className="text-xs font-black uppercase tracking-wider">Audio Track Listening</h3>
-                                <p className="text-[10px] text-sky-100 font-medium">Putar audio satu kali sambil mengisi lembar jawaban di bawah</p>
+                                <h3 className="text-xs font-black uppercase tracking-wider">Listening Audio Track</h3>
+                                <p className="text-[10px] text-sky-100 font-medium">Play the audio once while completing the answer sheet below</p>
                             </div>
                         </div>
                         <a 
@@ -189,7 +189,7 @@ export default function IeltsDigitalAnswerSheet({
                             rel="noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all"
                         >
-                            <span>Buka Audio Terpisah</span>
+                            <span>Open Audio Separately</span>
                             <ExternalLink size={13} />
                         </a>
                     </div>
@@ -199,7 +199,7 @@ export default function IeltsDigitalAnswerSheet({
                         src={task.audio_path}
                         className="w-full h-10 rounded-xl"
                     >
-                        Browser Anda tidak mendukung audio langsung. Silakan klik tombol 'Buka Audio Terpisah'.
+                        Your browser does not support direct audio playback. Please click 'Open Audio Separately'.
                     </audio>
                 </div>
             )}
@@ -213,7 +213,7 @@ export default function IeltsDigitalAnswerSheet({
                             <div className="flex items-center gap-2">
                                 <FileText size={16} className="text-rose-500" />
                                 <span className="text-xs font-black uppercase tracking-wider text-slate-800">
-                                    Buku Soal (Question Booklet PDF)
+                                    Question Booklet PDF
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -221,10 +221,10 @@ export default function IeltsDigitalAnswerSheet({
                                     type="button"
                                     onClick={() => setIsPdfExpanded(!isPdfExpanded)}
                                     className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all text-xs font-bold flex items-center gap-1"
-                                    title={isPdfExpanded ? "Perkecil Tampilan" : "Perbesar Penuh"}
+                                    title={isPdfExpanded ? "Standard View" : "Full Screen View"}
                                 >
                                     {isPdfExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                                    <span className="hidden sm:inline">{isPdfExpanded ? 'Tampilan Normal' : 'Layar Penuh'}</span>
+                                    <span className="hidden sm:inline">{isPdfExpanded ? 'Standard View' : 'Full Screen'}</span>
                                 </button>
                                 {task.question_pdf_path && (
                                     <a
@@ -234,7 +234,7 @@ export default function IeltsDigitalAnswerSheet({
                                         className="p-1.5 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all text-xs font-bold flex items-center gap-1"
                                     >
                                         <ExternalLink size={14} />
-                                        <span className="hidden sm:inline">Buka Tab Baru</span>
+                                        <span className="hidden sm:inline">Open in New Tab</span>
                                     </a>
                                 )}
                             </div>
@@ -251,7 +251,7 @@ export default function IeltsDigitalAnswerSheet({
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-slate-400">
                                     <FileText size={48} className="text-slate-600 mb-3" />
-                                    <p className="text-sm font-bold">Dokumen soal belum diunggah</p>
+                                    <p className="text-sm font-bold">No question document uploaded</p>
                                 </div>
                             )}
                         </div>
@@ -266,7 +266,7 @@ export default function IeltsDigitalAnswerSheet({
                                         Digital Answer Sheet (1–40)
                                     </h3>
                                     <p className="text-[10px] text-slate-400 font-medium">
-                                        Ketik jawaban langsung di kotak bernomor di bawah
+                                        Type your answers directly into the numbered slots below
                                     </p>
                                 </div>
                                 <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100">
@@ -324,14 +324,14 @@ export default function IeltsDigitalAnswerSheet({
 
                                             {isReview ? (
                                                 <div className="flex-1 text-xs font-bold text-slate-900 bg-white px-3 py-2 rounded-xl border border-slate-200">
-                                                    {value || <span className="text-slate-300 italic">(Kosong)</span>}
+                                                    {value || <span className="text-slate-300 italic">(Blank)</span>}
                                                 </div>
                                             ) : (
                                                 <input
                                                     type="text"
                                                     value={value}
                                                     onChange={(e) => handleGridItemChange(slotNum, e.target.value)}
-                                                    placeholder={`Jawaban No. ${slotNum}`}
+                                                    placeholder={`Answer for No. ${slotNum}`}
                                                     className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase"
                                                 />
                                             )}
@@ -343,7 +343,7 @@ export default function IeltsDigitalAnswerSheet({
                             {/* Alternative File Upload Option */}
                             <div className="pt-3 border-t border-slate-100">
                                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                                    Atau Unggah Berkas Jawaban / Scan (Opsional)
+                                    Or Upload Scanned/PDF Answer Sheet (Optional)
                                 </label>
                                 {isReview ? (
                                     parsedData.filePath && (
@@ -353,7 +353,7 @@ export default function IeltsDigitalAnswerSheet({
                                             rel="noreferrer"
                                             className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:underline"
                                         >
-                                            <FileText size={14} /> Lihat Berkas Unggahan
+                                            <FileText size={14} /> View Uploaded File
                                         </a>
                                     )
                                 ) : (
@@ -367,7 +367,7 @@ export default function IeltsDigitalAnswerSheet({
                                         <div className="border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 rounded-2xl p-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 transition-all cursor-pointer">
                                             <Upload size={14} className="text-slate-400" />
                                             <span className="truncate">
-                                                {answer instanceof File ? answer.name : 'Upload File / Foto Jawaban'}
+                                                {answer instanceof File ? answer.name : 'Upload File / Photo of Answer Sheet'}
                                             </span>
                                         </div>
                                     </div>
@@ -386,7 +386,7 @@ export default function IeltsDigitalAnswerSheet({
                         <div className="flex items-center justify-between px-2">
                             <span className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
                                 <FileText size={16} className="text-amber-500" />
-                                Lembar Soal & Grafik
+                                Question Booklet & Prompt
                             </span>
                             {task.question_pdf_path && (
                                 <a
@@ -395,7 +395,7 @@ export default function IeltsDigitalAnswerSheet({
                                     rel="noreferrer"
                                     className="p-1 rounded-xl text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center gap-1"
                                 >
-                                    <ExternalLink size={13} /> Tab Baru
+                                    <ExternalLink size={13} /> New Tab
                                 </a>
                             )}
                         </div>
@@ -410,7 +410,7 @@ export default function IeltsDigitalAnswerSheet({
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-slate-400">
                                     <PenTool size={48} className="text-slate-600 mb-3" />
-                                    <p className="text-sm font-bold">Instruksi tertera pada bagian atas halaman</p>
+                                    <p className="text-sm font-bold">Instructions are displayed at the top of the page</p>
                                 </div>
                             )}
                         </div>
@@ -422,10 +422,10 @@ export default function IeltsDigitalAnswerSheet({
                             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                 <div>
                                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                                        Ketik Esai / Tanggapan Anda
+                                        Type Your Essay / Response
                                     </h3>
                                     <p className="text-[10px] text-slate-400 font-medium">
-                                        Minimal {minWordsTarget} kata • Gaya formal akademik
+                                        Minimum {minWordsTarget} words • Formal academic style
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -434,7 +434,7 @@ export default function IeltsDigitalAnswerSheet({
                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                             : 'bg-amber-50 text-amber-700 border-amber-200'
                                     }`}>
-                                        {wordCount} / {minWordsTarget} kata
+                                        {wordCount} / {minWordsTarget} words
                                     </span>
                                 </div>
                             </div>
@@ -442,13 +442,13 @@ export default function IeltsDigitalAnswerSheet({
                             {isReview ? (
                                 <div 
                                     className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm text-slate-800 leading-relaxed font-medium prose prose-sm max-w-none min-h-[300px]"
-                                    dangerouslySetInnerHTML={{ __html: essayText || "(Tidak ada teks jawaban diketik)" }}
+                                    dangerouslySetInnerHTML={{ __html: essayText || "(No response text entered)" }}
                                 />
                             ) : (
                                 <RichTextEditor
                                     value={essayText}
                                     onChange={handleEssayChange}
-                                    placeholder="Mulai ketik esai IELTS Anda di sini..."
+                                    placeholder="Start typing your IELTS essay response here..."
                                     minHeight="350px"
                                 />
                             )}
@@ -456,7 +456,7 @@ export default function IeltsDigitalAnswerSheet({
                             {/* File Upload Option */}
                             <div className="pt-3 border-t border-slate-100">
                                 <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                                    Atau Unggah Berkas Dokumen Word/PDF (Opsional)
+                                    Or Upload Word/PDF Document (Optional)
                                 </label>
                                 {isReview ? (
                                     parsedData.filePath && (
@@ -466,7 +466,7 @@ export default function IeltsDigitalAnswerSheet({
                                             rel="noreferrer"
                                             className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:underline"
                                         >
-                                            <FileText size={14} /> Unduh Berkas Jawaban
+                                            <FileText size={14} /> Download Response File
                                         </a>
                                     )
                                 ) : (
@@ -480,7 +480,7 @@ export default function IeltsDigitalAnswerSheet({
                                         <div className="border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 rounded-2xl p-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 transition-all cursor-pointer">
                                             <Upload size={14} className="text-slate-400" />
                                             <span className="truncate">
-                                                {answer instanceof File ? answer.name : 'Upload File Tambahan (DOCX/PDF)'}
+                                                {answer instanceof File ? answer.name : 'Upload Supplementary File (DOCX/PDF)'}
                                             </span>
                                         </div>
                                     </div>
@@ -498,13 +498,13 @@ export default function IeltsDigitalAnswerSheet({
                         <Mic size={32} />
                     </div>
                     <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                        Wawancara Speaking Bersama Guru IELC
+                        Speaking Interview with IELC Certified Examiner
                     </h3>
                     <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                        Sesi Speaking IELTS berdurasi 11–14 menit dan akan diselenggarakan secara live tatap muka online dengan guru examiner kami pada jadwal janji konsultasi yang telah ditentukan.
+                        The IELTS Speaking test is 11–14 minutes long and will be conducted live online with one of our certified examiners during your scheduled consultation appointment.
                     </p>
                     <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100 text-xs font-bold text-purple-900">
-                        Tidak ada jawaban tertulis yang perlu dikirimkan untuk sesi Speaking pada halaman ini.
+                        No written submission is required for the Speaking section on this page.
                     </div>
                 </div>
             )}

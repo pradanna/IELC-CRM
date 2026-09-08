@@ -103,7 +103,7 @@ export default function Exam({
                 key={q.number}
                 onClick={() => setCurrentPageIndex(q.pageIndex)}
                 disabled={isLocked}
-                title={isLocked ? "Sesi ini telah terkunci karena waktu habis" : undefined}
+                title={isLocked ? "This section has been locked because time expired" : undefined}
                 className={`h-11 w-full flex items-center justify-center rounded-xl text-xs font-bold border transition-all duration-200 ${
                     isCurrentPage
                         ? "ring-4 ring-primary-500/10 border-primary-500 shadow-md transform scale-105 z-10"
@@ -218,7 +218,7 @@ export default function Exam({
                             <div className="mb-8 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800">
                                 <AlertCircle size={20} className="shrink-0 text-rose-600" />
                                 <div className="text-xs">
-                                    <span className="font-bold uppercase tracking-wider">Sesi Terkunci:</span> Waktu pengerjaan untuk sesi ini telah habis. Jawaban pada sesi ini telah tersimpan otomatis dan tidak dapat diubah lagi.
+                                    <span className="font-bold uppercase tracking-wider">Section Locked:</span> Time for this section has expired. Your responses have been automatically saved and cannot be edited.
                                 </div>
                             </div>
                         )}
