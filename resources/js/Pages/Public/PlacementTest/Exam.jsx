@@ -1,11 +1,12 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
-import { Clock, ChevronLeft, ChevronRight, Check, AlertCircle, FileText, ExternalLink, Music, Download } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Check, AlertCircle, FileText, ExternalLink, Music, Download, Maximize, Minimize } from "lucide-react";
 import { usePlacementTest } from "./hooks/usePlacementTest";
 import { Upload, File as FileIcon, Type } from "lucide-react";
 import KidsCanvasQuestion from "./components/KidsCanvasQuestion";
 import KidsImagePinQuestion from "./components/KidsImagePinQuestion";
 import KidsFreeformCanvasQuestion from "./components/KidsFreeformCanvasQuestion";
+import IeltsDigitalAnswerSheet from "./components/IeltsDigitalAnswerSheet";
 import RichTextEditor from "@/Components/ui/RichTextEditor";
 
 export default function Exam({
@@ -16,17 +17,47 @@ export default function Exam({
     is_review = false,
     user_answers = {},
 }) {
-    const [showFinalStep, setShowFinalStep] = React.useState(false);
+    const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((err) => {
+                console.error("Error attempting to enable fullscreen:", err);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
+
+    React.useEffect(() => {
+        const handleFsChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener("fullscreenchange", handleFsChange);
+        return () => document.removeEventListener("fullscreenchange", handleFsChange);
+    }, []);
     const {
         currentPageIndex,
         setCurrentPageIndex,
+        lockCurrentSectionAndAdvance,
+        sectionTimers,
         mainRef,
         timeLeft,
+        activeSectionTimer,
+        isSectionTimer,
+        isCurrentSectionLocked,
+        sectionExpiryNotice,
+        setSectionExpiryNotice,
         formatTime,
         questionMap,
         handleOptionSelect,
         handleTextChange,
         handleFileSelect,
+        handleCustomAnswer,
         confirmFinish,
         getTimerColorClass,
         saveStatus,
@@ -34,7 +65,10 @@ export default function Exam({
         summaryFile,
         setData,
         processing,
-    } = usePlacementTest({ session, pages, isReview: is_review, userAnswers: user_answers });
+    } = usePlacementTest({ session, pages, isReview: is_review, userAnswers: user_answers, examCategory: exam_category });
+
+    // Modal state for confirming section transition & locking previous section
+    const [pendingNextPage, setPendingNextPage] = React.useState(null);
 
     const activePage = (pages && pages.length > 0) ? pages[currentPageIndex] : null;
 
@@ -66,6 +100,7 @@ export default function Exam({
     const qMapIndicator = (q) => {
         const isAnswered = answers[q.id] !== undefined && answers[q.id] !== null && answers[q.id] !== '';
         const isCurrentPage = currentPageIndex === q.pageIndex;
+        const isLocked = q.isLocked;
 
         let buttonClass = "";
         if (is_review) {
@@ -83,6 +118,8 @@ export default function Exam({
             } else {
                 buttonClass = "bg-blue-100 text-blue-800 border-blue-300";
             }
+        } else if (isLocked) {
+            buttonClass = "bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed";
         } else {
             buttonClass = isAnswered
                 ? "bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100 shadow-sm"
@@ -93,6 +130,8 @@ export default function Exam({
             <button
                 key={q.number}
                 onClick={() => setCurrentPageIndex(q.pageIndex)}
+                disabled={isLocked}
+                title={isLocked ? "This section has been locked because time expired" : undefined}
                 className={`h-11 w-full flex items-center justify-center rounded-xl text-xs font-bold border transition-all duration-200 ${
                     isCurrentPage
                         ? "ring-4 ring-primary-500/10 border-primary-500 shadow-md transform scale-105 z-10"
@@ -114,14 +153,56 @@ export default function Exam({
                     <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white shadow-md shadow-primary-500/20">
                         <Check size={18} strokeWidth={3} />
                     </div>
-                    <div className="font-bold text-gray-900 tracking-tight">
-                        {exam_title}
+                    <div>
+                        <div className="font-bold text-gray-900 tracking-tight leading-none">
+                            {exam_title}
+                        </div>
+                        {isSectionTimer && activeSectionTimer && (
+                            <div className="text-[10px] font-bold text-primary-600 uppercase tracking-wider mt-1">
+                                {activeSectionTimer.title} ({activeSectionTimer.skillType})
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-mono text-sm font-bold shadow-sm transition-all duration-300 ${getTimerColorClass()}`}>
-                    <Clock size={16} />
-                    <span>{formatTime(timeLeft)}</span>
+                <div className="flex items-center gap-3">
+                    {/* Real-time Save Indicator */}
+                    {!is_review && (
+                        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-500">
+                            <span className={`w-2 h-2 rounded-full transition-all ${
+                                saveStatus === 'saving' 
+                                    ? 'bg-amber-400 animate-ping' 
+                                    : 'bg-emerald-500'
+                            }`} />
+                            <span>{saveStatus === 'saving' ? 'Saving locally...' : 'Auto-saved'}</span>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={toggleFullscreen}
+                        type="button"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold shadow-sm transition-all active:scale-95"
+                        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                    >
+                        {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
+                        <span className="hidden md:inline">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
+                    </button>
+
+                    {isSectionTimer && activeSectionTimer?.skillType === 'speaking' ? (
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 font-mono text-xs font-black uppercase tracking-wider shadow-sm">
+                            <span>Live Interview</span>
+                        </div>
+                    ) : (
+                        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-mono text-sm font-bold shadow-sm transition-all duration-300 ${getTimerColorClass()}`}>
+                            <Clock size={16} />
+                            <span>{formatTime(timeLeft)}</span>
+                            {isSectionTimer && (
+                                <span className="text-[10px] uppercase font-bold opacity-75 ml-1 border-l pl-2 border-current">
+                                    Section Timer
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -160,62 +241,38 @@ export default function Exam({
                 </aside>
 
                 {/* Main Content */}
-                <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-8">
-                    <div className="max-w-3xl mx-auto py-12 pb-32">
-                        {/* Final Submission Step (IELTS) */}
-                        {showFinalStep ? (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="mb-10 bg-white border-2 border-primary-100 border-dashed rounded-[32px] p-12 text-center shadow-2xl shadow-primary-500/5">
-                                    <div className="w-20 h-20 bg-primary-600 text-white rounded-[24px] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-primary-500/40">
-                                        <Upload size={32} />
+                <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-4 sm:px-8">
+                    <div className={`${exam_category === 'IELTS' ? 'max-w-[1500px]' : 'max-w-3xl'} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}>
+                        {/* Section Expiry Notice Banner */}
+                        {sectionExpiryNotice && (
+                            <div className="mb-8 p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-amber-900 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                        <AlertCircle size={18} />
                                     </div>
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Final Step: Upload Your Work</h3>
-                                    <p className="text-slate-500 text-sm max-w-sm mx-auto mb-10 font-medium">
-                                        Please upload the document or zip file containing all your answers for this assessment.
+                                    <p className="text-xs font-bold leading-snug">
+                                        {sectionExpiryNotice}
                                     </p>
+                                </div>
+                                <button 
+                                    onClick={() => setSectionExpiryNotice(null)}
+                                    className="text-xs font-bold text-amber-700 hover:text-amber-900 px-2 py-1"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
 
-                                    <div className="relative max-w-md mx-auto group">
-                                        <input 
-                                            type="file" 
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                            onChange={(e) => setData('summary_file', e.target.files[0])}
-                                        />
-                                        <div className={`border-2 border-dashed rounded-[24px] p-8 flex flex-col items-center gap-3 transition-all ${
-                                            summaryFile ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-slate-50 group-hover:border-primary-300 group-hover:bg-primary-50/50'
-                                        }`}>
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
-                                                summaryFile ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'
-                                            }`}>
-                                                {summaryFile ? <Check size={20} /> : <FileText size={20} />}
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
-                                                    {summaryFile ? summaryFile.name : 'Select Your Work Bundle'}
-                                                </p>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">PDF, ZIP, or DOCX (Max 20MB)</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-12 flex items-center justify-center gap-4">
-                                        <button 
-                                            onClick={() => setShowFinalStep(false)}
-                                            className="px-8 py-3.5 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-all"
-                                        >
-                                            Go Back
-                                        </button>
-                                        <button 
-                                            disabled={!summaryFile || processing}
-                                            onClick={confirmFinish}
-                                            className="px-10 py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 transition-all active:scale-[0.98]"
-                                        >
-                                            Submit Everything
-                                        </button>
-                                    </div>
+                        {/* Current Section Locked Warning (if expired) */}
+                        {isCurrentSectionLocked && !is_review && (
+                            <div className="mb-8 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800">
+                                <AlertCircle size={20} className="shrink-0 text-rose-600" />
+                                <div className="text-xs">
+                                    <span className="font-bold uppercase tracking-wider">Section Locked:</span> Time for this section has expired. Your responses have been automatically saved and cannot be edited.
                                 </div>
                             </div>
-                        ) : (
-                        <>
+                        )}
+
                         {/* Group Header (if any) */}
                         {activePage.type === "group" && (
                             <div className="mb-10 bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
@@ -299,198 +356,58 @@ export default function Exam({
                         )}
 
                         {/* Questions */}
-                        {activePage.questions.map((q) => (
-                            <div
-                                key={q.id}
-                                className="mb-8 bg-white border border-gray-200 shadow-sm rounded-3xl p-8 transition-all hover:shadow-gray-200/50"
-                            >
-                                <div className="flex gap-6">
-                                    <div className="shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-gray-900/10">
-                                        {q.number}
+                        {activePage.questions.map((q) => {
+                            if (q.type === 'ielts_task') {
+                                return (
+                                    <div key={q.id} className="mb-8">
+                                        <IeltsDigitalAnswerSheet
+                                            task={q}
+                                            answer={answers[q.id]}
+                                            onAnswerChange={(taskId, newAnswer) => {
+                                                if (is_review) return;
+                                                handleCustomAnswer(taskId, newAnswer);
+                                            }}
+                                            onFileSelect={handleFileSelect}
+                                            isReview={is_review}
+                                        />
                                     </div>
-                                    <div className="flex-1 pt-1">
-                                        <p className="text-lg font-bold text-gray-900 mb-4 leading-snug">
-                                            {q.text}
-                                        </p>
+                                );
+                            }
 
-                                        {/* Question-Level Audio Player */}
-                                        {q.audio_path && (
-                                            <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-2xl p-3.5 flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                                                    <Music size={16} />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
-                                                        Listening Audio Question
-                                                    </p>
-                                                    <audio controls className="w-full h-9">
-                                                        <source src={q.audio_path} type="audio/mpeg" />
-                                                        Browser Anda tidak mendukung pemutaran audio.
-                                                    </audio>
-                                                </div>
-                                            </div>
-                                        )}
-                                        
-                                        {/* Question Content */}
-                                        {/* IELTS Task Multi-Modal (Audio, PDF Soal, Answer Sheet, Essay Input & Upload) */}
-                                        {q.type === 'ielts_task' && (
-                                            <div className="space-y-6">
-                                                {/* Description / Instructions (Rendered HTML) */}
-                                                {q.description && (
-                                                    <div 
-                                                        className="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-5 text-xs text-indigo-950 font-medium leading-relaxed prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-indigo-950 prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5"
-                                                        dangerouslySetInnerHTML={{ __html: q.description }}
-                                                    />
-                                                )}
+                            return (
+                                <div
+                                    key={q.id}
+                                    className="mb-8 bg-white border border-gray-200 shadow-sm rounded-3xl p-8 transition-all hover:shadow-gray-200/50"
+                                >
+                                    <div className="flex gap-6">
+                                        <div className="shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-gray-900/10">
+                                            {q.number}
+                                        </div>
+                                        <div className="flex-1 pt-1">
+                                            <p className="text-lg font-bold text-gray-900 mb-4 leading-snug">
+                                                {q.text}
+                                            </p>
 
-                                                {/* Audio Player (Listening) with Direct Player & Open Link */}
-                                                {q.audio_path && (
-                                                    <div className="bg-sky-50/90 border border-sky-200 rounded-2xl p-4 flex flex-col gap-3 shadow-xs">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                                                                    <Music size={16} />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs font-black uppercase tracking-wider text-sky-950 leading-none">
-                                                                        Audio Listening Track
-                                                                    </p>
-                                                                    <p className="text-[10px] font-medium text-sky-700 mt-0.5">
-                                                                        Putar audio langsung di bawah atau buka di tab baru
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <a
-                                                                href={q.audio_path}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-sky-200 text-sky-700 text-xs font-bold hover:bg-sky-100/70 transition-all shadow-xs"
-                                                            >
-                                                                <span>Buka Audio File</span>
-                                                                <ExternalLink size={13} />
-                                                            </a>
-                                                        </div>
-                                                        <div className="pt-1">
-                                                            <audio 
-                                                                controls 
-                                                                preload="auto"
-                                                                src={q.audio_path} 
-                                                                className="w-full h-10 rounded-xl"
-                                                            >
-                                                                Browser Anda tidak mendukung pemutar audio langsung. Silakan klik tombol Buka Audio File di atas.
-                                                            </audio>
-                                                        </div>
+                                            {/* Question-Level Audio Player */}
+                                            {q.audio_path && (
+                                                <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-2xl p-3.5 flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                                        <Music size={16} />
                                                     </div>
-                                                )}
-
-                                                {/* Downloadable PDF Resources (Buku Soal & Answer Sheet) */}
-                                                {(q.question_pdf_path || q.answer_sheet_pdf_path) && (
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                                        {q.question_pdf_path && (
-                                                            <a
-                                                                href={q.question_pdf_path}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="flex items-center justify-between p-4 rounded-2xl bg-white border border-rose-200/80 hover:border-rose-400 hover:shadow-md transition-all group"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                                                                        <FileText size={20} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-xs font-black text-slate-900 group-hover:text-rose-600 transition-colors">Buku Soal (PDF)</p>
-                                                                        <p className="text-[10px] font-medium text-slate-400">Klik untuk membaca / unduh soal</p>
-                                                                    </div>
-                                                                </div>
-                                                                <ExternalLink size={16} className="text-slate-400 group-hover:text-rose-600" />
-                                                            </a>
-                                                        )}
-
-                                                        {q.answer_sheet_pdf_path && (
-                                                            <a
-                                                                href={q.answer_sheet_pdf_path}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="flex items-center justify-between p-4 rounded-2xl bg-white border border-emerald-200/80 hover:border-emerald-400 hover:shadow-md transition-all group"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                                                                        <FileText size={20} />
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-xs font-black text-slate-900 group-hover:text-emerald-600 transition-colors">Template Answer Sheet (PDF)</p>
-                                                                        <p className="text-[10px] font-medium text-slate-400">Klik untuk membuka lembar jawaban di tab baru</p>
-                                                                    </div>
-                                                                </div>
-                                                                <ExternalLink size={16} className="text-slate-400 group-hover:text-emerald-600" />
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Candidate Response: Essay Text Input AND/OR File Upload */}
-                                                <div className="space-y-4 pt-2 border-t border-slate-100">
-                                                    <div className="space-y-2">
-                                                        <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
-                                                            Ketik Tanggapan / Esai Online
-                                                        </label>
-                                                        {is_review ? (
-                                                            <div 
-                                                                className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm text-slate-800 leading-relaxed font-medium prose prose-sm max-w-none"
-                                                                dangerouslySetInnerHTML={{ __html: answers[q.id]?.essay_text || answers[q.id]?.answer_text || "(Tidak ada esai teks)" }}
-                                                            />
-                                                        ) : (
-                                                            <RichTextEditor
-                                                                value={typeof answers[q.id] === 'string' ? answers[q.id] : (answers[q.id]?.text || '')}
-                                                                onChange={(val) => handleTextChange(q.id, val)}
-                                                                placeholder="Ketik esai / jawaban lengkap Anda di sini..."
-                                                                minHeight="180px"
-                                                            />
-                                                        )}
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
-                                                            Unggah Berkas Lembar Jawaban / Scan (PDF/Docx/Foto)
-                                                        </label>
-                                                        {is_review ? (
-                                                            <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
-                                                                <span className="text-xs font-bold text-slate-700">
-                                                                    {answers[q.id]?.file_path ? 'Berkas Telah Diunggah' : 'Tidak ada berkas diunggah'}
-                                                                </span>
-                                                                {answers[q.id]?.file_path && (
-                                                                    <a href={answers[q.id].file_path} target="_blank" className="text-xs font-bold text-indigo-600 hover:underline">
-                                                                        Unduh Berkas
-                                                                    </a>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="relative group">
-                                                                <input
-                                                                    type="file"
-                                                                    accept=".pdf,.doc,.docx,image/*"
-                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                                    onChange={(e) => handleFileSelect(q.id, e.target.files[0])}
-                                                                />
-                                                                <div className={`border-2 border-dashed rounded-2xl p-6 flex items-center justify-center gap-3 transition-all ${
-                                                                    answers[q.id] instanceof File
-                                                                        ? 'border-emerald-300 bg-emerald-50/50'
-                                                                        : 'border-slate-200 bg-slate-50/50 hover:border-indigo-300 hover:bg-indigo-50/30'
-                                                                }`}>
-                                                                    <Upload size={18} className={answers[q.id] instanceof File ? 'text-emerald-600' : 'text-slate-400'} />
-                                                                    <span className="text-xs font-bold text-slate-700">
-                                                                        {answers[q.id] instanceof File ? answers[q.id].name : 'Pilih File Answer Sheet (PDF, DOCX, JPG)'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        )}
+                                                    <div className="flex-1">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
+                                                            Listening Audio Question
+                                                        </p>
+                                                        <audio controls className="w-full h-9">
+                                                            <source src={q.audio_path} type="audio/mpeg" />
+                                                            Browser Anda tidak mendukung pemutaran audio.
+                                                        </audio>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        {/* MCQ Rendering */}
-                                        {q.type === 'mcq' && (
+                                            {/* MCQ Rendering */}
+                                            {q.type === 'mcq' && (
                                             <div className="grid grid-cols-1 gap-3">
                                                 {q.options.map((opt, idx) => {
                                                     const isSelected = is_review 
@@ -679,48 +596,65 @@ export default function Exam({
                                                 )}
                                             </div>
                                         )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                        </>
-                        )}
+                            );
+                        })}
 
                         {/* Pagination Footer */}
                         <div className="mt-12 flex items-center justify-between border-t border-gray-100 pt-8 pb-20">
-                            <button
-                                onClick={() => setCurrentPageIndex((prev) => Math.max(0, prev - 1))}
-                                disabled={currentPageIndex === 0}
-                                className={`inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-2xl transition-all ${
-                                    currentPageIndex === 0
-                                        ? "opacity-0 invisible pointer-events-none"
-                                        : "bg-white text-gray-700 border border-gray-200 shadow-lg shadow-gray-200/50 hover:bg-gray-50 active:scale-95"
-                                }`}
-                            >
-                                <ChevronLeft size={18} /> Previous
-                            </button>
+                            {(() => {
+                                const prevIndex = currentPageIndex - 1;
+                                const isPrevLocked = isSectionTimer && prevIndex >= 0 && (questionMap.find(q => q.pageIndex === prevIndex)?.isLocked);
+                                return (
+                                    <button
+                                        onClick={() => setCurrentPageIndex(Math.max(0, currentPageIndex - 1))}
+                                        disabled={currentPageIndex === 0 || isPrevLocked}
+                                        className={`inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-2xl transition-all ${
+                                            currentPageIndex === 0 || isPrevLocked
+                                                ? "opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200"
+                                                : "bg-white text-gray-700 border border-gray-200 shadow-lg shadow-gray-200/50 hover:bg-gray-50 active:scale-95"
+                                        }`}
+                                    >
+                                        <ChevronLeft size={18} /> Previous {isPrevLocked ? '(Locked)' : ''}
+                                    </button>
+                                );
+                            })()}
 
                             {currentPageIndex < pages.length - 1 ? (
                                 <button
-                                    onClick={() => setCurrentPageIndex((prev) => Math.min(pages.length - 1, prev + 1))}
+                                    onClick={() => {
+                                        const nextIdx = currentPageIndex + 1;
+                                        if (exam_category === 'IELTS' && !is_review) {
+                                            // Open confirmation modal
+                                            const currentTitle = activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
+                                            const nextSection = pages[nextIdx];
+                                            const nextTask = nextSection?.questions?.[0] || {};
+                                            const nextTitle = nextTask.title || `Section ${nextIdx + 1}`;
+                                            const nextSkill = nextTask.skill_type || 'Section';
+                                            setPendingNextPage({
+                                                nextIndex: nextIdx,
+                                                currentTitle,
+                                                nextTitle,
+                                                nextSkill,
+                                            });
+                                        } else {
+                                            setCurrentPageIndex(nextIdx);
+                                        }
+                                    }}
                                     className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl shadow-lg shadow-gray-900/10 hover:bg-black transition-all active:scale-95"
                                 >
                                     Next <ChevronRight size={18} />
                                 </button>
                             ) : (
-                                !is_review && !showFinalStep && (
+                                !is_review && (
                                     <button
-                                        onClick={() => {
-                                            if (exam_category === 'IELTS') {
-                                                setShowFinalStep(true);
-                                            } else {
-                                                confirmFinish();
-                                            }
-                                        }}
+                                        onClick={confirmFinish}
                                         disabled={processing}
                                         className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50"
                                     >
-                                        {exam_category === 'IELTS' ? 'Next: Final Submission' : 'Finish Test'} <Check size={18} />
+                                        Finish Test <Check size={18} />
                                     </button>
                                 )
                             )}
@@ -728,6 +662,55 @@ export default function Exam({
                     </div>
                 </main>
             </div>
+
+            {/* IELTS Section Transition & Lock Confirmation Modal */}
+            {pendingNextPage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-5 shadow-sm">
+                            <AlertCircle size={28} />
+                        </div>
+                        
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+                            Proceed to {pendingNextPage.nextSkill.toUpperCase()} Section?
+                        </h3>
+                        
+                        <div className="space-y-3 text-sm text-slate-600 leading-relaxed mb-6">
+                            <p>
+                                You are about to finish <strong>{pendingNextPage.currentTitle}</strong> and move to <strong>{pendingNextPage.nextTitle}</strong>.
+                            </p>
+                            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-800 flex items-start gap-2.5">
+                                <span className="text-base leading-none">⚠️</span>
+                                <div>
+                                    <p className="font-bold uppercase tracking-wider text-rose-900 mb-0.5">Important:</p>
+                                    This current section will be permanently closed and locked. You will <strong>NOT</strong> be able to return or change your answers once you proceed.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => setPendingNextPage(null)}
+                                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-all"
+                            >
+                                Review Answers
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const nextIdx = pendingNextPage.nextIndex;
+                                    setPendingNextPage(null);
+                                    lockCurrentSectionAndAdvance(nextIdx);
+                                }}
+                                className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary-500/20 transition-all active:scale-95"
+                            >
+                                Confirm & Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             <style dangerouslySetInnerHTML={{ __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }

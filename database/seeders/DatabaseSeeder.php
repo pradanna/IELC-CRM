@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             PlacementTestInterchangeSeeder::class,
             KidsPtExamSeeder::class,
             IeltsPtExamSeeder::class,
+            IeltsAcademicPtExamSeeder::class,
             LoyaltySettingSeeder::class,
             PaymentAccountSeeder::class,
             PriceMasterSeeder::class,

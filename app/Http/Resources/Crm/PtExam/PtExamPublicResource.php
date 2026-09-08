@@ -48,68 +48,43 @@ class PtExamPublicResource extends JsonResource
             }
             $totalQuestions = $questionNumber - 1;
         } elseif ($category === 'IELTS') {
-            // IELTS PLACEMENT DIAGNOSTIC
-            $ieltsTasks = $this->ieltsTasks ?? collect();
-            $standaloneTasks = ($this->ieltsTasks ?? collect())->whereNull('pt_ielts_section_id');
+            // IELTS PLACEMENT TEST / DIAGNOSTIC
+            $ieltsTasks = ($this->ieltsTasks ?? collect())->sortBy('position')->values();
 
-            $items = collect();
-            foreach ($standaloneTasks as $t) {
-                $items->push((object)['type' => 'standalone', 'position' => $t->position, 'data' => $t]);
-            }
-            foreach ($ieltsTasks as $s) {
-                $items->push((object)['type' => 'group', 'position' => $s->position, 'data' => $s]);
-            }
-            $items = $items->sortBy('position')->values();
+            foreach ($ieltsTasks as $index => $t) {
+                $audioUrl = $t->audio_path
+                    ? (str_starts_with($t->audio_path, 'http') ? $t->audio_path : Storage::url($t->audio_path))
+                    : null;
+                $questionPdfUrl = $t->question_pdf_path
+                    ? (str_starts_with($t->question_pdf_path, 'http') ? $t->question_pdf_path : Storage::url($t->question_pdf_path))
+                    : null;
+                $answerSheetPdfUrl = $t->answer_sheet_pdf_path
+                    ? (str_starts_with($t->answer_sheet_pdf_path, 'http') ? $t->answer_sheet_pdf_path : Storage::url($t->answer_sheet_pdf_path))
+                    : null;
 
-            foreach ($items as $item) {
-                if ($item->type === 'standalone') {
-                    $t = $item->data;
-                    $pages[] = [
-                        'id' => 'ielts_t_' . $t->id,
-                        'type' => 'standalone',
-                        'questions' => [[
-                            'id' => $t->id,
-                            'number' => $questionNumber++,
-                            'type' => $t->task_type === 'file_upload' ? 'file' : 'text',
-                            'task_type' => $t->task_type,
-                            'text' => $t->prompt_text,
-                            'audio_path' => $t->audio_path ? Storage::url($t->audio_path) : null,
-                            'resource_file_path' => $t->resource_file_path ? Storage::url($t->resource_file_path) : null,
-                            'min_words' => $t->min_words,
-                            'max_score' => $t->max_score,
-                            'options' => [],
-                        ]]
-                    ];
-                } else {
-                    $s = $item->data;
-                    $sectionTasks = [];
-                    foreach ($s->tasks as $t) {
-                        $sectionTasks[] = [
-                            'id' => $t->id,
-                            'number' => $questionNumber++,
-                            'type' => $t->task_type === 'file_upload' ? 'file' : 'text',
-                            'task_type' => $t->task_type,
-                            'text' => $t->prompt_text,
-                            'audio_path' => $t->audio_path ? Storage::url($t->audio_path) : null,
-                            'resource_file_path' => $t->resource_file_path ? Storage::url($t->resource_file_path) : null,
-                            'min_words' => $t->min_words,
-                            'max_score' => $t->max_score,
-                            'options' => [],
-                        ];
-                    }
-                    $pages[] = [
-                        'id' => 'ielts_s_' . $s->id,
-                        'type' => 'group',
-                        'section_type' => $s->section_type,
-                        'title' => $s->title,
-                        'instruction' => $s->instruction,
-                        'reading_text' => $s->passage_text,
-                        'audio_path' => $s->audio_path ? Storage::url($s->audio_path) : null,
-                        'file_path' => $s->resource_file_path ? Storage::url($s->resource_file_path) : null,
-                        'duration_minutes' => $s->duration_minutes,
-                        'questions' => $sectionTasks,
-                    ];
-                }
+                $pages[] = [
+                    'id' => 'ielts_t_' . $t->id,
+                    'type' => 'standalone',
+                    'questions' => [[
+                        'id' => $t->id,
+                        'number' => $questionNumber++,
+                        'skill_type' => $t->skill_type,
+                        'title' => $t->title,
+                        'type' => 'ielts_task',
+                        'task_type' => $t->skill_type,
+                        'question_text' => $t->title,
+                        'text' => $t->title,
+                        'description' => $t->description,
+                        'audio_path' => $audioUrl,
+                        'question_pdf_path' => $questionPdfUrl,
+                        'answer_sheet_pdf_path' => $answerSheetPdfUrl,
+                        'min_words' => $t->min_words,
+                        'duration_minutes' => $t->duration_minutes,
+                        'points' => $t->max_score ?? 9.0,
+                        'max_score' => $t->max_score ?? 9.0,
+                        'options' => [],
+                    ]]
+                ];
             }
             $totalQuestions = $questionNumber - 1;
         } else {

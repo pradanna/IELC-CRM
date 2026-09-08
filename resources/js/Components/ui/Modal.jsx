@@ -34,12 +34,14 @@ export default function Modal({
             "6xl": "sm:max-w-6xl",
             "7xl": "sm:max-w-7xl",
             full: "sm:max-w-[96vw] max-w-[96vw]",
-            screen: "sm:max-w-[98vw] max-w-[98vw]",
+            screen: "w-screen h-screen max-w-none m-0 rounded-none sm:my-0 sm:max-w-none",
         }[maxWidth] || "sm:max-w-lg";
+
+    const isScreen = maxWidth === "screen";
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[10000] overflow-y-auto"
+            className={`fixed inset-0 z-[10000] overflow-y-auto ${isScreen ? "p-0" : ""}`}
             aria-labelledby="modal-title"
             role="dialog"
             aria-modal="true"
@@ -52,13 +54,15 @@ export default function Modal({
             ></div>
 
             {/* Modal Panel */}
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className={`flex min-h-full justify-center text-center ${isScreen ? "items-center p-0" : "items-end p-4 sm:items-center sm:p-0"}`}>
                 <div
-                    className={`relative transform overflow-visible rounded-xl bg-white text-left shadow-2xl ring-1 ring-gray-900/5 transition-all sm:my-8 sm:w-full ${maxWidthClass}`}
+                    className={`relative transform overflow-hidden bg-white text-left shadow-2xl transition-all ${
+                        isScreen ? "w-screen h-screen m-0 rounded-none max-w-none ring-0 flex flex-col" : `rounded-xl ring-1 ring-gray-900/5 sm:my-8 sm:w-full ${maxWidthClass}`
+                    }`}
                 >
                     {/* Header */}
                     {title && (
-                        <div className="border-b border-gray-100 bg-gray-50/50 px-4 py-3 sm:px-6">
+                        <div className="border-b border-gray-100 bg-gray-50/50 px-4 py-3 sm:px-6 shrink-0">
                             <h3
                                 className="text-base font-semibold leading-6 text-gray-900"
                                 id="modal-title"
@@ -68,7 +72,7 @@ export default function Modal({
                         </div>
                     )}
                     {/* Body */}
-                    <div className="px-4 py-5 sm:p-6">{children}</div>
+                    <div className={isScreen ? "flex-1 flex flex-col min-h-0 p-0 overflow-hidden" : "px-4 py-5 sm:p-6"}>{children}</div>
                 </div>
             </div>
         </div>,
