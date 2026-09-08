@@ -169,4 +169,60 @@ class PlacementTestMultiDomainTest extends TestCase
         $this->assertEquals('drag_drop', $result['pages'][0]['questions'][0]['type']);
         $this->assertEquals('freeform_canvas', $result['pages'][0]['questions'][0]['kid_canvas']['mode']);
     }
+
+    /** @test */
+    public function it_can_transform_legacy_kids_exam_and_supports_kid_canvas_answers()
+    {
+        $exam = new PtExam([
+            'id' => '00000000-0000-0000-0000-000000000030',
+            'title' => 'Kids Legacy Placement',
+            'category' => 'Kids',
+        ]);
+
+        $question = new \App\Domains\Academic\Domain\Models\PtQuestion([
+            'id' => '00000000-0000-0000-0000-000000000031',
+            'pt_exam_id' => $exam->id,
+            'type' => 'drag_drop',
+            'question_text' => 'Circle the cat',
+            'position' => 1,
+        ]);
+
+        $kidCanvas = new \App\Domains\Academic\Domain\Models\PtKidCanvas([
+            'id' => '00000000-0000-0000-0000-000000000032',
+            'pt_question_id' => $question->id,
+            'mode' => 'freeform_canvas',
+            'instruction' => 'Circle the cat',
+            'canvas_data' => [
+                'targets' => [
+                    ['id' => 'tgt_1', 'type' => 'ring_target', 'is_correct_answer' => true]
+                ],
+                'tokens' => [
+                    ['id' => 'tok_ring', 'type' => 'ring']
+                ]
+            ]
+        ]);
+
+        $question->setRelation('kidCanvas', $kidCanvas);
+        $exam->setRelation('questions', collect([$question]));
+        $exam->setRelation('kidsQuestions', collect());
+
+        $resource = new PtExamPublicResource($exam);
+        $result = $resource->toArray(new Request());
+
+        $this->assertEquals(1, $result['total_questions']);
+        $this->assertEquals('freeform_canvas', $result['pages'][0]['questions'][0]['kid_canvas']['mode']);
+        $this->assertNotEmpty($result['pages'][0]['questions'][0]['kid_canvas']['canvas_data']);
+
+        $canvasAnswer = new \App\Domains\Academic\Domain\Models\PtKidCanvasAnswer([
+            'id' => '00000000-0000-0000-0000-000000000033',
+            'pt_session_id' => '00000000-0000-0000-0000-000000000099',
+            'pt_question_id' => $question->id,
+            'pt_kid_canvas_id' => $kidCanvas->id,
+            'user_mapping' => ['tgt_1' => 'tok_ring'],
+            'is_correct' => true,
+        ]);
+
+        $this->assertTrue($canvasAnswer->is_correct);
+        $this->assertEquals(['tgt_1' => 'tok_ring'], $canvasAnswer->user_mapping);
+    }
 }

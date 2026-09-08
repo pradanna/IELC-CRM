@@ -82,8 +82,10 @@ class PtSessionController extends Controller
             'answers',
             'generalAnswers',
             'kidsAnswers',
+            'kidCanvasAnswers',
             'ieltsAnswers',
             'ptExam.questions.options',
+            'ptExam.questions.kidCanvas',
             'ptExam.ptQuestionGroups.questions.options',
             'ptExam.generalQuestions.options',
             'ptExam.generalGroups.questions.options',
@@ -111,6 +113,15 @@ class PtSessionController extends Controller
                 'is_correct' => $answer->is_correct,
                 'score_earned' => $answer->score_earned,
                 'teacher_notes' => $answer->teacher_notes,
+            ]);
+        }
+        foreach ($ptSession->kidCanvasAnswers as $answer) {
+            $answers->put($answer->pt_question_id, [
+                'user_mapping' => $answer->user_mapping,
+                'answer_text' => is_array($answer->user_mapping) ? json_encode($answer->user_mapping) : $answer->user_mapping,
+                'is_correct' => $answer->is_correct,
+                'score_earned' => null,
+                'teacher_notes' => null,
             ]);
         }
 

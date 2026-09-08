@@ -66,6 +66,11 @@ class PtSession extends Model
         return $this->hasMany(PtKidsAnswer::class, 'pt_session_id');
     }
 
+    public function kidCanvasAnswers(): HasMany
+    {
+        return $this->hasMany(PtKidCanvasAnswer::class, 'pt_session_id');
+    }
+
     public function ieltsAnswers(): HasMany
     {
         return $this->hasMany(PtIeltsAnswer::class, 'pt_session_id');

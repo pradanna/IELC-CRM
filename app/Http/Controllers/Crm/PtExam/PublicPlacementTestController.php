@@ -127,9 +127,34 @@ class PublicPlacementTestController extends Controller
         $ieltsModules = null;
 
         if ($category === 'Kids') {
-            $correctAnswers = \App\Domains\Academic\Domain\Models\PtKidsAnswer::where('pt_session_id', $session->id)
-                ->where('is_correct', true)
-                ->count();
+            // Count total evaluatable targets across all canvas questions
+            $totalTargets = 0;
+            $kidsQuestions = $session->ptExam->kidsQuestions && $session->ptExam->kidsQuestions->isNotEmpty()
+                ? $session->ptExam->kidsQuestions
+                : $session->ptExam->questions;
+
+            foreach ($kidsQuestions as $q) {
+                $rawCanvas = $q->canvas_data ?? $q->kidCanvas?->canvas_data;
+                $c = is_string($rawCanvas) ? json_decode($rawCanvas, true) : $rawCanvas;
+                if (isset($c['targets']) && is_array($c['targets'])) {
+                    $validTargets = array_filter($c['targets'], function ($tgt) {
+                        $isEx = !empty($tgt['is_example']) || in_array($tgt['type'] ?? '', ['example_circle', 'example_box', 'example_word', 'example_input']);
+                        if ($isEx) return false;
+                        if (($tgt['type'] ?? '') === 'ring_target' && ($tgt['is_correct_answer'] ?? true) === false) return false;
+                        return true;
+                    });
+                    $totalTargets += count($validTargets);
+                } elseif (isset($c['drop_zones']) && is_array($c['drop_zones'])) {
+                    $totalTargets += count($c['drop_zones']);
+                }
+            }
+
+            if ($totalTargets > 0) {
+                $totalQuestions = $totalTargets;
+            }
+
+            // Correct answers for kids represents the total targets correctly matched / score points
+            $correctAnswers = (int) round($session->final_score ?? 0);
         } elseif ($category === 'IELTS') {
             $correctAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::where('pt_session_id', $session->id)
                 ->count();

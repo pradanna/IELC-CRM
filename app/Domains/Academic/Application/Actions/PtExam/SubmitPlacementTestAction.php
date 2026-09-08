@@ -24,8 +24,13 @@ class SubmitPlacementTestAction
 
             if ($category === 'Kids') {
                 // KIDS PLACEMENT TEST SUBMISSION
-                $exam->load(['kidsQuestions']);
-                $questionMap = $exam->kidsQuestions->keyBy('id');
+                // Support both new PtKidsQuestion model and legacy PtQuestion + PtKidCanvas model
+                $exam->load(['kidsQuestions', 'questions.kidCanvas']);
+                
+                $isKidsQuestionsTable = $exam->kidsQuestions && $exam->kidsQuestions->isNotEmpty();
+                $questionMap = $isKidsQuestionsTable
+                    ? $exam->kidsQuestions->keyBy('id')
+                    : ($exam->questions ?? collect())->keyBy('id');
 
                 foreach ($submittedAnswers as $questionId => $value) {
                     if ($value === null || $value === '') continue;
@@ -38,13 +43,15 @@ class SubmitPlacementTestAction
                     $totalTargets = 0;
 
                     if (is_array($userMapping)) {
-                        $canvasData = is_array($question->canvas_data) ? $question->canvas_data : json_decode($question->canvas_data, true);
+                        $rawCanvas = $question->canvas_data ?? $question->kidCanvas?->canvas_data;
+                        $canvasData = is_array($rawCanvas) ? $rawCanvas : json_decode($rawCanvas, true);
+
                         if (isset($canvasData['targets']) && is_array($canvasData['targets'])) {
                             $tokensList = collect($canvasData['tokens'] ?? []);
                             foreach ($canvasData['targets'] as $tgt) {
                                 $tgtId = $tgt['id'] ?? '';
                                 $tgtType = $tgt['type'] ?? '';
-                                $isExample = !empty($tgt['is_example']) || in_array($tgtType, ['example_circle', 'example_box']);
+                                $isExample = !empty($tgt['is_example']) || in_array($tgtType, ['example_circle', 'example_box', 'example_word', 'example_input']);
                                 
                                 // Target contoh tidak dihitung dalam penilaian sama sekali
                                 if ($isExample) {
@@ -122,20 +129,30 @@ class SubmitPlacementTestAction
                         $isAllCorrect = false;
                     }
 
-                    // Nilai dihitung per dropzone yang benar dikalikan bobot poin (points per correct dropzone)
+                    // Nilai dihitung per target yang benar dikalikan bobot poin (points per correct target/dropzone)
                     $questionPoints = (float)($question->points ?? 1);
                     $earnedScore = $correctTargetsCount * $questionPoints;
 
                     $isQuestionCorrect = ($totalTargets > 0 && $isAllCorrect);
                     $totalScore += $earnedScore;
 
-                    \App\Domains\Academic\Domain\Models\PtKidsAnswer::create([
-                        'pt_session_id' => $session->id,
-                        'pt_kids_question_id' => $question->id,
-                        'user_mapping' => $userMapping,
-                        'is_correct' => $isQuestionCorrect,
-                        'score_earned' => $earnedScore,
-                    ]);
+                    if ($isKidsQuestionsTable) {
+                        \App\Domains\Academic\Domain\Models\PtKidsAnswer::create([
+                            'pt_session_id' => $session->id,
+                            'pt_kids_question_id' => $question->id,
+                            'user_mapping' => $userMapping,
+                            'is_correct' => $isQuestionCorrect,
+                            'score_earned' => $earnedScore,
+                        ]);
+                    } else {
+                        \App\Domains\Academic\Domain\Models\PtKidCanvasAnswer::create([
+                            'pt_session_id' => $session->id,
+                            'pt_question_id' => $question->id,
+                            'pt_kid_canvas_id' => $question->kidCanvas?->id,
+                            'user_mapping' => $userMapping,
+                            'is_correct' => $isQuestionCorrect,
+                        ]);
+                    }
                 }
             } elseif ($category === 'IELTS') {
                 // IELTS PLACEMENT TEST SUBMISSION
