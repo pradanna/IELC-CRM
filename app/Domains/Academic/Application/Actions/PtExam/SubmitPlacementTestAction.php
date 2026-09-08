@@ -162,12 +162,14 @@ class SubmitPlacementTestAction
 
                     // Auto-scoring for Reading and Listening tasks
                     $parsedAnswers = is_array($value) ? $value : (is_string($value) ? json_decode($value, true) : null);
-                    if ($task->skill_type === 'reading' && is_array($parsedAnswers)) {
-                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($parsedAnswers);
+                    $gridAnswers = is_array($parsedAnswers) ? ($parsedAnswers['grid'] ?? $parsedAnswers) : [];
+
+                    if ($task->skill_type === 'reading' && is_array($gridAnswers)) {
+                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($gridAnswers);
                         $bandScore = $gradeResult['band_score'];
                         $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
-                    } elseif ($task->skill_type === 'listening' && is_array($parsedAnswers)) {
-                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($parsedAnswers);
+                    } elseif ($task->skill_type === 'listening' && is_array($gridAnswers)) {
+                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($gridAnswers);
                         $bandScore = $gradeResult['band_score'];
                         $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
                     }

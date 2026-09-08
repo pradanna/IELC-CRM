@@ -124,6 +124,8 @@ class PublicPlacementTestController extends Controller
         $category = $session->ptExam->category ?? 'General';
 
         $correctAnswers = 0;
+        $ieltsModules = null;
+
         if ($category === 'Kids') {
             $correctAnswers = \App\Domains\Academic\Domain\Models\PtKidsAnswer::where('pt_session_id', $session->id)
                 ->where('is_correct', true)
@@ -131,6 +133,33 @@ class PublicPlacementTestController extends Controller
         } elseif ($category === 'IELTS') {
             $correctAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::where('pt_session_id', $session->id)
                 ->count();
+            $ieltsAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::with('ptIeltsTask')
+                ->where('pt_session_id', $session->id)
+                ->get();
+            
+            $ieltsModules = [];
+            foreach ($ieltsAnswers as $ans) {
+                $task = $ans->ptIeltsTask;
+                $skill = $task?->skill_type ?? 'other';
+                
+                // Parse raw score from teacher notes e.g. "Auto-graded: 32/40 correct (Band 7.5)"
+                $rawScore = null;
+                if ($ans->teacher_notes && preg_match('/Auto-graded:\s*(\d+)\/(\d+)/', $ans->teacher_notes, $matches)) {
+                    $rawScore = [
+                        'correct' => (int)$matches[1],
+                        'total' => (int)$matches[2],
+                    ];
+                }
+
+                $ieltsModules[$skill] = [
+                    'title' => $task?->title ?? ucfirst($skill),
+                    'skill_type' => $skill,
+                    'band_score' => $ans->band_score,
+                    'raw_score' => $rawScore,
+                    'is_auto_graded' => in_array($skill, ['listening', 'reading']),
+                    'status' => $ans->band_score !== null ? 'graded' : 'pending_review',
+                ];
+            }
         } else {
             $generalCorrect = \App\Domains\Academic\Domain\Models\PtGeneralAnswer::where('pt_session_id', $session->id)
                 ->where('is_correct', true)
@@ -154,7 +183,8 @@ class PublicPlacementTestController extends Controller
             'stats' => [
                 'total_questions' => $totalQuestions,
                 'correct_answers' => $correctAnswers,
-            ]
+            ],
+            'ielts_modules' => $ieltsModules,
         ]);
     }
 }
