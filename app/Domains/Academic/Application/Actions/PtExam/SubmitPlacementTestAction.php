@@ -139,14 +139,9 @@ class SubmitPlacementTestAction
                 }
             } elseif ($category === 'IELTS') {
                 // IELTS PLACEMENT TEST SUBMISSION
-                $exam->load(['ieltsTasks', 'ieltsTasks']);
-                $allTasks = collect();
-                foreach ($exam->ieltsTasks as $t) $allTasks->push($t);
-                foreach ($exam->ieltsTasks as $s) {
-                    foreach ($s->tasks as $t) $allTasks->push($t);
-                }
-                $taskMap = $allTasks->keyBy('id');
-                $hasManualGrading = true;
+                $exam->load(['ieltsTasks']);
+                $taskMap = $exam->ieltsTasks->keyBy('id');
+                $hasManualGrading = true; // Writing and Speaking still require consultant/teacher evaluation
 
                 foreach ($submittedAnswers as $taskId => $value) {
                     if ($value === null || $value === '') continue;
@@ -155,6 +150,8 @@ class SubmitPlacementTestAction
 
                     $filePath = null;
                     $essayText = null;
+                    $bandScore = null;
+                    $teacherNotes = null;
 
                     if (request()->hasFile("answers.{$taskId}")) {
                         $file = request()->file("answers.{$taskId}");
@@ -163,11 +160,25 @@ class SubmitPlacementTestAction
                         $essayText = is_string($value) ? $value : json_encode($value);
                     }
 
+                    // Auto-scoring for Reading and Listening tasks
+                    $parsedAnswers = is_array($value) ? $value : (is_string($value) ? json_decode($value, true) : null);
+                    if ($task->skill_type === 'reading' && is_array($parsedAnswers)) {
+                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($parsedAnswers);
+                        $bandScore = $gradeResult['band_score'];
+                        $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
+                    } elseif ($task->skill_type === 'listening' && is_array($parsedAnswers)) {
+                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($parsedAnswers);
+                        $bandScore = $gradeResult['band_score'];
+                        $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
+                    }
+
                     \App\Domains\Academic\Domain\Models\PtIeltsAnswer::create([
                         'pt_session_id' => $session->id,
                         'pt_ielts_task_id' => $task->id,
                         'essay_text' => $essayText,
                         'answer_file_path' => $filePath,
+                        'band_score' => $bandScore,
+                        'teacher_notes' => $teacherNotes,
                     ]);
                 }
             } else {
