@@ -242,7 +242,7 @@ export default function Exam({
 
                 {/* Main Content */}
                 <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-4 sm:px-8">
-                    <div className={`${exam_category === 'IELTS' ? 'max-w-[1500px]' : 'max-w-3xl'} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}>
+                    <div className={`${(exam_category === 'IELTS' || exam_category === 'Kids') ? 'max-w-[1500px]' : 'max-w-3xl'} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}>
                         {/* Section Expiry Notice Banner */}
                         {sectionExpiryNotice && (
                             <div className="mb-8 p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-amber-900 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -374,10 +374,14 @@ export default function Exam({
                                 );
                             }
 
+                            const isDragDropQuestion = q.type === 'drag_drop';
+
                             return (
                                 <div
                                     key={q.id}
-                                    className="mb-8 bg-white border border-gray-200 shadow-sm rounded-3xl p-8 transition-all hover:shadow-gray-200/50"
+                                    className={`mb-8 bg-white border border-gray-200 shadow-sm rounded-3xl transition-all hover:shadow-gray-200/50 ${
+                                        isDragDropQuestion ? 'p-4 sm:p-6 lg:p-8' : 'p-8'
+                                    }`}
                                 >
                                     <div className="flex gap-6">
                                         <div className="shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-gray-900/10">

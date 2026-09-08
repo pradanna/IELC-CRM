@@ -18,6 +18,8 @@ import {
     Volume2,
     Play,
     Pause,
+    Maximize2,
+    Minimize2,
 } from "lucide-react";
 
 // Base Reference Coordinate System from Admin Studio
@@ -646,6 +648,7 @@ export default function KidsFreeformCanvasQuestion({
 }) {
     const containerRef = useRef(null);
     const [canvasScale, setCanvasScale] = useState(1);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Responsive Canvas Resizing calculation with ResizeObserver
     useEffect(() => {
@@ -653,12 +656,13 @@ export default function KidsFreeformCanvasQuestion({
 
         const updateScale = () => {
             if (!containerRef.current) return;
-            // Dapatkan lebar efektif container (dikurangi padding 16px)
-            const availableWidth = containerRef.current.clientWidth - 16;
+            // Dapatkan lebar efektif container (dikurangi padding)
+            const availableWidth = containerRef.current.clientWidth - (isFullscreen ? 48 : 16);
             if (availableWidth > 0) {
-                // Skala otomatis: max 1.0 pada layar besar desktop, dan mengecil secara proporsional di tablet/HP
+                // Skala otomatis: max 1.3 pada mode fullscreen atau desktop besar
+                const maxScale = isFullscreen ? 1.4 : 1.1;
                 const newScale = Math.min(
-                    1,
+                    maxScale,
                     Math.max(0.3, availableWidth / BASE_WIDTH),
                 );
                 setCanvasScale(newScale);
@@ -675,11 +679,20 @@ export default function KidsFreeformCanvasQuestion({
         observer.observe(containerRef.current);
 
         window.addEventListener("resize", updateScale);
+
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape" && isFullscreen) {
+                setIsFullscreen(false);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+
         return () => {
             observer.disconnect();
             window.removeEventListener("resize", updateScale);
+            window.removeEventListener("keydown", handleKeyDown);
         };
-    }, []);
+    }, [isFullscreen]);
 
     // Parse Canvas Payload from kid_canvas relationship or question options
     const canvasConfig = useMemo(() => {
@@ -829,28 +842,63 @@ export default function KidsFreeformCanvasQuestion({
                     </div>
                 )}
 
-                {/* 2. Optional Reset Bar (Only shown if student has filled some answers or review mode) */}
-                {!isReview && Object.keys(answers).length > 0 && (
-                    <div className="flex items-center justify-between px-4 py-2 bg-slate-800 text-white rounded-2xl border border-slate-700 shadow-sm">
-                        <span className="text-xs font-bold text-slate-300">
-                            💡 Klik target pada kanvas untuk membatalkan
-                            jawaban, atau reset semua:
+                {/* 2. Action Toolbar: Fullscreen & Reset */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-md">
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsFullscreen(!isFullscreen)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-sm transition-all active:scale-95"
+                            title={isFullscreen ? "Keluar Fullscreen (ESC)" : "Perbesar Kanvas (Fullscreen)"}
+                        >
+                            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                            <span>{isFullscreen ? "Keluar Fullscreen" : "Fullscreen Kanvas"}</span>
+                        </button>
+                        <span className="hidden sm:inline text-[11px] font-medium text-slate-400">
+                            {isFullscreen ? "Tekan ESC untuk kembali" : "Perbesar agar mudah menarik kata"}
                         </span>
+                    </div>
+
+                    {!isReview && Object.keys(answers).length > 0 && (
                         <button
                             type="button"
                             onClick={handleResetAll}
-                            className="text-[11px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-wider flex items-center gap-1.5 transition-colors bg-rose-950/40 px-3 py-1 rounded-xl border border-rose-800/40"
+                            className="text-[11px] font-black text-rose-300 hover:text-rose-200 uppercase tracking-wider flex items-center gap-1.5 transition-colors bg-rose-950/60 hover:bg-rose-900/80 px-3 py-1.5 rounded-xl border border-rose-700/50 active:scale-95"
                         >
                             <RotateCcw className="w-3.5 h-3.5" /> Reset Semua
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* 3. Free-Form Canvas Responsive Rendering Area */}
                 <div
                     ref={containerRef}
-                    className="w-full bg-slate-100 rounded-3xl border-4 border-slate-200 shadow-xl overflow-hidden flex justify-center items-center p-2"
+                    className={`w-full bg-slate-100 rounded-3xl border-4 border-slate-200 shadow-xl overflow-hidden flex justify-center items-center transition-all ${
+                        isFullscreen
+                            ? "fixed inset-0 z-50 p-6 bg-slate-950/90 backdrop-blur-md border-0 rounded-none overflow-y-auto flex-col"
+                            : "p-2 sm:p-4"
+                    }`}
                 >
+                    {isFullscreen && (
+                        <div className="w-full max-w-5xl flex items-center justify-between pb-4 text-white shrink-0">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 bg-amber-500 rounded-lg text-slate-950">
+                                    Kids Interactive Test
+                                </span>
+                                <span className="text-sm font-bold truncate max-w-md">
+                                    {instruction || "Tarik kata yang tepat ke kotak target"}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsFullscreen(false)}
+                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black shadow-lg shadow-rose-600/30 transition-all active:scale-95"
+                            >
+                                <Minimize2 size={14} />
+                                <span>Tutup Fullscreen (ESC)</span>
+                            </button>
+                        </div>
+                    )}
                     <div
                         style={{
                             width: `${BASE_WIDTH * canvasScale}px`,
