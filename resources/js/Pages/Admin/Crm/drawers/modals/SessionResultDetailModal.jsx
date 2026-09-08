@@ -13,11 +13,46 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
         final_score: session?.final_score || 0,
         recommended_level: session?.recommended_level || '',
         grading_notes: session?.grading_notes || '',
+        module_bands: {
+            listening: '',
+            reading: '',
+            writing: '',
+            speaking: '',
+        },
     });
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [data, setData] = useState(null);
+
+    // Official IELTS rounding function:
+    // avg = sum / count
+    // fraction < 0.25 -> round down
+    // 0.25 <= fraction < 0.75 -> .5
+    // fraction >= 0.75 -> round up
+    const calculateOverallIeltsBand = (bands) => {
+        const numbers = Object.values(bands)
+            .map(v => parseFloat(v))
+            .filter(v => !isNaN(v) && v >= 0 && v <= 9);
+
+        if (numbers.length === 0) return null;
+        const avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+        const whole = Math.floor(avg);
+        const fraction = avg - whole;
+
+        if (fraction < 0.25) return whole;
+        if (fraction < 0.75) return whole + 0.5;
+        return whole + 1.0;
+    };
+
+    const getSuggestedLevel = (band) => {
+        if (band >= 7.5) return 'IELTS Advanced / Mastery';
+        if (band >= 6.5) return 'IELTS Preparation 2 (Upper Intermediate)';
+        if (band >= 5.5) return 'IELTS Preparation 1 (Intermediate)';
+        if (band >= 4.5) return 'Pre-IELTS (Foundation)';
+        if (band >= 3.5) return 'Elementary English';
+        return 'Beginner / General English';
+    };
 
     useEffect(() => {
         if (show && session?.id) {
@@ -26,6 +61,12 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                 final_score: session.final_score || 0,
                 recommended_level: session.recommended_level || '',
                 grading_notes: session.grading_notes || '',
+                module_bands: {
+                    listening: '',
+                    reading: '',
+                    writing: '',
+                    speaking: '',
+                },
             });
         }
     }, [show, session]);
@@ -37,20 +78,46 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
             const response = await axios.get(route('admin.crm.pt-sessions.get-result', session.id));
             setData(response.data);
             
-            // Re-sync form with fresh data if already graded
-            if (response.data.session) {
-                setGradeData({
-                    final_score: response.data.session.final_score || 0,
-                    recommended_level: response.data.session.recommended_level || '',
-                    grading_notes: response.data.session.grading_notes || '',
-                });
-            }
+            const fetchedSession = response.data.session;
+            const moduleScores = response.data.ielts_module_scores || {};
+
+            const initialBands = {
+                listening: moduleScores.listening !== null && moduleScores.listening !== undefined ? moduleScores.listening : '',
+                reading: moduleScores.reading !== null && moduleScores.reading !== undefined ? moduleScores.reading : '',
+                writing: moduleScores.writing !== null && moduleScores.writing !== undefined ? moduleScores.writing : '',
+                speaking: moduleScores.speaking !== null && moduleScores.speaking !== undefined ? moduleScores.speaking : '',
+            };
+
+            const computedOverall = calculateOverallIeltsBand(initialBands);
+
+            setGradeData({
+                final_score: computedOverall !== null ? computedOverall : (fetchedSession?.final_score || 0),
+                recommended_level: fetchedSession?.recommended_level || (computedOverall ? getSuggestedLevel(computedOverall) : ''),
+                grading_notes: fetchedSession?.grading_notes || '',
+                module_bands: initialBands,
+            });
         } catch (err) {
             console.error('Error fetching session results:', err);
             setError('Failed to load assessment results. Please try again.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleModuleBandChange = (skill, value) => {
+        const updatedBands = {
+            ...gradeForm.module_bands,
+            [skill]: value,
+        };
+
+        const computedOverall = calculateOverallIeltsBand(updatedBands);
+        
+        setGradeData(prev => ({
+            ...prev,
+            module_bands: updatedBands,
+            final_score: computedOverall !== null ? computedOverall : prev.final_score,
+            recommended_level: computedOverall !== null ? getSuggestedLevel(computedOverall) : prev.recommended_level,
+        }));
     };
 
     const handleSaveGrade = () => {
@@ -184,32 +251,130 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                         )}
 
                                         <div className="space-y-4">
-                                            <div>
-                                                <InputLabel value="Final Adjusted Score" className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2" />
-                                                <div className="relative">
-                                                    <TextInput 
-                                                        type="number"
-                                                        value={gradeForm.final_score}
-                                                        onChange={e => setGradeData('final_score', e.target.value)}
-                                                        className="w-full text-lg font-black bg-slate-50 border-slate-200 focus:ring-emerald-100 focus:border-emerald-500 rounded-2xl py-3"
-                                                    />
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">Points</div>
+                                            {/* 4 Skills IELTS Bands Grid */}
+                                            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                                                <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                                                        Module Band Scores
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                                        Scale 0 - 9.0
+                                                    </span>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-2 text-[10px] font-bold text-slate-400">
-                                                    <span>Auto-Graded Score: <strong className="text-slate-700">{data.session.final_score}</strong></span>
-                                                    {data.session.band_score && (
-                                                        <span className="text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md font-black">Band {data.session.band_score}</span>
-                                                    )}
+
+                                                <div className="grid grid-cols-2 gap-2.5">
+                                                    {/* Listening */}
+                                                    <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[10px] font-black uppercase tracking-wider text-sky-700 flex items-center gap-1">
+                                                                Listening
+                                                            </span>
+                                                            {data.ielts_module_scores?.listening !== null && (
+                                                                <span className="text-[9px] font-bold text-slate-400">Auto</span>
+                                                            )}
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            step="0.5"
+                                                            min="0"
+                                                            max="9"
+                                                            value={gradeForm.module_bands.listening}
+                                                            onChange={e => handleModuleBandChange('listening', e.target.value)}
+                                                            placeholder="0.0"
+                                                            className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                                                        />
+                                                    </div>
+
+                                                    {/* Reading */}
+                                                    <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                                                                Reading
+                                                            </span>
+                                                            {data.ielts_module_scores?.reading !== null && (
+                                                                <span className="text-[9px] font-bold text-slate-400">Auto</span>
+                                                            )}
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            step="0.5"
+                                                            min="0"
+                                                            max="9"
+                                                            value={gradeForm.module_bands.reading}
+                                                            onChange={e => handleModuleBandChange('reading', e.target.value)}
+                                                            placeholder="0.0"
+                                                            className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                                        />
+                                                    </div>
+
+                                                    {/* Writing */}
+                                                    <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1">
+                                                                Writing
+                                                            </span>
+                                                            <span className="text-[9px] font-bold text-amber-600">Manual</span>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            step="0.5"
+                                                            min="0"
+                                                            max="9"
+                                                            value={gradeForm.module_bands.writing}
+                                                            onChange={e => handleModuleBandChange('writing', e.target.value)}
+                                                            placeholder="e.g. 5.5"
+                                                            className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                                                        />
+                                                    </div>
+
+                                                    {/* Speaking */}
+                                                    <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 flex items-center gap-1">
+                                                                Speaking
+                                                            </span>
+                                                            <span className="text-[9px] font-bold text-purple-600">Manual</span>
+                                                        </div>
+                                                        <input
+                                                            type="number"
+                                                            step="0.5"
+                                                            min="0"
+                                                            max="9"
+                                                            value={gradeForm.module_bands.speaking}
+                                                            onChange={e => handleModuleBandChange('speaking', e.target.value)}
+                                                            placeholder="e.g. 6.0"
+                                                            className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-[9px] text-slate-400 italic">
+                                                    * Masukkan nilai speaking/writing, rata-rata Overall Band dihitung otomatis sesuai standar IELTS.
+                                                </p>
+                                            </div>
+
+                                            {/* Overall Band Result Card */}
+                                            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-md">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                                                            Overall Band Score
+                                                        </span>
+                                                        <p className="text-[9px] text-slate-400">Rata-rata 4 Module</p>
+                                                    </div>
+                                                    <div className="text-2xl font-black text-white px-3 py-1 rounded-xl bg-white/10 border border-white/20">
+                                                        {gradeForm.final_score || '0.0'}
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <InputLabel value="Recommended Level" className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2" />
+                                                <InputLabel value="Recommended Course / Level" className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2" />
                                                 <TextInput 
                                                     value={gradeForm.recommended_level}
                                                     onChange={e => setGradeData('recommended_level', e.target.value)}
                                                     className="w-full text-sm font-bold bg-slate-50 border-slate-200 focus:ring-emerald-100 focus:border-emerald-500 rounded-2xl"
-                                                    placeholder="e.g. Intermediate 2"
+                                                    placeholder="e.g. IELTS Preparation 1"
                                                 />
                                             </div>
 

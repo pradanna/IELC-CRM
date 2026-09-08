@@ -52,6 +52,27 @@ class PtSessionController extends Controller
             'graded_by' => auth()->id(),
         ]);
 
+        // If module_bands are provided, update each PtIeltsAnswer's band_score
+        if ($request->has('module_bands') && is_array($request->module_bands)) {
+            $ptSession->load(['ptExam.ieltsTasks', 'ieltsAnswers']);
+            foreach ($request->module_bands as $skill => $band) {
+                if ($band === null || $band === '') continue;
+                $tasks = $ptSession->ptExam?->ieltsTasks?->where('skill_type', $skill) ?? collect();
+                foreach ($tasks as $task) {
+                    $answer = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+                    if ($answer) {
+                        $answer->update(['band_score' => (float) $band]);
+                    } else {
+                        \App\Domains\Academic\Domain\Models\PtIeltsAnswer::create([
+                            'pt_session_id' => $ptSession->id,
+                            'pt_ielts_task_id' => $task->id,
+                            'band_score' => (float) $band,
+                        ]);
+                    }
+                }
+            }
+        }
+
         return back()->with('success', 'Grading updated successfully.');
     }
 
@@ -132,10 +153,52 @@ class PtSessionController extends Controller
             }
         }
         
+        // Compute IELTS Module Band Scores if applicable
+        $ieltsModuleScores = null;
+        if ($ptSession->ptExam?->category === 'IELTS') {
+            $listeningBand = null;
+            $readingBand = null;
+            $writingBand = null;
+            $speakingBand = null;
+
+            foreach ($ptSession->ieltsAnswers as $ans) {
+                $skill = $ans->ptIeltsTask?->skill_type;
+                if ($skill === 'listening') {
+                    if ($ans->band_score !== null) {
+                        $listeningBand = (float) $ans->band_score;
+                    } elseif (isset($answers[$ans->pt_ielts_task_id]['evaluation']['band_score'])) {
+                        $listeningBand = (float) $answers[$ans->pt_ielts_task_id]['evaluation']['band_score'];
+                    }
+                } elseif ($skill === 'reading') {
+                    if ($ans->band_score !== null) {
+                        $readingBand = (float) $ans->band_score;
+                    } elseif (isset($answers[$ans->pt_ielts_task_id]['evaluation']['band_score'])) {
+                        $readingBand = (float) $answers[$ans->pt_ielts_task_id]['evaluation']['band_score'];
+                    }
+                } elseif ($skill === 'writing') {
+                    if ($ans->band_score !== null) {
+                        $writingBand = (float) $ans->band_score;
+                    }
+                } elseif ($skill === 'speaking') {
+                    if ($ans->band_score !== null) {
+                        $speakingBand = (float) $ans->band_score;
+                    }
+                }
+            }
+
+            $ieltsModuleScores = [
+                'listening' => $listeningBand,
+                'reading' => $readingBand,
+                'writing' => $writingBand,
+                'speaking' => $speakingBand,
+            ];
+        }
+
         return response()->json([
             'session' => new PtSessionResource($ptSession),
             'answers' => $answers,
             'exam' => new PtExamPublicResource($ptSession->ptExam),
+            'ielts_module_scores' => $ieltsModuleScores,
         ]);
     }
 

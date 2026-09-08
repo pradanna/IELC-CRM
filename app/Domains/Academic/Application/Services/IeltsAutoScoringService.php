@@ -372,13 +372,45 @@ class IeltsAutoScoringService
         ];
     }
 
-    protected static function matchesAny(string $userVal, array $candidates): bool
+    /**
+     * Calculate Official IELTS Overall Band Score from 4 module bands.
+     * Rounding rule:
+     * - fractional part < 0.25 => round down to whole (e.g. 6.125 -> 6.0)
+     * - fractional part >= 0.25 and < 0.75 => round to half (e.g. 6.25 -> 6.5, 6.625 -> 6.5)
+     * - fractional part >= 0.75 => round up to next whole (e.g. 6.75 -> 7.0)
+     */
+    public static function calculateOverallBandScore(array $moduleScores): float
     {
-        foreach ($candidates as $cand) {
-            if ($userVal === self::normalize($cand)) {
-                return true;
-            }
+        $validScores = array_filter($moduleScores, fn($s) => $s !== null && is_numeric($s));
+        if (empty($validScores)) {
+            return 0.0;
         }
-        return false;
+
+        $avg = array_sum($validScores) / count($validScores);
+        $whole = floor($avg);
+        $fraction = $avg - $whole;
+
+        if ($fraction < 0.25) {
+            return (float) $whole;
+        } elseif ($fraction < 0.75) {
+            return (float) ($whole + 0.5);
+        } else {
+            return (float) ($whole + 1.0);
+        }
+    }
+
+    /**
+     * Suggest Course / Level based on IELTS Overall Band Score.
+     */
+    public static function suggestLevel(float $band): string
+    {
+        return match (true) {
+            $band >= 7.5 => 'IELTS Advanced / Mastery',
+            $band >= 6.5 => 'IELTS Preparation 2 (Upper Intermediate)',
+            $band >= 5.5 => 'IELTS Preparation 1 (Intermediate)',
+            $band >= 4.5 => 'Pre-IELTS (Foundation)',
+            $band >= 3.5 => 'Elementary English',
+            default      => 'Beginner / General English',
+        };
     }
 }
