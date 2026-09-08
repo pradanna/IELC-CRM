@@ -153,14 +153,32 @@ class PtExamSeeder extends Seeder
         ];
 
         foreach ($exams as $examData) {
-            $exam = PtExam::create([
+            $slug = Str::slug($examData['title']);
+            $exam = PtExam::firstOrCreate(
+                ['slug' => $slug],
+                [
+                    'title' => $examData['title'],
+                    'category' => $examData['category'] ?? 'General',
+                    'description' => $examData['description'],
+                    'duration_minutes' => $examData['duration_minutes'],
+                    'is_active' => $examData['is_active'],
+                ]
+            );
+
+            $exam->update([
                 'title' => $examData['title'],
                 'category' => $examData['category'] ?? 'General',
-                'slug' => Str::slug($examData['title']),
                 'description' => $examData['description'],
                 'duration_minutes' => $examData['duration_minutes'],
                 'is_active' => $examData['is_active'],
             ]);
+
+            // Clean old questions & groups to allow clean re-seed
+            foreach ($exam->questions as $existingQ) {
+                $existingQ->options()->delete();
+                $existingQ->delete();
+            }
+            $exam->ptQuestionGroups()->delete();
 
             if (isset($examData['standalone_questions'])) {
                 foreach ($examData['standalone_questions'] as $qData) {

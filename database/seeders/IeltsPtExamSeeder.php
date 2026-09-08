@@ -13,14 +13,32 @@ class IeltsPtExamSeeder extends Seeder
      */
     public function run(): void
     {
-        $exam = PtExam::create([
+        $slug = Str::slug('IELTS Placement Test');
+        $exam = PtExam::firstOrCreate(
+            ['slug' => $slug],
+            [
+                'title' => 'IELTS Placement Test',
+                'category' => 'IELTS',
+                'description' => 'A comprehensive placement test to assess your readiness for the IELTS exam, covering Reading, Listening, and Language Use.',
+                'duration_minutes' => 90,
+                'is_active' => true,
+            ]
+        );
+
+        $exam->update([
             'title' => 'IELTS Placement Test',
             'category' => 'IELTS',
-            'slug' => Str::slug('IELTS Placement Test'),
             'description' => 'A comprehensive placement test to assess your readiness for the IELTS exam, covering Reading, Listening, and Language Use.',
             'duration_minutes' => 90,
             'is_active' => true,
         ]);
+
+        // Clean old questions & groups to allow clean re-seed
+        foreach ($exam->questions as $existingQ) {
+            $existingQ->options()->delete();
+            $existingQ->delete();
+        }
+        $exam->ptQuestionGroups()->delete();
 
         // --- SECTION 1: GRAMMAR & VOCABULARY (Standalone Questions) ---
         $standaloneQuestions = [
