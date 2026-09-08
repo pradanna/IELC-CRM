@@ -62,33 +62,35 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="6xl">
-            <div className="h-[85vh] flex flex-col overflow-hidden rounded-2xl">
+        <Modal show={show} onClose={onClose} maxWidth="screen">
+            <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-100">
                 {/* Header */}
-                <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white shrink-0">
+                <div className="bg-slate-900 px-6 py-3 flex items-center justify-between text-white shrink-0 shadow-md z-20">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                            <FileText size={20} className="text-emerald-400" />
+                        <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                            <FileText size={18} className="text-emerald-400" />
                         </div>
                         <div>
-                            <h2 className="text-sm font-black uppercase tracking-widest">
+                            <h2 className="text-sm font-black uppercase tracking-widest leading-tight">
                                 Assessment Review: {session?.pt_exam?.title}
                             </h2>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                Candidate: {session?.lead_name} • Score: <span className="text-emerald-400">{session?.final_score}</span>
+                                Candidate: <span className="text-white">{session?.lead_name}</span> • Score: <span className="text-emerald-400 font-black">{session?.final_score}</span>
                             </p>
                         </div>
                     </div>
-                    <button 
-                        onClick={onClose}
-                        className="p-1 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-black transition-all"
-                    >
-                        Close Review
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={onClose}
+                            className="px-4 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl text-xs font-black transition-all flex items-center gap-1.5"
+                        >
+                            <span>Close Review</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-hidden relative bg-slate-50">
+                <div className="flex-1 min-h-0 overflow-hidden relative bg-slate-50 flex flex-col">
                     {loading || !data ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="w-10 h-10 text-slate-300 animate-spin" />

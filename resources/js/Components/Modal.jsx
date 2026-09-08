@@ -24,14 +24,23 @@ export default function Modal({
         lg: 'sm:max-w-lg',
         xl: 'sm:max-w-xl',
         '2xl': 'sm:max-w-2xl',
-    }[maxWidth];
+        '4xl': 'sm:max-w-4xl',
+        '6xl': 'sm:max-w-6xl',
+        '7xl': 'sm:max-w-7xl',
+        full: 'sm:max-w-[98vw]',
+        screen: 'w-screen h-screen max-w-none m-0 rounded-none',
+    }[maxWidth] || 'sm:max-w-2xl';
+
+    const isScreen = maxWidth === 'screen';
 
     return (
         <Transition show={show} leave="duration-200">
             <Dialog
                 as="div"
                 id="modal"
-                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
+                className={`fixed inset-0 z-50 flex transform items-center overflow-y-auto transition-all ${
+                    isScreen ? 'p-0' : 'px-4 py-6 sm:px-0'
+                }`}
                 onClose={close}
             >
                 <TransitionChild
@@ -54,7 +63,9 @@ export default function Modal({
                     leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
                     <DialogPanel
-                        className={`mb-6 transform rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full ${maxWidthClass}`}
+                        className={`transform bg-white shadow-xl transition-all sm:mx-auto sm:w-full ${
+                            isScreen ? 'w-screen h-screen m-0 rounded-none max-w-none mb-0' : `mb-6 rounded-lg ${maxWidthClass}`
+                        }`}
                     >
                         {children}
                     </DialogPanel>
