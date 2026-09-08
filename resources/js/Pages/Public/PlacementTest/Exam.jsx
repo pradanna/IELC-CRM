@@ -17,7 +17,6 @@ export default function Exam({
     is_review = false,
     user_answers = {},
 }) {
-    const [showFinalStep, setShowFinalStep] = React.useState(false);
     const [isFullscreen, setIsFullscreen] = React.useState(false);
 
     const toggleFullscreen = () => {
@@ -256,60 +255,6 @@ export default function Exam({
                             </div>
                         )}
 
-                        {/* Final Submission Step (IELTS) */}
-                        {showFinalStep ? (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="mb-10 bg-white border-2 border-primary-100 border-dashed rounded-[32px] p-12 text-center shadow-2xl shadow-primary-500/5">
-                                    <div className="w-20 h-20 bg-primary-600 text-white rounded-[24px] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-primary-500/40">
-                                        <Upload size={32} />
-                                    </div>
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Final Step: Upload Your Work</h3>
-                                    <p className="text-slate-500 text-sm max-w-sm mx-auto mb-10 font-medium">
-                                        Please upload the document or zip file containing all your answers for this assessment.
-                                    </p>
-
-                                    <div className="relative max-w-md mx-auto group">
-                                        <input 
-                                            type="file" 
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                            onChange={(e) => setData('summary_file', e.target.files[0])}
-                                        />
-                                        <div className={`border-2 border-dashed rounded-[24px] p-8 flex flex-col items-center gap-3 transition-all ${
-                                            summaryFile ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-slate-50 group-hover:border-primary-300 group-hover:bg-primary-50/50'
-                                        }`}>
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
-                                                summaryFile ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400'
-                                            }`}>
-                                                {summaryFile ? <Check size={20} /> : <FileText size={20} />}
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
-                                                    {summaryFile ? summaryFile.name : 'Select Your Work Bundle'}
-                                                </p>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">PDF, ZIP, or DOCX (Max 20MB)</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-12 flex items-center justify-center gap-4">
-                                        <button 
-                                            onClick={() => setShowFinalStep(false)}
-                                            className="px-8 py-3.5 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-all"
-                                        >
-                                            Go Back
-                                        </button>
-                                        <button 
-                                            disabled={!summaryFile || processing}
-                                            onClick={confirmFinish}
-                                            className="px-10 py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 transition-all active:scale-[0.98]"
-                                        >
-                                            Submit Everything
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                        <>
                         {/* Group Header (if any) */}
                         {activePage.type === "group" && (
                             <div className="mb-10 bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
@@ -642,8 +587,6 @@ export default function Exam({
                                 </div>
                             );
                         })}
-                        </>
-                        )}
 
                         {/* Pagination Footer */}
                         <div className="mt-12 flex items-center justify-between border-t border-gray-100 pt-8 pb-20">
@@ -673,19 +616,13 @@ export default function Exam({
                                     Next <ChevronRight size={18} />
                                 </button>
                             ) : (
-                                !is_review && !showFinalStep && (
+                                !is_review && (
                                     <button
-                                        onClick={() => {
-                                            if (exam_category === 'IELTS') {
-                                                setShowFinalStep(true);
-                                            } else {
-                                                confirmFinish();
-                                            }
-                                        }}
+                                        onClick={confirmFinish}
                                         disabled={processing}
                                         className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50"
                                     >
-                                        {exam_category === 'IELTS' ? 'Next: Final Submission' : 'Finish Test'} <Check size={18} />
+                                        Finish Test <Check size={18} />
                                     </button>
                                 )
                             )}
