@@ -88,8 +88,10 @@ export default function CanvasTokenItem({
     onDragEndClean,
     onUpdateToken,
 }) {
-    const x = typeof tok.x === "number" ? tok.x : 850;
-    const y = typeof tok.y === "number" ? tok.y : 150;
+    const parsedX = parseFloat(tok.x);
+    const parsedY = parseFloat(tok.y);
+    const x = !isNaN(parsedX) ? parsedX : 850;
+    const y = !isNaN(parsedY) ? parsedY : 150;
 
     // 1. Ring Token
     if (tok.type === "ring") {

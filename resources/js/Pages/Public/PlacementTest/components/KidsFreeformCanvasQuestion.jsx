@@ -1032,10 +1032,10 @@ export default function KidsFreeformCanvasQuestion({
                             {/* Render Draggable Tokens Directly on the Canvas */}
                             {tokens.map((tok) => {
                                 const isUsed = usedTokenIds.includes(tok.id);
-                                const x =
-                                    typeof tok.x === "number" ? tok.x : 880;
-                                const y =
-                                    typeof tok.y === "number" ? tok.y : 120;
+                                const parsedX = parseFloat(tok.x);
+                                const parsedY = parseFloat(tok.y);
+                                const x = !isNaN(parsedX) ? parsedX : 880;
+                                const y = !isNaN(parsedY) ? parsedY : 120;
 
                                 return (
                                     <div
