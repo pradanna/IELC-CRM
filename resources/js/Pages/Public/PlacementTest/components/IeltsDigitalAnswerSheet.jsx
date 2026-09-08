@@ -28,7 +28,7 @@ export default function IeltsDigitalAnswerSheet({
 
     // Parse existing answers: either string (essay), object (grid 1-40), or JSON string
     const parsedData = useMemo(() => {
-        if (!answer) return { text: '', grid: {}, file: null };
+        if (!answer) return { text: '', grid: {}, file: null, evaluation: null, bandScore: null };
         if (typeof answer === 'string') {
             try {
                 const parsed = JSON.parse(answer);
@@ -36,26 +36,46 @@ export default function IeltsDigitalAnswerSheet({
                     return {
                         text: parsed.text || '',
                         grid: parsed.grid || parsed,
-                        file: null
+                        file: null,
+                        evaluation: null,
+                        bandScore: null,
                     };
                 }
             } catch (e) {
                 // Regular string / essay text
             }
-            return { text: answer, grid: {}, file: null };
+            return { text: answer, grid: {}, file: null, evaluation: null, bandScore: null };
         }
         if (typeof answer === 'object') {
             if (answer instanceof File) {
-                return { text: '', grid: {}, file: answer };
+                return { text: '', grid: {}, file: answer, evaluation: null, bandScore: null };
             }
+
+            let nestedGrid = answer.grid || (answer['1'] !== undefined ? answer : {});
+            let nestedText = answer.text || answer.essay_text || answer.answer_text || '';
+
+            // If essay_text is a JSON string representing grid/composite
+            if (typeof nestedText === 'string' && nestedText.startsWith('{') && (!nestedGrid || Object.keys(nestedGrid).length === 0)) {
+                try {
+                    const parsedJson = JSON.parse(nestedText);
+                    if (parsedJson && (parsedJson.grid || parsedJson['1'])) {
+                        nestedGrid = parsedJson.grid || parsedJson;
+                        nestedText = parsedJson.text || '';
+                    }
+                } catch (e) {}
+            }
+
             return {
-                text: answer.text || answer.essay_text || answer.answer_text || '',
-                grid: answer.grid || (answer['1'] !== undefined ? answer : {}),
+                text: nestedText,
+                grid: nestedGrid,
                 file: answer.file || null,
                 filePath: answer.file_path || null,
+                evaluation: answer.evaluation || null,
+                bandScore: answer.band_score || null,
+                evaluatorNotes: answer.evaluator_notes || null,
             };
         }
-        return { text: '', grid: {}, file: null };
+        return { text: '', grid: {}, file: null, evaluation: null, bandScore: null };
     }, [answer]);
 
     const [gridAnswers, setGridAnswers] = useState(parsedData.grid || {});
@@ -141,13 +161,26 @@ export default function IeltsDigitalAnswerSheet({
                         </div>
                     </div>
 
-                    {/* Progress Indicator */}
+                    {/* Progress or Score Indicator */}
                     {isObjectiveModule && (
-                        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-black">
-                            <span className="text-slate-500">Answered:</span>
-                            <span className={`font-black ${filledGridCount === 40 ? 'text-emerald-600' : 'text-indigo-600'}`}>
-                                {filledGridCount} / 40
-                            </span>
+                        <div className="flex items-center gap-2.5">
+                            {isReview && (parsedData.evaluation || parsedData.bandScore) && (
+                                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-black text-emerald-800">
+                                    <span>Score:</span>
+                                    <span className="text-emerald-700 font-black">
+                                        {parsedData.evaluation ? `${parsedData.evaluation.raw_score} / ${parsedData.evaluation.total_questions} correct` : ''}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase">
+                                        Band {parsedData.bandScore || parsedData.evaluation?.band_score}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-black">
+                                <span className="text-slate-500">Answered:</span>
+                                <span className={`font-black ${filledGridCount === 40 ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                                    {filledGridCount} / 40
+                                </span>
+                            </div>
                         </div>
                     )}
 
@@ -345,36 +378,58 @@ export default function IeltsDigitalAnswerSheet({
                                     const slotNum = (activeSectionTab - 1) * 10 + i + 1;
                                     const value = gridAnswers[slotNum] || '';
                                     const isFilled = value.toString().trim() !== '';
+                                    const itemEval = parsedData.evaluation?.item_results?.[slotNum];
+                                    const isCorrect = itemEval?.is_correct;
 
                                     return (
                                         <div 
                                             key={slotNum} 
-                                            className={`flex items-center gap-3 p-2 rounded-2xl border transition-all ${
-                                                isFilled 
-                                                    ? 'bg-indigo-50/40 border-indigo-200 ring-1 ring-indigo-500/10' 
-                                                    : 'bg-slate-50/70 border-slate-200/80 hover:border-slate-300'
+                                            className={`flex flex-col gap-1.5 p-2 rounded-2xl border transition-all ${
+                                                isReview && itemEval
+                                                    ? (isCorrect 
+                                                        ? 'bg-emerald-50/70 border-emerald-300 ring-1 ring-emerald-500/10' 
+                                                        : (isFilled ? 'bg-rose-50/70 border-rose-300 ring-1 ring-rose-500/10' : 'bg-slate-50/70 border-slate-200/80'))
+                                                    : (isFilled 
+                                                        ? 'bg-indigo-50/40 border-indigo-200 ring-1 ring-indigo-500/10' 
+                                                        : 'bg-slate-50/70 border-slate-200/80 hover:border-slate-300')
                                             }`}
                                         >
-                                            <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center font-black text-xs transition-colors ${
-                                                isFilled 
-                                                    ? 'bg-indigo-600 text-white shadow-xs' 
-                                                    : 'bg-white border border-slate-200 text-slate-500'
-                                            }`}>
-                                                {slotNum}
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center font-black text-xs transition-colors ${
+                                                    isReview && itemEval
+                                                        ? (isCorrect ? 'bg-emerald-600 text-white shadow-xs' : (isFilled ? 'bg-rose-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-500'))
+                                                        : (isFilled ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-500')
+                                                }`}>
+                                                    {slotNum}
+                                                </div>
+
+                                                {isReview ? (
+                                                    <div className="flex-1 flex items-center justify-between text-xs font-bold text-slate-900 bg-white px-3 py-2 rounded-xl border border-slate-200">
+                                                        <span>{value || <span className="text-slate-300 italic">(Blank)</span>}</span>
+                                                        {itemEval && isFilled && (
+                                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                                                                isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                                                            }`}>
+                                                                {isCorrect ? 'Correct' : 'Incorrect'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={value}
+                                                        onChange={(e) => handleGridItemChange(slotNum, e.target.value)}
+                                                        placeholder={`Answer for No. ${slotNum}`}
+                                                        className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase"
+                                                    />
+                                                )}
                                             </div>
 
-                                            {isReview ? (
-                                                <div className="flex-1 text-xs font-bold text-slate-900 bg-white px-3 py-2 rounded-xl border border-slate-200">
-                                                    {value || <span className="text-slate-300 italic">(Blank)</span>}
+                                            {/* In Review Mode: Show Acceptable Answer Keys if incorrect */}
+                                            {isReview && itemEval && !isCorrect && itemEval.acceptable_keys?.length > 0 && (
+                                                <div className="pl-11 pr-2 text-[10px] text-slate-500 font-medium">
+                                                    <span className="font-bold text-slate-700">Correct Key:</span> {itemEval.acceptable_keys.join(' / ')}
                                                 </div>
-                                            ) : (
-                                                <input
-                                                    type="text"
-                                                    value={value}
-                                                    onChange={(e) => handleGridItemChange(slotNum, e.target.value)}
-                                                    placeholder={`Answer for No. ${slotNum}`}
-                                                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase"
-                                                />
                                             )}
                                         </div>
                                     );

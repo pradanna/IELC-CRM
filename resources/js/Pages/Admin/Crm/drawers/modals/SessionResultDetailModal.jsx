@@ -75,7 +75,7 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                 Assessment Review: {session?.pt_exam?.title}
                             </h2>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                Candidate: <span className="text-white">{session?.lead_name}</span> • Score: <span className="text-emerald-400 font-black">{session?.final_score}</span>
+                                Candidate: <span className="text-white">{session?.lead_name}</span> • Score: <span className="text-emerald-400 font-black">{(data?.session?.final_score ?? session?.final_score ?? 0)}</span>
                             </p>
                         </div>
                     </div>
@@ -173,7 +173,12 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                                     />
                                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">Points</div>
                                                 </div>
-                                                <p className="text-[10px] text-slate-400 font-bold mt-2 italic">* MCQ score was initially {data.session.final_score}</p>
+                                                <div className="flex items-center justify-between mt-2 text-[10px] font-bold text-slate-400">
+                                                    <span>Auto-Graded Score: <strong className="text-slate-700">{data.session.final_score}</strong></span>
+                                                    {data.session.band_score && (
+                                                        <span className="text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md font-black">Band {data.session.band_score}</span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div>

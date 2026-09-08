@@ -167,10 +167,12 @@ class SubmitPlacementTestAction
                     if ($task->skill_type === 'reading' && is_array($gridAnswers)) {
                         $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($gridAnswers);
                         $bandScore = $gradeResult['band_score'];
+                        $totalScore += $gradeResult['raw_score'];
                         $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
                     } elseif ($task->skill_type === 'listening' && is_array($gridAnswers)) {
                         $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($gridAnswers);
                         $bandScore = $gradeResult['band_score'];
+                        $totalScore += $gradeResult['raw_score'];
                         $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
                     }
 

@@ -95,6 +95,17 @@ class PtSessionController extends Controller
 
         // 3. IELTS Answers
         foreach ($ptSession->ieltsAnswers as $answer) {
+            $task = $answer->ptIeltsTask;
+            $parsedPayload = is_string($answer->essay_text) ? json_decode($answer->essay_text, true) : null;
+            $gridAnswers = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
+            
+            $evaluation = null;
+            if ($task && $task->skill_type === 'reading' && is_array($gridAnswers)) {
+                $evaluation = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($gridAnswers);
+            } elseif ($task && $task->skill_type === 'listening' && is_array($gridAnswers)) {
+                $evaluation = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($gridAnswers);
+            }
+
             $answers->put($answer->pt_ielts_task_id, [
                 'essay_text' => $answer->essay_text,
                 'answer_text' => $answer->essay_text,
@@ -105,6 +116,7 @@ class PtSessionController extends Controller
                 'score_gra' => $answer->score_gra,
                 'band_score' => $answer->band_score,
                 'evaluator_notes' => $answer->teacher_notes ?? $answer->evaluator_notes,
+                'evaluation' => $evaluation,
             ]);
         }
 
