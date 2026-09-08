@@ -43,6 +43,8 @@ export default function Exam({
     const {
         currentPageIndex,
         setCurrentPageIndex,
+        lockCurrentSectionAndAdvance,
+        sectionTimers,
         mainRef,
         timeLeft,
         activeSectionTimer,
@@ -64,6 +66,9 @@ export default function Exam({
         setData,
         processing,
     } = usePlacementTest({ session, pages, isReview: is_review, userAnswers: user_answers, examCategory: exam_category });
+
+    // Modal state for confirming section transition & locking previous section
+    const [pendingNextPage, setPendingNextPage] = React.useState(null);
 
     const activePage = (pages && pages.length > 0) ? pages[currentPageIndex] : null;
 
@@ -619,7 +624,25 @@ export default function Exam({
 
                             {currentPageIndex < pages.length - 1 ? (
                                 <button
-                                    onClick={() => setCurrentPageIndex((prev) => Math.min(pages.length - 1, prev + 1))}
+                                    onClick={() => {
+                                        const nextIdx = currentPageIndex + 1;
+                                        if (exam_category === 'IELTS' && !is_review) {
+                                            // Open confirmation modal
+                                            const currentTitle = activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
+                                            const nextSection = pages[nextIdx];
+                                            const nextTask = nextSection?.questions?.[0] || {};
+                                            const nextTitle = nextTask.title || `Section ${nextIdx + 1}`;
+                                            const nextSkill = nextTask.skill_type || 'Section';
+                                            setPendingNextPage({
+                                                nextIndex: nextIdx,
+                                                currentTitle,
+                                                nextTitle,
+                                                nextSkill,
+                                            });
+                                        } else {
+                                            setCurrentPageIndex(nextIdx);
+                                        }
+                                    }}
                                     className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl shadow-lg shadow-gray-900/10 hover:bg-black transition-all active:scale-95"
                                 >
                                     Next <ChevronRight size={18} />
@@ -639,6 +662,55 @@ export default function Exam({
                     </div>
                 </main>
             </div>
+
+            {/* IELTS Section Transition & Lock Confirmation Modal */}
+            {pendingNextPage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-5 shadow-sm">
+                            <AlertCircle size={28} />
+                        </div>
+                        
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+                            Proceed to {pendingNextPage.nextSkill.toUpperCase()} Section?
+                        </h3>
+                        
+                        <div className="space-y-3 text-sm text-slate-600 leading-relaxed mb-6">
+                            <p>
+                                You are about to finish <strong>{pendingNextPage.currentTitle}</strong> and move to <strong>{pendingNextPage.nextTitle}</strong>.
+                            </p>
+                            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-800 flex items-start gap-2.5">
+                                <span className="text-base leading-none">⚠️</span>
+                                <div>
+                                    <p className="font-bold uppercase tracking-wider text-rose-900 mb-0.5">Important:</p>
+                                    This current section will be permanently closed and locked. You will <strong>NOT</strong> be able to return or change your answers once you proceed.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => setPendingNextPage(null)}
+                                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-all"
+                            >
+                                Review Answers
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const nextIdx = pendingNextPage.nextIndex;
+                                    setPendingNextPage(null);
+                                    lockCurrentSectionAndAdvance(nextIdx);
+                                }}
+                                className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary-500/20 transition-all active:scale-95"
+                            >
+                                Confirm & Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             <style dangerouslySetInnerHTML={{ __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }

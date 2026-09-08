@@ -309,6 +309,31 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
         return true;
     };
 
+    const lockCurrentSectionAndAdvance = (nextPageIndex) => {
+        if (!isIelts || isReview) {
+            navigateToPage(nextPageIndex);
+            return;
+        }
+
+        // Lock the current section
+        setSectionTimers(prev => ({
+            ...prev,
+            [currentPageIndex]: {
+                ...(prev[currentPageIndex] || {}),
+                isLocked: true,
+                timeLeft: 0,
+            }
+        }));
+
+        // Advance to next section
+        setCurrentPageIndex(nextPageIndex);
+        if (typeof window !== "undefined") {
+            try {
+                localStorage.setItem(activePageKey, nextPageIndex.toString());
+            } catch (e) {}
+        }
+    };
+
     const navigateToPage = (targetPageIndex) => {
         if (!canNavigateToPage(targetPageIndex)) {
             alert("This section has expired and is locked. You cannot modify answers for previous sections.");
@@ -325,6 +350,8 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
     return {
         currentPageIndex,
         setCurrentPageIndex: navigateToPage,
+        lockCurrentSectionAndAdvance,
+        sectionTimers,
         mainRef,
         timeLeft: currentTimeLeft,
         activeSectionTimer,
