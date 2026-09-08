@@ -217,22 +217,22 @@ export default function IeltsDigitalAnswerSheet({
                                     Question Booklet PDF
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setIsPdfExpanded(!isPdfExpanded)}
-                                    className="p-1.5 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all text-xs font-bold flex items-center gap-1"
-                                    title={isPdfExpanded ? "Standard View" : "Full Screen View"}
+                                    className="p-1.5 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 shadow-xs"
+                                    title={isPdfExpanded ? "Close Full Screen" : "Full Screen PDF"}
                                 >
                                     {isPdfExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                                    <span className="hidden sm:inline">{isPdfExpanded ? 'Standard View' : 'Full Screen'}</span>
+                                    <span>{isPdfExpanded ? 'Close Full Screen' : 'Full Screen PDF'}</span>
                                 </button>
                                 {task.question_pdf_path && (
                                     <a
                                         href={task.question_pdf_path}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="p-1.5 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all text-xs font-bold flex items-center gap-1"
+                                        className="p-1.5 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all text-xs font-bold flex items-center gap-1 px-2.5"
                                     >
                                         <ExternalLink size={14} />
                                         <span className="hidden sm:inline">Open in New Tab</span>
@@ -241,7 +241,8 @@ export default function IeltsDigitalAnswerSheet({
                             </div>
                         </div>
 
-                        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-inner h-[650px] relative">
+                        {/* Regular PDF Box */}
+                        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-inner h-[680px] relative">
                             {task.question_pdf_path ? (
                                 <iframe
                                     src={task.question_pdf_path}
@@ -256,6 +257,45 @@ export default function IeltsDigitalAnswerSheet({
                                 </div>
                             )}
                         </div>
+
+                        {/* Fullscreen PDF Modal Overlay */}
+                        {isPdfExpanded && task.question_pdf_path && (
+                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 sm:p-6 animate-in fade-in duration-200">
+                                <div className="flex items-center justify-between pb-3 text-white">
+                                    <div className="flex items-center gap-2 font-bold text-sm">
+                                        <FileText size={18} className="text-rose-400" />
+                                        <span>{task.title} - Question Booklet (Full Screen)</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <a
+                                            href={task.question_pdf_path}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+                                        >
+                                            <ExternalLink size={14} />
+                                            <span>Open in Tab</span>
+                                        </a>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPdfExpanded(false)}
+                                            className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-rose-600/30 transition-all active:scale-95"
+                                        >
+                                            <Minimize2 size={14} />
+                                            <span>Exit Full Screen (ESC)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+                                    <iframe
+                                        src={task.question_pdf_path}
+                                        title="Full Screen Question Booklet"
+                                        className="w-full h-full border-0"
+                                        allow="autoplay"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Pane: Interactive Digital Answer Sheet (1–40) */}
@@ -389,16 +429,29 @@ export default function IeltsDigitalAnswerSheet({
                                 <FileText size={16} className="text-amber-500" />
                                 Question Booklet & Prompt
                             </span>
-                            {task.question_pdf_path && (
-                                <a
-                                    href={task.question_pdf_path}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="p-1 rounded-xl text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center gap-1"
-                                >
-                                    <ExternalLink size={13} /> New Tab
-                                </a>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {task.question_pdf_path && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPdfExpanded(!isPdfExpanded)}
+                                        className="p-1 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 text-xs font-bold flex items-center gap-1 px-2.5 py-1"
+                                        title={isPdfExpanded ? "Close Full Screen" : "Full Screen Prompt"}
+                                    >
+                                        <Maximize2 size={13} />
+                                        <span>Full Screen</span>
+                                    </button>
+                                )}
+                                {task.question_pdf_path && (
+                                    <a
+                                        href={task.question_pdf_path}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="p-1 rounded-xl text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center gap-1"
+                                    >
+                                        <ExternalLink size={13} /> New Tab
+                                    </a>
+                                )}
+                            </div>
                         </div>
 
                         <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-inner h-[580px] relative">
@@ -415,6 +468,44 @@ export default function IeltsDigitalAnswerSheet({
                                 </div>
                             )}
                         </div>
+
+                        {/* Fullscreen Writing Prompt Modal Overlay */}
+                        {isPdfExpanded && task.question_pdf_path && (
+                            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 sm:p-6 animate-in fade-in duration-200">
+                                <div className="flex items-center justify-between pb-3 text-white">
+                                    <div className="flex items-center gap-2 font-bold text-sm">
+                                        <FileText size={18} className="text-amber-400" />
+                                        <span>{task.title} - Prompt (Full Screen)</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <a
+                                            href={task.question_pdf_path}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+                                        >
+                                            <ExternalLink size={14} />
+                                            <span>Open in Tab</span>
+                                        </a>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPdfExpanded(false)}
+                                            className="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-amber-600/30 transition-all active:scale-95"
+                                        >
+                                            <Minimize2 size={14} />
+                                            <span>Exit Full Screen (ESC)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+                                    <iframe
+                                        src={task.question_pdf_path}
+                                        title="Full Screen Writing Prompt Booklet"
+                                        className="w-full h-full border-0"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Pane: Live Online Essay Editor */}

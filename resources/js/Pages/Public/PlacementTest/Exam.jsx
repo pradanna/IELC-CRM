@@ -1,6 +1,6 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
-import { Clock, ChevronLeft, ChevronRight, Check, AlertCircle, FileText, ExternalLink, Music, Download } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Check, AlertCircle, FileText, ExternalLink, Music, Download, Maximize, Minimize } from "lucide-react";
 import { usePlacementTest } from "./hooks/usePlacementTest";
 import { Upload, File as FileIcon, Type } from "lucide-react";
 import KidsCanvasQuestion from "./components/KidsCanvasQuestion";
@@ -18,6 +18,29 @@ export default function Exam({
     user_answers = {},
 }) {
     const [showFinalStep, setShowFinalStep] = React.useState(false);
+    const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((err) => {
+                console.error("Error attempting to enable fullscreen:", err);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
+
+    React.useEffect(() => {
+        const handleFsChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener("fullscreenchange", handleFsChange);
+        return () => document.removeEventListener("fullscreenchange", handleFsChange);
+    }, []);
     const {
         currentPageIndex,
         setCurrentPageIndex,
@@ -138,6 +161,16 @@ export default function Exam({
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={toggleFullscreen}
+                        type="button"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold shadow-sm transition-all active:scale-95"
+                        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                    >
+                        {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
+                        <span className="hidden md:inline">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
+                    </button>
+
                     {isSectionTimer && activeSectionTimer?.skillType === 'speaking' ? (
                         <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 font-mono text-xs font-black uppercase tracking-wider shadow-sm">
                             <span>Live Interview</span>
@@ -191,8 +224,8 @@ export default function Exam({
                 </aside>
 
                 {/* Main Content */}
-                <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-8">
-                    <div className="max-w-3xl mx-auto py-12 pb-32">
+                <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-4 sm:px-8">
+                    <div className={`${exam_category === 'IELTS' ? 'max-w-[1500px]' : 'max-w-3xl'} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}>
                         {/* Section Expiry Notice Banner */}
                         {sectionExpiryNotice && (
                             <div className="mb-8 p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-amber-900 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -360,58 +393,62 @@ export default function Exam({
                         )}
 
                         {/* Questions */}
-                        {activePage.questions.map((q) => (
-                            <div
-                                key={q.id}
-                                className="mb-8 bg-white border border-gray-200 shadow-sm rounded-3xl p-8 transition-all hover:shadow-gray-200/50"
-                            >
-                                <div className="flex gap-6">
-                                    <div className="shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-gray-900/10">
-                                        {q.number}
+                        {activePage.questions.map((q) => {
+                            if (q.type === 'ielts_task') {
+                                return (
+                                    <div key={q.id} className="mb-8">
+                                        <IeltsDigitalAnswerSheet
+                                            task={q}
+                                            answer={answers[q.id]}
+                                            onAnswerChange={(taskId, newAnswer) => {
+                                                if (is_review) return;
+                                                const updatedAnswers = {
+                                                    ...answers,
+                                                    [taskId]: newAnswer,
+                                                };
+                                                setData('answers', updatedAnswers);
+                                            }}
+                                            onFileSelect={handleFileSelect}
+                                            isReview={is_review}
+                                        />
                                     </div>
-                                    <div className="flex-1 pt-1">
-                                        <p className="text-lg font-bold text-gray-900 mb-4 leading-snug">
-                                            {q.text}
-                                        </p>
+                                );
+                            }
 
-                                        {/* Question-Level Audio Player */}
-                                        {q.audio_path && (
-                                            <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-2xl p-3.5 flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                                                    <Music size={16} />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
-                                                        Listening Audio Question
-                                                    </p>
-                                                    <audio controls className="w-full h-9">
-                                                        <source src={q.audio_path} type="audio/mpeg" />
-                                                        Browser Anda tidak mendukung pemutaran audio.
-                                                    </audio>
-                                                </div>
-                                            </div>
-                                        )}
-                                        
-                                        {/* IELTS Task Multi-Modal (Split-screen PDF, Audio Player & Digital 1-40 Answer Sheet) */}
-                                        {q.type === 'ielts_task' && (
-                                            <IeltsDigitalAnswerSheet
-                                                task={q}
-                                                answer={answers[q.id]}
-                                                onAnswerChange={(taskId, newAnswer) => {
-                                                    if (is_review) return;
-                                                    const updatedAnswers = {
-                                                        ...answers,
-                                                        [taskId]: newAnswer,
-                                                    };
-                                                    setData('answers', updatedAnswers);
-                                                }}
-                                                onFileSelect={handleFileSelect}
-                                                isReview={is_review}
-                                            />
-                                        )}
+                            return (
+                                <div
+                                    key={q.id}
+                                    className="mb-8 bg-white border border-gray-200 shadow-sm rounded-3xl p-8 transition-all hover:shadow-gray-200/50"
+                                >
+                                    <div className="flex gap-6">
+                                        <div className="shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-gray-900/10">
+                                            {q.number}
+                                        </div>
+                                        <div className="flex-1 pt-1">
+                                            <p className="text-lg font-bold text-gray-900 mb-4 leading-snug">
+                                                {q.text}
+                                            </p>
 
-                                        {/* MCQ Rendering */}
-                                        {q.type === 'mcq' && (
+                                            {/* Question-Level Audio Player */}
+                                            {q.audio_path && (
+                                                <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-2xl p-3.5 flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                                        <Music size={16} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
+                                                            Listening Audio Question
+                                                        </p>
+                                                        <audio controls className="w-full h-9">
+                                                            <source src={q.audio_path} type="audio/mpeg" />
+                                                            Browser Anda tidak mendukung pemutaran audio.
+                                                        </audio>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* MCQ Rendering */}
+                                            {q.type === 'mcq' && (
                                             <div className="grid grid-cols-1 gap-3">
                                                 {q.options.map((opt, idx) => {
                                                     const isSelected = is_review 
@@ -600,10 +637,11 @@ export default function Exam({
                                                 )}
                                             </div>
                                         )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         </>
                         )}
 
