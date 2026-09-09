@@ -127,10 +127,37 @@ export default function IeltsDigitalAnswerSheet({
         return words.length;
     }, [essayText]);
 
-    // Count filled answer slots in grid (1 - 40)
+    // Count filled answer slots in grid
     const filledGridCount = useMemo(() => {
         return Object.values(gridAnswers).filter(val => val && val.toString().trim() !== '').length;
     }, [gridAnswers]);
+
+    // Dynamic total slots: parse from title regex (e.g. "28 Questions", "20 Questions", "50 Questions"), task props, or default 40
+    const totalSlots = useMemo(() => {
+        if (task.total_questions) return parseInt(task.total_questions);
+        if (task.total_slots) return parseInt(task.total_slots);
+        if (task.title) {
+            const match = task.title.match(/(\d+)\s*questions?/i);
+            if (match && parseInt(match[1]) > 0) {
+                return parseInt(match[1]);
+            }
+        }
+        return 40;
+    }, [task]);
+
+    // Dynamic tabs (chunks of 10 up to totalSlots)
+    const sectionTabs = useMemo(() => {
+        const numTabs = Math.ceil(totalSlots / 10);
+        return Array.from({ length: numTabs }, (_, idx) => {
+            const sec = idx + 1;
+            const start = idx * 10 + 1;
+            const end = Math.min((idx + 1) * 10, totalSlots);
+            return {
+                sec,
+                range: `${start} - ${end}`
+            };
+        });
+    }, [totalSlots]);
 
     const minWordsTarget = task.min_words || (skill === 'writing' && task.title?.includes('Task 1') ? 150 : 250);
 
@@ -168,7 +195,7 @@ export default function IeltsDigitalAnswerSheet({
                                 <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-black text-emerald-800">
                                     <span>Score:</span>
                                     <span className="text-emerald-700 font-black">
-                                        {parsedData.evaluation ? `${parsedData.evaluation.raw_score} / ${parsedData.evaluation.total_questions} correct` : ''}
+                                        {parsedData.evaluation ? `${parsedData.evaluation.raw_score} / ${parsedData.evaluation.total_questions || totalSlots} correct` : ''}
                                     </span>
                                     <span className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase">
                                         Band {parsedData.bandScore || parsedData.evaluation?.band_score}
@@ -177,8 +204,8 @@ export default function IeltsDigitalAnswerSheet({
                             )}
                             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-black">
                                 <span className="text-slate-500">Answered:</span>
-                                <span className={`font-black ${filledGridCount === 40 ? 'text-emerald-600' : 'text-indigo-600'}`}>
-                                    {filledGridCount} / 40
+                                <span className={`font-black ${filledGridCount === totalSlots ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                                    {filledGridCount} / {totalSlots}
                                 </span>
                             </div>
                         </div>
@@ -203,8 +230,8 @@ export default function IeltsDigitalAnswerSheet({
                 )}
             </div>
 
-            {/* 2. Audio Player Bar (Listening Only) */}
-            {skill === 'listening' && task.audio_path && (
+            {/* 2. Audio Player Bar (Listening or Integrated Tasks with Audio) */}
+            {task.audio_path && (
                 <div className="bg-sky-500 text-white rounded-3xl p-5 shadow-lg shadow-sky-500/20">
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
@@ -212,8 +239,14 @@ export default function IeltsDigitalAnswerSheet({
                                 <Music size={18} className="text-white" />
                             </div>
                             <div>
-                                <h3 className="text-xs font-black uppercase tracking-wider">Listening Audio Track</h3>
-                                <p className="text-[10px] text-sky-100 font-medium">Play the audio once while completing the answer sheet below</p>
+                                <h3 className="text-xs font-black uppercase tracking-wider">
+                                    {skill === 'listening' ? 'Listening Audio Track' : 'Lecture / Task Audio Track'}
+                                </h3>
+                                <p className="text-[10px] text-sky-100 font-medium">
+                                    {skill === 'listening' 
+                                        ? 'Play the audio once while completing the answer sheet below' 
+                                        : 'Listen carefully to the lecture recording to answer the question'}
+                                </p>
                             </div>
                         </div>
                         <a 
@@ -337,7 +370,7 @@ export default function IeltsDigitalAnswerSheet({
                             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                 <div>
                                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                                        Digital Answer Sheet (1–40)
+                                        Digital Answer Sheet (1–{totalSlots})
                                     </h3>
                                     <p className="text-[10px] text-slate-400 font-medium">
                                         Type your answers directly into the numbered slots below
@@ -349,13 +382,11 @@ export default function IeltsDigitalAnswerSheet({
                             </div>
 
                             {/* Section Quick Jump Tabs */}
-                            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-2xl">
-                                {[
-                                    { sec: 1, range: '1 - 10' },
-                                    { sec: 2, range: '11 - 20' },
-                                    { sec: 3, range: '21 - 30' },
-                                    { sec: 4, range: '31 - 40' },
-                                ].map((item) => (
+                            <div 
+                                className="grid gap-1.5 p-1 bg-slate-100 rounded-2xl"
+                                style={{ gridTemplateColumns: `repeat(${sectionTabs.length}, minmax(0, 1fr))` }}
+                            >
+                                {sectionTabs.map((item) => (
                                     <button
                                         key={item.sec}
                                         type="button"
@@ -376,6 +407,7 @@ export default function IeltsDigitalAnswerSheet({
                             <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                                 {Array.from({ length: 10 }, (_, i) => {
                                     const slotNum = (activeSectionTab - 1) * 10 + i + 1;
+                                    if (slotNum > totalSlots) return null;
                                     const value = gridAnswers[slotNum] || '';
                                     const isFilled = value.toString().trim() !== '';
                                     const itemEval = parsedData.evaluation?.item_results?.[slotNum];

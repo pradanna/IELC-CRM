@@ -1,16 +1,16 @@
 import Modal from '@/Components/ui/Modal';
 import TextInput from '@/Components/form/TextInput';
-import TextArea from '@/Components/ui/TextArea';
 import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
 import Checkbox from '@/Components/form/Checkbox';
+import RichTextEditor from '@/Components/ui/RichTextEditor';
 import { Trash2, AlertTriangle } from 'lucide-react';
 
 export default function ExamSettingsModal({ show, onClose, form, onSubmit, onDelete, hasSessions = false }) {
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
+        <Modal show={show} onClose={onClose} maxWidth="2xl">
             <div className="p-8">
                 <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1">Package Settings</h2>
                 <p className="text-xs text-slate-400 mb-6">Edit exam package configuration</p>
@@ -66,13 +66,15 @@ export default function ExamSettingsModal({ show, onClose, form, onSubmit, onDel
                     </div>
 
                     <div>
-                        <InputLabel value="Description" />
-                        <TextArea
-                            className="mt-1"
-                            rows={3}
-                            value={form.data.description ?? ''}
-                            onChange={(e) => form.setData('description', e.target.value)}
-                        />
+                        <InputLabel value="Description / Instructions" />
+                        <div className="mt-1">
+                            <RichTextEditor
+                                value={form.data.description ?? ''}
+                                onChange={(val) => form.setData('description', val)}
+                                placeholder="Tulis deskripsi paket, silabus/modul tes, instruksi peserta..."
+                                minHeight="140px"
+                            />
+                        </div>
                         <InputError message={form.errors.description} className="mt-1" />
                     </div>
 

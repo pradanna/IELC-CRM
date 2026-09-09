@@ -36,9 +36,10 @@ export default function Landing({ session, exam }) {
                                 {exam.title}
                             </h4>
                             {exam.description && (
-                                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                                    {exam.description}
-                                </p>
+                                <div 
+                                    className="mt-2 text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>p]:mb-1.5"
+                                    dangerouslySetInnerHTML={{ __html: exam.description }}
+                                />
                             )}
                         </div>
 

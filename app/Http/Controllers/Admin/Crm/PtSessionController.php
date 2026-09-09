@@ -214,17 +214,79 @@ class PtSessionController extends Controller
     }
 
     /**
-     * Download candidate's IELTS Writing answers as a PDF.
+     * Download candidate's complete answer sheet as a PDF (Listening, Reading, Writing - excluding Speaking).
      */
     public function downloadWritingPdf(PtSession $ptSession)
     {
         $ptSession->load(['lead.branch', 'ptExam.ieltsTasks', 'ieltsAnswers.ptIeltsTask']);
 
-        // Filter only writing tasks
-        $writingTasks = [];
-        $ieltsTasks = $ptSession->ptExam?->ieltsTasks?->where('skill_type', 'writing') ?? collect();
+        $allIeltsTasks = $ptSession->ptExam?->ieltsTasks?->sortBy('position') ?? collect();
 
-        foreach ($ieltsTasks as $task) {
+        // 1. Listening Tasks
+        $listeningTasks = [];
+        foreach ($allIeltsTasks->where('skill_type', 'listening') as $task) {
+            $ans = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+            $parsedPayload = $ans && is_string($ans->essay_text) ? json_decode($ans->essay_text, true) : null;
+            $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
+
+            $totalSlots = 40;
+            if (preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
+                $totalSlots = (int) $matches[1];
+            }
+
+            $filledCount = 0;
+            foreach ($grid as $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $filledCount++;
+                }
+            }
+
+            $eval = !empty($grid) ? \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($grid) : null;
+
+            $listeningTasks[] = [
+                'task' => $task,
+                'grid' => $grid,
+                'total_slots' => $totalSlots,
+                'filled_count' => $filledCount,
+                'raw_score' => $eval['raw_score'] ?? null,
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? null),
+            ];
+        }
+
+        // 2. Reading Tasks
+        $readingTasks = [];
+        foreach ($allIeltsTasks->where('skill_type', 'reading') as $task) {
+            $ans = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+            $parsedPayload = $ans && is_string($ans->essay_text) ? json_decode($ans->essay_text, true) : null;
+            $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
+
+            $totalSlots = 40;
+            if (preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
+                $totalSlots = (int) $matches[1];
+            }
+
+            $filledCount = 0;
+            foreach ($grid as $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $filledCount++;
+                }
+            }
+
+            $eval = !empty($grid) ? \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($grid) : null;
+
+            $readingTasks[] = [
+                'task' => $task,
+                'grid' => $grid,
+                'total_slots' => $totalSlots,
+                'filled_count' => $filledCount,
+                'raw_score' => $eval['raw_score'] ?? null,
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? null),
+            ];
+        }
+
+        // 3. Writing Tasks
+        $writingTasks = [];
+        foreach ($allIeltsTasks->where('skill_type', 'writing') as $task) {
             $answer = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
             $rawText = '';
             $fileUrl = null;
@@ -254,13 +316,15 @@ class PtSessionController extends Controller
             ];
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.ielts_writing_submission', [
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.ielts_candidate_answersheet', [
             'session' => $ptSession,
+            'listeningTasks' => $listeningTasks,
+            'readingTasks' => $readingTasks,
             'writingTasks' => $writingTasks,
         ]);
 
         $safeName = \Illuminate\Support\Str::slug($ptSession->lead?->name ?? 'candidate');
-        return $pdf->stream("IELTS-Writing-{$safeName}-{$ptSession->id}.pdf");
+        return $pdf->stream("IELTS-Answer-Sheet-{$safeName}-{$ptSession->id}.pdf");
     }
 }
 

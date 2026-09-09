@@ -1,8 +1,7 @@
 {
     "exam_title": "IELTS Academic Placement Test",
     "exam_slug": "ielts-academic-placement-test",
-    "exam_category": "IELTS",
-    "exam_description": "Official IELC IELTS Academic Placement Test covering 4 modules: Listening (30 mins, 40 questions), Reading (60 mins, 40 questions), Writing Task 1 & Task 2 (60 mins), and Speaking (11-14 mins interactive interview with a certified instructor).",
+    "exam_description": "<p><strong>Official IELC IELTS Academic Placement Test</strong> covering 4 core modules:</p><ul><li><strong>Listening:</strong> 4 sections, 40 questions (30 mins)</li><li><strong>Reading:</strong> 3 passages, 40 questions (60 mins)</li><li><strong>Writing:</strong> Task 1 &amp; Task 2 (60 mins, 400+ words total)</li><li><strong>Speaking:</strong> 1-on-1 live interview with a certified examiner (11–14 mins)</li></ul><p class='mt-2'><strong>Total duration:</strong> 150 minutes.</p>",
     "exam_duration": 150,
     "tasks": [
         {
@@ -37,7 +36,7 @@
             "title": "IELTS Academic Writing Task 1 (Short Report)",
             "description": "<p><strong>Task 1: Report on a Graph / Chart</strong></p><p>You should spend about <strong>20 minutes</strong> on this task.</p><div class='p-4 my-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 font-medium'><p><strong>Prompt:</strong> The graph below shows the contribution of three sectors – agriculture, manufacturing, and business and financial services – to the UK economy in the twentieth century.</p><p class='mt-2'>Summarize the information by selecting and reporting the main features, and make comparisons where relevant.</p></div><p><strong>Requirements:</strong></p><ul><li>Write in a formal academic style.</li><li>Write at least <strong>150 words</strong>.</li><li>You can view the full question booklet & diagram on the left.</li><li>Type your report directly in the essay editor on the right.</li></ul>",
             "audio_path": null,
-            "question_pdf_path": "pt_exams/ielts/images/ielts_writing_task1_graph.png",
+            "question_pdf_path": "pt_exams/ielts/pdf/ielts_academic_writing_task1_question_booklet.pdf",
             "answer_sheet_pdf_path": null,
             "duration_minutes": 20,
             "max_score": 9.0,
@@ -50,7 +49,7 @@
             "title": "IELTS Academic Writing Task 2 (Discursive Essay)",
             "description": "<p><strong>Task 2: Academic Essay</strong></p><p>You should spend about <strong>40 minutes</strong> on this task.</p><div class='p-4 my-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 font-medium'><p><strong>Topic:</strong> To some people, studying the past has little value in the modern world. Why do you think it is important to do so? What will be the effect if children are not taught history?</p><p class='mt-2'>Give reasons for your answer and include any relevant examples from your own experience or knowledge.</p></div><p><strong>Requirements:</strong></p><ul><li>Write in a formal academic style.</li><li>Write at least <strong>250 words</strong>.</li><li>Type your essay directly in the text editor on the right, or upload your document.</li></ul>",
             "audio_path": null,
-            "question_pdf_path": null,
+            "question_pdf_path": "pt_exams/ielts/pdf/ielts_academic_writing_task2_question_booklet.pdf",
             "answer_sheet_pdf_path": null,
             "duration_minutes": 40,
             "max_score": 9.0,

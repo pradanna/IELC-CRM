@@ -23,6 +23,7 @@ import { useEffect } from 'react';
 
 import AdminPageLayout from '@/Components/shared/AdminPageLayout';
 import AdminCard from '@/Components/shared/AdminCard';
+import RichTextEditor from '@/Components/ui/RichTextEditor';
 import SessionResultDetailModal from '../drawers/modals/SessionResultDetailModal';
 
 export default function Index({ stats, sessions, exams }) {
@@ -302,7 +303,9 @@ export default function Index({ stats, sessions, exams }) {
                                                     {exam.title}
                                                 </h3>
                                                 <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-4">
-                                                    {exam.description || 'Tidak ada deskripsi paket.'}
+                                                    {exam.description 
+                                                        ? exam.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() 
+                                                        : 'Tidak ada deskripsi paket.'}
                                                 </p>
                                             </div>
 
@@ -356,7 +359,7 @@ export default function Index({ stats, sessions, exams }) {
             >
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <Dialog.Panel className="mx-auto max-w-lg w-full bg-white rounded-3xl shadow-2xl p-10 relative overflow-hidden">
+                    <Dialog.Panel className="mx-auto max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 sm:p-10 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-12 text-slate-50 opacity-10 pointer-events-none">
                             <Plus size={200} />
                         </div>
@@ -373,8 +376,8 @@ export default function Index({ stats, sessions, exams }) {
                                         required
                                         value={data.title}
                                         onChange={e => setData('title', e.target.value)}
-                                        placeholder="e.g., IELTS Placement Diagnostic"
-                                        className={`w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-red-100 transition-all ${errors.title ? 'ring-2 ring-red-500' : ''}`}
+                                        placeholder="e.g. TOEFL iBT Placement Test"
+                                        className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-red-100 transition-all"
                                     />
                                     {errors.title && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.title}</p>}
                                 </div>
@@ -407,13 +410,14 @@ export default function Index({ stats, sessions, exams }) {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider ml-1">Notes / Description</label>
-                                    <textarea 
-                                        rows="3"
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider ml-1">Notes / Description (WYSIWYG)</label>
+                                    <RichTextEditor 
                                         value={data.description}
-                                        onChange={e => setData('description', e.target.value)}
-                                        className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-red-100 transition-all resize-none"
+                                        onChange={val => setData('description', val)}
+                                        placeholder="Tulis deskripsi paket, silabus/modul tes, instruksi peserta..."
+                                        minHeight="140px"
                                     />
+                                    {errors.description && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.description}</p>}
                                 </div>
 
                                 <div className="flex items-center gap-5 pt-4">
