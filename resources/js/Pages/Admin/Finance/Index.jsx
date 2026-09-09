@@ -8,16 +8,17 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import PlotAndInvoiceModal from './modals/PlotAndInvoiceModal';
+import PayInvoiceModal from './modals/PayInvoiceModal';
 import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 import Button from '@/Components/ui/Button';
 
-export default function Index({ leads, placementTestLeads = [], rejoinStudents = [], paketLanjutStudents = [], classes, priceMasters, recentInvoices, expiringClasses }) {
+export default function Index({ leads, placementTestLeads = [], rejoinStudents = [], paketLanjutStudents = [], classes, priceMasters, recentInvoices, expiringClasses, pendingClassRequests = [] }) {
     const [isPlotModalOpen, setIsPlotModalOpen] = useState(false);
     const [selectedEntity, setSelectedEntity] = useState(null); // Can be lead or student
     const [entityType, setEntityType] = useState('lead'); // 'lead' or 'student'
     const [search, setSearch] = useState('');
-    const [activeTab, setActiveTab] = useState('placement_test'); // 'placement_test', 'new', 'paket_lanjut', or 'rejoin'
+    const [activeTab, setActiveTab] = useState(pendingClassRequests?.length > 0 ? 'class_requests' : 'placement_test');
 
     const expiringClassesList = useMemo(() => {
         if (!expiringClasses) return [];
@@ -34,16 +35,33 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
         );
     }, [placementTestLeads, search]);
 
+    const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+    const [selectedInvoiceToPay, setSelectedInvoiceToPay] = useState(null);
+
     const openPlotModal = (entity, type = 'lead') => {
         setSelectedEntity(entity);
         setEntityType(type);
         setIsPlotModalOpen(true);
     };
 
-    const handlePayInvoice = (invoiceId) => {
-        if (confirm('Tandai invoice ini sebagai lunas?')) {
-            router.post(route('admin.finance.invoices.pay', invoiceId));
-        }
+    const handleOpenPayModal = (invoice) => {
+        setSelectedInvoiceToPay(invoice);
+        setIsPayModalOpen(true);
+    };
+
+    const handleConfirmPay = (paymentMethod, callback) => {
+        if (!selectedInvoiceToPay) return;
+        router.post(
+            route('admin.finance.invoices.pay', selectedInvoiceToPay.id),
+            { payment_method: paymentMethod },
+            {
+                onFinish: () => {
+                    if (callback) callback();
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                },
+            }
+        );
     };
     
     const handleSendInvoiceWA = async (invoice) => {
@@ -232,6 +250,71 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
             (student.student_number || '').toLowerCase().includes(search.toLowerCase())
         );
     }, [rejoinStudents, search]);
+
+    const filteredClassRequests = useMemo(() => {
+        return (pendingClassRequests || []).filter(req => {
+            const name = req.lead?.name || req.student?.lead?.name || '';
+            const className = req.study_class?.name || '';
+            return name.toLowerCase().includes(search.toLowerCase()) || className.toLowerCase().includes(search.toLowerCase());
+        });
+    }, [pendingClassRequests, search]);
+
+    const classRequestColumns = [
+        {
+            header: 'Entity Name',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-sky-50 flex items-center justify-center rounded-xl text-sky-600">
+                        <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="font-black text-slate-900 tracking-tight uppercase">{row.lead?.name || row.student?.lead?.name || 'Unknown Lead'}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {row.lead?.branch?.name || 'Unknown Branch'}
+                        </p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Requested Class (CS)',
+            render: (row) => (
+                <div className="space-y-0.5">
+                    <span className="px-3 py-1 bg-sky-50 text-sky-700 rounded-lg font-black text-[10px] uppercase tracking-widest border border-sky-100">
+                        {row.study_class?.name || 'Class Request'}
+                    </span>
+                    {row.notes && (
+                        <p className="text-[9px] font-bold text-slate-400 italic">"{row.notes}"</p>
+                    )}
+                </div>
+            )
+        },
+        {
+            header: 'Status',
+            render: () => (
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+                    <span className="text-[10px] font-bold text-sky-600 uppercase tracking-widest">
+                        Needs Invoice (CS Request)
+                    </span>
+                </div>
+            )
+        },
+        {
+            header: 'Actions',
+            className: 'text-right',
+            render: (row) => (
+                <Button 
+                    onClick={() => openPlotModal(row.lead || row, 'lead')}
+                    variant="primary"
+                    icon={Calculator}
+                    className="inline-flex py-2 px-4 bg-sky-600 hover:bg-sky-700 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-sky-600/10"
+                >
+                    Terbitkan Invoice
+                </Button>
+            )
+        }
+    ];
 
     const formatIndoDate = (dateStr) => {
         if (!dateStr) return '-';
@@ -475,7 +558,10 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
     let currentData = [];
     let currentColumns = [];
 
-    if (activeTab === 'placement_test') {
+    if (activeTab === 'class_requests') {
+        currentData = filteredClassRequests;
+        currentColumns = classRequestColumns;
+    } else if (activeTab === 'placement_test') {
         currentData = filteredPlacementTestLeads;
         currentColumns = leadColumns;
     } else if (activeTab === 'new') {
@@ -510,32 +596,61 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                     {/* Left Column: Leads for Invoicing */}
                 <div className="lg:col-span-8 space-y-8">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
+                            <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-2xl">
+                                {pendingClassRequests?.length > 0 && (
+                                    <Button 
+                                        onClick={() => setActiveTab('class_requests')}
+                                        variant="ghost"
+                                        className={`px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-none ${
+                                            activeTab === 'class_requests' 
+                                                ? 'bg-red-600 text-white shadow-md shadow-red-600/20 font-black hover:bg-red-600' 
+                                                : 'text-slate-500 font-extrabold hover:text-red-600 hover:bg-red-50/50'
+                                        }`}
+                                    >
+                                        Class Requests ({(pendingClassRequests || []).length})
+                                    </Button>
+                                )}
                                 <Button 
                                     onClick={() => setActiveTab('placement_test')}
                                     variant="ghost"
-                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'placement_test' ? 'bg-white text-purple-700 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-none ${
+                                        activeTab === 'placement_test' 
+                                            ? 'bg-red-600 text-white shadow-md shadow-red-600/20 font-black hover:bg-red-600' 
+                                            : 'text-slate-500 font-extrabold hover:text-red-600 hover:bg-red-50/50'
+                                    }`}
                                 >
                                     Placement Test ({(placementTestLeads || []).length})
                                 </Button>
                                 <Button 
                                     onClick={() => setActiveTab('new')}
                                     variant="ghost"
-                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'new' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-none ${
+                                        activeTab === 'new' 
+                                            ? 'bg-red-600 text-white shadow-md shadow-red-600/20 font-black hover:bg-red-600' 
+                                            : 'text-slate-500 font-extrabold hover:text-red-600 hover:bg-red-50/50'
+                                    }`}
                                 >
                                     New Leads ({leads.length})
                                 </Button>
                                 <Button 
                                     onClick={() => setActiveTab('paket_lanjut')}
                                     variant="ghost"
-                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'paket_lanjut' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-none ${
+                                        activeTab === 'paket_lanjut' 
+                                            ? 'bg-red-600 text-white shadow-md shadow-red-600/20 font-black hover:bg-red-600' 
+                                            : 'text-slate-500 font-extrabold hover:text-red-600 hover:bg-red-50/50'
+                                    }`}
                                 >
                                     Paket Lanjut ({expiringClassesList.length})
                                 </Button>
                                 <Button 
                                     onClick={() => setActiveTab('rejoin')}
                                     variant="ghost"
-                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-none ${activeTab === 'rejoin' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-400 hover:text-slate-600 hover:bg-transparent'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-none ${
+                                        activeTab === 'rejoin' 
+                                            ? 'bg-red-600 text-white shadow-md shadow-red-600/20 font-black hover:bg-red-600' 
+                                            : 'text-slate-500 font-extrabold hover:text-red-600 hover:bg-red-50/50'
+                                    }`}
                                 >
                                     Rejoin ({rejoinStudents.length})
                                 </Button>
@@ -626,7 +741,7 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
 
                                         {invoice.status === 'pending' && (
                                             <Button 
-                                                onClick={() => handlePayInvoice(invoice.id)}
+                                                onClick={() => handleOpenPayModal(invoice)}
                                                 variant="primary"
                                                 icon={CheckCircle2}
                                                 className="flex-[2] py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/10 transition-all active:scale-95"
@@ -636,9 +751,14 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                                         )}
                                         
                                         {invoice.status === 'paid' && (
-                                            <div className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                                                <CheckCircle className="w-3 h-3" />
-                                                <span className="text-[8px] font-black uppercase tracking-widest">Tagihan Terbayarkan</span>
+                                            <div className="flex-[2] flex flex-col items-center justify-center gap-0.5 px-3 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                                                <div className="flex items-center gap-1.5">
+                                                    <CheckCircle className="w-3 h-3" />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Tagihan Terbayarkan</span>
+                                                </div>
+                                                {invoice.payment_method && (
+                                                    <span className="text-[7px] font-bold text-emerald-700 uppercase">{invoice.payment_method}</span>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -657,6 +777,16 @@ export default function Index({ leads, placementTestLeads = [], rejoinStudents =
                 student={entityType === 'student' ? selectedEntity : null}
                 classes={classes}
                 priceMasters={priceMasters}
+            />
+            <PayInvoiceModal
+                isOpen={isPayModalOpen}
+                onClose={() => {
+                    setIsPayModalOpen(false);
+                    setSelectedInvoiceToPay(null);
+                }}
+                onConfirm={handleConfirmPay}
+                invoiceNumber={selectedInvoiceToPay?.invoice_number}
+                totalAmount={selectedInvoiceToPay?.total_amount}
             />
         </AuthenticatedLayout>
     );

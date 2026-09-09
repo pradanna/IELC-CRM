@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Crm\PtExam;
 
-use App\Domains\CRM\Application\Actions\PtExam\SubmitPlacementTestAction;
+use App\Domains\Academic\Application\Actions\PtExam\SubmitPlacementTestAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PtExam\SubmitPlacementTestRequest;
 use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
@@ -58,7 +58,11 @@ class PublicPlacementTestController extends Controller
     {
         $session = PtSession::with([
             'ptExam.questions.options',
-            'ptExam.ptQuestionGroups.questions.options'
+            'ptExam.ptQuestionGroups.questions.options',
+            'ptExam.generalQuestions.options',
+            'ptExam.generalGroups.questions.options',
+            'ptExam.kidsQuestions',
+            'ptExam.ieltsTasks',
         ])->where('token', $token)->firstOrFail();
 
         if ($session->status === 'completed') {
@@ -101,9 +105,15 @@ class PublicPlacementTestController extends Controller
 
     public function result(string $token): Response|RedirectResponse
     {
-        $session = PtSession::with(['lead', 'ptExam.questions', 'ptExam.ptQuestionGroups.questions'])
-            ->where('token', $token)
-            ->firstOrFail();
+        $session = PtSession::with([
+            'lead',
+            'ptExam.generalQuestions',
+            'ptExam.generalGroups.questions',
+            'ptExam.kidsQuestions',
+            'ptExam.ieltsTasks',
+            'ptExam.questions',
+            'ptExam.ptQuestionGroups.questions',
+        ])->where('token', $token)->firstOrFail();
 
         if ($session->status !== 'completed') {
             return redirect()->route('public.placement-test.show', ['token' => $token]);
@@ -111,10 +121,83 @@ class PublicPlacementTestController extends Controller
 
         $examResource = new PtExamPublicResource($session->ptExam);
         $totalQuestions = $examResource->toArray(request())['total_questions'];
+        $category = $session->ptExam->category ?? 'General';
 
-        $correctAnswers = PtAnswer::where('pt_session_id', $session->id)
-            ->where('is_correct', true)
-            ->count();
+        $correctAnswers = 0;
+        $ieltsModules = null;
+
+        if ($category === 'Kids') {
+            // Count total evaluatable targets across all canvas questions
+            $totalTargets = 0;
+            $kidsQuestions = $session->ptExam->kidsQuestions && $session->ptExam->kidsQuestions->isNotEmpty()
+                ? $session->ptExam->kidsQuestions
+                : $session->ptExam->questions;
+
+            foreach ($kidsQuestions as $q) {
+                $rawCanvas = $q->canvas_data ?? $q->kidCanvas?->canvas_data;
+                $c = is_string($rawCanvas) ? json_decode($rawCanvas, true) : $rawCanvas;
+                if (isset($c['targets']) && is_array($c['targets'])) {
+                    $validTargets = array_filter($c['targets'], function ($tgt) {
+                        $isEx = !empty($tgt['is_example']) || in_array($tgt['type'] ?? '', ['example_circle', 'example_box', 'example_word', 'example_input']);
+                        if ($isEx) return false;
+                        if (($tgt['type'] ?? '') === 'ring_target' && ($tgt['is_correct_answer'] ?? true) === false) return false;
+                        return true;
+                    });
+                    $totalTargets += count($validTargets);
+                } elseif (isset($c['drop_zones']) && is_array($c['drop_zones'])) {
+                    $totalTargets += count($c['drop_zones']);
+                }
+            }
+
+            if ($totalTargets > 0) {
+                $totalQuestions = $totalTargets;
+            }
+
+            // Correct answers for kids represents the total targets correctly matched / score points
+            $correctAnswers = (int) round($session->final_score ?? 0);
+        } elseif ($category === 'IELTS') {
+            $correctAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::where('pt_session_id', $session->id)
+                ->count();
+            
+            $session->load(['ptExam.ieltsTasks']);
+            $ieltsAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::with('ptIeltsTask')
+                ->where('pt_session_id', $session->id)
+                ->get()
+                ->keyBy('pt_ielts_task_id');
+            
+            $ieltsModules = [];
+            foreach ($session->ptExam->ieltsTasks as $task) {
+                $skill = $task->skill_type ?? 'other';
+                $ans = $ieltsAnswers->get($task->id);
+
+                // Parse raw score from teacher notes e.g. "Auto-graded: 32/40 correct (Band 7.5)"
+                $rawScore = null;
+                if ($ans && $ans->teacher_notes && preg_match('/Auto-graded:\s*(\d+)\/(\d+)/', $ans->teacher_notes, $matches)) {
+                    $rawScore = [
+                        'correct' => (int)$matches[1],
+                        'total' => (int)$matches[2],
+                    ];
+                }
+
+                $ieltsModules[$skill] = [
+                    'title' => $task->title ?? ucfirst($skill),
+                    'skill_type' => $skill,
+                    'band_score' => $ans?->band_score,
+                    'raw_score' => $rawScore,
+                    'is_auto_graded' => in_array($skill, ['listening', 'reading']),
+                    'has_attempted' => $ans !== null,
+                    'status' => $ans?->band_score !== null ? 'graded' : ($ans ? 'pending_review' : 'not_attempted'),
+                ];
+            }
+        } else {
+            $generalCorrect = \App\Domains\Academic\Domain\Models\PtGeneralAnswer::where('pt_session_id', $session->id)
+                ->where('is_correct', true)
+                ->count();
+            $legacyCorrect = PtAnswer::where('pt_session_id', $session->id)
+                ->where('is_correct', true)
+                ->count();
+            $correctAnswers = $generalCorrect > 0 ? $generalCorrect : $legacyCorrect;
+        }
 
         return Inertia::render('Public/PlacementTest/Result', [
             'session' => [
@@ -129,7 +212,8 @@ class PublicPlacementTestController extends Controller
             'stats' => [
                 'total_questions' => $totalQuestions,
                 'correct_answers' => $correctAnswers,
-            ]
+            ],
+            'ielts_modules' => $ieltsModules,
         ]);
     }
 }

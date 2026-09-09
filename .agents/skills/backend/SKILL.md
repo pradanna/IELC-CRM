@@ -14,28 +14,41 @@ As a Backend Specialist for the IELC-CRM project, you are responsible for mainta
 - **Database**: MySQL (via Eloquent ORM)
 - **Authentication**: Laravel Sanctum / Breeze
 
-## Architecture: Thin Controller + Action Pattern
+## Architecture: Domain-Driven Design (DDD) + Thin Controller & Action Pattern
 
-### Thin Controllers
+Struktur kode backend IELC-CRM mengadopsi pola **Domain-Driven Design (DDD)** yang modular dan terisolasi:
+
+```
+app/Domains/{DomainName}/
+├── Domain/
+│   ├── Models/           ← Eloquent Models, Relationships, Scopes
+│   └── Repositories/     ← (Opsional) Interface/Contract Domain
+├── Application/
+│   ├── Actions/          ← Pure Single-Action Classes (handle method)
+│   ├── Services/         ← Domain Services
+│   └── Listeners/        ← Event Listeners
+└── Infrastructure/       ← Implementasi Eksternal / Repositories
+```
+
+### Thin Controllers (`app/Http/Controllers/`)
 Controllers should ONLY handle HTTP concerns:
 1. Accept the **FormRequest** (validated data).
-2. Call the appropriate **Action** class.
-3. Return the **Inertia response** with a **Resource**.
+2. Call the appropriate **Action** class in `app/Domains/{Domain}/Application/Actions/`.
+3. Return the **Inertia response** with an **API Resource**.
 
 ```php
-// Example: LeadController@store
-public function store(StoreLeadRequest $request)
+// Example: StudentController@transferClass
+public function transferClass(TransferStudentClassRequest $request, Student $student, TransferStudentClass $action)
 {
-    $lead = (new StoreLead)->handle($request->validated());
-    return redirect()->route('leads.index')
-        ->with('success', 'Lead berhasil dibuat.');
+    $action->handle($student, ...$request->validated());
+    return redirect()->back()->with('success', 'Siswa berhasil dipindahkan ke kelas baru.');
 }
 ```
 
-### Action Classes (`app/Actions/`)
+### Action Classes (`app/Domains/{Domain}/Application/Actions/`)
 - Pure PHP classes — no package dependencies.
-- Structure: `app/Actions/{Module}/{Entity}/{ActionName}.php`
-- Example: `app/Actions/CRM/Leads/StoreLead.php`
+- Structure: `app/Domains/{Domain}/Application/Actions/{ActionName}.php`
+- Example: `app/Domains/Academic/Application/Actions/TransferStudentClass.php`
 - Use a single `handle()` method for the main logic.
 - Wrap data-altering operations in `DB::transaction()`.
 

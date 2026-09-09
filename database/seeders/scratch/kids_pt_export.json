@@ -1,0 +1,943 @@
+{
+    "exam_title": "PT KIDS",
+    "exam_slug": "pt-kids",
+    "exam_description": null,
+    "exam_duration": 60,
+    "questions": [
+        {
+            "question_text": "Part A.1",
+            "type": "drag_drop",
+            "points": 1,
+            "number": 4,
+            "position": 4,
+            "audio_path": null,
+            "canvas": {
+                "mode": "freeform_canvas",
+                "instruction": "Tarik kata yang tepat dari kotak di bawah untuk melengkapi kalimat.",
+                "canvas_data": {
+                    "mode": "freeform_canvas",
+                    "instruction": "Tarik kata yang tepat dari kotak di bawah untuk melengkapi kalimat.",
+                    "tokens": [
+                        {
+                            "id": "tok_w_1788191835049",
+                            "type": "word",
+                            "text": "fine",
+                            "color": "#ea580c",
+                            "fontSize": "16",
+                            "x": "189",
+                            "y": "199"
+                        },
+                        {
+                            "id": "tok_w_1788321846097",
+                            "type": "word",
+                            "text": "old",
+                            "color": "#ea580c",
+                            "fontSize": "16",
+                            "x": "385",
+                            "y": "197"
+                        },
+                        {
+                            "id": "tok_w_1788321869579",
+                            "type": "word",
+                            "text": "your",
+                            "color": "#ea580c",
+                            "fontSize": "16",
+                            "x": "493",
+                            "y": "195"
+                        },
+                        {
+                            "id": "tok_w_1788321871811",
+                            "type": "word",
+                            "text": "name's",
+                            "color": "#ea580c",
+                            "fontSize": "16",
+                            "x": "601",
+                            "y": "194"
+                        },
+                        {
+                            "id": "tok_w_1788321874123",
+                            "type": "word",
+                            "text": "How",
+                            "color": "#ea580c",
+                            "fontSize": "16",
+                            "x": "721",
+                            "y": "196"
+                        },
+                        {
+                            "id": "tok_w_1788322276778",
+                            "type": "word",
+                            "text": "ten",
+                            "color": "#ea580c",
+                            "fontSize": "16",
+                            "x": "285",
+                            "y": "198"
+                        }
+                    ],
+                    "elements": [
+                        {
+                            "id": "img_1788330673711",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/shdZlzVCmu8hnFQWGnBt1qxcPncO2wJ2AL9oRx2p.jpg",
+                            "x": "30.415637734385154",
+                            "y": "295.5528348841189",
+                            "width": "1039",
+                            "height": "410"
+                        },
+                        {
+                            "id": "txt_1788158831305",
+                            "type": "text",
+                            "text": "Hello, I'm Tom\r\nWhat's              name?",
+                            "x": "137.99999999999957",
+                            "y": "336.7536569350943",
+                            "fontSize": "20",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
+                        },
+                        {
+                            "id": "txt_1788321912749_2i4d",
+                            "type": "text",
+                            "text": "Hi, My               Jenny.",
+                            "x": "134.99999999999957",
+                            "y": "630.7536569350943",
+                            "fontSize": "20",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
+                        },
+                        {
+                            "id": "txt_1788321932990_r3c8",
+                            "type": "text",
+                            "text": "How\r\n             Are You?",
+                            "x": "494.99999999999955",
+                            "y": "335.75365693509434",
+                            "fontSize": "20",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
+                        },
+                        {
+                            "id": "txt_1788321961096_stj8",
+                            "type": "text",
+                            "text": "I'm                 .",
+                            "x": "499.99999999999955",
+                            "y": "636.7536569350943",
+                            "fontSize": "20",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
+                        },
+                        {
+                            "id": "txt_1788321974337_bhhb",
+                            "type": "text",
+                            "text": "are you",
+                            "x": "902.9999999999995",
+                            "y": "338.7536569350944",
+                            "fontSize": "19",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
+                        },
+                        {
+                            "id": "txt_1788322002515_7sq2",
+                            "type": "text",
+                            "text": "I'm                , thank you.",
+                            "x": "786.9999999999995",
+                            "y": "639.7536569350939",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
+                        },
+                        {
+                            "id": "txt_1788322640706_hs80",
+                            "type": "text",
+                            "text": "today?",
+                            "x": "878.9999999999995",
+                            "y": "366.7536569350944",
+                            "fontSize": "19",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
+                        },
+                        {
+                            "id": "txt_1788448367894",
+                            "type": "text",
+                            "text": "Tarik kata yang tepat dari kotak di bawah untuk melengkapi kalimat.",
+                            "x": "239",
+                            "y": "121",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        }
+                    ],
+                    "targets": [
+                        {
+                            "id": "tgt_1788159547088",
+                            "type": "word_target",
+                            "x": "218.52902864842204",
+                            "y": "371.54099316381456",
+                            "width": "60",
+                            "height": "20",
+                            "correct_token_id": "tok_w_1788321869579",
+                            "label": "1...........",
+                            "fontSize": "12"
+                        },
+                        {
+                            "id": "tgt_1788322044989_53e0",
+                            "type": "word_target",
+                            "x": "211.52902864842204",
+                            "y": "640.5409931638146",
+                            "width": "60",
+                            "height": "20",
+                            "correct_token_id": "tok_w_1788321871811",
+                            "label": "2..........",
+                            "fontSize": "12"
+                        },
+                        {
+                            "id": "tgt_1788322054734_59r0",
+                            "type": "word_target",
+                            "x": "507.529028648422",
+                            "y": "368.54099316381456",
+                            "width": "60",
+                            "height": "20",
+                            "correct_token_id": "tok_w_1788321846097",
+                            "label": "3.........",
+                            "fontSize": "12"
+                        },
+                        {
+                            "id": "tgt_1788322058342_jazm",
+                            "type": "word_target",
+                            "x": "550.529028648422",
+                            "y": "641.5409931638146",
+                            "width": "60",
+                            "height": "20",
+                            "correct_token_id": "tok_w_1788322276778",
+                            "label": "4.........",
+                            "fontSize": "12"
+                        },
+                        {
+                            "id": "tgt_1788322062647_yfwe",
+                            "type": "word_target",
+                            "x": "833.529028648422",
+                            "y": "646.5409931638146",
+                            "width": "60",
+                            "height": "20",
+                            "correct_token_id": "tok_w_1788191835049",
+                            "label": "6.........",
+                            "fontSize": "12"
+                        },
+                        {
+                            "id": "tgt_1788322067447_1brz",
+                            "type": "word_target",
+                            "x": "837.529028648422",
+                            "y": "352.54099316381456",
+                            "width": "60",
+                            "height": "20",
+                            "correct_token_id": "tok_w_1788191835049",
+                            "label": "5..........",
+                            "fontSize": "12"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "question_text": "Part A. 2",
+            "type": "drag_drop",
+            "points": 1,
+            "number": 2,
+            "position": 5,
+            "audio_path": null,
+            "canvas": {
+                "mode": "freeform_canvas",
+                "instruction": "Taruh lingkaran hijau di kata yang benar lalu tarik kata yang benar dari kolom kanan untuk melengkapi kalimat.",
+                "canvas_data": {
+                    "mode": "freeform_canvas",
+                    "instruction": "Taruh lingkaran hijau di kata yang benar lalu tarik kata yang benar dari kolom kanan untuk melengkapi kalimat.",
+                    "tokens": [
+                        {
+                            "id": "tok_w_1788452641885",
+                            "type": "word",
+                            "text": "kite",
+                            "color": "#ea580c",
+                            "x": "647",
+                            "y": "412"
+                        },
+                        {
+                            "id": "tok_w_1788452644205",
+                            "type": "word",
+                            "text": "cake",
+                            "color": "#ea580c",
+                            "x": "653",
+                            "y": "473"
+                        },
+                        {
+                            "id": "tok_w_1788452646749",
+                            "type": "word",
+                            "text": "table",
+                            "color": "#ea580c",
+                            "x": "651",
+                            "y": "532"
+                        },
+                        {
+                            "id": "tok_ring_1788452710771",
+                            "type": "ring",
+                            "label": "🟢 Ring Hijau #1",
+                            "color": "#22c55e",
+                            "x": "269",
+                            "y": "374",
+                            "allowed_target_ids": [
+                                "tgt_1788452508589_2nd0",
+                                "tgt_1788452523254_qbvk"
+                            ],
+                            "allowed_target_id": null
+                        },
+                        {
+                            "id": "tok_ring_1788452714389",
+                            "type": "ring",
+                            "label": "🟢 Ring Hijau #2",
+                            "color": "#22c55e",
+                            "x": "267",
+                            "y": "563",
+                            "allowed_target_ids": [
+                                "tgt_1788452582865_qi6u",
+                                "tgt_1788452582865_f31k"
+                            ],
+                            "allowed_target_id": null
+                        },
+                        {
+                            "id": "tok_ring_1788452719488",
+                            "type": "ring",
+                            "label": "🟢 Ring Hijau #3",
+                            "color": "#22c55e",
+                            "x": "257",
+                            "y": "742",
+                            "allowed_target_ids": [
+                                "tgt_1788452593258_tmrl",
+                                "tgt_1788452593258_f1d3"
+                            ],
+                            "allowed_target_id": null
+                        }
+                    ],
+                    "elements": [
+                        {
+                            "id": "txt_1788450711478",
+                            "type": "text",
+                            "text": "Taruh lingkaran hijau di kata yang benar lalu tarik kata yang benar dari kolom kanan untuk melengkapi kalimat.",
+                            "x": "102",
+                            "y": "37",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788450721050",
+                            "type": "text",
+                            "text": "EXAMPLE",
+                            "x": "109",
+                            "y": "111",
+                            "fontSize": "18",
+                            "fontStyle": "bold",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "img_1788452328568",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/5nfmHduN0ak1sILtNpYu1K4SRdVnfRgOUxGsT2ii.jpg",
+                            "x": "532",
+                            "y": "70",
+                            "width": "180",
+                            "height": "180"
+                        },
+                        {
+                            "id": "txt_1788452364303",
+                            "type": "text",
+                            "text": "It's",
+                            "x": "110",
+                            "y": "186",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788452394951_buy6",
+                            "type": "text",
+                            "text": "\/",
+                            "x": "263",
+                            "y": "185",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788452455130_p8v3",
+                            "type": "text",
+                            "text": "Questions",
+                            "x": "107",
+                            "y": "299",
+                            "fontSize": "18",
+                            "fontStyle": "bold",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788452490356_bcyh",
+                            "type": "text",
+                            "text": "1. It's",
+                            "x": "114",
+                            "y": "432",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788452515373_4na5",
+                            "type": "text",
+                            "text": "\/",
+                            "x": "280",
+                            "y": "429",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "img_1788452561328",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/Vxm4qk9hxz8DPmdO30JokJW372mvZl2MuVhH6h3i.jpg",
+                            "x": "390.99999999999994",
+                            "y": "293.3013761534713",
+                            "width": "142",
+                            "height": "142"
+                        },
+                        {
+                            "id": "txt_1788452582865_uk6t",
+                            "type": "text",
+                            "text": "2. It's",
+                            "x": "113",
+                            "y": "611",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788452582865_s9zm",
+                            "type": "text",
+                            "text": "\/",
+                            "x": "279",
+                            "y": "608",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788452593258_psmi",
+                            "type": "text",
+                            "text": "2. It's",
+                            "x": "102",
+                            "y": "793",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788452593258_cqwg",
+                            "type": "text",
+                            "text": "\/",
+                            "x": "268",
+                            "y": "790",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "img_1788452603157",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/VaI6G4sKifuZFKuAULfshHQzKmvdK7igN3IOnAIR.jpg",
+                            "x": "402.00000000000045",
+                            "y": "495.4796155172842",
+                            "width": "117",
+                            "height": "117"
+                        },
+                        {
+                            "id": "img_1788452624185",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/zyuPM53V902ukjchIAEwJjW9j0qELkIqtkQD8noj.jpg",
+                            "x": "386.9999999999999",
+                            "y": "676.7502688175149",
+                            "width": "116",
+                            "height": "116"
+                        }
+                    ],
+                    "targets": [
+                        {
+                            "id": "tgt_1788452387087",
+                            "type": "ring_target",
+                            "x": "208",
+                            "y": "196",
+                            "radius": "24",
+                            "correct_token_type": "ring",
+                            "label": "small",
+                            "is_correct_answer": "0"
+                        },
+                        {
+                            "id": "tgt_1788452407099",
+                            "type": "example_circle",
+                            "is_example": "1",
+                            "x": "336",
+                            "y": "194",
+                            "radius": "28",
+                            "label": "big"
+                        },
+                        {
+                            "id": "tgt_1788452418772",
+                            "type": "example_word",
+                            "is_example": "1",
+                            "example_text": "aeroplan",
+                            "x": "400",
+                            "y": "177",
+                            "width": "100",
+                            "height": "32",
+                            "label": "aeroplan"
+                        },
+                        {
+                            "id": "tgt_1788452508589_2nd0",
+                            "type": "ring_target",
+                            "x": "230",
+                            "y": "438",
+                            "radius": "24",
+                            "correct_token_type": "ring",
+                            "label": "long"
+                        },
+                        {
+                            "id": "tgt_1788452523254_qbvk",
+                            "type": "ring_target",
+                            "x": "346",
+                            "y": "438",
+                            "radius": "24",
+                            "correct_token_type": "ring",
+                            "label": "short",
+                            "is_correct_answer": "0"
+                        },
+                        {
+                            "id": "tgt_1788452536705",
+                            "type": "word_target",
+                            "x": "409",
+                            "y": "424",
+                            "width": "100",
+                            "height": "32",
+                            "correct_token_id": "tok_w_1788452646749",
+                            "label": "-------------"
+                        },
+                        {
+                            "id": "tgt_1788452582865_qi6u",
+                            "type": "ring_target",
+                            "x": "229",
+                            "y": "617",
+                            "radius": "24",
+                            "correct_token_type": "ring",
+                            "label": "black"
+                        },
+                        {
+                            "id": "tgt_1788452582865_f31k",
+                            "type": "ring_target",
+                            "x": "345",
+                            "y": "617",
+                            "radius": "24",
+                            "correct_token_type": "ring",
+                            "label": "white",
+                            "is_correct_answer": "0"
+                        },
+                        {
+                            "id": "tgt_1788452582865_99zq",
+                            "type": "word_target",
+                            "x": "408",
+                            "y": "603",
+                            "width": "100",
+                            "height": "32",
+                            "correct_token_id": "tok_w_1788452641885",
+                            "label": "-------------"
+                        },
+                        {
+                            "id": "tgt_1788452593258_f1d3",
+                            "type": "ring_target",
+                            "x": "218",
+                            "y": "799",
+                            "radius": "24",
+                            "correct_token_type": "ring",
+                            "label": "his",
+                            "is_correct_answer": "0"
+                        },
+                        {
+                            "id": "tgt_1788452593258_tmrl",
+                            "type": "ring_target",
+                            "x": "334",
+                            "y": "799",
+                            "radius": "24",
+                            "correct_token_type": "ring",
+                            "label": "her"
+                        },
+                        {
+                            "id": "tgt_1788452593258_5abc",
+                            "type": "word_target",
+                            "x": "397",
+                            "y": "785",
+                            "width": "100",
+                            "height": "32",
+                            "correct_token_id": "tok_w_1788452644205",
+                            "label": "-------------"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "question_text": "Part A.3",
+            "type": "drag_drop",
+            "points": 1,
+            "number": 3,
+            "position": 6,
+            "audio_path": null,
+            "canvas": {
+                "mode": "freeform_canvas",
+                "instruction": "Pilih benar (centang) atau salah (silang) dengan meletakkan tanda yang benar di dalam kotak.",
+                "canvas_data": {
+                    "mode": "freeform_canvas",
+                    "instruction": "Pilih benar (centang) atau salah (silang) dengan meletakkan tanda yang benar di dalam kotak.",
+                    "tokens": [
+                        {
+                            "id": "tok_chk_1788454250925",
+                            "type": "check",
+                            "label": "✔ Centang #1",
+                            "symbol": "✔",
+                            "color": "#16a34a",
+                            "x": "589",
+                            "y": "484"
+                        },
+                        {
+                            "id": "tok_crs_1788454252433",
+                            "type": "cross",
+                            "label": "✖ Silang #1",
+                            "symbol": "✖",
+                            "color": "#dc2626",
+                            "x": "646",
+                            "y": "485"
+                        },
+                        {
+                            "id": "tok_chk_1788454305500",
+                            "type": "check",
+                            "label": "✔ Centang #2",
+                            "symbol": "✔",
+                            "color": "#16a34a",
+                            "x": "593",
+                            "y": "587"
+                        },
+                        {
+                            "id": "tok_crs_1788454306013",
+                            "type": "cross",
+                            "label": "✖ Silang #2",
+                            "symbol": "✖",
+                            "color": "#dc2626",
+                            "x": "650",
+                            "y": "586"
+                        },
+                        {
+                            "id": "tok_chk_1788454306952",
+                            "type": "check",
+                            "label": "✔ Centang #3",
+                            "symbol": "✔",
+                            "color": "#16a34a",
+                            "x": "595",
+                            "y": "689"
+                        },
+                        {
+                            "id": "tok_crs_1788454307496",
+                            "type": "cross",
+                            "label": "✖ Silang #3",
+                            "symbol": "✖",
+                            "color": "#dc2626",
+                            "x": "654",
+                            "y": "688"
+                        },
+                        {
+                            "id": "tok_chk_1788454308052",
+                            "type": "check",
+                            "label": "✔ Centang #4",
+                            "symbol": "✔",
+                            "color": "#16a34a",
+                            "x": "598",
+                            "y": "804"
+                        },
+                        {
+                            "id": "tok_crs_1788454308496",
+                            "type": "cross",
+                            "label": "✖ Silang #4",
+                            "symbol": "✖",
+                            "color": "#dc2626",
+                            "x": "654",
+                            "y": "803"
+                        },
+                        {
+                            "id": "tok_chk_1788454309000",
+                            "type": "check",
+                            "label": "✔ Centang #5",
+                            "symbol": "✔",
+                            "color": "#16a34a",
+                            "x": "598",
+                            "y": "902"
+                        },
+                        {
+                            "id": "tok_crs_1788454309388",
+                            "type": "cross",
+                            "label": "✖ Silang #5",
+                            "symbol": "✖",
+                            "color": "#dc2626",
+                            "x": "654",
+                            "y": "902"
+                        }
+                    ],
+                    "elements": [
+                        {
+                            "id": "txt_1788453641631",
+                            "type": "text",
+                            "text": "Pilih benar (centang) atau salah (silang) dengan meletakkan tanda yang benar di dalam kotak.",
+                            "x": "152",
+                            "y": "52",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453647854_6ko7",
+                            "type": "text",
+                            "text": "Example",
+                            "x": "82",
+                            "y": "112",
+                            "fontSize": "18",
+                            "fontStyle": "bold",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453660310_poeg",
+                            "type": "text",
+                            "text": "This is a flower.",
+                            "x": "288",
+                            "y": "180",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453679399_h859",
+                            "type": "text",
+                            "text": "This is a goat.",
+                            "x": "286",
+                            "y": "291",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453708137_zg58",
+                            "type": "text",
+                            "text": "Questions",
+                            "x": "91",
+                            "y": "402",
+                            "fontSize": "18",
+                            "fontStyle": "bold",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453718257_rvps",
+                            "type": "text",
+                            "text": "This is a lizard.",
+                            "x": "278",
+                            "y": "494",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453734866_mjc2",
+                            "type": "text",
+                            "text": "This is a bike.",
+                            "x": "277",
+                            "y": "602",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453748147_n1ku",
+                            "type": "text",
+                            "text": "This is a pineapple.",
+                            "x": "261",
+                            "y": "707",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453760780_qkz9",
+                            "type": "text",
+                            "text": "This is a television.",
+                            "x": "270",
+                            "y": "818",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "txt_1788453772741_qoy4",
+                            "type": "text",
+                            "text": "This is a guitar.",
+                            "x": "278",
+                            "y": "914",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b"
+                        },
+                        {
+                            "id": "img_1788454054028",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/zDd8n4EGv0nmEJKGRS7PCGNpDQazqttAdmoJn8Kf.jpg",
+                            "x": "161.00000000000006",
+                            "y": "143.22227808884088",
+                            "width": "110",
+                            "height": "95"
+                        },
+                        {
+                            "id": "img_1788454054086",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/ftOtGhgzkDNkctABB4e63IzTmKdLr1jAQctXDwIh.jpg",
+                            "x": "110.00000000000009",
+                            "y": "663.9517818200607",
+                            "width": "136",
+                            "height": "96"
+                        },
+                        {
+                            "id": "img_1788454054333",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/vWroia0TXlnwjHiRZBbTn7CuIviBOLJTFGnMB1Lz.jpg",
+                            "x": "118.61905530293066",
+                            "y": "769.6590001304007",
+                            "width": "139",
+                            "height": "98"
+                        },
+                        {
+                            "id": "img_1788454054351",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/hMZyxNcokBdIed9jkKJM1Aguw9Kp5kzXxFhIZYDh.jpg",
+                            "x": "101.130034888669",
+                            "y": "871.9149663467751",
+                            "width": "150",
+                            "height": "94"
+                        },
+                        {
+                            "id": "img_1788454184115",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/HPoZ7DJxe9KE6e8QSDqOKMrBaskIFlPciaUbdfbM.jpg",
+                            "x": "161.99999999999977",
+                            "y": "257.2117027681969",
+                            "width": "101",
+                            "height": "82"
+                        },
+                        {
+                            "id": "img_1788454193406",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/43PIEAWW1JchEiI6oSPmkAsgXu6hQ0BAiB78vGPW.jpg",
+                            "x": "109.00000000000003",
+                            "y": "463.34117960224114",
+                            "width": "146",
+                            "height": "91"
+                        },
+                        {
+                            "id": "img_1788454206658",
+                            "type": "image",
+                            "src": "\/storage\/pt_exams\/kids_canvas\/a7V4FfAVVNisP4LrCimiLyYKQ6og621ehGwmRGAL.jpg",
+                            "x": "103.00000000000004",
+                            "y": "560.2284613862248",
+                            "width": "157",
+                            "height": "98"
+                        }
+                    ],
+                    "targets": [
+                        {
+                            "id": "tgt_1788453696947",
+                            "type": "example_box",
+                            "is_example": "1",
+                            "example_symbol": "check",
+                            "x": "475",
+                            "y": "175",
+                            "width": "36",
+                            "height": "36",
+                            "label": "Contoh Centang"
+                        },
+                        {
+                            "id": "tgt_1788453700906",
+                            "type": "example_box",
+                            "is_example": "1",
+                            "example_symbol": "cross",
+                            "x": "473",
+                            "y": "281",
+                            "width": "36",
+                            "height": "36",
+                            "label": "Contoh Silang"
+                        },
+                        {
+                            "id": "tgt_1788454277978",
+                            "type": "box_target",
+                            "x": "426",
+                            "y": "487",
+                            "width": "36",
+                            "height": "36",
+                            "correct_symbol": "cross",
+                            "label": "Kotak True\/False",
+                            "correct_token_id": "cross"
+                        },
+                        {
+                            "id": "tgt_1788454287306_fz6l",
+                            "type": "box_target",
+                            "x": "416",
+                            "y": "596",
+                            "width": "36",
+                            "height": "36",
+                            "correct_symbol": "check",
+                            "label": "Kotak True\/False (Copy)"
+                        },
+                        {
+                            "id": "tgt_1788454289586_go5o",
+                            "type": "box_target",
+                            "x": "434",
+                            "y": "699",
+                            "width": "36",
+                            "height": "36",
+                            "correct_symbol": "check",
+                            "label": "Kotak True\/False (Copy) (Copy)"
+                        },
+                        {
+                            "id": "tgt_1788454291770_456y",
+                            "type": "box_target",
+                            "x": "446",
+                            "y": "810",
+                            "width": "36",
+                            "height": "36",
+                            "correct_symbol": "cross",
+                            "label": "Kotak True\/False (Copy) (Copy) (Copy)",
+                            "correct_token_id": "cross"
+                        },
+                        {
+                            "id": "tgt_1788454294258_uv5d",
+                            "type": "box_target",
+                            "x": "425",
+                            "y": "909",
+                            "width": "36",
+                            "height": "36",
+                            "correct_symbol": "check",
+                            "label": "Kotak True\/False (Copy) (Copy) (Copy) (Copy)"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

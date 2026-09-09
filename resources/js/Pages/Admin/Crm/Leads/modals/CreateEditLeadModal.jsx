@@ -122,6 +122,25 @@ export default function CreateEditLeadModal({
 
     const [cities, setCities] = useState([]);
     const [loadingCities, setLoadingCities] = useState(false);
+    const parseGradeAndSchoolLevel = (rawGrade, rawLevel) => {
+        if (rawLevel) {
+            return { grade: rawGrade, school_level: rawLevel };
+        }
+        if (!rawGrade) {
+            return { grade: '', school_level: '' };
+        }
+        const trimmed = rawGrade.trim();
+        const sdMatch = trimmed.match(/^SD\s*([1-6])$/i);
+        if (sdMatch) return { grade: 'SD', school_level: `Kelas ${sdMatch[1]}` };
+
+        const smpMatch = trimmed.match(/^SMP\s*([7-9])$/i);
+        if (smpMatch) return { grade: 'SMP', school_level: `Kelas ${smpMatch[1]}` };
+
+        const smaMatch = trimmed.match(/^SMA\s*(1[0-2])$/i);
+        if (smaMatch) return { grade: 'SMA', school_level: `Kelas ${smaMatch[1]}` };
+
+        return { grade: trimmed, school_level: '' };
+    };
 
     // Initial defaults for New Lead OR Prefill for Edit
     useEffect(() => {
@@ -144,6 +163,8 @@ export default function CreateEditLeadModal({
                     is_main_contact: r.is_main_contact || false
                 })) : [];
 
+                const parsedGrade = parseGradeAndSchoolLevel(lead.grade, lead.school_level);
+
                 setData({
                     name: lead.name || '',
                     nickname: lead.nickname || '',
@@ -152,7 +173,8 @@ export default function CreateEditLeadModal({
                     email: lead.email || '',
                     birth_date: lead.birth_date || '',
                     school: lead.school || '',
-                    grade: lead.grade || '',
+                    grade: parsedGrade.grade,
+                    school_level: parsedGrade.school_level,
                     branch_id: lead.branch_id || '',
                     lead_source_id: lead.lead_source_id || '',
                     info_source_id: lead.info_source_id || '',
@@ -177,6 +199,7 @@ export default function CreateEditLeadModal({
                     birth_date: '',
                     school: '',
                     grade: '',
+                    school_level: '',
                     branch_id: auth.user.branch_id || '',
                     lead_source_id: '',
                     info_source_id: '',
@@ -237,15 +260,44 @@ export default function CreateEditLeadModal({
         }
     };
 
-    const gradeOptions = [
-        { value: 'PG', label: 'PG' },
-        { value: 'TK', label: 'TK' },
+    const mainGradeOptions = [
+        { value: 'TK', label: 'TK / PAUD' },
         { value: 'SD', label: 'SD' },
         { value: 'SMP', label: 'SMP' },
-        { value: 'SMA', label: 'SMA' },
-        { value: 'KULIAH', label: 'KULIAH' },
-        { value: 'UMUM', label: 'UMUM' }
+        { value: 'SMA', label: 'SMA / SMK' },
+        { value: 'UMUM', label: 'Umum / Profesional' },
     ];
+
+    const getSchoolLevelOptions = (grade) => {
+        if (grade === 'SD') {
+            return [
+                { value: '', label: 'Pilih Kelas (Opsional)' },
+                { value: 'Kelas 1', label: 'SD Kelas 1' },
+                { value: 'Kelas 2', label: 'SD Kelas 2' },
+                { value: 'Kelas 3', label: 'SD Kelas 3' },
+                { value: 'Kelas 4', label: 'SD Kelas 4' },
+                { value: 'Kelas 5', label: 'SD Kelas 5' },
+                { value: 'Kelas 6', label: 'SD Kelas 6' },
+            ];
+        }
+        if (grade === 'SMP') {
+            return [
+                { value: '', label: 'Pilih Kelas (Opsional)' },
+                { value: 'Kelas 7', label: 'SMP Kelas 7' },
+                { value: 'Kelas 8', label: 'SMP Kelas 8' },
+                { value: 'Kelas 9', label: 'SMP Kelas 9' },
+            ];
+        }
+        if (grade === 'SMA') {
+            return [
+                { value: '', label: 'Pilih Kelas (Opsional)' },
+                { value: 'Kelas 10', label: 'SMA Kelas 10' },
+                { value: 'Kelas 11', label: 'SMA Kelas 11' },
+                { value: 'Kelas 12', label: 'SMA Kelas 12' },
+            ];
+        }
+        return [];
+    };
 
     return (
         <Transition.Root show={isOpen} as={Fragment}>
@@ -531,15 +583,31 @@ export default function CreateEditLeadModal({
                                                                 placeholder="Nama Sekolah 'diisi UMUM jika sudah tidak dalam fase sekolah'"
                                                             />
                                                         </PremiumFormGroup>
-                                                        <PremiumFormGroup label="Kelas" error={errors.grade}>
-                                                            <PremiumSearchableSelect
-                                                                options={gradeOptions}
-                                                                value={data.grade}
-                                                                onChange={val => setData('grade', val)}
-                                                                placeholder="Pilih Kelas"
-                                                                error={errors.grade}
-                                                            />
-                                                        </PremiumFormGroup>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            <PremiumFormGroup label="Jenjang Sekolah" error={errors.grade}>
+                                                                <PremiumSearchableSelect
+                                                                    options={mainGradeOptions}
+                                                                    value={data.grade}
+                                                                    onChange={val => {
+                                                                        setData(prev => ({ ...prev, grade: val, school_level: '' }));
+                                                                    }}
+                                                                    placeholder="Pilih Jenjang"
+                                                                    error={errors.grade}
+                                                                />
+                                                            </PremiumFormGroup>
+
+                                                            {['SD', 'SMP', 'SMA'].includes(data.grade) && (
+                                                                <PremiumFormGroup label="Detail Kelas" error={errors.school_level}>
+                                                                    <PremiumSearchableSelect
+                                                                        options={getSchoolLevelOptions(data.grade)}
+                                                                        value={data.school_level}
+                                                                        onChange={val => setData('school_level', val)}
+                                                                        placeholder="Pilih Kelas (Opsional)"
+                                                                        error={errors.school_level}
+                                                                    />
+                                                                </PremiumFormGroup>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="pt-6 border-t border-slate-100">

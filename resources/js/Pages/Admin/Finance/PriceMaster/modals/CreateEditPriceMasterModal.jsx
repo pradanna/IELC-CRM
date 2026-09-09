@@ -61,7 +61,7 @@ export default function CreateEditPriceMasterModal({ isOpen, onClose, priceItem 
                         <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
                             {priceItem ? 'Update' : 'Create'} <span className="text-red-600">Price Master</span>
                         </h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Configure session rates for invoicing</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Configure package rates for invoicing</p>
                     </div>
                 </div>
 
@@ -80,7 +80,7 @@ export default function CreateEditPriceMasterModal({ isOpen, onClose, priceItem 
                     </div>
 
                     <div>
-                        <InputLabel htmlFor="price" value="Price per Session (IDR)" className="uppercase text-[10px] tracking-widest font-black text-slate-400 mb-2" />
+                        <InputLabel htmlFor="price" value="Harga per Paket (IDR)" className="uppercase text-[10px] tracking-widest font-black text-slate-400 mb-2" />
                         <div className="relative">
                             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
                             <TextInput
@@ -114,7 +114,7 @@ export default function CreateEditPriceMasterModal({ isOpen, onClose, priceItem 
                         ) : (
                             <Save className="w-4 h-4 mr-2" />
                         )}
-                        {priceItem ? 'Update Rate' : 'Save Rate'}
+                        {priceItem ? 'Update Paket' : 'Simpan Paket'}
                     </PrimaryButton>
                 </div>
             </form>

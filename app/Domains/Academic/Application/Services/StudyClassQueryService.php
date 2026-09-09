@@ -23,7 +23,9 @@ class StudyClassQueryService
             'instructor.finance', 
             'instructor.teacher',
             'priceMaster', 
-            'students.lead'
+            'students.lead',
+            'currentCycleAttendances.student.lead',
+            'currentCycleAttendances.recorder'
         ])->withCount('students');
 
         $status = $request->input('status', 'active');
@@ -61,10 +63,7 @@ class StudyClassQueryService
         }
 
         if ($request->filled('category')) {
-            $category = strtolower($request->category);
-            if (in_array($category, ['group', 'private'])) {
-                $query->where('category', $category);
-            }
+            $query->where('category', $request->category);
         }
 
         return [
@@ -72,6 +71,7 @@ class StudyClassQueryService
             'branches' => Branch::select('id', 'name')->get(),
             'instructors' => User::with(['superadmin', 'marketing', 'frontdesk', 'finance'])->get(),
             'priceMasters' => PriceMaster::select('id', 'name', 'price_per_session')->get(),
+            'leadTypes' => \DB::table('lead_types')->select('id', 'code', 'name')->orderBy('name')->get(),
         ];
     }
 }

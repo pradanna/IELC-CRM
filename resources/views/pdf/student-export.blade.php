@@ -52,44 +52,43 @@
             margin-bottom: 24px;
         }
 
+        tr {
+            page-break-inside: avoid;
+        }
+
         thead th {
-            padding: 8px 10px;
+            padding: 6px 8px;
             text-align: left;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: 800;
             color: #ffffff;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            white-space: nowrap;
-            border: 1px solid rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+            border: 1px solid #334155;
         }
 
         tbody td {
-            padding: 8px 10px;
-            font-size: 10px;
+            padding: 5px 8px;
+            font-size: 9px;
             color: #334155;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             vertical-align: middle;
         }
 
-        tbody tr:nth-child(even) td { background-color: #f8fafc; }
-
         .section-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         /* ─── Footer ─────────────────────────────────────────── */
         .page-footer {
-            margin-top: 28px;
+            margin-top: 20px;
             border-top: 1px solid #e2e8f0;
-            padding-top: 12px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
+            padding-top: 10px;
+            font-size: 8.5px;
             color: #94a3b8;
             font-weight: 600;
         }

@@ -19,7 +19,7 @@ export default function KanbanColumn({ phase, leads, onCardClick }) {
     });
 
     return (
-        <div ref={setNodeRef} className={`flex flex-col w-80 shrink-0 rounded-3xl p-4 border border-slate-100/50 ${style.bg} min-h-full`}>
+        <div id={`phase-column-${phase.id}`} ref={setNodeRef} className={`flex flex-col w-80 shrink-0 rounded-3xl p-4 border border-slate-100/50 ${style.bg} min-h-full`}>
             {/* Column Header */}
             <div className={`shrink-0 flex items-center justify-between mb-6 px-2 ${style.color}`}>
                 <div className="flex items-center gap-3">

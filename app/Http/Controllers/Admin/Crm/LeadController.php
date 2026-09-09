@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
+use App\Domains\CRM\Application\Actions\Leads\AddLeadEnrollment;
 use App\Domains\CRM\Application\Actions\Leads\FetchLeadHistory;
 use App\Domains\CRM\Application\Actions\Leads\PlotLeadClass;
 use App\Domains\CRM\Application\Actions\Leads\RecordLeadFollowUp;
@@ -57,6 +58,10 @@ class LeadController extends Controller
     {
         if (auth()->user()?->hasRole('finance')) {
             return redirect()->route('admin.finance.dashboard');
+        }
+
+        if (auth()->user()?->hasRole('teacher')) {
+            return redirect()->route('admin.academic.students.index');
         }
 
         $leads = $service->getPaginatedLeads($request);
@@ -161,6 +166,47 @@ class LeadController extends Controller
             return response()->json(['message' => 'Template sent effectively.']);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to send WhatsApp: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function addEnrollment(Request $request, Lead $lead, AddLeadEnrollment $action): JsonResponse
+    {
+        $validated = $request->validate([
+            'study_class_id' => ['required', 'uuid', 'exists:study_classes,id'],
+            'join_date'      => ['nullable', 'date'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $enrollment = $action->handle($lead, $validated);
+
+            $lead->refresh()->load([
+                'branch', 'owner', 'leadSource', 'infoSource', 'leadType', 'leadPhase',
+                'guardians', 'leadRelationships.relatedLead',
+                'ptSessions.ptExam',
+                'consultations.consultant',
+                'invoices.items',
+                'student.studyClasses',
+                'chatLogs.sender',
+                'notes.user',
+                'activities.user',
+                'enrollments.studyClass', 'enrollments.invoice',
+            ]);
+
+            return response()->json([
+                'message'    => 'Pengajuan kelas baru berhasil dikirim. Finance akan menerbitkan invoice.',
+                'lead'       => new LeadResource($lead),
+                'enrollment' => [
+                    'id'             => $enrollment->id,
+                    'study_class_id' => $enrollment->study_class_id,
+                    'status'         => $enrollment->status,
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => $e->getMessage(), 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('addEnrollment failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Gagal membuat pengajuan kelas: ' . $e->getMessage()], 500);
         }
     }
 

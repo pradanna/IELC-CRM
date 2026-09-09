@@ -13,11 +13,11 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { X, GraduationCap, MapPin, Users, Calendar, Hash, Zap } from 'lucide-react';
 
-export default function CreateEditClassModal({ isOpen, onClose, studyClass = null, branches = [], instructors = [], priceMasters = [] }) {
+export default function CreateEditClassModal({ isOpen, onClose, studyClass = null, branches = [], instructors = [], priceMasters = [], leadTypes = [] }) {
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
         type: 'offline',
-        category: 'group',
+        category: '',
         status: 'active',
         branch_id: '',
         instructor_id: '',
@@ -33,10 +33,21 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
     // Automate calculations
     useClassScheduleCalculation(data, setData);
 
-    const categoryOptions = [
-        { value: 'group', label: 'Group Class' },
-        { value: 'private', label: 'Private Class' },
-    ];
+    const categoryOptions = useMemo(() => {
+        if (leadTypes && leadTypes.length > 0) {
+            return leadTypes.map(lt => ({
+                value: lt.name,
+                label: lt.name,
+            }));
+        }
+        return [
+            { value: 'Kids', label: 'Kids' },
+            { value: 'Teens', label: 'Teens' },
+            { value: 'Adult', label: 'Adult' },
+            { value: 'IELTS', label: 'IELTS' },
+            { value: 'TOEFL', label: 'TOEFL' },
+        ];
+    }, [leadTypes]);
 
     const typeOptions = [
         { value: 'offline', label: 'Offline' },
@@ -63,7 +74,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
             setData({
                 name: studyClass.name || '',
                 type: studyClass.type || 'offline',
-                category: studyClass.category || (studyClass.is_private ? 'private' : 'group'),
+                category: studyClass.category || '',
                 status: studyClass.status || 'active',
                 branch_id: studyClass.branch_id || '',
                 instructor_id: studyClass.instructor_id || '',
@@ -149,12 +160,12 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                         </PremiumFormGroup>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <PremiumFormGroup label="Kategori Kelas" error={errors.category} required>
+                            <PremiumFormGroup label="Program Kelas" error={errors.category} required>
                                 <PremiumSearchableSelect
                                     options={categoryOptions}
                                     value={data.category}
                                     onChange={(val) => setData('category', val)}
-                                    placeholder="Pilih Kategori"
+                                    placeholder="Pilih Program Kelas"
                                     icon={Users}
                                     error={errors.category}
                                 />

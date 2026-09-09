@@ -25,18 +25,22 @@ class DatabaseSeeder extends Seeder
             RoleAndPermissionSeeder::class,
             UserSeeder::class,
             MonthlyTargetSeeder::class,
-            LeadSeeder::class,
             TaskSeeder::class,
             ChatTemplateSeeder::class,
             PtExamSeeder::class,
+            PlacementTestConnectSeeder::class,
+            PlacementTestInterchangeSeeder::class,
+            KidsPtExamSeeder::class,
             IeltsPtExamSeeder::class,
+            IeltsAcademicPtExamSeeder::class,
+            IeltsGeneralTrainingPtExamSeeder::class,
+            ToeflPbtPtExamSeeder::class,
+            ToeflIbtPtExamSeeder::class,
             LoyaltySettingSeeder::class,
+            PaymentAccountSeeder::class,
+            PriceMasterSeeder::class,
+            StudyClassSeeder::class,
+            DataSiswaSeeder::class,
         ]);
-
-        if (app()->environment('local', 'testing')) {
-            $this->call([
-                ExampleStudyClassSeeder::class,
-            ]);
-        }
     }
 }

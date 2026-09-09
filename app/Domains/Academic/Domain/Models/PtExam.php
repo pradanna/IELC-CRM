@@ -52,10 +52,31 @@ class PtExam extends Model
         return $this->hasMany(PtQuestionGroup::class);
     }
 
+    // General Domain Relationships
+    public function generalGroups(): HasMany
+    {
+        return $this->hasMany(PtGeneralQuestionGroup::class, 'pt_exam_id')->orderBy('position');
+    }
+
+    public function generalQuestions(): HasMany
+    {
+        return $this->hasMany(PtGeneralQuestion::class, 'pt_exam_id')->orderBy('position');
+    }
+
+    // Kids Domain Relationships
+    public function kidsQuestions(): HasMany
+    {
+        return $this->hasMany(PtKidsQuestion::class, 'pt_exam_id')->orderBy('position');
+    }
+
+    // IELTS Domain Relationships (Direct Tasks)
+    public function ieltsTasks(): HasMany
+    {
+        return $this->hasMany(PtIeltsTask::class, 'pt_exam_id')->orderBy('position');
+    }
+
     public function ptSessions(): HasMany
     {
         return $this->hasMany(PtSession::class);
     }
 }
-
-

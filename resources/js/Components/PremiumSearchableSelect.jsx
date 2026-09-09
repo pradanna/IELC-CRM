@@ -79,8 +79,7 @@ export default function PremiumSearchableSelect({
                             afterLeave={() => setQuery('')}
                         >
                             <ComboboxOptions 
-                                anchor="bottom start"
-                                className="z-[100] mt-2 min-w-[200px] w-[var(--input-width)] origin-top-left bg-white/90 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-2xl shadow-slate-200/50 p-2 focus:outline-none"
+                                className="absolute top-[calc(100%+8px)] left-0 z-[999] min-w-[200px] w-full origin-top-left bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-2xl shadow-slate-300/60 p-2 focus:outline-none max-h-60 overflow-y-auto"
                             >
                                 {filteredOptions.length === 0 && query !== '' ? (
                                     <div className="relative cursor-default select-none px-4 py-3 text-[10px] font-black text-slate-400 uppercase italic">

@@ -64,8 +64,14 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Handle edit event and click outside
+    // Handle URL parameters for open_lead/id, edit event, and click outside
     React.useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openLeadId = urlParams.get('open_lead') || urlParams.get('id');
+        if (openLeadId) {
+            openDrawer(openLeadId, 0);
+        }
+
         const handleEdit = (e) => {
             setEditingLead(e.detail.lead);
             setIsLeadModalOpen(true);

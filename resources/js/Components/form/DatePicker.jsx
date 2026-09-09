@@ -12,7 +12,8 @@ export default function DatePicker({
     inputClassName = "",
     minYear = 1945,
     maxYear = new Date().getFullYear() + 10,
-    required = false
+    required = false,
+    align = "bottom-left"
 }) {
     // Local state for navigation (month and year)
     const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
@@ -155,7 +156,12 @@ export default function DatePicker({
                             leaveFrom="opacity-100 translate-y-0"
                             leaveTo="opacity-0 translate-y-1"
                         >
-                            <Popover.Panel className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[310px] sm:w-[320px]">
+                            <Popover.Panel className={`absolute z-50 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[310px] sm:w-[320px] ${
+                                align === 'top-left' ? 'bottom-[calc(100%+8px)] left-0' :
+                                align === 'top-right' ? 'bottom-[calc(100%+8px)] right-0' :
+                                align === 'bottom-right' ? 'top-[calc(100%+8px)] right-0' :
+                                'top-[calc(100%+8px)] left-0'
+                            }`}>
                                 {/* Header: Year & Month Selectors */}
                                 <div className="flex items-center justify-between gap-2 mb-4">
                                     <div className="flex items-center gap-1 flex-1">

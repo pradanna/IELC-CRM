@@ -43,6 +43,7 @@ class Student extends Model
     {
         return $this->belongsToMany(StudyClass::class, 'lead_enrollments', 'student_id', 'study_class_id')
             ->using(LeadEnrollmentPivot::class)
+            ->wherePivotIn('lead_enrollments.status', ['active', 'completed'])
             ->withPivot(['joined_at', 'end_date', 'status', 'stopped_at'])
             ->withTimestamps();
     }
@@ -50,6 +51,11 @@ class Student extends Model
     public function loyaltyRewards(): HasMany
     {
         return $this->hasMany(StudentLoyaltyReward::class);
+    }
+
+    public function progressReports(): HasMany
+    {
+        return $this->hasMany(StudentProgressReport::class)->latest();
     }
 }
 

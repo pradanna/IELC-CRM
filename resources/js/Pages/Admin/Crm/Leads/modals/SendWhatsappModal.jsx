@@ -8,12 +8,12 @@ import useWhatsapp from '@/Hooks/useWhatsapp';
  * Send Whatsapp Modal
  * Dedicated modal for composing and sending WhatsApp messages with templates & media library.
  */
-export default function SendWhatsappModal({ 
-    isOpen: propIsOpen, 
-    onClose: propOnClose, 
-    lead: propLead, 
-    chatTemplates: propChatTemplates, 
-    mediaAssets: propMediaAssets 
+export default function SendWhatsappModal({
+    isOpen: propIsOpen,
+    onClose: propOnClose,
+    lead: propLead,
+    chatTemplates: propChatTemplates,
+    mediaAssets: propMediaAssets
 }) {
     const { props: pageProps } = usePage();
     const { openWhatsapp } = useWhatsapp();
@@ -73,6 +73,27 @@ export default function SendWhatsappModal({
         }
     }, [isOpen]);
 
+    const [activeTab, setActiveTab] = useState('official'); // 'official' | 'baileys'
+    const [officialTemplates, setOfficialTemplates] = useState([]);
+    const [loadingOfficialTemplates, setLoadingOfficialTemplates] = useState(false);
+    const [selectedOfficialTemplate, setSelectedOfficialTemplate] = useState(null);
+    const [templateVariables, setTemplateVariables] = useState({});
+
+    // Fetch official templates when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setLoadingOfficialTemplates(true);
+            axios.get(route('admin.whatsapp.official.templates'))
+                .then(res => {
+                    if (res.data.status === 'success') {
+                        setOfficialTemplates(res.data.templates);
+                    }
+                })
+                .catch(err => console.error(err))
+                .finally(() => setLoadingOfficialTemplates(false));
+        }
+    }, [isOpen]);
+
     const filteredTemplates = useMemo(() => {
         if (!lead) return [];
         return chatTemplates.filter(template => {
@@ -91,47 +112,56 @@ export default function SendWhatsappModal({
     const filteredMedia = useMemo(() => {
         let results = mediaAssets;
         if (debouncedSearch) {
-            results = results.filter(asset => 
+            results = results.filter(asset =>
                 asset.name.toLowerCase().includes(debouncedSearch.toLowerCase())
             );
         }
         return results.slice(0, 5); // Max 5 results as requested
     }, [mediaAssets, debouncedSearch]);
 
-    const [sendingBaileys, setSendingBaileys] = useState(false);
-    const [baileysError, setBaileysError] = useState(null);
+    const [sending, setSending] = useState(false);
+    const [sendError, setSendError] = useState(null);
 
-    const handleSendWeb = () => {
-        if (!lead?.phone) return;
-        openWhatsapp(lead.phone, message);
-        onClose();
+    const handleSelectOfficialTemplate = (tpl) => {
+        setSelectedOfficialTemplate(tpl);
+        let text = tpl.body || '';
+        if (lead) {
+            text = text.replace(/\{\{1\}\}/g, lead.name || 'Siswa');
+            text = text.replace(/\{\{2\}\}/g, lead.phone || '');
+        }
+        setMessage(text);
     };
 
-    const handleSendBaileys = async () => {
+    const handleSendUnified = async () => {
         if (!lead?.phone || !message) return;
-        
-        if (!window.confirm(`Kirim pesan ini langsung ke ${lead.name} (${lead.phone}) via WhatsApp Gateway?`)) {
-            return;
-        }
 
-        setSendingBaileys(true);
-        setBaileysError(null);
+        setSending(true);
+        setSendError(null);
 
         try {
-            const response = await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { message });
-            alert('Pesan WhatsApp berhasil dikirim via Gateway!');
+            if (activeTab === 'official') {
+                await axios.post(route('admin.whatsapp.official.send'), {
+                    phone: lead.phone,
+                    message: message,
+                    template_name: selectedOfficialTemplate?.name,
+                    language_code: selectedOfficialTemplate?.language || 'en_US',
+                });
+                alert('Pesan berhasil dikirim via WA Official (Meta API)!');
+            } else {
+                await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { message });
+                alert('Pesan WhatsApp berhasil dikirim via Baileys Gateway!');
+            }
             onClose();
-            // Trigger refresh if available
             if (window.location) {
                 const event = new CustomEvent('leadDataRefreshed');
                 document.dispatchEvent(event);
             }
         } catch (err) {
-            console.error('Baileys error:', err);
-            const errMsg = err.response?.data?.message || err.message || 'Gagal terhubung ke WhatsApp Gateway.';
-            setBaileysError(errMsg);
+            console.error('Send message error:', err);
+            const errMsg = err.response?.data?.message || err.message || 'Gagal mengirim pesan WhatsApp.';
+            setSendError(errMsg);
         } finally {
-            setSendingBaileys(false);
+            setSending(false);
         }
     };
 
@@ -167,113 +197,169 @@ export default function SendWhatsappModal({
                         leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
                     >
                         <Dialog.Panel className="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[85vh]">
-                            
+
                             {/* LEFT: FORM SECTION */}
                             <div className="flex-1 flex flex-col border-r border-slate-100 h-full overflow-hidden">
-                                {/* Header */}
-                                <div className="px-8 pt-8 pb-4 border-b border-slate-50 bg-white z-10">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
-                                            <MessageSquare size={24} />
+                                {/* Header & Channel Tabs */}
+                                <div className="px-8 pt-6 pb-4 border-b border-slate-100 bg-white z-10 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                                                <MessageSquare size={24} />
+                                            </div>
+                                            <div>
+                                                <Dialog.Title className="text-lg font-black text-slate-900">
+                                                    Send WhatsApp Message
+                                                </Dialog.Title>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                                                    Messaging: {lead?.name} ({lead?.phone})
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Dialog.Title className="text-lg font-black text-slate-900">
-                                                Send WhatsApp Message
-                                            </Dialog.Title>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                                                Messaging: {lead?.name} ({lead?.phone})
-                                            </p>
-                                        </div>
+                                    </div>
+
+                                    {/* Channel Switcher Tabs */}
+                                    <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveTab('official');
+                                                setMessage('');
+                                                setSelectedOfficialTemplate(null);
+                                            }}
+                                            className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition-all ${activeTab === 'official'
+                                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                                }`}
+                                        >
+                                            📱 WA Official (Meta API)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveTab('baileys');
+                                                setMessage('');
+                                                setSelectedOfficialTemplate(null);
+                                            }}
+                                            className={`flex-1 py-2 px-4 rounded-xl text-xs font-black transition-all ${activeTab === 'baileys'
+                                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                                                }`}
+                                        >
+                                            🔗 WA Baileys / WA Web
+                                        </button>
                                     </div>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-8 space-y-6">
                                     {/* Error Banner */}
-                                    {baileysError && (
-                                        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex flex-col gap-2">
+                                    {sendError && (
+                                        <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex flex-col gap-1">
                                             <div className="flex items-center gap-2 text-red-700 font-bold text-xs">
                                                 <X className="w-4 h-4 bg-red-200 text-red-700 rounded-full p-0.5" />
-                                                <span>Pengiriman via Gateway Gagal:</span>
+                                                <span>Pengiriman Gagal:</span>
                                             </div>
-                                            <p className="text-xs text-red-600 font-medium pl-6">{baileysError}</p>
-                                            <div className="pt-2 flex gap-2">
-                                                <button
-                                                    onClick={handleSendWeb}
-                                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-1.5"
-                                                >
-                                                    <Send size={13} /> Kirim via WhatsApp Web Sebagai Alternatif
-                                                </button>
-                                            </div>
+                                            <p className="text-xs text-red-600 font-medium pl-6">{sendError}</p>
                                         </div>
                                     )}
 
-                                    {/* Templates */}
+                                    {/* Templates Section based on Active Tab */}
                                     <div>
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                            Available Templates 
-                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md">{filteredTemplates.length}</span>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            Available Templates ({activeTab === 'official' ? 'Official Meta' : 'Database CRM'})
+                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md">
+                                                {activeTab === 'official' ? officialTemplates.length : filteredTemplates.length}
+                                            </span>
                                         </h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {filteredTemplates.length === 0 ? (
-                                                <p className="text-xs font-bold text-slate-400 italic bg-slate-50 p-4 rounded-2xl border border-dashed w-full text-center">No specific templates for this lead.</p>
+
+                                        {activeTab === 'official' ? (
+                                            /* WA Official Meta Templates */
+                                            loadingOfficialTemplates ? (
+                                                <div className="py-4 text-center text-xs text-slate-400">Memuat template Meta...</div>
+                                            ) : officialTemplates.length === 0 ? (
+                                                <p className="text-xs font-bold text-slate-400 italic bg-slate-50 p-4 rounded-2xl border border-dashed text-center">
+                                                    Belum ada template Meta Official diset.
+                                                </p>
                                             ) : (
-                                                filteredTemplates.map(template => (
-                                                    <button
-                                                        key={template.id}
-                                                        onClick={() => setMessage(template.message)}
-                                                        className="px-5 py-2.5 bg-white border border-slate-200 hover:border-green-500 hover:text-green-600 rounded-full text-[10px] font-black uppercase tracking-wider transition-all shadow-sm hover:shadow-green-100 active:scale-95"
-                                                    >
-                                                        {template.title}
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {officialTemplates.map(template => (
+                                                        <button
+                                                            key={template.id}
+                                                            type="button"
+                                                            onClick={() => handleSelectOfficialTemplate(template)}
+                                                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${selectedOfficialTemplate?.id === template.id
+                                                                    ? 'bg-blue-600 text-white border-blue-600'
+                                                                    : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600'
+                                                                }`}
+                                                        >
+                                                            {template.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )
+                                        ) : (
+                                            /* WA Baileys / DB Templates */
+                                            <div className="flex flex-wrap gap-2">
+                                                {filteredTemplates.length === 0 ? (
+                                                    <p className="text-xs font-bold text-slate-400 italic bg-slate-50 p-4 rounded-2xl border border-dashed w-full text-center">
+                                                        No specific templates for this lead in database.
+                                                    </p>
+                                                ) : (
+                                                    filteredTemplates.map(template => (
+                                                        <button
+                                                            key={template.id}
+                                                            type="button"
+                                                            onClick={() => setMessage(template.message)}
+                                                            className="px-5 py-2.5 bg-white border border-slate-200 hover:border-emerald-500 hover:text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-95"
+                                                        >
+                                                            {template.title}
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Message Area */}
                                     <div className="flex-1 flex flex-col pt-2 min-h-0">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Message Content (Format WA Native)</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                                            Message Content ({activeTab === 'official' ? 'Format Official Meta' : 'Format WA Native'})
+                                        </label>
                                         <textarea
                                             value={message}
                                             onChange={e => setMessage(e.target.value)}
                                             placeholder="Halo kak, berikut informasi..."
-                                            className="w-full flex-1 min-h-[220px] px-6 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] text-sm font-bold text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-green-500/5 focus:border-green-500 transition-all resize-none shadow-inner"
+                                            className="w-full flex-1 min-h-[200px] px-6 py-5 bg-slate-50 border border-slate-200 rounded-[2rem] text-sm font-bold text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all resize-none shadow-inner"
                                         />
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div className="px-8 py-5 flex flex-wrap sm:flex-nowrap gap-3 border-t border-slate-100 bg-slate-50/50">
-                                    <button
-                                        type="button" 
-                                        onClick={onClose}
-                                        className="py-3.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all"
-                                    >
-                                        Batal
-                                    </button>
-                                    
+                                {/* Actions Footer - Single Kirim Button */}
+                                <div className="px-8 py-5 flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50">
                                     <button
                                         type="button"
-                                        onClick={handleSendWeb}
-                                        disabled={!message || sendingBaileys}
-                                        className="py-3.5 px-5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                                        onClick={onClose}
+                                        className="py-3.5 px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all"
                                     >
-                                        <Send size={14} /> Kirim via WA Web
+                                        Batal
                                     </button>
 
                                     <button
                                         type="button"
-                                        onClick={handleSendBaileys}
-                                        disabled={!message || sendingBaileys}
-                                        className="flex-1 py-3.5 px-6 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95"
+                                        onClick={handleSendUnified}
+                                        disabled={!message || sending}
+                                        className={`flex-1 py-3.5 px-6 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 disabled:opacity-50 ${activeTab === 'official'
+                                                ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                                                : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                                            }`}
                                     >
-                                        {sendingBaileys ? (
+                                        {sending ? (
                                             <>
                                                 <Loader2 size={14} className="animate-spin" /> Mengirim...
                                             </>
                                         ) : (
                                             <>
-                                                <Send size={14} /> Kirim Sekarang
+                                                <Send size={14} /> Kirim Sekarang ({activeTab === 'official' ? 'Official Meta' : 'Baileys'})
                                             </>
                                         )}
                                     </button>
@@ -294,12 +380,12 @@ export default function SendWhatsappModal({
                                             <X size={18} />
                                         </button>
                                     </div>
-                                    
+
                                     {/* Small Search Bar with Debounce */}
                                     <div className="relative">
-                                        <input 
-                                            type="text" 
-                                            placeholder="Search brosur..." 
+                                        <input
+                                            type="text"
+                                            placeholder="Search brosur..."
                                             value={searchQuery}
                                             onChange={e => setSearchQuery(e.target.value)}
                                             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm pl-9"
@@ -309,7 +395,7 @@ export default function SendWhatsappModal({
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                                     {filteredMedia.length === 0 ? (
                                         <div className="py-20 text-center">
@@ -336,7 +422,7 @@ export default function SendWhatsappModal({
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <button
                                                         type="button"
                                                         onClick={() => copyToClipboard(fileUrl, asset.id)}

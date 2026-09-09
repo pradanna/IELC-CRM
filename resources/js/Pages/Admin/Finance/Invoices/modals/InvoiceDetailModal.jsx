@@ -147,7 +147,7 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onPay }) 
                 {/* Body Content */}
                 <div className="px-10 py-8 space-y-8 max-h-[72vh] overflow-y-auto">
                     {/* Status & Dates */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <div className={`grid grid-cols-1 ${invoice.status === 'paid' ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100`}>
                         <div className="space-y-2">
                             <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Status Invoice</span>
                             <div className="pt-0.5">
@@ -156,6 +156,14 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onPay }) 
                                 </span>
                             </div>
                         </div>
+                        {invoice.status === 'paid' && (
+                            <div className="space-y-2">
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Metode Pembayaran</span>
+                                <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">
+                                    {invoice.payment_method || '-'}
+                                </p>
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Tanggal Dibuat</span>
                             <p className="text-sm font-black text-slate-800 uppercase tracking-tight">
@@ -360,7 +368,7 @@ export default function InvoiceDetailModal({ isOpen, onClose, invoice, onPay }) 
                             <button
                                 type="button"
                                 onClick={() => {
-                                    onPay(invoice.id);
+                                    onPay(invoice);
                                     onClose();
                                 }}
                                 className="flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-black uppercase tracking-wider text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all"

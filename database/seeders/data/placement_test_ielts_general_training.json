@@ -1,0 +1,73 @@
+{
+    "exam_title": "IELTS General Training Placement Test",
+    "exam_slug": "ielts-general-training-placement-test",
+    "exam_description": "<p><strong>Official IELC IELTS General Training Placement Test</strong> covering 4 core modules:</p><ul><li><strong>Listening:</strong> 4 sections, 40 questions (30 mins)</li><li><strong>Reading:</strong> 3 sections, 40 questions (60 mins)</li><li><strong>Writing:</strong> Task 1 Letter &amp; Task 2 Essay (60 mins, 400+ words total)</li><li><strong>Speaking:</strong> 1-on-1 live interview with a certified examiner (11–14 mins)</li></ul><p class='mt-2'><strong>Total duration:</strong> 150 minutes.</p>",
+    "exam_duration": 150,
+    "tasks": [
+        {
+            "position": 1,
+            "skill_type": "listening",
+            "title": "IELTS General Training Listening Section (4 Sections, 40 Questions)",
+            "description": "<p><strong>The IELTS® Listening Section</strong> is designed to measure your ability to understand conversations and lectures in English.</p><ul><li>There are <strong>4 sections</strong> in the Listening test (40 Questions in total).</li><li>The test duration is approximately <strong>30 minutes</strong> under real test conditions.</li><li>Listen carefully, as the audio track will be played <strong>only once</strong>.</li><li>Follow the question booklet on the left and enter your answers in the digital answer sheet (1–40) on the right.</li></ul>",
+            "audio_path": "pt_exams/ielts/audio/ielts_gt_listening_audio.mp3",
+            "question_pdf_path": "pt_exams/ielts/pdf/ielts_gt_listening_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 30,
+            "max_score": 9.0,
+            "min_words": null,
+            "total_answer_slots": 40
+        },
+        {
+            "position": 2,
+            "skill_type": "reading",
+            "title": "IELTS General Training Reading Section (3 Sections, 40 Questions)",
+            "description": "<p><strong>The IELTS® General Training Reading Section</strong> measures your ability to understand everyday practical materials, work-related notices, and general interest texts.</p><ul><li>There are <strong>3 Reading Sections / Passages</strong> in this test (40 Questions in total).</li><li>The test duration is <strong>60 minutes</strong>.</li><li>Read the passages and instructions in the booklet on the left and enter your answers into the digital answer sheet (1–40) on the right.</li><li>Pay attention to word count limits in the instructions (e.g. NO MORE THAN THREE WORDS AND/OR A NUMBER, TRUE/FALSE/NOT GIVEN).</li></ul>",
+            "audio_path": null,
+            "question_pdf_path": "pt_exams/ielts/pdf/ielts_gt_reading_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 60,
+            "max_score": 9.0,
+            "min_words": null,
+            "total_answer_slots": 40
+        },
+        {
+            "position": 3,
+            "skill_type": "writing",
+            "title": "IELTS General Training Writing Task 1 (Letter Writing)",
+            "description": "<p><strong>Task 1: Formal / Semi-formal Letter</strong></p><p>You should spend about <strong>20 minutes</strong> on this task.</p><div class='p-4 my-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 font-medium'><p><strong>Prompt:</strong> Your local hospital has advertised for people to do unpaid work helping at the hospital. You would like to do some work at the hospital in your free time.</p><p class='mt-2'>Write a letter to the hospital. In your letter:</p><ul class='list-disc ml-5 mt-1 space-y-1'><li>Explain why you would like to do unpaid work at the hospital</li><li>Say what type of unpaid work at the hospital you would prefer</li><li>Give details of when you would be available for this work</li></ul><p class='mt-2 text-sm text-amber-800'><em>You do NOT need to write any addresses. Begin your letter as follows: <strong>Dear Sir or Madam,</strong></em></p></div><p><strong>Requirements:</strong></p><ul><li>Write in a formal style.</li><li>Write at least <strong>150 words</strong>.</li><li>Type your letter directly in the text editor on the right.</li></ul>",
+            "audio_path": null,
+            "question_pdf_path": "pt_exams/ielts/pdf/ielts_gt_writing_task1_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 20,
+            "max_score": 9.0,
+            "min_words": 150,
+            "total_answer_slots": null
+        },
+        {
+            "position": 4,
+            "skill_type": "writing",
+            "title": "IELTS General Training Writing Task 2 (Discursive Essay)",
+            "description": "<p><strong>Task 2: Discursive Essay</strong></p><p>You should spend about <strong>40 minutes</strong> on this task.</p><div class='p-4 my-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 font-medium'><p><strong>Topic:</strong> It is sometimes said that people should be encouraged to get married before they are 30, as this is best both for the individual and for society. Do you agree or disagree?</p><p class='mt-2'>Give reasons for your answer and include any relevant examples from your own knowledge or experience.</p></div><p><strong>Requirements:</strong></p><ul><li>Write in a formal style.</li><li>Write at least <strong>250 words</strong>.</li><li>Type your essay directly in the text editor on the right, or upload your document.</li></ul>",
+            "audio_path": null,
+            "question_pdf_path": "pt_exams/ielts/pdf/ielts_gt_writing_task2_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 40,
+            "max_score": 9.0,
+            "min_words": 250,
+            "total_answer_slots": null
+        },
+        {
+            "position": 5,
+            "skill_type": "speaking",
+            "title": "IELTS Speaking Interview & Discussion",
+            "description": "<p><strong>The IELTS® Speaking Section</strong> is designed to measure your ability to speak English effectively in both academic and general settings.</p><p>In the Speaking test, you will have a 1-on-1 interactive discussion with an experienced certified examiner. The test is approximately <strong>11–14 minutes</strong> long and divided into 3 parts:</p><ol><li><strong>Part 1 (Introduction & Interview):</strong> You will answer questions about yourself, your hobbies, studies/work, and everyday topics.</li><li><strong>Part 2 (Individual Long Turn):</strong> You will be given a topic card with 1 minute to prepare, and speak for 1–2 minutes.</li><li><strong>Part 3 (Two-way Discussion):</strong> A deeper discussion with the examiner exploring abstract issues related to Part 2.</li></ol><div class='p-4 mt-4 bg-purple-50 border border-purple-200 rounded-xl text-purple-900 font-bold'><p>ℹ️ The speaking test will be conducted live online with one of our experienced certified examiners during your scheduled consultation appointment. See you there!</p></div>",
+            "audio_path": null,
+            "question_pdf_path": null,
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 15,
+            "max_score": 9.0,
+            "min_words": null,
+            "total_answer_slots": null
+        }
+    ]
+}

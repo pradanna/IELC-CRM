@@ -23,7 +23,7 @@ class SendInvoiceNotification
             "Invoice Terbit: {$invoice->invoice_number}",
             "Invoice baru senilai Rp " . number_format($invoice->total_amount, 0, ',', '.') . " telah diterbitkan untuk {$entityName}.",
             'invoice',
-            $lead ? "/admin/crm/leads?id={$lead->id}" : "/admin/finance"
+            $lead ? route('admin.crm.leads.kanban', ['open_lead' => $lead->id]) : "/admin/finance"
         );
 
         if ($lead && $lead->owner) {

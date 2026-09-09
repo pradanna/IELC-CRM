@@ -143,16 +143,17 @@ export default function QuestionGroupModal({ show, onClose, form, onSubmit, edit
                         </div>
 
                         <div>
-                            <InputLabel value={isIELTS ? 'Attached Resource (PDF/DOCX)' : 'Reading Document (Optional)'} />
+                            <InputLabel value={isIELTS ? 'Attached Resource / Diagram Image' : 'Gambar Passage / Ilustrasi Reading (Opsional)'} className="font-bold" />
                             <FileInput
-                                accept=".pdf,.doc,.docx"
+                                accept="image/*,.pdf"
                                 value={form.data.reading_file}
                                 onChange={(file) => form.setData('reading_file', file)}
-                                placeholder="PDF or Word Document"
+                                placeholder="Pilih Gambar Passage (PNG, JPG, WebP)"
                                 icon={FileText}
                                 error={form.errors.reading_file}
                                 className="mt-1"
                             />
+                            <p className="text-[10px] text-slate-400 mt-1 font-medium">Gambar akan langsung ditampilkan di samping atau atas soal siswa.</p>
                         </div>
                     </div>
 

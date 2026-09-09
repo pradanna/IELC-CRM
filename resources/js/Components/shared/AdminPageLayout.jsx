@@ -31,9 +31,9 @@ export default function AdminPageLayout({
                             {title}
                         </h1>
                         {subtitle && (
-                            <p className="text-slate-500 font-bold text-sm mt-1 ">
+                            <div className="text-slate-500 font-bold text-sm mt-1">
                                 {subtitle}
-                            </p>
+                            </div>
                         )}
                     </div>
                 </div>

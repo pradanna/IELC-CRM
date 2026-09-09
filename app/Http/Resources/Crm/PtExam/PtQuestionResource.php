@@ -25,6 +25,7 @@ class PtQuestionResource extends JsonResource
             'number' => $this->number,
             'position' => $this->position,
             'options' => PtQuestionOptionResource::collection($this->whenLoaded('options')),
+            'kid_canvas' => $this->whenLoaded('kidCanvas'),
         ];
     }
 }

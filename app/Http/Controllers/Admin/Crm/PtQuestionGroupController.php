@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
-use App\Domains\CRM\Application\Actions\PtExam\CreatePtQuestionGroupAction;
-use App\Domains\CRM\Application\Actions\PtExam\UpdatePtQuestionGroupAction;
+use App\Domains\Academic\Application\Actions\PtExam\CreatePtQuestionGroupAction;
+use App\Domains\Academic\Application\Actions\PtExam\UpdatePtQuestionGroupAction;
 use App\Http\Controllers\Controller;
 use App\Domains\Academic\Domain\Models\PtExam;
 use App\Domains\Academic\Domain\Models\PtQuestionGroup;
@@ -18,8 +18,8 @@ class PtQuestionGroupController extends Controller
             'instruction' => ['required', 'string'],
             'section_type' => ['nullable', 'string', 'in:reading,speaking,listening'],
             'reading_text' => ['nullable', 'string'],
-            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg'],
-            'reading_file' => ['nullable', 'file', 'mimes:pdf,doc,docx'],
+            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg,webp,svg'],
+            'reading_file' => ['nullable', 'file', 'mimes:png,jpeg,jpg,webp,gif,svg,pdf,doc,docx'],
         ]);
 
         $validated['pt_exam_id'] = $ptExam->id;
@@ -35,8 +35,8 @@ class PtQuestionGroupController extends Controller
             'instruction' => ['required', 'string'],
             'section_type' => ['nullable', 'string', 'in:reading,speaking,listening'],
             'reading_text' => ['nullable', 'string'],
-            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg'],
-            'reading_file' => ['nullable', 'file', 'mimes:pdf,doc,docx'],
+            'media' => ['nullable', 'file', 'mimes:mp3,wav,mp4,mpeg,pdf,doc,docx,txt,zip,png,jpeg,jpg,webp,svg'],
+            'reading_file' => ['nullable', 'file', 'mimes:png,jpeg,jpg,webp,gif,svg,pdf,doc,docx'],
         ]);
 
         $action->handle($ptQuestionGroup, $validated);

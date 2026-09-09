@@ -1,15 +1,16 @@
 import Modal from '@/Components/ui/Modal';
 import TextInput from '@/Components/form/TextInput';
-import TextArea from '@/Components/ui/TextArea';
 import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import SecondaryButton from '@/Components/form/SecondaryButton';
 import Checkbox from '@/Components/form/Checkbox';
+import RichTextEditor from '@/Components/ui/RichTextEditor';
+import { Trash2, AlertTriangle } from 'lucide-react';
 
-export default function ExamSettingsModal({ show, onClose, form, onSubmit }) {
+export default function ExamSettingsModal({ show, onClose, form, onSubmit, onDelete, hasSessions = false }) {
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
+        <Modal show={show} onClose={onClose} maxWidth="2xl">
             <div className="p-8">
                 <h2 className="text-lg font-black text-slate-900 tracking-tight mb-1">Package Settings</h2>
                 <p className="text-xs text-slate-400 mb-6">Edit exam package configuration</p>
@@ -34,7 +35,9 @@ export default function ExamSettingsModal({ show, onClose, form, onSubmit }) {
                             onChange={(e) => form.setData('category', e.target.value)}
                             required
                         >
-                            <option value="General">General Placement (MCQ-based)</option>
+                            <option value="General">General / Adult Placement</option>
+                            <option value="Kids">Kids Placement (Interactive / Drag & Drop)</option>
+                            <option value="Teens">Teens Placement</option>
                             <option value="IELTS">IELTS Assessment (Task-based)</option>
                         </select>
                         <InputError message={form.errors.category} className="mt-1" />
@@ -63,15 +66,49 @@ export default function ExamSettingsModal({ show, onClose, form, onSubmit }) {
                     </div>
 
                     <div>
-                        <InputLabel value="Description" />
-                        <TextArea
-                            className="mt-1"
-                            rows={3}
-                            value={form.data.description ?? ''}
-                            onChange={(e) => form.setData('description', e.target.value)}
-                        />
+                        <InputLabel value="Description / Instructions" />
+                        <div className="mt-1">
+                            <RichTextEditor
+                                value={form.data.description ?? ''}
+                                onChange={(val) => form.setData('description', val)}
+                                placeholder="Tulis deskripsi paket, silabus/modul tes, instruksi peserta..."
+                                minHeight="140px"
+                            />
+                        </div>
                         <InputError message={form.errors.description} className="mt-1" />
                     </div>
+
+                    {/* Danger Zone: Delete Package */}
+                    {onDelete && (
+                        <div className="pt-4 border-t border-slate-100">
+                            <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100 flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                                        <AlertTriangle size={14} className="text-rose-500" />
+                                        Hapus Paket Ujian
+                                    </p>
+                                    <p className="text-[11px] text-rose-600/80 mt-0.5 font-medium">
+                                        {hasSessions
+                                            ? 'Paket tidak dapat dihapus karena sudah memiliki sesi peserta.'
+                                            : 'Tindakan ini permanen dan akan menghapus seluruh soal terkait.'}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={onDelete}
+                                    disabled={hasSessions}
+                                    className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shrink-0 ${
+                                        hasSessions
+                                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                                            : 'bg-white text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white shadow-xs cursor-pointer'
+                                    }`}
+                                >
+                                    <Trash2 size={13} />
+                                    <span>Hapus</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center justify-end gap-3 pt-2">
                         <SecondaryButton type="button" onClick={onClose}>

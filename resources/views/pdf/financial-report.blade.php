@@ -131,17 +131,41 @@
         </table>
     @endif
 
+    <!-- Breakdown Akun / Metode Pembayaran (Kas & Bank) -->
+    @if(isset($stats['payment_method_revenue']) && count($stats['payment_method_revenue']) > 0)
+        <div class="section-title">Rekapitulasi Akun Pembayaran (Kas &amp; Bank)</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Metode / Akun Pembayaran</th>
+                    <th style="width: 25%; text-align: center;">Jumlah Transaksi</th>
+                    <th style="width: 25%; text-align: right;">Total Penerimaan</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($stats['payment_method_revenue'] as $payItem)
+                    <tr>
+                        <td class="font-bold">{{ $payItem['payment_method'] }}</td>
+                        <td class="text-center">{{ $payItem['count'] }}</td>
+                        <td class="text-right font-bold text-emerald">Rp {{ number_format($payItem['total'], 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     <!-- Rincian Transaksi Lunas Dalam Periode Filter -->
     <div class="section-title">Daftar Transaksi Lunas Terfilter dalam Periode</div>
     @if(isset($stats['period_invoices']) && count($stats['period_invoices']) > 0)
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 18%;">No. Invoice</th>
-                    <th style="width: 22%;">Pelanggan</th>
-                    <th style="width: 20%;">Type Lead</th>
-                    <th style="width: 22%;">Kelas / Paket</th>
-                    <th style="width: 18%; text-align: right;">Nominal</th>
+                    <th style="width: 17%;">No. Invoice</th>
+                    <th style="width: 20%;">Pelanggan</th>
+                    <th style="width: 16%;">Type Lead</th>
+                    <th style="width: 18%;">Kelas / Paket</th>
+                    <th style="width: 14%;">Metode</th>
+                    <th style="width: 15%; text-align: right;">Nominal</th>
                 </tr>
             </thead>
             <tbody>
@@ -155,6 +179,7 @@
                         <td>{{ $leadObj->name ?? 'Unknown' }}</td>
                         <td>{{ $ltName }}</td>
                         <td>{{ $inv->studyClass->name ?? 'Manual Item' }}</td>
+                        <td><strong>{{ $inv->payment_method ?: '-' }}</strong></td>
                         <td class="text-right font-bold text-emerald">Rp {{ number_format($inv->total_amount, 0, ',', '.') }}</td>
                     </tr>
                 @endforeach

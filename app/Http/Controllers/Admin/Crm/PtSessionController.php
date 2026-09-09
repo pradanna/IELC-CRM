@@ -7,9 +7,8 @@ use App\Domains\Academic\Domain\Models\PtSession;
 use App\Http\Requests\Crm\PtExam\UpdatePtSessionGradeRequest;
 use App\Domains\Academic\Domain\Models\PtExam;
 use App\Domains\CRM\Domain\Models\Lead;
-use App\Domains\CRM\Application\Actions\PtExam\CreatePtSessionAction;
-use App\Domains\CRM\Application\Actions\PtExam\DeletePtSessionAction;
-use App\Domains\CRM\Application\Actions\PtExam\GetPtSessionResultAction;
+use App\Domains\Academic\Application\Actions\PtExam\CreatePtSessionAction;
+use App\Domains\Academic\Application\Actions\PtExam\GetPtSessionResultAction;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Http\Resources\Crm\PtExam\PtExamResource;
 use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
@@ -21,6 +20,45 @@ class PtSessionController extends Controller
     public function index(Request $request)
     {
         return redirect()->route('admin.placement-tests.index', $request->query());
+    }
+
+    public function completedList(Request $request)
+    {
+        $search = $request->query('search');
+        $examId = $request->query('exam_id');
+        $category = $request->query('category');
+
+        $query = PtSession::with(['lead:id,name,phone,branch_id', 'lead.branch:id,name', 'ptExam:id,title,category'])
+            ->where('status', 'completed');
+
+        if ($search) {
+            $query->whereHas('lead', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($examId) {
+            $query->where('pt_exam_id', $examId);
+        }
+
+        if ($category && $category !== 'all') {
+            $query->whereHas('ptExam', function ($q) use ($category) {
+                $q->where('category', $category);
+            });
+        }
+
+        $sessions = $query->orderBy('finished_at', 'desc')->paginate(15);
+
+        return response()->json([
+            'data' => PtSessionResource::collection($sessions),
+            'pagination' => [
+                'current_page' => $sessions->currentPage(),
+                'last_page' => $sessions->lastPage(),
+                'total' => $sessions->total(),
+                'per_page' => $sessions->perPage(),
+            ]
+        ]);
     }
 
     public function store(Request $request, CreatePtSessionAction $action)
@@ -53,27 +91,279 @@ class PtSessionController extends Controller
             'graded_by' => auth()->id(),
         ]);
 
+        // If module_bands are provided, update each PtIeltsAnswer's band_score
+        if ($request->has('module_bands') && is_array($request->module_bands)) {
+            $ptSession->load(['ptExam.ieltsTasks', 'ieltsAnswers']);
+            foreach ($request->module_bands as $skill => $band) {
+                if ($band === null || $band === '') continue;
+                $tasks = $ptSession->ptExam?->ieltsTasks?->where('skill_type', $skill) ?? collect();
+                foreach ($tasks as $task) {
+                    $answer = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+                    if ($answer) {
+                        $answer->update(['band_score' => (float) $band]);
+                    } else {
+                        \App\Domains\Academic\Domain\Models\PtIeltsAnswer::create([
+                            'pt_session_id' => $ptSession->id,
+                            'pt_ielts_task_id' => $task->id,
+                            'band_score' => (float) $band,
+                        ]);
+                    }
+                }
+            }
+        }
+
         return back()->with('success', 'Grading updated successfully.');
     }
 
     public function getResult(PtSession $ptSession)
     {
-        $ptSession->load(['answers', 'ptExam.questions.options', 'ptExam.ptQuestionGroups.questions.options']);
+        $ptSession->load([
+            'answers',
+            'generalAnswers',
+            'kidsAnswers',
+            'kidCanvasAnswers',
+            'ieltsAnswers',
+            'ptExam.questions.options',
+            'ptExam.questions.kidCanvas',
+            'ptExam.ptQuestionGroups.questions.options',
+            'ptExam.generalQuestions.options',
+            'ptExam.generalGroups.questions.options',
+            'ptExam.kidsQuestions',
+            'ptExam.ieltsTasks',
+        ]);
         
-        $answers = $ptSession->answers->keyBy('pt_question_id')->map(function ($answer) {
-            return [
-                'option_id' => $answer->pt_question_option_id,
+        $answers = collect();
+
+        // 1. General Answers
+        foreach ($ptSession->generalAnswers as $answer) {
+            $answers->put($answer->pt_general_question_id, [
+                'option_id' => $answer->pt_general_question_option_id,
                 'answer_text' => $answer->answer_text,
-                'file_path' => $answer->file_path ? \Illuminate\Support\Facades\Storage::url($answer->file_path) : null,
                 'is_correct' => $answer->is_correct,
-            ];
-        });
+                'score_earned' => $answer->score_earned,
+            ]);
+        }
+
+        // 2. Kids Answers
+        foreach ($ptSession->kidsAnswers as $answer) {
+            $answers->put($answer->pt_kids_question_id, [
+                'user_mapping' => $answer->user_mapping,
+                'answer_text' => is_array($answer->user_mapping) ? json_encode($answer->user_mapping) : $answer->user_mapping,
+                'is_correct' => $answer->is_correct,
+                'score_earned' => $answer->score_earned,
+                'teacher_notes' => $answer->teacher_notes,
+            ]);
+        }
+        foreach ($ptSession->kidCanvasAnswers as $answer) {
+            $answers->put($answer->pt_question_id, [
+                'user_mapping' => $answer->user_mapping,
+                'answer_text' => is_array($answer->user_mapping) ? json_encode($answer->user_mapping) : $answer->user_mapping,
+                'is_correct' => $answer->is_correct,
+                'score_earned' => null,
+                'teacher_notes' => null,
+            ]);
+        }
+
+        // 3. IELTS Answers
+        foreach ($ptSession->ieltsAnswers as $answer) {
+            $task = $answer->ptIeltsTask;
+            $parsedPayload = is_string($answer->essay_text) ? json_decode($answer->essay_text, true) : null;
+            $gridAnswers = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
+            
+            $evaluation = null;
+            if ($task && $task->skill_type === 'reading' && is_array($gridAnswers)) {
+                $evaluation = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($gridAnswers);
+            } elseif ($task && $task->skill_type === 'listening' && is_array($gridAnswers)) {
+                $evaluation = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($gridAnswers);
+            }
+
+            $answers->put($answer->pt_ielts_task_id, [
+                'essay_text' => $answer->essay_text,
+                'answer_text' => $answer->essay_text,
+                'file_path' => ($answer->answer_file_path ?? $answer->file_path) ? \Illuminate\Support\Facades\Storage::url($answer->answer_file_path ?? $answer->file_path) : null,
+                'score_tr' => $answer->score_tr,
+                'score_cc' => $answer->score_cc,
+                'score_lr' => $answer->score_lr,
+                'score_gra' => $answer->score_gra,
+                'band_score' => $answer->band_score,
+                'evaluator_notes' => $answer->teacher_notes ?? $answer->evaluator_notes,
+                'evaluation' => $evaluation,
+            ]);
+        }
+
+        // 4. Legacy Answers fallback
+        foreach ($ptSession->answers as $answer) {
+            if (!$answers->has($answer->pt_question_id)) {
+                $answers->put($answer->pt_question_id, [
+                    'option_id' => $answer->pt_question_option_id,
+                    'answer_text' => $answer->answer_text,
+                    'file_path' => $answer->file_path ? \Illuminate\Support\Facades\Storage::url($answer->file_path) : null,
+                    'is_correct' => $answer->is_correct,
+                ]);
+            }
+        }
         
+        // Compute IELTS Module Band Scores if applicable
+        $ieltsModuleScores = null;
+        if ($ptSession->ptExam?->category === 'IELTS') {
+            $listeningBand = null;
+            $readingBand = null;
+            $writingBand = null;
+            $speakingBand = null;
+
+            foreach ($ptSession->ieltsAnswers as $ans) {
+                $skill = $ans->ptIeltsTask?->skill_type;
+                if ($skill === 'listening') {
+                    if ($ans->band_score !== null) {
+                        $listeningBand = (float) $ans->band_score;
+                    } elseif (isset($answers[$ans->pt_ielts_task_id]['evaluation']['band_score'])) {
+                        $listeningBand = (float) $answers[$ans->pt_ielts_task_id]['evaluation']['band_score'];
+                    }
+                } elseif ($skill === 'reading') {
+                    if ($ans->band_score !== null) {
+                        $readingBand = (float) $ans->band_score;
+                    } elseif (isset($answers[$ans->pt_ielts_task_id]['evaluation']['band_score'])) {
+                        $readingBand = (float) $answers[$ans->pt_ielts_task_id]['evaluation']['band_score'];
+                    }
+                } elseif ($skill === 'writing') {
+                    if ($ans->band_score !== null) {
+                        $writingBand = (float) $ans->band_score;
+                    }
+                } elseif ($skill === 'speaking') {
+                    if ($ans->band_score !== null) {
+                        $speakingBand = (float) $ans->band_score;
+                    }
+                }
+            }
+
+            $ieltsModuleScores = [
+                'listening' => $listeningBand,
+                'reading' => $readingBand,
+                'writing' => $writingBand,
+                'speaking' => $speakingBand,
+            ];
+        }
+
         return response()->json([
             'session' => new PtSessionResource($ptSession),
             'answers' => $answers,
             'exam' => new PtExamPublicResource($ptSession->ptExam),
+            'ielts_module_scores' => $ieltsModuleScores,
         ]);
+    }
+
+    /**
+     * Download candidate's complete answer sheet as a PDF (Listening, Reading, Writing - excluding Speaking).
+     */
+    public function downloadWritingPdf(PtSession $ptSession)
+    {
+        $ptSession->load(['lead.branch', 'ptExam.ieltsTasks', 'ieltsAnswers.ptIeltsTask']);
+
+        $allIeltsTasks = $ptSession->ptExam?->ieltsTasks?->sortBy('position') ?? collect();
+
+        // 1. Listening Tasks
+        $listeningTasks = [];
+        foreach ($allIeltsTasks->where('skill_type', 'listening') as $task) {
+            $ans = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+            $parsedPayload = $ans && is_string($ans->essay_text) ? json_decode($ans->essay_text, true) : null;
+            $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
+
+            $totalSlots = 40;
+            if (preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
+                $totalSlots = (int) $matches[1];
+            }
+
+            $filledCount = 0;
+            foreach ($grid as $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $filledCount++;
+                }
+            }
+
+            $eval = !empty($grid) ? \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($grid) : null;
+
+            $listeningTasks[] = [
+                'task' => $task,
+                'grid' => $grid,
+                'total_slots' => $totalSlots,
+                'filled_count' => $filledCount,
+                'raw_score' => $eval['raw_score'] ?? null,
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? null),
+            ];
+        }
+
+        // 2. Reading Tasks
+        $readingTasks = [];
+        foreach ($allIeltsTasks->where('skill_type', 'reading') as $task) {
+            $ans = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+            $parsedPayload = $ans && is_string($ans->essay_text) ? json_decode($ans->essay_text, true) : null;
+            $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
+
+            $totalSlots = 40;
+            if (preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
+                $totalSlots = (int) $matches[1];
+            }
+
+            $filledCount = 0;
+            foreach ($grid as $val) {
+                if ($val !== null && trim((string)$val) !== '') {
+                    $filledCount++;
+                }
+            }
+
+            $eval = !empty($grid) ? \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($grid) : null;
+
+            $readingTasks[] = [
+                'task' => $task,
+                'grid' => $grid,
+                'total_slots' => $totalSlots,
+                'filled_count' => $filledCount,
+                'raw_score' => $eval['raw_score'] ?? null,
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? null),
+            ];
+        }
+
+        // 3. Writing Tasks
+        $writingTasks = [];
+        foreach ($allIeltsTasks->where('skill_type', 'writing') as $task) {
+            $answer = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+            $rawText = '';
+            $fileUrl = null;
+
+            if ($answer) {
+                $payload = is_string($answer->essay_text) ? json_decode($answer->essay_text, true) : null;
+                if (is_array($payload) && isset($payload['text'])) {
+                    $rawText = $payload['text'];
+                } elseif (is_string($answer->essay_text)) {
+                    $rawText = $answer->essay_text;
+                }
+
+                if ($answer->answer_file_path || $answer->file_path) {
+                    $fileUrl = \Illuminate\Support\Facades\Storage::url($answer->answer_file_path ?? $answer->file_path);
+                }
+            }
+
+            $cleanText = strip_tags($rawText);
+            $words = array_filter(preg_split('/\s+/', trim($cleanText)));
+            $wordCount = count($words);
+
+            $writingTasks[] = [
+                'task' => $task,
+                'text' => $rawText,
+                'word_count' => $wordCount,
+                'file_url' => $fileUrl,
+            ];
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.ielts_candidate_answersheet', [
+            'session' => $ptSession,
+            'listeningTasks' => $listeningTasks,
+            'readingTasks' => $readingTasks,
+            'writingTasks' => $writingTasks,
+        ]);
+
+        $safeName = \Illuminate\Support\Str::slug($ptSession->lead?->name ?? 'candidate');
+        return $pdf->stream("IELTS-Answer-Sheet-{$safeName}-{$ptSession->id}.pdf");
     }
 }
 

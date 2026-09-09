@@ -33,6 +33,7 @@ class StoreLead
                 'birth_date' => $data['birth_date'] ?? null,
                 'school' => $data['school'] ?? null,
                 'grade' => $data['grade'] ?? null,
+                'school_level' => $data['school_level'] ?? null,
                 'branch_id' => $data['branch_id'],
                 'owner_id' => Auth::id(),
                 'created_by' => Auth::id(),

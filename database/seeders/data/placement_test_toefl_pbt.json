@@ -1,0 +1,47 @@
+{
+    "exam_title": "TOEFL PBT Placement Test",
+    "exam_slug": "toefl-pbt-placement-test",
+    "exam_description": "<p><strong>Official IELC TOEFL PBT Placement Test</strong> covering 3 core assessment sections:</p><ul><li><strong>Section 1:</strong> Listening Comprehension (50 questions, 30 mins)</li><li><strong>Section 2:</strong> Structure &amp; Written Expression (40 questions, 25 mins)</li><li><strong>Section 3:</strong> Reading Comprehension (50 questions, 55 mins)</li></ul><p class='mt-2'><strong>Total duration:</strong> 110 minutes.</p>",
+    "exam_duration": 110,
+    "tasks": [
+        {
+            "position": 1,
+            "skill_type": "listening",
+            "title": "Section 1: Listening Comprehension (50 Questions, 30 Minutes)",
+            "description": "<p><strong>Section 1: Listening Comprehension</strong> is designed to measure your ability to understand spoken English in academic and conversational contexts.</p><ul><li>There are <strong>50 questions</strong> in this section:<ul><li><strong>Part A:</strong> Short conversations between two speakers, each followed by a question.</li><li><strong>Part B:</strong> Longer conversations followed by several questions.</li><li><strong>Part C:</strong> Short talks and lectures followed by several questions.</li></ul></li><li>The test duration is approximately <strong>30 minutes</strong>.</li><li>Listen carefully, as the audio track will be played <strong>only once</strong>.</li><li>Follow the question booklet on the left and type your answers (A, B, C, or D) into the digital answer sheet (1–50) on the right.</li></ul>",
+            "audio_path": "pt_exams/toefl/audio/toefl_pbt_listening_audio.mp3",
+            "question_pdf_path": "pt_exams/toefl/pdf/toefl_pbt_listening_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 30,
+            "max_score": 68.0,
+            "min_words": null,
+            "total_answer_slots": 50
+        },
+        {
+            "position": 2,
+            "skill_type": "reading",
+            "title": "Section 2: Structure & Written Expression (40 Questions, 25 Minutes)",
+            "description": "<p><strong>Section 2: Structure & Written Expression</strong> is designed to measure your ability to recognize language that is appropriate for standard written English.</p><ul><li>There are <strong>40 questions</strong> in this section:<ul><li><strong>Structure (Questions 1–15):</strong> Incomplete sentences. Choose the one word or phrase (A, B, C, or D) that best completes the sentence.</li><li><strong>Written Expression (Questions 16–40):</strong> Sentences with four underlined words or phrases marked A, B, C, and D. Identify the one underlined word or phrase that must be changed in order for the sentence to be correct.</li></ul></li><li>The time allowed for this section is <strong>25 minutes</strong>.</li><li>Read each question carefully in the booklet on the left and enter your chosen option (A, B, C, or D) in the digital answer sheet (1–40) on the right.</li></ul>",
+            "audio_path": null,
+            "question_pdf_path": "pt_exams/toefl/pdf/toefl_pbt_structure_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 25,
+            "max_score": 68.0,
+            "min_words": null,
+            "total_answer_slots": 40
+        },
+        {
+            "position": 3,
+            "skill_type": "reading",
+            "title": "Section 3: Reading Comprehension (50 Questions, 55 Minutes)",
+            "description": "<p><strong>Section 3: Reading Comprehension</strong> is designed to measure your ability to read and understand short passages similar in topic and style to those that students are likely to encounter in North American colleges and universities.</p><ul><li>There are <strong>50 questions</strong> based on several reading passages.</li><li>The time allowed for this section is <strong>55 minutes</strong>.</li><li>Read the passages in the booklet on the left and answer all questions relating to each passage.</li><li>Enter your chosen answer (A, B, C, or D) directly into the digital answer sheet (1–50) on the right.</li></ul>",
+            "audio_path": null,
+            "question_pdf_path": "pt_exams/toefl/pdf/toefl_pbt_reading_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 55,
+            "max_score": 67.0,
+            "min_words": null,
+            "total_answer_slots": 50
+        }
+    ]
+}

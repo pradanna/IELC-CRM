@@ -4,28 +4,16 @@ import { useState } from "react";
 import NotificationDropdown from "./NotificationDropdown";
 import WhatsappNotificationDropdown from "./WhatsappNotificationDropdown";
 
-export default function Navbar({ user, waNotifications = [], onWaRemove = () => {} }) {
+import GlobalOmniSearch from "./GlobalOmniSearch";
+
+export default function Navbar({ user, availableMenus = [], waNotifications = [], onWaRemove = () => {} }) {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     return (
-        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200 sticky top-0 z-[60]">
-            {/* Search Bar */}
-            <div className="flex-1 max-w-md">
-                <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <Search
-                            className="w-5 h-5 text-gray-400"
-                            aria-hidden="true"
-                        />
-                    </span>
-                    <input
-                        type="text"
-                        name="search"
-                        id="search"
-                        className="block w-full rounded-lg focus:outline-none py-3 border-gray-200 pl-10 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                        placeholder="Search lead by name or phone..."
-                    />
-                </div>
+        <nav className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200 sticky top-0 z-40">
+            {/* Omni-Search Bar (Menus & Leads) */}
+            <div className="flex-1 max-w-lg">
+                <GlobalOmniSearch availableMenus={availableMenus} />
             </div>
 
             {/* Right side icons */}
@@ -80,15 +68,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
                                             role="menuitem"
                                             tabIndex="-1"
                                         >
-                                            Your Profile
-                                        </Link>
-                                        <Link
-                                            href="#" // Replace with settings route
-                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            role="menuitem"
-                                            tabIndex="-1"
-                                        >
-                                            Settings
+                                            Profil Saya
                                         </Link>
                                         <Link
                                             href={route("logout")}
@@ -98,7 +78,7 @@ export default function Navbar({ user, waNotifications = [], onWaRemove = () => 
                                             role="menuitem"
                                             tabIndex="-1"
                                         >
-                                            Sign out
+                                            Keluar
                                         </Link>
                                     </div>
                                 </div>

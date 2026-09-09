@@ -19,6 +19,7 @@ class PtExamSeeder extends Seeder
         $exams = [
             [
                 'title' => 'General English Placement Test',
+                'category' => 'General',
                 'description' => 'Tes penempatan bahasa Inggris umum yang mencakup tata bahasa (grammar), kosakata (vocabulary), pemahaman bacaan (reading), dan pemahaman mendengarkan (listening).',
                 'duration_minutes' => 60,
                 'is_active' => true,
@@ -152,13 +153,32 @@ class PtExamSeeder extends Seeder
         ];
 
         foreach ($exams as $examData) {
-            $exam = PtExam::create([
+            $slug = Str::slug($examData['title']);
+            $exam = PtExam::firstOrCreate(
+                ['slug' => $slug],
+                [
+                    'title' => $examData['title'],
+                    'category' => $examData['category'] ?? 'General',
+                    'description' => $examData['description'],
+                    'duration_minutes' => $examData['duration_minutes'],
+                    'is_active' => $examData['is_active'],
+                ]
+            );
+
+            $exam->update([
                 'title' => $examData['title'],
-                'slug' => Str::slug($examData['title']),
+                'category' => $examData['category'] ?? 'General',
                 'description' => $examData['description'],
                 'duration_minutes' => $examData['duration_minutes'],
                 'is_active' => $examData['is_active'],
             ]);
+
+            // Clean old questions & groups to allow clean re-seed
+            foreach ($exam->questions as $existingQ) {
+                $existingQ->options()->delete();
+                $existingQ->delete();
+            }
+            $exam->ptQuestionGroups()->delete();
 
             if (isset($examData['standalone_questions'])) {
                 foreach ($examData['standalone_questions'] as $qData) {

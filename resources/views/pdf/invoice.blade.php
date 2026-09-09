@@ -101,6 +101,9 @@
         </div>
         <div style="margin-top: 10px; font-size: 14px; color: #16a34a;">
             <strong>Dibayar pada:</strong> {{ \Carbon\Carbon::parse($invoice->paid_at)->translatedFormat('d F Y H:i') }}
+            @if(!empty($invoice->payment_method))
+                <br><strong>Metode Pembayaran:</strong> {{ $invoice->payment_method }}
+            @endif
         </div>
     @elseif($invoice->status === 'unpaid')
         {{-- <div

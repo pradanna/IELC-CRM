@@ -62,12 +62,13 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 18%;">No. Invoice</th>
-                    <th style="width: 12%;">Tipe</th>
-                    <th style="width: 25%;">Pelanggan / No HP</th>
-                    <th style="width: 25%;">Kelas / Produk</th>
-                    <th style="width: 12%; text-align: right;">Nominal</th>
-                    <th style="width: 8%; text-align: center;">Waktu</th>
+                    <th style="width: 16%;">No. Invoice</th>
+                    <th style="width: 10%;">Tipe</th>
+                    <th style="width: 22%;">Pelanggan / No HP</th>
+                    <th style="width: 22%;">Kelas / Produk</th>
+                    <th style="width: 12%;">Metode</th>
+                    <th style="width: 11%; text-align: right;">Nominal</th>
+                    <th style="width: 7%; text-align: center;">Waktu</th>
                 </tr>
             </thead>
             <tbody>
@@ -82,6 +83,7 @@
                         <td>{{ $typeLabel }}</td>
                         <td>{{ $cust }} <br><span style="color: #64748b; font-size: 8px;">{{ $phone }}</span></td>
                         <td>{{ $inv->studyClass->name ?? 'Manual Item' }}</td>
+                        <td><strong>{{ $inv->payment_method ?: '-' }}</strong></td>
                         <td class="text-right font-bold text-emerald">Rp {{ number_format($inv->total_amount, 0, ',', '.') }}</td>
                         <td class="text-center">{{ $inv->paid_at ? \Carbon\Carbon::parse($inv->paid_at)->format('H:i') : \Carbon\Carbon::parse($inv->updated_at)->format('H:i') }}</td>
                     </tr>
