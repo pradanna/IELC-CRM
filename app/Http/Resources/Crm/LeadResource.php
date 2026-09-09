@@ -183,9 +183,9 @@ class LeadResource extends JsonResource
                 ])
             ),
 
-            'created_at'     => $this->created_at->toISOString(),
-            'formatted_at'   => $this->created_at->format('d M Y'),
-            'human_at'       => $this->created_at->diffForHumans(),
+            'created_at'     => $this->created_at ? $this->created_at->toISOString() : null,
+            'formatted_at'   => $this->created_at ? $this->created_at->format('d M Y') : null,
+            'human_at'       => $this->created_at ? $this->created_at->diffForHumans() : null,
             'enrolled_at'    => $this->enrolled_at ? $this->enrolled_at->toISOString() : null,
             'formatted_enrolled_at' => $this->enrolled_at ? $this->enrolled_at->format('d M Y') : null,
             'last_activity_at' => $this->last_activity_at ? $this->last_activity_at->toISOString() : null,

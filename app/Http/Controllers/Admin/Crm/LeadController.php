@@ -60,6 +60,10 @@ class LeadController extends Controller
             return redirect()->route('admin.finance.dashboard');
         }
 
+        if (auth()->user()?->hasRole('teacher')) {
+            return redirect()->route('admin.academic.students.index');
+        }
+
         $leads = $service->getPaginatedLeads($request);
 
         return Inertia::render('Admin/Crm/Leads/Index', [

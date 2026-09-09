@@ -24,8 +24,16 @@ use App\Http\Resources\Crm\InfoSourceResource;
 
 class CrmDashboardController extends Controller
 {
-    public function index(Request $request, FetchCrmDashboardData $action): Response
+    public function index(Request $request, FetchCrmDashboardData $action): Response|\Illuminate\Http\RedirectResponse
     {
+        if (auth()->user()?->hasRole('finance')) {
+            return redirect()->route('admin.finance.dashboard');
+        }
+
+        if (auth()->user()?->hasRole('teacher')) {
+            return redirect()->route('admin.academic.students.index');
+        }
+
         $filters = $request->only(['month', 'year', 'branch_id']);
 
         // Resolve auth context here in the HTTP layer, not inside the domain Action

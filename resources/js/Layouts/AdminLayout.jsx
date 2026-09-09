@@ -62,12 +62,15 @@ const menuItems = [
                 href: route("admin.crm.reports.index"),
                 name: "admin.crm.reports.*",
             },
+            // WhatsApp Inbox hidden during development
+            /*
             {
                 icon: <Headset size={20} />,
                 text: "WhatsApp Inbox",
                 href: route("admin.whatsapp.inbox"),
                 name: "admin.whatsapp.inbox",
             },
+            */
         ],
     },
     {
@@ -187,7 +190,7 @@ export default function AdminLayout({ children }) {
         }
 
         if (isTeacher) {
-            return ['Database'].includes(group.category);
+            return ['CRM & Leads', 'Database'].includes(group.category);
         }
 
         return false;
@@ -210,7 +213,7 @@ export default function AdminLayout({ children }) {
                     return allowed.includes(item.text);
                 }
                 if (isTeacher) {
-                    const allowed = ['Students'];
+                    const allowed = ['Students', 'Placement Tests'];
                     return allowed.includes(item.text);
                 }
                 return true;
@@ -267,6 +270,7 @@ export default function AdminLayout({ children }) {
             <main className="flex-1 bg-gray-50">
                 <Navbar 
                     user={auth.user} 
+                    availableMenus={filteredMenu}
                     waNotifications={notifications}
                     onWaRemove={removeNotification}
                 />

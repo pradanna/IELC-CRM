@@ -22,6 +22,45 @@ class PtSessionController extends Controller
         return redirect()->route('admin.placement-tests.index', $request->query());
     }
 
+    public function completedList(Request $request)
+    {
+        $search = $request->query('search');
+        $examId = $request->query('exam_id');
+        $category = $request->query('category');
+
+        $query = PtSession::with(['lead:id,name,phone,branch_id', 'lead.branch:id,name', 'ptExam:id,title,category'])
+            ->where('status', 'completed');
+
+        if ($search) {
+            $query->whereHas('lead', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($examId) {
+            $query->where('pt_exam_id', $examId);
+        }
+
+        if ($category && $category !== 'all') {
+            $query->whereHas('ptExam', function ($q) use ($category) {
+                $q->where('category', $category);
+            });
+        }
+
+        $sessions = $query->orderBy('finished_at', 'desc')->paginate(15);
+
+        return response()->json([
+            'data' => PtSessionResource::collection($sessions),
+            'pagination' => [
+                'current_page' => $sessions->currentPage(),
+                'last_page' => $sessions->lastPage(),
+                'total' => $sessions->total(),
+                'per_page' => $sessions->perPage(),
+            ]
+        ]);
+    }
+
     public function store(Request $request, CreatePtSessionAction $action)
     {
         $data = $request->validate([

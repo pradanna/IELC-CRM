@@ -118,6 +118,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     // Placement Tests
     Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
+    Route::get('/crm/pt-sessions/completed', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'completedList'])->name('crm.pt-sessions.completed');
     Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
     Route::get('/crm/pt-sessions/{pt_session}/result', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'getResult'])->name('crm.pt-sessions.get-result');
     Route::get('/crm/pt-sessions/{pt_session}/download-writing', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'downloadWritingPdf'])->name('crm.pt-sessions.download-writing-pdf');
@@ -244,6 +245,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/teachers', fn() => Inertia::render('Dashboard'))->name('teachers.index');
     Route::get('/students', fn() => Inertia::render('Dashboard'))->name('students.index');
 });
+
+if (app()->environment('local')) {
+    Route::get('/errors/preview/{status}', function ($status) {
+        abort_unless(in_array($status, [404, 419, 403, 500, 503]), 404);
+        return Inertia::render('Error', ['status' => (int)$status]);
+    });
+}
 
 require __DIR__.'/auth.php';
 

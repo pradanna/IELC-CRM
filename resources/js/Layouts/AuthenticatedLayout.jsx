@@ -16,10 +16,11 @@ export default function AuthenticatedLayout({ header, children }) {
     }
 
     if (
-        ['superadmin', 'super-admin', 'frontdesk', 'marketing'].includes(user.role) ||
+        ['superadmin', 'super-admin', 'frontdesk', 'marketing', 'teacher'].includes(user.role) ||
         !!user.superadmin ||
         !!user.frontdesk ||
-        !!user.marketing
+        !!user.marketing ||
+        !!user.teacher
     ) {
         return <AdminLayout>{children}</AdminLayout>;
     }

@@ -25,9 +25,11 @@ import AdminPageLayout from '@/Components/shared/AdminPageLayout';
 import AdminCard from '@/Components/shared/AdminCard';
 import RichTextEditor from '@/Components/ui/RichTextEditor';
 import SessionResultDetailModal from '../drawers/modals/SessionResultDetailModal';
+import CompletedPtSessionsModal from './modals/CompletedPtSessionsModal';
 
 export default function Index({ stats, sessions, exams }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isCompletedModalOpen, setIsCompletedModalOpen] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     
@@ -180,9 +182,14 @@ export default function Index({ stats, sessions, exams }) {
                                     <h2 className="text-xs font-black text-slate-800 tracking-wider uppercase">Recent Activity</h2>
                                     <p className="text-[11px] font-medium text-slate-400 mt-0.5">Live candidate submissions</p>
                                 </div>
-                                <span className="text-[10px] font-black bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg">
-                                    {sessions.data.length} Sessions
-                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCompletedModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 text-xs font-black text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-xl border border-red-100 transition-all cursor-pointer shadow-2xs"
+                                >
+                                    <span>Lihat Semua</span>
+                                    <ChevronRight size={14} />
+                                </button>
                             </div>
 
                             <div className="space-y-3">
@@ -226,6 +233,18 @@ export default function Index({ stats, sessions, exams }) {
                                         </div>
                                     ))
                                 )}
+                            </div>
+
+                            {/* View All Footer Link */}
+                            <div className="pt-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCompletedModalOpen(true)}
+                                    className="w-full py-2.5 text-center text-xs font-black text-slate-600 hover:text-red-600 hover:bg-slate-50 rounded-xl border border-dashed border-slate-200 transition-all cursor-pointer flex items-center justify-center gap-2"
+                                >
+                                    <span>Lihat Semua Siswa Selesai Ujian</span>
+                                    <ChevronRight size={14} />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -446,6 +465,16 @@ export default function Index({ stats, sessions, exams }) {
                 show={isResultModalOpen}
                 onClose={() => setIsResultModalOpen(false)}
                 session={selectedSession}
+            />
+
+            <CompletedPtSessionsModal
+                isOpen={isCompletedModalOpen}
+                onClose={() => setIsCompletedModalOpen(false)}
+                exams={exams}
+                onViewResult={(session) => {
+                    setSelectedSession(session);
+                    setIsResultModalOpen(true);
+                }}
             />
             
             <style dangerouslySetInnerHTML={{ __html: `

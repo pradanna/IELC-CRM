@@ -243,52 +243,65 @@ export default function Exam({
                             )}
                         </div>
                     )}
+
+                    {/* Header Finish / Close Review Button for IELTS (when sidebar is hidden) */}
+                    {exam_category === 'IELTS' && (
+                        !is_review ? (
+                            <button
+                                onClick={confirmFinish}
+                                disabled={processing}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <Check size={15} />
+                                <span>Finish Test</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => window.close()}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-600 hover:bg-gray-700 text-white text-xs font-bold shadow-md shadow-gray-500/20 transition-all active:scale-95"
+                            >
+                                <span>Close Review</span>
+                            </button>
+                        )
+                    )}
                 </div>
             </header>
 
             <div className="flex-1 flex overflow-hidden">
-                {/* Sidebar Navigation */}
-                <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
-                    <div className="p-5 border-b border-gray-100 bg-gray-50/30">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
-                            {exam_category === 'IELTS' ? 'Module / Section Map' : 'Question Map'}
-                        </p>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-                        <div className="grid grid-cols-4 gap-2.5 mb-4">
-                            {questionMap.map((q) => qMapIndicator(q))}
+                {/* Sidebar Navigation - Hidden for IELTS */}
+                {exam_category !== 'IELTS' && (
+                    <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
+                        <div className="p-5 border-b border-gray-100 bg-gray-50/30">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
+                                Question Map
+                            </p>
                         </div>
-
-                        {exam_category === 'IELTS' && !is_review && (
-                            <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 leading-relaxed">
-                                <div className="flex items-center gap-1.5 font-black text-amber-800 uppercase tracking-wider text-[10px] mb-1">
-                                    <AlertCircle size={13} className="text-amber-600 shrink-0" />
-                                    <span>Peringatan Sesi</span>
-                                </div>
-                                Setiap bagian dikerjakan berurutan sesuai batas waktu. Jika Anda berpindah ke bagian selanjutnya, bagian sebelumnya akan <strong>dikunci permanen</strong>.
+                        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                            <div className="grid grid-cols-4 gap-2.5 mb-4">
+                                {questionMap.map((q) => qMapIndicator(q))}
                             </div>
-                        )}
-                    </div>
-                    <div className="p-5 border-t border-gray-200 bg-gray-50/30">
-                        {!is_review && (
-                            <button
-                                onClick={confirmFinish}
-                                disabled={processing}
-                                className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
-                            >
-                                <Check size={18} /> Finish Test
-                            </button>
-                        )}
-                        {is_review && (
-                             <button
-                                onClick={() => window.close()}
-                                className="w-full inline-flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-500/20 transition-all active:scale-[0.98]"
-                            >
-                                Close Review
-                            </button>
-                        )}
-                    </div>
-                </aside>
+                        </div>
+                        <div className="p-5 border-t border-gray-200 bg-gray-50/30">
+                            {!is_review && (
+                                <button
+                                    onClick={confirmFinish}
+                                    disabled={processing}
+                                    className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+                                >
+                                    <Check size={18} /> Finish Test
+                                </button>
+                            )}
+                            {is_review && (
+                                 <button
+                                    onClick={() => window.close()}
+                                    className="w-full inline-flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-500/20 transition-all active:scale-[0.98]"
+                                >
+                                    Close Review
+                                </button>
+                            )}
+                        </div>
+                    </aside>
+                )}
 
                 {/* Main Content */}
                 <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-4 sm:px-8">
