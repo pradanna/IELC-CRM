@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
     DndContext, 
     DragOverlay, 
@@ -10,13 +10,14 @@ import {
     useSensors 
 } from '@dnd-kit/core';
 import { Palette, CheckCircle2, RotateCcw, Move, HelpCircle, Image as ImageIcon, X } from 'lucide-react';
+import { extractAnswerMapping } from './KidsFreeformCanvasQuestion';
 
 // Draggable Word Bank Card
-function DraggableWord({ word, isOverlay = false, isUsed = false }) {
+function DraggableWord({ word, isOverlay = false, isUsed = false, isReview = false }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: word.id,
         data: word,
-        disabled: isUsed && !isOverlay,
+        disabled: (isUsed || isReview) && !isOverlay,
     });
 
     const style = transform ? {
@@ -131,10 +132,12 @@ export default function KidsImagePinQuestion({
         : (canvasConfig?.image_preview || '');
 
     // User's answer state: { [pin_id]: word_id }
-    const [answers, setAnswers] = useState(() => {
-        if (!value) return {};
-        return typeof value === 'string' ? JSON.parse(value) : value;
-    });
+    const parsedAnswers = useMemo(() => extractAnswerMapping(value), [value]);
+    const [answers, setAnswers] = useState(() => parsedAnswers);
+
+    useEffect(() => {
+        setAnswers(parsedAnswers);
+    }, [parsedAnswers]);
 
     const [activeWord, setActiveWord] = useState(null);
 
@@ -224,6 +227,7 @@ export default function KidsImagePinQuestion({
                                 key={word.id}
                                 word={word}
                                 isUsed={usedWordIds.includes(word.id)}
+                                isReview={isReview}
                             />
                         ))}
                     </div>

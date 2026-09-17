@@ -31,7 +31,7 @@ export default function Inbox({ branches = [], officialPhone, officialStatus }) 
         templates,
         loadingTemplates,
         fetchTemplates,
-    } = useWhatsappInbox(branches, 'official');
+    } = useWhatsappInbox(branches, 'baileys');
 
     const handleOpenTemplateModal = () => {
         setIsTemplateModalOpen(true);
@@ -43,8 +43,8 @@ export default function Inbox({ branches = [], officialPhone, officialStatus }) 
             <Head title="WhatsApp Inbox Center" />
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-                {/* Top Header & Tab Navigation */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
@@ -55,38 +55,15 @@ export default function Inbox({ branches = [], officialPhone, officialStatus }) 
                         <h1 className="text-2xl font-black text-slate-900 tracking-tight">WhatsApp Inbox Center</h1>
                     </div>
 
-                    {/* Main Tabs Switcher (WA Official vs WA Baileys) */}
-                    <div className="flex items-center gap-2 p-1.5 bg-slate-200/60 rounded-2xl border border-slate-200/80">
-                        <button
-                            onClick={() => setActiveTab('official')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-sm ${
-                                activeTab === 'official'
-                                    ? 'bg-blue-600 text-white shadow-blue-500/20'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-300/50'
-                            }`}
-                        >
-                            <ShieldCheck size={16} />
-                            <span>📱 WA Official (API)</span>
-                        </button>
-
-                        <button
-                            onClick={() => setActiveTab('baileys')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-sm ${
-                                activeTab === 'baileys'
-                                    ? 'bg-emerald-600 text-white shadow-emerald-500/20'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-300/50'
-                            }`}
-                        >
-                            <PhoneCall size={16} />
-                            <span>🔗 WA Baileys (Multi-Branch)</span>
-                        </button>
-
+                    {/* Quick Settings & Navigation */}
+                    <div className="flex items-center gap-2">
                         <Link
                             href={route('admin.whatsapp.index')}
-                            className="p-2.5 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-300/50 transition-all"
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
                             title="Pengaturan Koneksi WA"
                         >
                             <Settings size={16} />
+                            <span>Pengaturan WA</span>
                         </Link>
                     </div>
                 </div>

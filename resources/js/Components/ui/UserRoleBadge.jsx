@@ -4,6 +4,9 @@ import { Shield } from 'lucide-react';
 const getRoleColor = (role) => {
     switch (role?.toLowerCase()) {
         case 'superadmin': return 'bg-red-50 text-red-600 border-red-100';
+        case 'it_staff':
+        case 'it-staff':
+        case 'it staff': return 'bg-cyan-50 text-cyan-600 border-cyan-100';
         case 'marketing': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
         case 'teacher': return 'bg-blue-50 text-blue-600 border-blue-100';
         case 'frontdesk': return 'bg-purple-50 text-purple-600 border-purple-100';

@@ -12,6 +12,7 @@ use App\Domains\Academic\Application\Actions\PtExam\GetPtSessionResultAction;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Http\Resources\Crm\PtExam\PtExamResource;
 use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
+use App\Domains\Academic\Application\Services\PtReportService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -27,9 +28,27 @@ class PtSessionController extends Controller
         $search = $request->query('search');
         $examId = $request->query('exam_id');
         $category = $request->query('category');
+        $status = $request->query('status');
 
-        $query = PtSession::with(['lead:id,name,phone,branch_id', 'lead.branch:id,name', 'ptExam:id,title,category'])
-            ->where('status', 'completed');
+        $query = PtSession::with([
+            'lead:id,name,phone,branch_id', 
+            'lead.branch:id,name', 
+            'ptExam:id,title,category',
+            'ptExam.questions.kidCanvas',
+            'ptExam.kidsQuestions',
+            'ptExam.generalQuestions.options',
+            'ptExam.generalGroups.questions.options',
+            'ptExam.ieltsTasks',
+            'kidCanvasAnswers',
+            'kidsAnswers',
+            'generalAnswers',
+            'ieltsAnswers.ptIeltsTask',
+            'answers',
+        ]);
+
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
 
         if ($search) {
             $query->whereHas('lead', function ($q) use ($search) {
@@ -48,7 +67,7 @@ class PtSessionController extends Controller
             });
         }
 
-        $sessions = $query->orderBy('finished_at', 'desc')->paginate(15);
+        $sessions = $query->orderByRaw('COALESCE(finished_at, updated_at, created_at) DESC')->paginate(15);
 
         return response()->json([
             'data' => PtSessionResource::collection($sessions),
@@ -244,18 +263,51 @@ class PtSessionController extends Controller
             ];
         }
 
+        $reportData = app(PtReportService::class)->getReportData($ptSession);
+
         return response()->json([
             'session' => new PtSessionResource($ptSession),
             'answers' => $answers,
             'exam' => new PtExamPublicResource($ptSession->ptExam),
             'ielts_module_scores' => $ieltsModuleScores,
+            'stats' => [
+                'total_questions' => $reportData['total_targets'],
+                'correct_answers' => $reportData['correct_targets'],
+                'percentage' => $reportData['percentage'],
+                'unit_label' => $reportData['unit_label'],
+                'achievement_text' => $reportData['achievement_text'],
+            ],
+            'download_urls' => [
+                'result_pdf' => route('admin.crm.pt-sessions.download-result-pdf', $ptSession->id),
+                'answers_pdf' => route('admin.crm.pt-sessions.download-answers-pdf', $ptSession->id),
+            ],
         ]);
     }
 
     /**
-     * Download candidate's complete answer sheet as a PDF (Listening, Reading, Writing - excluding Speaking).
+     * Download candidate's achievement and score report as a PDF.
      */
-    public function downloadWritingPdf(PtSession $ptSession)
+    public function downloadResultPdf(PtSession $ptSession, PtReportService $reportService)
+    {
+        $pdf = $reportService->generateResultPdf($ptSession);
+        $safeName = \Illuminate\Support\Str::slug($ptSession->lead?->name ?? 'candidate');
+        return $pdf->stream("IELC-PT-Achievement-{$safeName}-{$ptSession->id}.pdf");
+    }
+
+    /**
+     * Download candidate's full question and answers breakdown as a PDF.
+     */
+    public function downloadAnswersPdf(PtSession $ptSession, PtReportService $reportService)
+    {
+        $pdf = $reportService->generateAnswersPdf($ptSession);
+        $safeName = \Illuminate\Support\Str::slug($ptSession->lead?->name ?? 'candidate');
+        return $pdf->stream("IELC-PT-Answers-{$safeName}-{$ptSession->id}.pdf");
+    }
+
+    /**
+     * Helper to prepare structured IELTS candidate answer sheet data.
+     */
+    protected function prepareIeltsAnswerSheetData(PtSession $ptSession): array
     {
         $ptSession->load(['lead.branch', 'ptExam.ieltsTasks', 'ieltsAnswers.ptIeltsTask']);
 
@@ -280,15 +332,16 @@ class PtSessionController extends Controller
                 }
             }
 
-            $eval = !empty($grid) ? \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($grid) : null;
+            $eval = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($grid);
 
             $listeningTasks[] = [
                 'task' => $task,
                 'grid' => $grid,
                 'total_slots' => $totalSlots,
                 'filled_count' => $filledCount,
-                'raw_score' => $eval['raw_score'] ?? null,
-                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? null),
+                'raw_score' => $eval['raw_score'] ?? 0,
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? 0),
+                'eval' => $eval,
             ];
         }
 
@@ -311,15 +364,16 @@ class PtSessionController extends Controller
                 }
             }
 
-            $eval = !empty($grid) ? \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($grid) : null;
+            $eval = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($grid);
 
             $readingTasks[] = [
                 'task' => $task,
                 'grid' => $grid,
                 'total_slots' => $totalSlots,
                 'filled_count' => $filledCount,
-                'raw_score' => $eval['raw_score'] ?? null,
-                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? null),
+                'raw_score' => $eval['raw_score'] ?? 0,
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? 0),
+                'eval' => $eval,
             ];
         }
 
@@ -355,15 +409,209 @@ class PtSessionController extends Controller
             ];
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.ielts_candidate_answersheet', [
-            'session' => $ptSession,
+        return [
             'listeningTasks' => $listeningTasks,
             'readingTasks' => $readingTasks,
             'writingTasks' => $writingTasks,
-        ]);
+        ];
+    }
+
+    /**
+     * Download candidate's complete answer sheet as a PDF (Listening, Reading, Writing - excluding Speaking).
+     */
+    public function downloadWritingPdf(PtSession $ptSession)
+    {
+        $data = $this->prepareIeltsAnswerSheetData($ptSession);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.ielts_candidate_answersheet', array_merge([
+            'session' => $ptSession,
+        ], $data));
 
         $safeName = \Illuminate\Support\Str::slug($ptSession->lead?->name ?? 'candidate');
         return $pdf->stream("IELTS-Answer-Sheet-{$safeName}-{$ptSession->id}.pdf");
+    }
+
+    /**
+     * Download candidate's complete answer sheet as a Word document (.docx).
+     */
+    public function downloadWritingDocx(PtSession $ptSession)
+    {
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+
+        $data = $this->prepareIeltsAnswerSheetData($ptSession);
+
+        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord->setDefaultFontName('Calibri');
+        $phpWord->setDefaultFontSize(10);
+
+        $section = $phpWord->addSection([
+            'marginTop' => 720,
+            'marginRight' => 720,
+            'marginBottom' => 720,
+            'marginLeft' => 720,
+        ]);
+
+        $candidateName = $ptSession->lead?->name ?? 'Candidate';
+        $branchName = $ptSession->lead?->branch?->name ?? 'Head Office';
+        $testTitle = $ptSession->ptExam?->title ?? 'IELTS Placement Test';
+        $subDate = $ptSession->finished_at ? \Carbon\Carbon::parse($ptSession->finished_at)->format('d M Y, H:i') : now()->format('d M Y, H:i');
+
+        // Document Title
+        $section->addText("CANDIDATE ANSWER SHEET", ['bold' => true, 'size' => 18, 'color' => '0F172A']);
+        $section->addText("Listening, Reading & Writing Evaluation", ['size' => 11, 'color' => '64748B']);
+        $section->addTextBreak(1);
+
+        // Metadata Table
+        $metaTable = $section->addTable(['borderSize' => 6, 'borderColor' => 'CBD5E1', 'cellMargin' => 80]);
+        $metaTable->addRow();
+        $metaTable->addCell(4800, ['bgColor' => 'F8FAFC'])->addText("Candidate: {$candidateName}", ['bold' => true]);
+        $metaTable->addCell(4800, ['bgColor' => 'F8FAFC'])->addText("Branch: {$branchName}", ['bold' => true]);
+        $metaTable->addRow();
+        $metaTable->addCell(4800)->addText("Test: {$testTitle}");
+        $metaTable->addCell(4800)->addText("Submitted: {$subDate}");
+        $section->addTextBreak(1);
+
+        // 1. Listening Section
+        if (!empty($data['listeningTasks'])) {
+            foreach ($data['listeningTasks'] as $taskItem) {
+                $title = $taskItem['task']->title ?? 'Listening Section';
+                $rawScore = $taskItem['raw_score'] ?? 0;
+                $bandScore = $taskItem['band_score'] !== null ? number_format($taskItem['band_score'], 1) : '0.0';
+
+                $section->addText(strtoupper($title), ['bold' => true, 'size' => 13, 'color' => '0369A1']);
+                $section->addText("Answered: {$taskItem['filled_count']} of {$taskItem['total_slots']} items  •  Score: {$rawScore} / {$taskItem['total_slots']} (Band {$bandScore})", ['italic' => true, 'size' => 9.5, 'color' => '475569']);
+                $section->addTextBreak(1);
+
+                $chunks = array_chunk(range(1, $taskItem['total_slots']), 10);
+                foreach ($chunks as $chunk) {
+                    $table = $section->addTable(['borderSize' => 6, 'borderColor' => 'CBD5E1', 'cellMargin' => 50]);
+
+                    // Header Row
+                    $table->addRow();
+                    foreach ($chunk as $num) {
+                        $table->addCell(960, ['bgColor' => 'F1F5F9'])->addText("#{$num}", ['bold' => true, 'size' => 8.5], ['alignment' => 'center']);
+                    }
+
+                    // Answer & Correctness Row
+                    $table->addRow();
+                    foreach ($chunk as $num) {
+                        $itemEval = $taskItem['eval']['item_results'][$num] ?? null;
+                        $isCorrect = $itemEval['is_correct'] ?? false;
+                        $userVal = isset($taskItem['grid'][$num]) && trim((string)$taskItem['grid'][$num]) !== '' ? $taskItem['grid'][$num] : '-';
+                        $keys = $itemEval['acceptable_keys'] ?? [];
+                        $keyStr = is_array($keys) ? implode(' / ', array_slice($keys, 0, 2)) : (string)$keys;
+
+                        $bgColor = $isCorrect ? 'F0FDF4' : ($userVal !== '-' ? 'FEF2F2' : 'F8FAFC');
+                        $textColor = $isCorrect ? '16A34A' : ($userVal !== '-' ? 'DC2626' : '64748B');
+
+                        $cell = $table->addCell(960, ['bgColor' => $bgColor]);
+                        $cell->addText($userVal, ['bold' => true, 'size' => 8.5, 'color' => $textColor], ['alignment' => 'center']);
+
+                        if ($isCorrect) {
+                            $cell->addText("Benar", ['bold' => true, 'size' => 7.5, 'color' => '16A34A'], ['alignment' => 'center']);
+                        } else {
+                            $cell->addText("Salah", ['bold' => true, 'size' => 7.5, 'color' => 'DC2626'], ['alignment' => 'center']);
+                            if (!empty($keyStr)) {
+                                $cell->addText("Kunci: {$keyStr}", ['size' => 7, 'color' => '991B1B'], ['alignment' => 'center']);
+                            }
+                        }
+                    }
+
+                    $section->addTextBreak(1);
+                }
+            }
+        }
+
+        // 2. Reading Section
+        if (!empty($data['readingTasks'])) {
+            foreach ($data['readingTasks'] as $taskItem) {
+                $title = $taskItem['task']->title ?? 'Reading Section';
+                $rawScore = $taskItem['raw_score'] ?? 0;
+                $bandScore = $taskItem['band_score'] !== null ? number_format($taskItem['band_score'], 1) : '0.0';
+
+                $section->addText(strtoupper($title), ['bold' => true, 'size' => 13, 'color' => '15803D']);
+                $section->addText("Answered: {$taskItem['filled_count']} of {$taskItem['total_slots']} items  •  Score: {$rawScore} / {$taskItem['total_slots']} (Band {$bandScore})", ['italic' => true, 'size' => 9.5, 'color' => '475569']);
+                $section->addTextBreak(1);
+
+                $chunks = array_chunk(range(1, $taskItem['total_slots']), 10);
+                foreach ($chunks as $chunk) {
+                    $table = $section->addTable(['borderSize' => 6, 'borderColor' => 'CBD5E1', 'cellMargin' => 50]);
+
+                    // Header Row
+                    $table->addRow();
+                    foreach ($chunk as $num) {
+                        $table->addCell(960, ['bgColor' => 'F1F5F9'])->addText("#{$num}", ['bold' => true, 'size' => 8.5], ['alignment' => 'center']);
+                    }
+
+                    // Answer & Correctness Row
+                    $table->addRow();
+                    foreach ($chunk as $num) {
+                        $itemEval = $taskItem['eval']['item_results'][$num] ?? null;
+                        $isCorrect = $itemEval['is_correct'] ?? false;
+                        $userVal = isset($taskItem['grid'][$num]) && trim((string)$taskItem['grid'][$num]) !== '' ? $taskItem['grid'][$num] : '-';
+                        $keys = $itemEval['acceptable_keys'] ?? [];
+                        $keyStr = is_array($keys) ? implode(' / ', array_slice($keys, 0, 2)) : (string)$keys;
+
+                        $bgColor = $isCorrect ? 'F0FDF4' : ($userVal !== '-' ? 'FEF2F2' : 'F8FAFC');
+                        $textColor = $isCorrect ? '16A34A' : ($userVal !== '-' ? 'DC2626' : '64748B');
+
+                        $cell = $table->addCell(960, ['bgColor' => $bgColor]);
+                        $cell->addText($userVal, ['bold' => true, 'size' => 8.5, 'color' => $textColor], ['alignment' => 'center']);
+
+                        if ($isCorrect) {
+                            $cell->addText("Benar", ['bold' => true, 'size' => 7.5, 'color' => '16A34A'], ['alignment' => 'center']);
+                        } else {
+                            $cell->addText("Salah", ['bold' => true, 'size' => 7.5, 'color' => 'DC2626'], ['alignment' => 'center']);
+                            if (!empty($keyStr)) {
+                                $cell->addText("Kunci: {$keyStr}", ['size' => 7, 'color' => '991B1B'], ['alignment' => 'center']);
+                            }
+                        }
+                    }
+
+                    $section->addTextBreak(1);
+                }
+            }
+        }
+
+        // 3. Writing Section
+        if (!empty($data['writingTasks'])) {
+            $section->addPageBreak();
+            $section->addText("WRITING SECTION SUBMISSIONS", ['bold' => true, 'size' => 14, 'color' => 'B45309']);
+            $section->addText("Total Writing Tasks: " . count($data['writingTasks']), ['italic' => true, 'size' => 9.5, 'color' => '475569']);
+            $section->addTextBreak(1);
+
+            foreach ($data['writingTasks'] as $index => $item) {
+                $taskTitle = $item['task']->title ?? ('Writing Task ' . ($index + 1));
+                $section->addText($taskTitle, ['bold' => true, 'size' => 12, 'color' => '0F172A']);
+                $section->addText("Word Count: {$item['word_count']} words", ['bold' => true, 'size' => 9.5, 'color' => '64748B']);
+                if (!empty($item['file_url'])) {
+                    $section->addText("Attached Document: {$item['file_url']}", ['italic' => true, 'size' => 9, 'color' => '0284C7']);
+                }
+                $section->addTextBreak(1);
+
+                $essayText = $item['text'] ? html_entity_decode(strip_tags($item['text']), ENT_QUOTES | ENT_HTML5, 'UTF-8') : '(No text response entered by candidate)';
+                $paragraphs = explode("\n", str_replace(["\r\n", "\r"], "\n", $essayText));
+                foreach ($paragraphs as $p) {
+                    $trimmed = trim($p);
+                    if ($trimmed !== '') {
+                        $section->addText($trimmed, ['size' => 10.5, 'lineHeight' => 1.3]);
+                    } else {
+                        $section->addTextBreak(1);
+                    }
+                }
+                $section->addTextBreak(1);
+            }
+        }
+
+        $safeName = \Illuminate\Support\Str::slug($ptSession->lead?->name ?? 'candidate');
+        $fileName = "IELTS-Answer-Sheet-{$safeName}-{$ptSession->id}.docx";
+        $tempPath = tempnam(sys_get_temp_dir(), 'ielts_doc_');
+        $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+        $objWriter->save($tempPath);
+
+        return response()->download($tempPath, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])->deleteFileAfterSend(true);
     }
 }
 

@@ -1,9 +1,11 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
-import { CheckCircle, Trophy, Target, MessageCircle, ArrowRight, ExternalLink, Headphones, BookOpen, PenTool, Mic, Clock, Sparkles } from "lucide-react";
+import { CheckCircle, Trophy, Target, MessageCircle, ArrowRight, ExternalLink, Headphones, BookOpen, PenTool, Mic, Clock, Award, FileText } from "lucide-react";
 
-export default function Result({ session, exam, stats, ielts_modules = {} }) {
-    const percentage = Math.round((stats.correct_answers / stats.total_questions) * 100);
+export default function Result({ session, exam, stats, ielts_modules = {}, download_urls = {} }) {
+    const totalQ = stats?.total_questions || 0;
+    const correctA = stats?.correct_answers || 0;
+    const percentage = totalQ > 0 ? Math.round((correctA / totalQ) * 100) : 0;
 
     const listeningData = ielts_modules?.listening;
     const readingData = ielts_modules?.reading;
@@ -78,12 +80,26 @@ export default function Result({ session, exam, stats, ielts_modules = {} }) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between px-8 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-10">
+                                <div className="flex items-center justify-between px-8 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-6">
                                     <div className="flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                         <span className="text-xs font-bold text-slate-500">Correct Answers</span>
                                     </div>
                                     <span className="text-sm font-black text-slate-900">{stats.correct_answers} / {stats.total_questions}</span>
+                                </div>
+
+                                <div className="flex justify-center mb-10">
+                                    {download_urls?.result_pdf && (
+                                        <a
+                                            href={download_urls.result_pdf}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                        >
+                                            <Award size={16} />
+                                            <span>Download Nilai (PDF)</span>
+                                        </a>
+                                    )}
                                 </div>
                             </>
                         ) : (
@@ -112,23 +128,16 @@ export default function Result({ session, exam, stats, ielts_modules = {} }) {
                                             <span className="text-4xl font-black text-slate-900 tracking-tight">
                                                 {listeningData?.band_score !== null && listeningData?.band_score !== undefined
                                                     ? `Band ${parseFloat(listeningData.band_score)}`
-                                                    : (listeningData?.has_attempted === false ? 'Not Attempted' : 'Evaluating...')}
+                                                    : 'Band 0'}
                                             </span>
                                         </div>
 
-                                        {listeningData?.raw_score ? (
-                                            <div className="mt-3 pt-3 border-t border-sky-100 flex items-center justify-between text-xs font-bold text-slate-500">
-                                                <span>Raw Accuracy:</span>
-                                                <span className="text-sky-700 font-black">
-                                                    {listeningData.raw_score.correct} / {listeningData.raw_score.total} Correct
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <div className="mt-3 pt-3 border-t border-sky-100/60 flex items-center justify-between text-xs font-semibold text-slate-400">
-                                                <span>40 Questions</span>
-                                                <span>Objective Graded</span>
-                                            </div>
-                                        )}
+                                        <div className="mt-3 pt-3 border-t border-sky-100 flex items-center justify-between text-xs font-bold text-slate-500">
+                                            <span>Raw Accuracy:</span>
+                                            <span className="text-sky-700 font-black">
+                                                {listeningData?.raw_score?.correct ?? 0} / {listeningData?.raw_score?.total ?? 40} Correct
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {/* Reading Card */}
@@ -147,23 +156,16 @@ export default function Result({ session, exam, stats, ielts_modules = {} }) {
                                             <span className="text-4xl font-black text-slate-900 tracking-tight">
                                                 {readingData?.band_score !== null && readingData?.band_score !== undefined
                                                     ? `Band ${parseFloat(readingData.band_score)}`
-                                                    : (readingData?.has_attempted === false ? 'Not Attempted' : 'Evaluating...')}
+                                                    : 'Band 0'}
                                             </span>
                                         </div>
 
-                                        {readingData?.raw_score ? (
-                                            <div className="mt-3 pt-3 border-t border-emerald-100 flex items-center justify-between text-xs font-bold text-slate-500">
-                                                <span>Raw Accuracy:</span>
-                                                <span className="text-emerald-700 font-black">
-                                                    {readingData.raw_score.correct} / {readingData.raw_score.total} Correct
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <div className="mt-3 pt-3 border-t border-emerald-100/60 flex items-center justify-between text-xs font-semibold text-slate-400">
-                                                <span>40 Questions</span>
-                                                <span>Objective Graded</span>
-                                            </div>
-                                        )}
+                                        <div className="mt-3 pt-3 border-t border-emerald-100 flex items-center justify-between text-xs font-bold text-slate-500">
+                                            <span>Raw Accuracy:</span>
+                                            <span className="text-emerald-700 font-black">
+                                                {readingData?.raw_score?.correct ?? 0} / {readingData?.raw_score?.total ?? 40} Correct
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -226,7 +228,7 @@ export default function Result({ session, exam, stats, ielts_modules = {} }) {
                 
                 {/* Closure Credits */}
                 <div className="mt-12 text-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-700 text-slate-400">
-                    <p className="text-[11px] font-bold tracking-widest uppercase mb-1">IELC English Education</p>
+                    <p className="text-[11px] font-bold tracking-widest uppercase mb-1">IELC</p>
                     <p className="text-[10px] opacity-60">International English Language Center &copy; {new Date().getFullYear()}</p>
                 </div>
             </div>

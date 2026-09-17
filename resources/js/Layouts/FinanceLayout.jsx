@@ -41,7 +41,7 @@ const menuItems = [
             },
             {
                 icon: <Gift size={20} />,
-                text: "Diskon",
+                text: "Diskon dan Loyalty",
                 href: route("admin.finance.loyalty-settings.index"),
                 name: "admin.finance.loyalty-settings.*",
             },

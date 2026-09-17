@@ -31,6 +31,7 @@ class StoreLead
                 'phone' => $data['phone'],
                 'email' => $data['email'] ?? null,
                 'birth_date' => $data['birth_date'] ?? null,
+                'nik' => $data['nik'] ?? null,
                 'school' => $data['school'] ?? null,
                 'grade' => $data['grade'] ?? null,
                 'school_level' => $data['school_level'] ?? null,

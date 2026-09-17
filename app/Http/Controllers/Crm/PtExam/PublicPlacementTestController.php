@@ -9,6 +9,7 @@ use App\Http\Resources\Crm\PtExam\PtExamPublicResource;
 use App\Http\Resources\Crm\PtExam\PtSessionResource;
 use App\Domains\Academic\Domain\Models\PtAnswer;
 use App\Domains\Academic\Domain\Models\PtSession;
+use App\Domains\Academic\Application\Services\PtReportService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -76,7 +77,7 @@ class PublicPlacementTestController extends Controller
         $remainingSeconds = $durationSeconds;
 
         if ($session->started_at) {
-            $elapsed = now()->diffInSeconds($session->started_at);
+            $elapsed = max(0, now()->timestamp - $session->started_at->timestamp);
             $remainingSeconds = max(0, $durationSeconds - $elapsed);
         }
 
@@ -120,7 +121,11 @@ class PublicPlacementTestController extends Controller
         }
 
         $examResource = new PtExamPublicResource($session->ptExam);
-        $totalQuestions = $examResource->toArray(request())['total_questions'];
+        $totalQuestions = $examResource->toArray(request())['total_questions'] ?? 0;
+        if ($totalQuestions <= 0) {
+            $totalQuestions = $session->ptExam->questions()->count()
+                ?: ($session->ptExam->generalQuestions()->count() ?: 0);
+        }
         $category = $session->ptExam->category ?? 'General';
 
         $correctAnswers = 0;
@@ -137,10 +142,27 @@ class PublicPlacementTestController extends Controller
                 $rawCanvas = $q->canvas_data ?? $q->kidCanvas?->canvas_data;
                 $c = is_string($rawCanvas) ? json_decode($rawCanvas, true) : $rawCanvas;
                 if (isset($c['targets']) && is_array($c['targets'])) {
-                    $validTargets = array_filter($c['targets'], function ($tgt) {
+                    $tokensList = collect($c['tokens'] ?? []);
+                    $hasRestrictedTokens = $tokensList->contains(fn($t) => !empty($t['allowed_target_ids']) || !empty($t['allowed_target_id']));
+                    $allAllowedTargetIds = [];
+                    if ($hasRestrictedTokens) {
+                        foreach ($tokensList as $t) {
+                            if (!empty($t['allowed_target_ids'])) {
+                                foreach ($t['allowed_target_ids'] as $tid) {
+                                    $allAllowedTargetIds[$tid] = true;
+                                }
+                            }
+                            if (!empty($t['allowed_target_id'])) {
+                                $allAllowedTargetIds[$t['allowed_target_id']] = true;
+                            }
+                        }
+                    }
+
+                    $validTargets = array_filter($c['targets'], function ($tgt) use ($hasRestrictedTokens, $allAllowedTargetIds) {
                         $isEx = !empty($tgt['is_example']) || in_array($tgt['type'] ?? '', ['example_circle', 'example_box', 'example_word', 'example_input']);
                         if ($isEx) return false;
-                        if (($tgt['type'] ?? '') === 'ring_target' && ($tgt['is_correct_answer'] ?? true) === false) return false;
+                        if (($tgt['type'] ?? '') === 'ring_target' && !filter_var($tgt['is_correct_answer'] ?? true, FILTER_VALIDATE_BOOLEAN)) return false;
+                        if (($tgt['type'] ?? '') === 'ring_target' && $hasRestrictedTokens && !isset($allAllowedTargetIds[$tgt['id'] ?? ''])) return false;
                         return true;
                     });
                     $totalTargets += count($validTargets);
@@ -179,14 +201,28 @@ class PublicPlacementTestController extends Controller
                     ];
                 }
 
+                $isAutoGraded = in_array($skill, ['listening', 'reading']);
+                $bandScore = $ans?->band_score;
+                if ($isAutoGraded) {
+                    if ($bandScore === null) {
+                        $bandScore = 0;
+                    }
+                    if ($rawScore === null) {
+                        $rawScore = [
+                            'correct' => 0,
+                            'total' => 40,
+                        ];
+                    }
+                }
+
                 $ieltsModules[$skill] = [
                     'title' => $task->title ?? ucfirst($skill),
                     'skill_type' => $skill,
-                    'band_score' => $ans?->band_score,
+                    'band_score' => $bandScore,
                     'raw_score' => $rawScore,
-                    'is_auto_graded' => in_array($skill, ['listening', 'reading']),
+                    'is_auto_graded' => $isAutoGraded,
                     'has_attempted' => $ans !== null,
-                    'status' => $ans?->band_score !== null ? 'graded' : ($ans ? 'pending_review' : 'not_attempted'),
+                    'status' => $ans?->band_score !== null ? 'graded' : ($ans ? 'pending_review' : ($isAutoGraded ? 'graded' : 'not_attempted')),
                 ];
             }
         } else {
@@ -214,7 +250,33 @@ class PublicPlacementTestController extends Controller
                 'correct_answers' => $correctAnswers,
             ],
             'ielts_modules' => $ieltsModules,
+            'download_urls' => [
+                'result_pdf' => route('public.placement-test.download-result-pdf', ['token' => $token]),
+                'answers_pdf' => route('public.placement-test.download-answers-pdf', ['token' => $token]),
+            ],
         ]);
+    }
+
+    /**
+     * Download public candidate achievement and score report as a PDF.
+     */
+    public function downloadResultPdf(string $token, PtReportService $reportService)
+    {
+        $session = PtSession::where('token', $token)->firstOrFail();
+        $pdf = $reportService->generateResultPdf($session);
+        $safeName = \Illuminate\Support\Str::slug($session->lead?->name ?? 'candidate');
+        return $pdf->stream("IELC-PT-Achievement-{$safeName}-{$session->id}.pdf");
+    }
+
+    /**
+     * Download public candidate full question and answers breakdown as a PDF.
+     */
+    public function downloadAnswersPdf(string $token, PtReportService $reportService)
+    {
+        $session = PtSession::where('token', $token)->firstOrFail();
+        $pdf = $reportService->generateAnswersPdf($session);
+        $safeName = \Illuminate\Support\Str::slug($session->lead?->name ?? 'candidate');
+        return $pdf->stream("IELC-PT-Answers-{$safeName}-{$session->id}.pdf");
     }
 }
 

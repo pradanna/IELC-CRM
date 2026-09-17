@@ -48,6 +48,21 @@ class SubmitPlacementTestAction
 
                         if (isset($canvasData['targets']) && is_array($canvasData['targets'])) {
                             $tokensList = collect($canvasData['tokens'] ?? []);
+                            $hasRestrictedTokens = $tokensList->contains(fn($t) => !empty($t['allowed_target_ids']) || !empty($t['allowed_target_id']));
+                            $allAllowedTargetIds = [];
+                            if ($hasRestrictedTokens) {
+                                foreach ($tokensList as $t) {
+                                    if (!empty($t['allowed_target_ids'])) {
+                                        foreach ($t['allowed_target_ids'] as $tid) {
+                                            $allAllowedTargetIds[$tid] = true;
+                                        }
+                                    }
+                                    if (!empty($t['allowed_target_id'])) {
+                                        $allAllowedTargetIds[$t['allowed_target_id']] = true;
+                                    }
+                                }
+                            }
+
                             foreach ($canvasData['targets'] as $tgt) {
                                 $tgtId = $tgt['id'] ?? '';
                                 $tgtType = $tgt['type'] ?? '';
@@ -58,8 +73,22 @@ class SubmitPlacementTestAction
                                     continue;
                                 }
 
-                                // Jika target ring adalah pengecoh (bukan jawaban benar), jangan hitung sebagai bobot total yang harus diisi
-                                if ($tgtType === 'ring_target' && ($tgt['is_correct_answer'] ?? true) === false) {
+                                // Target ring yang tidak ada dalam daftar token mana pun (misal pengecoh di header contoh yang belum tertandai)
+                                if ($tgtType === 'ring_target' && $hasRestrictedTokens && !isset($allAllowedTargetIds[$tgtId])) {
+                                    continue;
+                                }
+
+                                // Target pengecoh (is_correct_answer === false / '0' / 0 / 'false')
+                                $isTargetExpected = isset($tgt['is_correct_answer'])
+                                    ? filter_var($tgt['is_correct_answer'], FILTER_VALIDATE_BOOLEAN)
+                                    : true;
+
+                                if ($tgtType === 'ring_target' && !$isTargetExpected) {
+                                    // Jika siswa melingkari target pengecoh, maka jawaban salah
+                                    $userAssignedTokenId = $userMapping[$tgtId] ?? null;
+                                    if (!empty($userAssignedTokenId)) {
+                                        $isAllCorrect = false;
+                                    }
                                     continue;
                                 }
 
@@ -70,8 +99,6 @@ class SubmitPlacementTestAction
 
                                     $isTargetCorrect = false;
                                     if ($tgtType === 'ring_target') {
-                                        // Jika target ring diset sebagai pengecoh (is_correct_answer === false), maka jika dilingkari tetap salah
-                                        $isTargetExpected = ($tgt['is_correct_answer'] ?? true) !== false;
                                         if ($userToken && ($userToken['type'] ?? '') === 'ring' && $isTargetExpected) {
                                             $isTargetCorrect = true;
                                         }
@@ -91,9 +118,9 @@ class SubmitPlacementTestAction
                                             $isTargetCorrect = true;
                                         }
                                     } elseif ($tgtType === 'input_target') {
-                                        $expectedText = strtolower(trim((string)($tgt['correct_text'] ?? '')));
-                                        $userTypedText = strtolower(trim((string)$userAssignedTokenId));
-                                        if ($expectedText !== '' && $userTypedText === $expectedText) {
+                                        $expectedRaw = (string)($tgt['correct_text'] ?: ($tgt['label'] ?? ''));
+                                        $userTypedText = (string)$userAssignedTokenId;
+                                        if (self::isTextOrNumberMatch($userTypedText, $expectedRaw)) {
                                             $isTargetCorrect = true;
                                         }
                                     } elseif ($tgtType === 'word_target') {
@@ -321,5 +348,135 @@ class SubmitPlacementTestAction
                 $targetLink
             ));
         });
+    }
+
+    protected static array $numberUnits = [
+        0 => 'zero', 1 => 'one', 2 => 'two', 3 => 'three', 4 => 'four',
+        5 => 'five', 6 => 'six', 7 => 'seven', 8 => 'eight', 9 => 'nine',
+        10 => 'ten', 11 => 'eleven', 12 => 'twelve', 13 => 'thirteen',
+        14 => 'fourteen', 15 => 'fifteen', 16 => 'sixteen', 17 => 'seventeen',
+        18 => 'eighteen', 19 => 'nineteen',
+    ];
+
+    protected static array $numberTens = [
+        20 => 'twenty', 30 => 'thirty', 40 => 'forty', 50 => 'fifty',
+        60 => 'sixty', 70 => 'seventy', 80 => 'eighty', 90 => 'ninety',
+    ];
+
+    public static function numberToWords(int $num): array
+    {
+        if (isset(self::$numberUnits[$num])) return [self::$numberUnits[$num]];
+        if (isset(self::$numberTens[$num])) return [self::$numberTens[$num]];
+        if ($num > 20 && $num < 100) {
+            $t = (int)(floor($num / 10) * 10);
+            $u = $num % 10;
+            $tenWord = self::$numberTens[$t] ?? '';
+            $unitWord = self::$numberUnits[$u] ?? '';
+            if ($tenWord && $unitWord) {
+                return ["{$tenWord}-{$unitWord}", "{$tenWord} {$unitWord}"];
+            }
+        }
+        if ($num === 100) return ['one hundred', 'hundred'];
+        return [];
+    }
+
+    public static function wordsToNumber(string $str): ?int
+    {
+        $clean = trim(str_replace('-', ' ', strtolower($str)));
+        if ($clean === '') return null;
+
+        $unitFlip = array_flip(self::$numberUnits);
+        $tenFlip = array_flip(self::$numberTens);
+
+        if (isset($unitFlip[$clean])) return $unitFlip[$clean];
+        if (isset($tenFlip[$clean])) return $tenFlip[$clean];
+        if ($clean === 'one hundred' || $clean === 'hundred') return 100;
+
+        $parts = explode(' ', $clean);
+        if (count($parts) === 2 && isset($tenFlip[$parts[0]]) && isset($unitFlip[$parts[1]])) {
+            return $tenFlip[$parts[0]] + $unitFlip[$parts[1]];
+        }
+
+        return null;
+    }
+
+    public static function normalizeAnswer(string $str): string
+    {
+        $s = strtolower(trim($str));
+        $s = str_replace(['.', ':'], ':', $s);
+        $s = str_replace(['-', '&'], [' ', 'and'], $s);
+        $s = preg_replace('/\s+/', ' ', $s);
+        return trim($s);
+    }
+
+    /**
+     * Check if user answer matches the expected answer, supporting:
+     * 1. Multiple options separated by `/`, `,` or `|` (e.g. "12 / twelve")
+     * 2. Full numbers 0 - 100 digits and words (e.g. "22" <=> "twenty-two", "64" <=> "sixty four")
+     * 3. Numbers inside phrases (e.g. "two days" <=> "2 days")
+     * 4. Punctuation, symbols, and time formats (e.g. "2.30" <=> "2:30")
+     * 5. Spacing variations (e.g. "stomachache" <=> "stomach ache", "no-one in" <=> "no one in")
+     * 6. Minor typo tolerance on longer words (e.g. "Russell" <=> "russel")
+     */
+    public static function isTextOrNumberMatch(string $userVal, string $expectedRaw): bool
+    {
+        $cleanUser = self::normalizeAnswer($userVal);
+        if ($cleanUser === '') return false;
+
+        $candidates = preg_split('/[\/|,]/', $expectedRaw);
+
+        foreach ($candidates as $candidate) {
+            $cleanCand = self::normalizeAnswer($candidate);
+            if ($cleanCand === '') continue;
+
+            // 1. Direct match
+            if ($cleanUser === $cleanCand) return true;
+
+            // 2. Pure number conversion
+            if (is_numeric($cleanCand)) {
+                $candNum = (int)$cleanCand;
+                $words = self::numberToWords($candNum);
+                foreach ($words as $w) {
+                    if ($cleanUser === self::normalizeAnswer($w)) return true;
+                }
+            }
+
+            if (is_numeric($cleanUser)) {
+                $userNum = (int)$cleanUser;
+                $candNum = self::wordsToNumber($cleanCand);
+                if ($candNum !== null && $userNum === $candNum) return true;
+            }
+
+            $userAsNum = self::wordsToNumber($cleanUser);
+            if ($userAsNum !== null && is_numeric($cleanCand) && $userAsNum === (int)$cleanCand) {
+                return true;
+            }
+
+            // 3. Number word replaced inside phrase (e.g. "two days" <-> "2 days")
+            $numPattern = '/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b/';
+            $userWithDigit = preg_replace_callback($numPattern, function($m) {
+                $n = self::wordsToNumber($m[1]);
+                return $n !== null ? (string)$n : $m[1];
+            }, $cleanUser);
+
+            $candWithDigit = preg_replace_callback($numPattern, function($m) {
+                $n = self::wordsToNumber($m[1]);
+                return $n !== null ? (string)$n : $m[1];
+            }, $cleanCand);
+
+            if ($userWithDigit === $candWithDigit) return true;
+            if (rtrim($userWithDigit, 's') === rtrim($candWithDigit, 's')) return true;
+
+            // 4. Singular / Plural flexibility (trailing s)
+            if (rtrim($cleanUser, 's') === rtrim($cleanCand, 's')) return true;
+
+            // 5. No-space variant (e.g. "stomachache" <-> "stomach ache", "noone in" <-> "no one in")
+            if (str_replace(' ', '', $cleanUser) === str_replace(' ', '', $cleanCand)) return true;
+
+            // 6. Minor 1-character typo tolerance for long words (length >= 5)
+            if (strlen($cleanCand) >= 5 && levenshtein($cleanUser, $cleanCand) <= 1) return true;
+        }
+
+        return false;
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileCode, Send, Sparkles } from 'lucide-react';
+import { X, FileCode, Send } from 'lucide-react';
 
 export default function TemplateSelectorModal({
     isOpen,

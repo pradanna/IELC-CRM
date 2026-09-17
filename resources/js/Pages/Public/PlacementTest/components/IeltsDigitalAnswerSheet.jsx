@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
     Headphones, BookOpen, PenTool, Mic, FileText, Music, 
     ExternalLink, Upload, Download, CheckCircle2, AlertCircle, Maximize2, 
-    Minimize2, ChevronDown, ChevronUp, Save, Eye, Sparkles
+    Minimize2, ChevronDown, ChevronUp, Save, Eye
 } from 'lucide-react';
 import RichTextEditor from '@/Components/ui/RichTextEditor';
 
@@ -404,7 +404,7 @@ export default function IeltsDigitalAnswerSheet({
                             </div>
 
                             {/* Numbered Input Cells Grid for the Active Section */}
-                            <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                            <div className="space-y-1.5">
                                 {Array.from({ length: 10 }, (_, i) => {
                                     const slotNum = (activeSectionTab - 1) * 10 + i + 1;
                                     if (slotNum > totalSlots) return null;
@@ -416,7 +416,7 @@ export default function IeltsDigitalAnswerSheet({
                                     return (
                                         <div 
                                             key={slotNum} 
-                                            className={`flex flex-col gap-1.5 p-2 rounded-2xl border transition-all ${
+                                            className={`flex flex-col gap-1 p-1.5 rounded-2xl border transition-all ${
                                                 isReview && itemEval
                                                     ? (isCorrect 
                                                         ? 'bg-emerald-50/70 border-emerald-300 ring-1 ring-emerald-500/10' 
@@ -426,8 +426,8 @@ export default function IeltsDigitalAnswerSheet({
                                                         : 'bg-slate-50/70 border-slate-200/80 hover:border-slate-300')
                                             }`}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center font-black text-xs transition-colors ${
+                                            <div className="flex items-center gap-2.5">
+                                                <div className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center font-black text-xs transition-colors ${
                                                     isReview && itemEval
                                                         ? (isCorrect ? 'bg-emerald-600 text-white shadow-xs' : (isFilled ? 'bg-rose-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-500'))
                                                         : (isFilled ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-500')
@@ -436,7 +436,7 @@ export default function IeltsDigitalAnswerSheet({
                                                 </div>
 
                                                 {isReview ? (
-                                                    <div className="flex-1 flex items-center justify-between text-xs font-bold text-slate-900 bg-white px-3 py-2 rounded-xl border border-slate-200">
+                                                    <div className="flex-1 flex items-center justify-between text-xs font-bold text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200">
                                                         <span>{value || <span className="text-slate-300 italic">(Blank)</span>}</span>
                                                         {itemEval && isFilled && (
                                                             <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
@@ -452,14 +452,14 @@ export default function IeltsDigitalAnswerSheet({
                                                         value={value}
                                                         onChange={(e) => handleGridItemChange(slotNum, e.target.value)}
                                                         placeholder={`Answer for No. ${slotNum}`}
-                                                        className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase"
+                                                        className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase"
                                                     />
                                                 )}
                                             </div>
 
                                             {/* In Review Mode: Show Acceptable Answer Keys if incorrect */}
                                             {isReview && itemEval && !isCorrect && itemEval.acceptable_keys?.length > 0 && (
-                                                <div className="pl-11 pr-2 text-[10px] text-slate-500 font-medium">
+                                                <div className="pl-10 pr-2 text-[10px] text-slate-500 font-medium">
                                                     <span className="font-bold text-slate-700">Correct Key:</span> {itemEval.acceptable_keys.join(' / ')}
                                                 </div>
                                             )}
@@ -468,39 +468,22 @@ export default function IeltsDigitalAnswerSheet({
                                 })}
                             </div>
 
-                            {/* Alternative File Upload Option */}
-                            <div className="pt-3 border-t border-slate-100">
-                                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                                    Or Upload Scanned/PDF Answer Sheet (Optional)
-                                </label>
-                                {isReview ? (
-                                    parsedData.filePath && (
-                                        <a
-                                            href={parsedData.filePath}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:underline"
-                                        >
-                                            <FileText size={14} /> View Uploaded File
-                                        </a>
-                                    )
-                                ) : (
-                                    <div className="relative">
-                                        <input
-                                            type="file"
-                                            accept=".pdf,.doc,.docx,image/*"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                            onChange={(e) => onFileSelect(task.id, e.target.files[0])}
-                                        />
-                                        <div className="border border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100/50 rounded-2xl p-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 transition-all cursor-pointer">
-                                            <Upload size={14} className="text-slate-400" />
-                                            <span className="truncate">
-                                                {answer instanceof File ? answer.name : 'Upload File / Photo of Answer Sheet'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            {/* Alternative File Upload Option - Hidden for now */}
+                            {isReview && parsedData.filePath && (
+                                <div className="pt-3 border-t border-slate-100">
+                                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                                        Uploaded Answer Sheet
+                                    </label>
+                                    <a
+                                        href={parsedData.filePath}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:underline"
+                                    >
+                                        <FileText size={14} /> View Uploaded File
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

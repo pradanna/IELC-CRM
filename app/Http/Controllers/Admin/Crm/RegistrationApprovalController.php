@@ -85,10 +85,15 @@ class RegistrationApprovalController extends Controller
     public function approve(Request $request, LeadRegistration $registration, ApproveLeadRegistration $action): RedirectResponse
     {
         $request->validate([
-            'branch_id' => 'nullable|exists:branches,id'
+            'branch_id' => 'nullable|exists:branches,id',
+            'is_online' => 'nullable|boolean'
         ]);
 
-        $lead = $action->handle($registration, $request->input('branch_id'));
+        $lead = $action->handle(
+            $registration,
+            $request->input('branch_id'),
+            $request->has('is_online') ? $request->boolean('is_online') : null
+        );
 
         return redirect()->back()->with([
             'success' => "Lead {$registration->name} berhasil disetujui dan ditambahkan ke CRM!",

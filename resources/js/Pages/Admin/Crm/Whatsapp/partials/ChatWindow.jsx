@@ -22,7 +22,7 @@ export default function ChatWindow({
                     Pilih Percakapan
                 </h3>
                 <p className="text-xs text-slate-400 max-w-xs">
-                    Pilih kontak di sebelah kiri untuk melihat pesan {activeTab === 'official' ? 'WA Official' : 'WA Baileys'}.
+                    Pilih kontak di sebelah kiri untuk melihat pesan {activeTab === 'official' ? 'WA Official' : 'WA Unofficial'}.
                 </p>
             </div>
         );
@@ -44,7 +44,7 @@ export default function ChatWindow({
                                     ? 'bg-blue-100 text-blue-700 border border-blue-200' 
                                     : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                             }`}>
-                                {activeTab === 'official' ? 'Official Meta API' : 'Baileys Device'}
+                                {activeTab === 'official' ? 'Official' : 'Unofficial'}
                             </span>
                         </div>
                         <p className="text-[11px] text-slate-400 font-mono mt-0.5">{selectedContact.phone}</p>

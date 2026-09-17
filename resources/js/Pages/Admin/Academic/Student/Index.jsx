@@ -39,6 +39,7 @@ import ExportButtons from "@/Components/ui/ExportButtons";
 
 export default function Index({
     students,
+    studentStats = { total_active: 0, expiring_soon: 0, total_stopped: 0 },
     studyClassesList = [],
     priceMastersList = [],
     gradesList = [],
@@ -60,6 +61,7 @@ export default function Index({
         handleFilterBranch,
         handleFilterLoyaltyTier,
         handleSort,
+        navigateWithFilters,
     } = useStudentIndex(filters);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -199,7 +201,7 @@ export default function Index({
                                 router.get(
                                     "/admin/academic/students",
                                     { mainTab: "list" },
-                                    { preserveState: true },
+                                    { preserveState: false, preserveScroll: true },
                                 );
                             }}
                             className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
@@ -216,7 +218,7 @@ export default function Index({
                                 router.get(
                                     "/admin/academic/students",
                                     { mainTab: "analytics" },
-                                    { preserveState: true },
+                                    { preserveState: false, preserveScroll: true },
                                 );
                             }}
                             className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
@@ -232,6 +234,108 @@ export default function Index({
 
                 {activeMainTab === "list" ? (
                     <>
+                        {/* Summary Statistic Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Siswa Aktif Card */}
+                            <button
+                                type="button"
+                                onClick={() => navigateWithFilters({ status: "active", expiry_status: "" })}
+                                className={`group text-left p-5 rounded-3xl border transition-all duration-300 relative overflow-hidden flex items-center justify-between cursor-pointer ${
+                                    filters.status === "active" && !filters.expiry_status
+                                        ? "bg-white border-slate-300 shadow-md shadow-slate-200/50 scale-[1.01]"
+                                        : "bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-md hover:shadow-slate-100"
+                                }`}
+                            >
+                                <div className="space-y-1.5 relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${
+                                            filters.status === "active" && !filters.expiry_status
+                                                ? "bg-emerald-500 animate-pulse"
+                                                : "bg-emerald-500"
+                                        }`} />
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                            Siswa Aktif
+                                        </p>
+                                    </div>
+                                    <h3 className="text-3xl sm:text-4xl font-black tracking-tight leading-none text-slate-900">
+                                        {Number(studentStats.total_active || 0).toLocaleString('id-ID')}
+                                    </h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Sedang aktif belajar
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 shrink-0 bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100">
+                                    <UserCheck size={28} strokeWidth={2.3} />
+                                </div>
+                            </button>
+
+                            {/* Mau Habis Card */}
+                            <button
+                                type="button"
+                                onClick={() => navigateWithFilters({ status: "active", expiry_status: "expiring_soon" })}
+                                className={`group text-left p-5 rounded-3xl border transition-all duration-300 relative overflow-hidden flex items-center justify-between cursor-pointer ${
+                                    filters.expiry_status === "expiring_soon"
+                                        ? "bg-white border-slate-300 shadow-md shadow-slate-200/50 scale-[1.01]"
+                                        : "bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-md hover:shadow-slate-100"
+                                }`}
+                            >
+                                <div className="space-y-1.5 relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${
+                                            filters.expiry_status === "expiring_soon"
+                                                ? "bg-amber-500 animate-pulse"
+                                                : "bg-amber-500"
+                                        }`} />
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                            Masa Aktif Mau Habis
+                                        </p>
+                                    </div>
+                                    <h3 className="text-3xl sm:text-4xl font-black tracking-tight leading-none text-slate-900">
+                                        {Number(studentStats.expiring_soon || 0).toLocaleString('id-ID')}
+                                    </h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Selesai dalam ≤ 21 hari
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 shrink-0 bg-amber-50 text-amber-600 group-hover:bg-amber-100">
+                                    <Clock size={28} strokeWidth={2.3} />
+                                </div>
+                            </button>
+
+                            {/* Siswa Stop Card */}
+                            <button
+                                type="button"
+                                onClick={() => navigateWithFilters({ status: "stop", expiry_status: "" })}
+                                className={`group text-left p-5 rounded-3xl border transition-all duration-300 relative overflow-hidden flex items-center justify-between cursor-pointer ${
+                                    filters.status === "stop"
+                                        ? "bg-white border-slate-300 shadow-md shadow-slate-200/50 scale-[1.01]"
+                                        : "bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-md hover:shadow-slate-100"
+                                }`}
+                            >
+                                <div className="space-y-1.5 relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${
+                                            filters.status === "stop"
+                                                ? "bg-rose-500 animate-pulse"
+                                                : "bg-rose-500"
+                                        }`} />
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                            Siswa Stop
+                                        </p>
+                                    </div>
+                                    <h3 className="text-3xl sm:text-4xl font-black tracking-tight leading-none text-slate-900">
+                                        {Number(studentStats.total_stopped || 0).toLocaleString('id-ID')}
+                                    </h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Telah berhenti belajar
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 shrink-0 bg-rose-50 text-rose-600 group-hover:bg-rose-100">
+                                    <ShieldAlert size={28} strokeWidth={2.3} />
+                                </div>
+                            </button>
+                        </div>
+
                         {/* Filters Card */}
                         <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-100 relative z-20">
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-2 items-center">
@@ -905,7 +1009,7 @@ export default function Index({
                                             ) : (
                                                 <tr>
                                                     <td
-                                                        colSpan="5"
+                                                        colSpan="6"
                                                         className="px-8 py-20 text-center"
                                                     >
                                                         <div className="flex flex-col items-center gap-4">

@@ -77,7 +77,7 @@ class FinanceController extends Controller
         $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', now()->toDateString());
 
-        $query = Invoice::with(['lead', 'student.lead', 'studyClass.branch', 'items'])->latest();
+        $query = Invoice::with(['lead.branch', 'student.lead.branch', 'studyClass.branch', 'items'])->latest();
 
         // 1. Search by Invoice Number or Name
         if ($request->search) {
@@ -89,8 +89,8 @@ class FinanceController extends Controller
             });
         }
 
-        // 2. Filter by Date Range
-        if ($startDate && $endDate) {
+        // 2. Filter by Date Range (do not restrict if user is searching and did not explicitly specify start_date)
+        if ($startDate && $endDate && (!$request->filled('search') || $request->has('start_date'))) {
             $query->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         }
 
@@ -112,7 +112,7 @@ class FinanceController extends Controller
 
         // Summary calculations (on filtered base query including status filter so cards reflect all filters)
         $baseQuery = Invoice::query();
-        if ($startDate && $endDate) {
+        if ($startDate && $endDate && (!$request->filled('search') || $request->has('start_date'))) {
             $baseQuery->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         }
         if ($request->search) {

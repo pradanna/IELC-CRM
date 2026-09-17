@@ -13,7 +13,8 @@ export default function PremiumSearchableSelect({
     placeholder = 'Search...', 
     icon: Icon,
     className = "",
-    error = false
+    error = false,
+    disabled = false
 }) {
     const [query, setQuery] = useState('');
 
@@ -34,6 +35,7 @@ export default function PremiumSearchableSelect({
     return (
         <div className={`relative ${widthClass} ${className}`}>
             <Combobox 
+                disabled={disabled}
                 value={selectedOption} 
                 onChange={(val) => {
                     onChange(val ? val.value : '');
@@ -45,10 +47,18 @@ export default function PremiumSearchableSelect({
                     <div className="relative">
                         {/* Trigger / Input */}
                         <div className={`
-                            relative flex items-center w-full bg-white border ${error ? 'border-red-500 ring-4 ring-red-500/5' : open ? 'border-red-500 shadow-sm ring-4 ring-red-500/5' : 'border-slate-300 hover:border-slate-400'} 
+                            relative flex items-center w-full bg-white border ${
+                                disabled 
+                                    ? 'bg-slate-100/70 border-slate-200 text-slate-400 cursor-not-allowed opacity-75' 
+                                    : error 
+                                    ? 'border-red-500 ring-4 ring-red-500/5' 
+                                    : open 
+                                    ? 'border-red-500 shadow-sm ring-4 ring-red-500/5' 
+                                    : 'border-slate-300 hover:border-slate-400'
+                            } 
                             rounded-2xl transition-all duration-300 outline-none shadow-sm
                         `}>
-                            <ComboboxButton as="div" className="flex items-center w-full pl-5 pr-12 py-3 cursor-text">
+                            <ComboboxButton as="div" className={`flex items-center w-full pl-5 pr-12 py-3 ${disabled ? 'cursor-not-allowed' : 'cursor-text'}`}>
                                 {Icon && <Icon size={16} className={`mr-3 ${open ? 'text-red-500' : 'text-slate-400'} transition-colors`} />}
                                 
                                 <ComboboxInput

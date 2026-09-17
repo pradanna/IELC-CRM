@@ -16,7 +16,7 @@ class FetchCrmReportData
         $endDate = $startDate->copy()->endOfMonth();
 
         $validBranchId = ($branchId && $branchId !== 'all' && $branchId !== 'null' && $branchId !== 'undefined') ? $branchId : null;
-        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin', 'frontdesk', 'marketing']);
+        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin', 'frontdesk', 'marketing', 'it_staff']);
 
         $applyFilters = function ($query) use ($validBranchId, $isSuperadmin, $user) {
             if (!$isSuperadmin) {
@@ -128,15 +128,25 @@ class FetchCrmReportData
 
         if ($newLeadsCount > 0) {
             $newLeads = $leads->filter(fn($l) => $l->created_at->month == $month);
-            $topSourceId = $newLeads->groupBy('lead_source_id')
-                ->map->count()
-                ->sortDesc()
-                ->keys()
-                ->first();
-            $topSource = LeadSource::find($topSourceId)?->name ?? 'Unknown';
-            $sourceCount = $newLeads->where('lead_source_id', $topSourceId)->count();
-            $sourcePct = round(($sourceCount / $newLeadsCount) * 100);
-            $insights[] = "<strong>Top Acquisition Source:</strong> {$topSource} menyumbang {$sourcePct}% dari total leads baru ({$sourceCount} leads).";
+            
+            // Prioritize identified lead sources; fallback to leads with unassigned source
+            $validSourceLeads = $newLeads->filter(fn($l) => !empty($l->lead_source_id));
+            
+            if ($validSourceLeads->isNotEmpty()) {
+                $topSourceId = $validSourceLeads->groupBy('lead_source_id')
+                    ->map->count()
+                    ->sortDesc()
+                    ->keys()
+                    ->first();
+                $topSource = LeadSource::find($topSourceId)?->name ?? 'Lainnya';
+                $sourceCount = $newLeads->where('lead_source_id', $topSourceId)->count();
+                $sourcePct = round(($sourceCount / $newLeadsCount) * 100);
+                $insights[] = "<strong>Top Acquisition Source:</strong> {$topSource} menyumbang {$sourcePct}% dari total leads baru ({$sourceCount} leads).";
+            } else {
+                $unassignedCount = $newLeads->whereNull('lead_source_id')->count();
+                $sourcePct = round(($unassignedCount / $newLeadsCount) * 100);
+                $insights[] = "<strong>Top Acquisition Source:</strong> Belum Ditentukan menyumbang {$sourcePct}% dari total leads baru ({$unassignedCount} leads).";
+            }
         }
 
         if ($newLeadsCount > 0) {

@@ -92,12 +92,18 @@ class PublicLeadController extends Controller
             'address' => 'nullable|string',
             'postal_code' => 'nullable|string|max:10',
             'guardian_data' => 'nullable|array',
+            'guardian_data.father_name' => 'nullable|string|max:255',
+            'guardian_data.father_phone' => ['nullable', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
+            'guardian_data.mother_name' => 'nullable|string|max:255',
+            'guardian_data.mother_phone' => ['nullable', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
             'lead_source_id' => 'nullable|exists:lead_sources,id',
             'info_source_id' => 'nullable|exists:info_sources,id',
         ], [
             'name.required' => 'Nama lengkap wajib diisi.',
             'phone.required' => 'Nomor WhatsApp wajib diisi.',
             'phone.regex' => 'Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
+            'guardian_data.father_phone.regex' => 'Format WhatsApp Ayah tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
+            'guardian_data.mother_phone.regex' => 'Format WhatsApp Ibu tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
         ]);
 
         $leadSourceId = $validated['lead_source_id'] ?? null;
@@ -145,7 +151,14 @@ class PublicLeadController extends Controller
             route('admin.crm.registrations.index')
         ));
 
-        return redirect()->back()->with('success', 'Pendaftaran Anda telah kami terima. Tim kami akan segera menghubungi Anda!');
+        return redirect()->route('public.join.success')->with('success', 'Pendaftaran Anda telah kami terima. Tim kami akan segera menghubungi Anda!');
+    }
+
+    public function success()
+    {
+        return Inertia::render('Public/Success', [
+            'message' => session('success'),
+        ]);
     }
 
     public function fillingForm($token)
@@ -218,12 +231,18 @@ class PublicLeadController extends Controller
             'address' => 'nullable|string',
             'postal_code' => 'nullable|string|max:10',
             'guardian_data' => 'nullable|array',
+            'guardian_data.father_name' => 'nullable|string|max:255',
+            'guardian_data.father_phone' => ['nullable', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
+            'guardian_data.mother_name' => 'nullable|string|max:255',
+            'guardian_data.mother_phone' => ['nullable', 'string', 'max:20', 'regex:/^(\+?62|0)8[1-9][0-9]{7,11}$/'],
             'lead_source_id' => 'nullable|exists:lead_sources,id',
             'info_source_id' => 'nullable|exists:info_sources,id',
         ], [
             'name.required' => 'Nama lengkap wajib diisi.',
             'phone.required' => 'Nomor WhatsApp wajib diisi.',
             'phone.regex' => 'Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
+            'guardian_data.father_phone.regex' => 'Format WhatsApp Ayah tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
+            'guardian_data.mother_phone.regex' => 'Format WhatsApp Ibu tidak valid. Gunakan format seperti 081234567890 atau 6281234567890.',
         ]);
 
         if (empty($validated['lead_source_id'])) {

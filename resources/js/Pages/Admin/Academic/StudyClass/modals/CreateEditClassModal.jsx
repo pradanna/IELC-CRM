@@ -17,7 +17,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
         type: 'offline',
-        category: '',
+        category: 'group',
         status: 'active',
         branch_id: '',
         instructor_id: '',
@@ -31,23 +31,12 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
     });
 
     // Automate calculations
-    useClassScheduleCalculation(data, setData);
+    const { recalculateTargetCompletion } = useClassScheduleCalculation(data, setData, isOpen);
 
-    const categoryOptions = useMemo(() => {
-        if (leadTypes && leadTypes.length > 0) {
-            return leadTypes.map(lt => ({
-                value: lt.name,
-                label: lt.name,
-            }));
-        }
-        return [
-            { value: 'Kids', label: 'Kids' },
-            { value: 'Teens', label: 'Teens' },
-            { value: 'Adult', label: 'Adult' },
-            { value: 'IELTS', label: 'IELTS' },
-            { value: 'TOEFL', label: 'TOEFL' },
-        ];
-    }, [leadTypes]);
+    const categoryOptions = [
+        { value: 'group', label: 'Group Classes' },
+        { value: 'private', label: 'Non-Group / Private' },
+    ];
 
     const typeOptions = [
         { value: 'offline', label: 'Offline' },
@@ -74,7 +63,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
             setData({
                 name: studyClass.name || '',
                 type: studyClass.type || 'offline',
-                category: studyClass.category || '',
+                category: (studyClass.category?.toLowerCase() === 'private') ? 'private' : 'group',
                 status: studyClass.status || 'active',
                 branch_id: studyClass.branch_id || '',
                 instructor_id: studyClass.instructor_id || '',
@@ -88,6 +77,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
             });
         } else {
             reset();
+            setData('category', 'group');
         }
         clearErrors();
     }, [studyClass, isOpen]);
@@ -106,9 +96,23 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
         const dataArr = Array.isArray(priceMasters) ? priceMasters : (priceMasters?.data || []);
         return dataArr.map(pm => ({ 
             value: pm.id, 
-            label: `${pm.name} (Total: Rp ${new Intl.NumberFormat('id-ID').format(pm.price_per_session)})` 
+            label: `${pm.name} (${pm.total_sessions ? `${pm.total_sessions} Sesi • ` : ''}Rp ${new Intl.NumberFormat('id-ID').format(pm.price_per_session)})` 
         }));
     }, [priceMasters]);
+
+    const handlePriceChange = (val) => {
+        const dataArr = Array.isArray(priceMasters) ? priceMasters : (priceMasters?.data || []);
+        const pm = dataArr.find(p => p.id === val);
+        if (pm?.total_sessions) {
+            setData(prev => ({
+                ...prev,
+                price_master_id: val,
+                total_meetings: Number(pm.total_sessions),
+            }));
+        } else {
+            setData('price_master_id', val);
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -160,12 +164,12 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                         </PremiumFormGroup>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <PremiumFormGroup label="Program Kelas" error={errors.category} required>
+                            <PremiumFormGroup label="Kategori Kelas" error={errors.category} required>
                                 <PremiumSearchableSelect
                                     options={categoryOptions}
-                                    value={data.category}
+                                    value={data.category || 'group'}
                                     onChange={(val) => setData('category', val)}
-                                    placeholder="Pilih Program Kelas"
+                                    placeholder="Pilih Kategori Kelas"
                                     icon={Users}
                                     error={errors.category}
                                 />
@@ -202,7 +206,7 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                             <PremiumSearchableSelect
                                 options={priceOptions}
                                 value={data.price_master_id}
-                                onChange={(val) => setData('price_master_id', val)}
+                                onChange={handlePriceChange}
                                 placeholder="Pilih Skema Harga..."
                                 icon={Zap}
                                 error={errors.price_master_id}
@@ -266,15 +270,41 @@ export default function CreateEditClassModal({ isOpen, onClose, studyClass = nul
                                 value={data.start_session_date}
                                 onChange={(val) => setData('start_session_date', val)}
                                 placeholder="Select launch date"
-                                inputClassName={`!rounded-xl !py-2.5 font-bold text-sm ${errors.start_session_date ? '!border-red-500' : ''}`}
+                                align="top-left"
+                                inputClassName={`!rounded-xl !py-2.5 !h-[42px] font-bold text-sm ${errors.start_session_date ? '!border-red-500' : ''}`}
                             />
                         </PremiumFormGroup>
-                        <PremiumFormGroup label="Target Completion" error={errors.end_session_date}>
+                        <PremiumFormGroup 
+                            label="Target Completion" 
+                            error={errors.end_session_date}
+                            action={
+                                <div className="flex items-center gap-2">
+                                    {data.end_session_date && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('end_session_date', '')}
+                                            className="text-[10px] font-extrabold text-slate-400 hover:text-red-600 uppercase tracking-wider transition-colors cursor-pointer"
+                                        >
+                                            Hapus
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={recalculateTargetCompletion}
+                                        className="text-[10px] font-extrabold text-red-600 hover:text-red-700 hover:underline uppercase tracking-wider transition-colors cursor-pointer"
+                                    >
+                                        Hitung Otomatis
+                                    </button>
+                                </div>
+                            }
+                        >
                             <DatePicker
                                 value={data.end_session_date}
                                 onChange={(val) => setData('end_session_date', val)}
                                 placeholder="Select completion date"
-                                inputClassName={`!rounded-xl !py-2.5 font-bold text-sm ${errors.end_session_date ? '!border-red-500' : ''}`}
+                                isClearable={true}
+                                align="top-right"
+                                inputClassName={`!rounded-xl !py-2.5 !h-[42px] font-bold text-sm ${errors.end_session_date ? '!border-red-500' : ''}`}
                             />
                         </PremiumFormGroup>
                     </div>

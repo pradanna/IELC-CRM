@@ -31,14 +31,17 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, \Illuminate\Http\Request $request) {
-            if (! app()->environment(['local', 'testing']) && in_array($response->getStatusCode(), [500, 503, 404, 403, 419])) {
-                return \Inertia\Inertia::render('Error', ['status' => $response->getStatusCode()])
+            $status = $response->getStatusCode();
+
+            // In local with debug enabled, keep detailed error traces for 500 server errors
+            if (app()->environment('local') && config('app.debug') && $status === 500) {
+                return $response;
+            }
+
+            if (in_array($status, [500, 503, 404, 403, 419])) {
+                return \Inertia\Inertia::render('Error', ['status' => $status])
                     ->toResponse($request)
-                    ->setStatusCode($response->getStatusCode());
-            } elseif ($response->getStatusCode() === 419) {
-                return \Inertia\Inertia::render('Error', ['status' => 419])
-                    ->toResponse($request)
-                    ->setStatusCode(419);
+                    ->setStatusCode($status);
             }
 
             return $response;

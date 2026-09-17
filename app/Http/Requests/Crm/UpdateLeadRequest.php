@@ -29,6 +29,8 @@ class UpdateLeadRequest extends FormRequest
             'address'        => ['nullable', 'string'],
             'postal_code'    => ['nullable', 'string', 'max:10'],
             'birth_date'     => ['nullable', 'date'],
+            'nik'            => ['nullable', 'string', 'max:30'],
+            'school'         => ['nullable', 'string', 'max:255'],
             'grade'        => ['nullable', 'string'],
             'school_level' => ['nullable', 'string'],
             'notes'          => ['nullable', 'string'],

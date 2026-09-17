@@ -118,7 +118,7 @@ export default function InspectorTargetsTab({
                                 <div className="space-y-1.5">
                                     <div>
                                         <label className="text-[9px] font-black uppercase text-sky-700">
-                                            Kunci Jawaban Teks (Case Insensitive):
+                                            Kunci Jawaban (Mendukung "12 / twelve" atau otomatis teks/angka):
                                         </label>
                                         <input
                                             type="text"
@@ -128,7 +128,7 @@ export default function InspectorTargetsTab({
                                                     correct_text: e.target.value,
                                                 })
                                             }
-                                            placeholder="Contoh: trousers / dress"
+                                            placeholder="Contoh: 12 / twelve atau dress"
                                             className="w-full bg-sky-50 border border-sky-300 text-sky-900 text-[11px] font-black p-1.5 rounded-lg focus:bg-white focus:border-sky-500"
                                         />
                                     </div>
@@ -377,26 +377,33 @@ export default function InspectorTargetsTab({
                                     {/* Status Kunci Jawaban Benar / Pengecoh */}
                                     <div className="pt-1.5 border-t border-slate-200/70">
                                         <label className="flex items-center gap-2 cursor-pointer p-1.5 bg-white rounded-lg border border-slate-200 hover:border-emerald-300">
-                                            <input
-                                                type="checkbox"
-                                                checked={tgt.is_correct_answer !== false}
-                                                onChange={(e) =>
-                                                    onUpdateTarget(tgt.id, {
-                                                        is_correct_answer: e.target.checked,
-                                                    })
-                                                }
-                                                className="w-3.5 h-3.5 text-emerald-600 rounded focus:ring-emerald-500"
-                                            />
-                                            <div className="flex-1">
-                                                <span className={`text-[10px] font-black uppercase ${tgt.is_correct_answer !== false ? "text-emerald-700" : "text-slate-500"}`}>
-                                                    {tgt.is_correct_answer !== false ? "✔ Target Jawaban Benar" : "✖ Target Pengecoh (Distractor)"}
-                                                </span>
-                                                <p className="text-[9px] text-slate-400 font-medium">
-                                                    {tgt.is_correct_answer !== false
-                                                        ? "Siswa mendapat nilai jika melingkari target ini"
-                                                        : "Pilihan salah, tidak dihitung benar jika dilingkari"}
-                                                </p>
-                                            </div>
+                                            {(() => {
+                                                const isTargetChecked = tgt.is_correct_answer !== false && tgt.is_correct_answer !== '0' && tgt.is_correct_answer !== 0 && tgt.is_correct_answer !== 'false';
+                                                return (
+                                                    <>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isTargetChecked}
+                                                            onChange={(e) =>
+                                                                onUpdateTarget(tgt.id, {
+                                                                    is_correct_answer: e.target.checked,
+                                                                })
+                                                            }
+                                                            className="w-3.5 h-3.5 text-emerald-600 rounded focus:ring-emerald-500"
+                                                        />
+                                                        <div className="flex-1">
+                                                            <span className={`text-[10px] font-black uppercase ${isTargetChecked ? "text-emerald-700" : "text-slate-500"}`}>
+                                                                {isTargetChecked ? "✔ Target Jawaban Benar" : "✖ Target Pengecoh (Distractor)"}
+                                                            </span>
+                                                            <p className="text-[9px] text-slate-400 font-medium">
+                                                                {isTargetChecked
+                                                                    ? "Siswa mendapat nilai jika melingkari target ini"
+                                                                    : "Pilihan salah, tidak dihitung benar jika dilingkari"}
+                                                            </p>
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
                                         </label>
                                     </div>
                                 </div>

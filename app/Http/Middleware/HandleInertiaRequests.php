@@ -34,8 +34,8 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? array_merge($request->user()->load(['superadmin', 'marketing', 'frontdesk', 'finance'])->toArray(), [
-                    'role' => $request->user()->hasRole('superadmin') ? 'superadmin' : $request->user()->getRoleNames()->first(),
+                'user' => $request->user() ? array_merge($request->user()->load(['superadmin', 'marketing', 'frontdesk', 'finance', 'teacher', 'itStaff', 'branch'])->toArray(), [
+                    'role' => $request->user()->hasRole('superadmin') ? 'superadmin' : ($request->user()->hasRole('it_staff') ? 'it_staff' : $request->user()->getRoleNames()->first()),
                 ]) : null,
             ],
             'flash' => [

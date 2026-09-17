@@ -136,10 +136,18 @@ export default function LeadDetailTab({ lead, loading, getPhaseStyle, phases = [
                                 <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 shadow-inner">
                                     <User size={20} />
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{rel.type}</p>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{rel.type}</p>
+                                        {rel.is_main_contact && <p className="text-[10px] font-black text-red-500 text-[9px] uppercase tracking-wider">Main Decision Maker</p>}
+                                    </div>
                                     <p className="text-sm font-black text-slate-900 tracking-tight">{rel.related_lead?.name || 'Unknown Lead'}</p>
-                                    {rel.is_main_contact && <p className="text-[10px] font-black text-red-500 mt-1 uppercase">Main Decision Maker</p>}
+                                    {rel.related_lead?.phone && (
+                                        <div className="flex items-center gap-2 mt-1.5 text-xs font-bold text-slate-600">
+                                            <Phone size={12} className="text-slate-400" />
+                                            <span>{rel.related_lead.phone}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))

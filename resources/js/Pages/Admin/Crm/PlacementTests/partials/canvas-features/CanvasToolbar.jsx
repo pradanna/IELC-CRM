@@ -6,7 +6,6 @@ import {
     Undo2,
     Redo2,
     ChevronDown,
-    Sparkles,
 } from "lucide-react";
 
 export default function CanvasToolbar({
@@ -180,7 +179,6 @@ export default function CanvasToolbar({
                         className="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-md active:scale-95 ring-2 ring-violet-400/30"
                         title="Daftar Template Contoh Soal (Sudah Terjawab / Aktif)"
                     >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
                         <span>+ Contoh Soal (Terjawab)</span>
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExampleMenuOpen ? "rotate-180" : ""}`} />
                     </button>

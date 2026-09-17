@@ -99,7 +99,7 @@ class StudyClass extends Model
         return Attribute::make(
             get: function () {
                 // Non-Group (Private) calculates progress based on manual progress and recorded sessions
-                if ($this->category === 'private') {
+                if (strtolower($this->category ?? '') === 'private') {
                     $attCount = 0;
                     if ($this->relationLoaded('currentCycleAttendances')) {
                         $attCount = $this->currentCycleAttendances->count();
@@ -149,7 +149,7 @@ class StudyClass extends Model
     {
         return Attribute::make(
             get: function () {
-                if ($this->category !== 'private' && $this->end_session_date && $this->end_session_date->endOfDay()->isPast()) {
+                if (strtolower($this->category ?? '') !== 'private' && $this->end_session_date && $this->end_session_date->endOfDay()->isPast()) {
                     return true;
                 }
                 if ($this->session_progress >= (int) $this->total_meetings && (int) $this->total_meetings > 0) {
@@ -166,7 +166,7 @@ class StudyClass extends Model
     protected function isPrivate(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->category === 'private'
+            get: fn () => strtolower($this->category ?? '') === 'private'
         );
     }
 }

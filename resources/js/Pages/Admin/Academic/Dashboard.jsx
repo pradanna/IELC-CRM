@@ -5,7 +5,7 @@ import {
     GraduationCap, Users, BookOpen, Laptop,
     Activity, TrendingUp, Calendar, Building2, 
     ShieldAlert, Filter, ChevronDown, X, MapPin, Search, FileText,
-    ArrowRightLeft, ArrowRight, RefreshCw, Sparkles, UserPlus
+    ArrowRightLeft, ArrowRight, RefreshCw, UserPlus
 } from 'lucide-react';
 import { 
     ResponsiveContainer, AreaChart, Area,
@@ -630,7 +630,7 @@ export function AcademicDashboardContent({ reports, filters, onFilterChange, hid
                                 <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-6 relative overflow-hidden shadow-lg border border-slate-700/50">
                                     <div className="space-y-3 relative z-10">
                                         <div className="w-10 h-10 bg-white/10 text-white rounded-xl flex items-center justify-center backdrop-blur-md">
-                                            <Sparkles className="w-5 h-5 text-amber-300" />
+                                            <TrendingUp className="w-5 h-5 text-amber-300" />
                                         </div>
                                         <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
                                             Total Transaksi Join

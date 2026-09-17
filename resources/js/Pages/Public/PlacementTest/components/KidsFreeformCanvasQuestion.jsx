@@ -26,6 +26,166 @@ import {
 const BASE_WIDTH = 1100;
 const BASE_HEIGHT = 1500;
 
+const UNITS = {
+    0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four',
+    5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
+    10: 'ten', 11: 'eleven', 12: 'twelve', 13: 'thirteen', 14: 'fourteen',
+    15: 'fifteen', 16: 'sixteen', 17: 'seventeen', 18: 'eighteen', 19: 'nineteen'
+};
+
+const TENS = {
+    20: 'twenty', 30: 'thirty', 40: 'forty', 50: 'fifty',
+    60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety'
+};
+
+function numberToWords(num) {
+    if (UNITS[num]) return [UNITS[num]];
+    if (TENS[num]) return [TENS[num]];
+    if (num > 20 && num < 100) {
+        const t = Math.floor(num / 10) * 10;
+        const u = num % 10;
+        const tenWord = TENS[t];
+        const unitWord = UNITS[u];
+        if (tenWord && unitWord) {
+            return [`${tenWord}-${unitWord}`, `${tenWord} ${unitWord}`];
+        }
+    }
+    if (num === 100) return ['one hundred', 'hundred'];
+    return [];
+}
+
+const UNITS_FLIP = Object.entries(UNITS).reduce((acc, [k, v]) => { acc[v] = Number(k); return acc; }, {});
+const TENS_FLIP = Object.entries(TENS).reduce((acc, [k, v]) => { acc[v] = Number(k); return acc; }, {});
+
+function wordsToNumber(str) {
+    const clean = String(str || '').toLowerCase().replace(/-/g, ' ').trim();
+    if (!clean) return null;
+    if (UNITS_FLIP[clean] !== undefined) return UNITS_FLIP[clean];
+    if (TENS_FLIP[clean] !== undefined) return TENS_FLIP[clean];
+    if (clean === 'one hundred' || clean === 'hundred') return 100;
+    const parts = clean.split(' ');
+    if (parts.length === 2 && TENS_FLIP[parts[0]] !== undefined && UNITS_FLIP[parts[1]] !== undefined) {
+        return TENS_FLIP[parts[0]] + UNITS_FLIP[parts[1]];
+    }
+    return null;
+}
+
+function normalizeAnswer(str) {
+    let s = String(str || '').toLowerCase().trim();
+    s = s.replace(/[\.:]/g, ':');
+    s = s.replace(/-/g, ' ').replace(/&/g, 'and');
+    s = s.replace(/\s+/g, ' ');
+    return s.trim();
+}
+
+function levenshteinDistance(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+export function checkTextOrNumberMatch(userVal, expectedRaw) {
+    const cleanUser = normalizeAnswer(userVal);
+    if (!cleanUser) return false;
+
+    const candidates = String(expectedRaw || '').split(/[\/|,]/);
+    const numRegex = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b/g;
+
+    for (const cand of candidates) {
+        const cleanCand = normalizeAnswer(cand);
+        if (!cleanCand) continue;
+
+        // 1. Direct match
+        if (cleanUser === cleanCand) return true;
+
+        // 2. Pure number conversion
+        if (!isNaN(cleanCand) && cleanCand !== '') {
+            const candNum = Number(cleanCand);
+            const words = numberToWords(candNum);
+            for (const w of words) {
+                if (cleanUser === normalizeAnswer(w)) return true;
+            }
+        }
+
+        if (!isNaN(cleanUser) && cleanUser !== '') {
+            const userNum = Number(cleanUser);
+            const candNum = wordsToNumber(cleanCand);
+            if (candNum !== null && userNum === candNum) return true;
+        }
+
+        const userAsNum = wordsToNumber(cleanUser);
+        if (userAsNum !== null && !isNaN(cleanCand) && userAsNum === Number(cleanCand)) {
+            return true;
+        }
+
+        // 3. Number word replaced inside phrase (e.g. "two days" <-> "2 days")
+        const userWithDigit = cleanUser.replace(numRegex, (m) => {
+            const n = wordsToNumber(m);
+            return n !== null ? String(n) : m;
+        });
+        const candWithDigit = cleanCand.replace(numRegex, (m) => {
+            const n = wordsToNumber(m);
+            return n !== null ? String(n) : m;
+        });
+
+        if (userWithDigit === candWithDigit) return true;
+        if (userWithDigit.replace(/s$/, '') === candWithDigit.replace(/s$/, '')) return true;
+
+        // 4. Singular / Plural flexibility
+        if (cleanUser.replace(/s$/, '') === cleanCand.replace(/s$/, '')) return true;
+
+        // 5. No-space variant (e.g. "stomachache" <-> "stomach ache")
+        if (cleanUser.replace(/\s+/g, '') === cleanCand.replace(/\s+/g, '')) return true;
+
+        // 6. Typo tolerance for words length >= 5
+        if (cleanCand.length >= 5 && levenshteinDistance(cleanUser, cleanCand) <= 1) return true;
+    }
+
+    return false;
+}
+
+export function extractAnswerMapping(raw) {
+    if (!raw) return {};
+    let parsed = raw;
+    if (typeof raw === "string") {
+        try {
+            parsed = JSON.parse(raw);
+        } catch (e) {
+            return {};
+        }
+    }
+    if (parsed && typeof parsed === "object") {
+        if (parsed.user_mapping !== undefined) {
+            const mapping = parsed.user_mapping;
+            if (typeof mapping === "string") {
+                try {
+                    return JSON.parse(mapping) || {};
+                } catch (e) {
+                    return {};
+                }
+            }
+            return mapping || {};
+        }
+    }
+    return parsed || {};
+}
+
 // Interactive Canvas Audio Player Component for Students
 function CanvasStudentAudioPlayer({ element }) {
     const [isPlaying, setIsPlaying] = useState(false);
@@ -90,12 +250,12 @@ function CanvasStudentAudioPlayer({ element }) {
 }
 
 // Draggable Token Component (supports both Ring Token & Word Token)
-function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
+function DraggableTokenItem({ token, isOverlay = false, isUsed = false, isReview = false }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } =
         useDraggable({
             id: token.id,
             data: token,
-            disabled: isUsed && !isOverlay,
+            disabled: (isUsed || isReview) && !isOverlay,
         });
 
     const style = transform
@@ -104,14 +264,16 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
           }
         : undefined;
 
+    const cursorClass = isReview ? "cursor-default select-none pointer-events-none" : "cursor-grab active:cursor-grabbing select-none";
+
     if (token.type === "ring") {
         return (
             <div
                 ref={setNodeRef}
                 style={style}
-                {...listeners}
-                {...attributes}
-                className={`cursor-grab active:cursor-grabbing select-none w-10 h-10 rounded-full border-3 border-emerald-500 bg-emerald-500/20 flex items-center justify-center transition-all ${
+                {...(isReview ? {} : listeners)}
+                {...(isReview ? {} : attributes)}
+                className={`${cursorClass} w-10 h-10 rounded-full border-3 border-emerald-500 bg-emerald-500/20 flex items-center justify-center transition-all ${
                     isDragging
                         ? "opacity-30 border-dashed border-emerald-400 scale-95"
                         : isOverlay
@@ -131,9 +293,9 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
             <div
                 ref={setNodeRef}
                 style={style}
-                {...listeners}
-                {...attributes}
-                className={`cursor-grab active:cursor-grabbing select-none w-10 h-10 rounded-2xl border-2 font-black text-xl transition-all flex items-center justify-center ${
+                {...(isReview ? {} : listeners)}
+                {...(isReview ? {} : attributes)}
+                className={`${cursorClass} w-10 h-10 rounded-2xl border-2 font-black text-xl transition-all flex items-center justify-center ${
                     isDragging
                         ? "opacity-30 border-dashed border-emerald-400 bg-emerald-50 scale-95"
                         : isOverlay
@@ -153,9 +315,9 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
             <div
                 ref={setNodeRef}
                 style={style}
-                {...listeners}
-                {...attributes}
-                className={`cursor-grab active:cursor-grabbing select-none w-10 h-10 rounded-2xl border-2 font-black text-xl transition-all flex items-center justify-center ${
+                {...(isReview ? {} : listeners)}
+                {...(isReview ? {} : attributes)}
+                className={`${cursorClass} w-10 h-10 rounded-2xl border-2 font-black text-xl transition-all flex items-center justify-center ${
                     isDragging
                         ? "opacity-30 border-dashed border-rose-400 bg-rose-50 scale-95"
                         : isOverlay
@@ -181,9 +343,9 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
                     width: `${width}px`,
                     height: `${height}px`,
                 }}
-                {...listeners}
-                {...attributes}
-                className={`cursor-grab active:cursor-grabbing select-none rounded-2xl border-2 p-1 transition-all flex flex-col items-center justify-center bg-white ${
+                {...(isReview ? {} : listeners)}
+                {...(isReview ? {} : attributes)}
+                className={`${cursorClass} rounded-2xl border-2 p-1 transition-all flex flex-col items-center justify-center bg-white ${
                     isDragging
                         ? "opacity-30 border-dashed border-indigo-400 bg-indigo-50 scale-95"
                         : isOverlay
@@ -209,9 +371,9 @@ function DraggableTokenItem({ token, isOverlay = false, isUsed = false }) {
                 ...style,
                 fontSize: token.fontSize ? `${token.fontSize}px` : undefined,
             }}
-            {...listeners}
-            {...attributes}
-            className={`cursor-grab active:cursor-grabbing select-none px-3.5 py-1.5 rounded-2xl border-2 font-black text-sm transition-all flex items-center gap-2 ${
+            {...(isReview ? {} : listeners)}
+            {...(isReview ? {} : attributes)}
+            className={`${cursorClass} px-3.5 py-1.5 rounded-2xl border-2 font-black text-sm transition-all flex items-center gap-2 ${
                 isDragging
                     ? "opacity-40 border-dashed border-orange-400 bg-orange-50 scale-95"
                     : isOverlay
@@ -626,7 +788,13 @@ function DroppableCanvasTarget({
                         style={{
                             fontSize: `${assignedToken.fontSize || target.fontSize || 14}px`,
                         }}
-                        className="font-black text-orange-600 drop-shadow-xs truncate w-full"
+                        className={`font-black drop-shadow-xs truncate w-full ${
+                            isReview
+                                ? isCorrect
+                                    ? "text-emerald-800"
+                                    : "text-rose-800 line-through"
+                                : "text-orange-600"
+                        }`}
                     >
                         {assignedToken.text}
                     </span>
@@ -717,10 +885,12 @@ export default function KidsFreeformCanvasQuestion({
     const instruction = canvasConfig?.instruction || "";
 
     // Answers mapping: { [target_id]: token_id }
-    const [answers, setAnswers] = useState(() => {
-        if (!value) return {};
-        return typeof value === "string" ? JSON.parse(value) : value;
-    });
+    const parsedAnswers = useMemo(() => extractAnswerMapping(value), [value]);
+    const [answers, setAnswers] = useState(() => parsedAnswers);
+
+    useEffect(() => {
+        setAnswers(parsedAnswers);
+    }, [parsedAnswers]);
 
     const [activeToken, setActiveToken] = useState(null);
 
@@ -987,10 +1157,15 @@ export default function KidsFreeformCanvasQuestion({
                                               (t) => t.id === assignedTokenId,
                                           );
 
+                                const isTgtExpected =
+                                    tgt.is_correct_answer !== false &&
+                                    tgt.is_correct_answer !== "0" &&
+                                    tgt.is_correct_answer !== 0 &&
+                                    tgt.is_correct_answer !== "false";
+
                                 const isCorrect =
                                     tgt.type === "ring_target"
-                                        ? assignedToken?.type === "ring" &&
-                                          tgt.is_correct_answer !== false
+                                        ? assignedToken?.type === "ring" && isTgtExpected
                                         : tgt.type === "box_target"
                                           ? tgt.correct_token_id &&
                                             assignedTokenId ===
@@ -1008,12 +1183,10 @@ export default function KidsFreeformCanvasQuestion({
                                                         : "cross")
                                                   : false
                                           : tgt.type === "input_target"
-                                            ? String(assignedTokenId || "")
-                                                  .trim()
-                                                  .toLowerCase() ===
-                                              String(tgt.correct_text || "")
-                                                  .trim()
-                                                  .toLowerCase()
+                                            ? checkTextOrNumberMatch(
+                                                  assignedTokenId,
+                                                  tgt.correct_text || tgt.label,
+                                              )
                                             : tgt.correct_token_id ===
                                               assignedTokenId;
 
@@ -1051,6 +1224,7 @@ export default function KidsFreeformCanvasQuestion({
                                         <DraggableTokenItem
                                             token={tok}
                                             isUsed={isUsed}
+                                            isReview={isReview}
                                         />
                                     </div>
                                 );

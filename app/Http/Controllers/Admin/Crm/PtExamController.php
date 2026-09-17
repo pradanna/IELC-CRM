@@ -28,7 +28,19 @@ class PtExamController extends Controller
             'completed_today' => PtSession::where('status', 'completed')->whereDate('finished_at', now()->today())->count(),
         ];
 
-        $sessions = PtSession::with(['lead', 'ptExam'])
+        $sessions = PtSession::with([
+            'lead.branch',
+            'ptExam.questions.kidCanvas',
+            'ptExam.kidsQuestions',
+            'ptExam.generalQuestions.options',
+            'ptExam.generalGroups.questions.options',
+            'ptExam.ieltsTasks',
+            'kidCanvasAnswers',
+            'kidsAnswers',
+            'generalAnswers',
+            'ieltsAnswers.ptIeltsTask',
+            'answers',
+        ])
             ->latest()
             ->take(10)
             ->get();

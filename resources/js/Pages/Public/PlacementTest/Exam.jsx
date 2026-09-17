@@ -1,6 +1,20 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
-import { Clock, ChevronLeft, ChevronRight, Check, AlertCircle, FileText, ExternalLink, Music, Download, Maximize, Minimize } from "lucide-react";
+import {
+    Clock,
+    ChevronLeft,
+    ChevronRight,
+    Check,
+    AlertCircle,
+    FileText,
+    ExternalLink,
+    Music,
+    Download,
+    Maximize,
+    Minimize,
+    Award,
+    Trophy,
+} from "lucide-react";
 import { usePlacementTest } from "./hooks/usePlacementTest";
 import { Upload, File as FileIcon, Type } from "lucide-react";
 import KidsCanvasQuestion from "./components/KidsCanvasQuestion";
@@ -12,10 +26,12 @@ import RichTextEditor from "@/Components/ui/RichTextEditor";
 export default function Exam({
     session,
     exam_title,
-    exam_category = 'General',
+    exam_category = "General",
     pages,
     is_review = false,
     user_answers = {},
+    stats = null,
+    download_urls = null,
 }) {
     const [isFullscreen, setIsFullscreen] = React.useState(false);
 
@@ -38,7 +54,8 @@ export default function Exam({
             setIsFullscreen(!!document.fullscreenElement);
         };
         document.addEventListener("fullscreenchange", handleFsChange);
-        return () => document.removeEventListener("fullscreenchange", handleFsChange);
+        return () =>
+            document.removeEventListener("fullscreenchange", handleFsChange);
     }, []);
     const {
         currentPageIndex,
@@ -65,20 +82,210 @@ export default function Exam({
         summaryFile,
         setData,
         processing,
-    } = usePlacementTest({ session, pages, isReview: is_review, userAnswers: user_answers, examCategory: exam_category });
+    } = usePlacementTest({
+        session,
+        pages,
+        isReview: is_review,
+        userAnswers: user_answers,
+        examCategory: exam_category,
+    });
+
+    // Compute or format achievement stats for review mode
+    const computedStats = React.useMemo(() => {
+        if (stats && stats.total_questions !== undefined) {
+            return stats;
+        }
+
+        if (!pages || pages.length === 0) {
+            return {
+                total_questions: 0,
+                correct_answers: 0,
+                percentage: 0,
+                unit_label: "Soal",
+            };
+        }
+
+        if (exam_category === "Kids") {
+            let totalTargets = 0;
+            let correctTargets = 0;
+
+            pages.forEach((page) => {
+                page.questions?.forEach((q) => {
+                    const canvas = q.kid_canvas?.canvas_data || {};
+                    const qAns = user_answers?.[q.id] || answers?.[q.id] || {};
+                    const userMapping =
+                        qAns.user_mapping ||
+                        (typeof qAns === "object" && !qAns.user_mapping
+                            ? qAns
+                            : {});
+
+                    const tokens = canvas.tokens || [];
+                    const tokensById = {};
+                    tokens.forEach((t) => {
+                        if (t.id) tokensById[t.id] = t;
+                    });
+
+                    const hasRestrictedTokens = tokens.some(
+                        (t) =>
+                            t.allowed_target_ids?.length || t.allowed_target_id,
+                    );
+                    const allowedTargetIds = {};
+                    if (hasRestrictedTokens) {
+                        tokens.forEach((t) => {
+                            (t.allowed_target_ids || []).forEach((tid) => {
+                                allowedTargetIds[tid] = true;
+                            });
+                            if (t.allowed_target_id)
+                                allowedTargetIds[t.allowed_target_id] = true;
+                        });
+                    }
+
+                    if (Array.isArray(canvas.targets)) {
+                        canvas.targets.forEach((tgt) => {
+                            const isEx =
+                                tgt.is_example ||
+                                [
+                                    "example_circle",
+                                    "example_box",
+                                    "example_word",
+                                    "example_input",
+                                ].includes(tgt.type);
+                            if (isEx) return;
+                            if (
+                                tgt.type === "ring_target" &&
+                                (tgt.is_correct_answer === false ||
+                                    tgt.is_correct_answer === "0" ||
+                                    tgt.is_correct_answer === 0)
+                            )
+                                return;
+                            if (
+                                tgt.type === "ring_target" &&
+                                hasRestrictedTokens &&
+                                !allowedTargetIds[tgt.id]
+                            )
+                                return;
+
+                            totalTargets++;
+
+                            const userVal = userMapping[tgt.id];
+                            const userToken = userVal
+                                ? tokensById[userVal]
+                                : null;
+
+                            let isCorrect = false;
+                            if (tgt.type === "ring_target") {
+                                if (userToken && userToken.type === "ring")
+                                    isCorrect = true;
+                            } else if (tgt.type === "box_target") {
+                                const expSymbol = tgt.correct_symbol;
+                                const expTokenId = tgt.correct_token_id;
+                                const uType = userToken?.type || userVal;
+                                if (expTokenId && userVal === expTokenId)
+                                    isCorrect = true;
+                                else if (expSymbol && uType === expSymbol)
+                                    isCorrect = true;
+                                else if (expTokenId && uType === expTokenId)
+                                    isCorrect = true;
+                            } else if (tgt.type === "input_target") {
+                                const expText = String(
+                                    tgt.correct_text || tgt.label || "",
+                                )
+                                    .trim()
+                                    .toLowerCase();
+                                const uText = String(userVal || "")
+                                    .trim()
+                                    .toLowerCase();
+                                if (
+                                    uText &&
+                                    (uText === expText ||
+                                        (Number(uText) === Number(expText) &&
+                                            !isNaN(Number(uText))))
+                                ) {
+                                    isCorrect = true;
+                                }
+                            } else if (tgt.type === "word_target") {
+                                if (userVal === tgt.correct_token_id)
+                                    isCorrect = true;
+                            }
+
+                            if (isCorrect) correctTargets++;
+                        });
+                    } else if (Array.isArray(canvas.drop_zones)) {
+                        canvas.drop_zones.forEach((dz) => {
+                            totalTargets++;
+                            if (userMapping[dz.id] === dz.correct_word_id)
+                                correctTargets++;
+                        });
+                    }
+                });
+            });
+
+            const pct =
+                totalTargets > 0
+                    ? Math.round((correctTargets / totalTargets) * 1000) / 10
+                    : 0;
+            return {
+                total_questions: totalTargets,
+                correct_answers: correctTargets,
+                percentage: pct,
+                unit_label: "Kotak Isian",
+                achievement_text: `Benar ${correctTargets} dari ${totalTargets} Soal (Kotak Isian)`,
+            };
+        }
+
+        let totalQ = 0;
+        let correctQ = 0;
+        pages.forEach((p) => {
+            p.questions?.forEach((q) => {
+                totalQ++;
+                const a = user_answers?.[q.id] || answers?.[q.id];
+                if (a?.is_correct) correctQ++;
+            });
+        });
+
+        return {
+            total_questions: totalQ,
+            correct_answers: correctQ,
+            percentage: totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0,
+            unit_label: "Soal",
+            achievement_text: `Benar ${correctQ} dari ${totalQ} Soal`,
+        };
+    }, [stats, pages, user_answers, answers, exam_category]);
+
+    const resultPdfUrl =
+        download_urls?.result_pdf ||
+        (session?.id
+            ? `/crm/pt-sessions/${session.id}/download-result-pdf`
+            : null) ||
+        (session?.token && session.token !== "review"
+            ? `/placement-test/${session.token}/download-result-pdf`
+            : null);
+
+    const answersPdfUrl =
+        download_urls?.answers_pdf ||
+        (session?.id
+            ? `/crm/pt-sessions/${session.id}/download-answers-pdf`
+            : null) ||
+        (session?.token && session.token !== "review"
+            ? `/placement-test/${session.token}/download-answers-pdf`
+            : null);
 
     // Modal state for confirming section transition & locking previous section
     const [pendingNextPage, setPendingNextPage] = React.useState(null);
 
-    const activePage = (pages && pages.length > 0) ? pages[currentPageIndex] : null;
+    const activePage =
+        pages && pages.length > 0 ? pages[currentPageIndex] : null;
 
     if (!activePage) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-white rounded-3xl border border-gray-200">
                 <FileText className="w-12 h-12 text-slate-300 mb-3" />
-                <h3 className="text-base font-black text-slate-800 uppercase tracking-wider">Belum Ada Soal</h3>
+                <h3 className="text-base font-black text-slate-800 uppercase tracking-wider">
+                    Belum Ada Soal
+                </h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                    Paket ujian ini belum memiliki soal atau group pertanyaan yang terdaftar.
+                    Paket ujian ini belum memiliki soal atau group pertanyaan
+                    yang terdaftar.
                 </p>
             </div>
         );
@@ -86,13 +293,15 @@ export default function Exam({
 
     const getStatusBadge = (status) => {
         const styles = {
-            pending: 'bg-amber-50 text-amber-700 border-amber-200',
-            in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
-            completed: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            pending: "bg-amber-50 text-amber-700 border-amber-200",
+            in_progress: "bg-blue-50 text-blue-700 border-blue-200",
+            completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
         };
         return (
-            <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wider ${styles[status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                {status.replace('_', ' ')}
+            <span
+                className={`px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wider ${styles[status] || "bg-gray-50 text-gray-600 border-gray-200"}`}
+            >
+                {status.replace("_", " ")}
             </span>
         );
     };
@@ -106,19 +315,22 @@ export default function Exam({
         if (q.pageIndex === currentPageIndex) return;
 
         // If IELTS
-        if (exam_category === 'IELTS') {
+        if (exam_category === "IELTS") {
             // Cannot go back to previous sections if locked
             if (q.pageIndex < currentPageIndex) {
-                alert("This section has been locked and submitted. You cannot return to previous sections in IELTS.");
+                alert(
+                    "This section has been locked and submitted. You cannot return to previous sections in IELTS.",
+                );
                 return;
             }
 
             // If jumping forward, require confirmation because current section will be locked
-            const currentTitle = activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
+            const currentTitle =
+                activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
             const targetSection = pages[q.pageIndex];
             const targetTask = targetSection?.questions?.[0] || {};
             const nextTitle = targetTask.title || `Section ${q.pageIndex + 1}`;
-            const nextSkill = targetTask.skill_type || 'Section';
+            const nextSkill = targetTask.skill_type || "Section";
 
             setPendingNextPage({
                 nextIndex: q.pageIndex,
@@ -132,29 +344,70 @@ export default function Exam({
         setCurrentPageIndex(q.pageIndex);
     };
 
+    const handleNextNavigation = () => {
+        if (currentPageIndex >= pages.length - 1) return;
+        const nextIdx = currentPageIndex + 1;
+        if (exam_category === "IELTS" && !is_review) {
+            const currentTitle =
+                activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
+            const nextSection = pages[nextIdx];
+            const nextTask = nextSection?.questions?.[0] || {};
+            const nextTitle = nextTask.title || `Section ${nextIdx + 1}`;
+            const nextSkill = nextTask.skill_type || "Section";
+            setPendingNextPage({
+                nextIndex: nextIdx,
+                currentTitle,
+                nextTitle,
+                nextSkill,
+            });
+        } else {
+            setCurrentPageIndex(nextIdx);
+        }
+    };
+
     const qMapIndicator = (q) => {
-        const isAnswered = answers[q.id] !== undefined && answers[q.id] !== null && answers[q.id] !== '';
+        const isAnswered =
+            answers[q.id] !== undefined &&
+            answers[q.id] !== null &&
+            answers[q.id] !== "";
         const isCurrentPage = currentPageIndex === q.pageIndex;
-        const isLocked = q.isLocked || (exam_category === 'IELTS' && !is_review && q.pageIndex < currentPageIndex);
+        const isLocked =
+            q.isLocked ||
+            (exam_category === "IELTS" &&
+                !is_review &&
+                q.pageIndex < currentPageIndex);
 
         let buttonClass = "";
         if (is_review) {
             const pageData = pages[q.pageIndex];
-            const qData = pageData.questions.find(x => x.id === q.id);
+            const qData = pageData?.questions?.find((x) => x.id === q.id);
             const ans = answers[q.id];
 
-            if (qData.type === 'mcq') {
-                const correctOption = qData.options.find(opt => opt.is_correct);
+            if (
+                ans &&
+                ans.is_correct !== undefined &&
+                ans.is_correct !== null
+            ) {
+                buttonClass = ans.is_correct
+                    ? "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200"
+                    : "bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200";
+            } else if (qData?.type === "mcq") {
+                const correctOption = qData.options?.find(
+                    (opt) => opt.is_correct,
+                );
                 if (ans?.option_id === correctOption?.id) {
-                    buttonClass = "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200";
+                    buttonClass =
+                        "bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200";
                 } else {
-                    buttonClass = "bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200";
+                    buttonClass =
+                        "bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200";
                 }
             } else {
-                buttonClass = "bg-blue-100 text-blue-800 border-blue-300";
+                buttonClass = "bg-slate-100 text-slate-700 border-slate-200";
             }
         } else if (isLocked) {
-            buttonClass = "bg-slate-100 text-slate-400 border-slate-200 opacity-50 cursor-not-allowed";
+            buttonClass =
+                "bg-slate-100 text-slate-400 border-slate-200 opacity-50 cursor-not-allowed";
         } else {
             buttonClass = isAnswered
                 ? "bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100 shadow-sm"
@@ -168,8 +421,10 @@ export default function Exam({
                 onClick={() => handleIndicatorClick(q)}
                 disabled={isLocked && !is_review}
                 title={
-                    isLocked 
-                        ? (exam_category === 'IELTS' ? "Section closed and locked" : "Section locked") 
+                    isLocked
+                        ? exam_category === "IELTS"
+                            ? "Section closed and locked"
+                            : "Section locked"
                         : undefined
                 }
                 className={`h-11 w-full flex items-center justify-center rounded-xl text-xs font-bold border transition-all duration-200 ${
@@ -199,7 +454,8 @@ export default function Exam({
                         </div>
                         {isSectionTimer && activeSectionTimer && (
                             <div className="text-[10px] font-bold text-primary-600 uppercase tracking-wider mt-1">
-                                {activeSectionTimer.title} ({activeSectionTimer.skillType})
+                                {activeSectionTimer.title} (
+                                {activeSectionTimer.skillType})
                             </div>
                         )}
                     </div>
@@ -209,12 +465,18 @@ export default function Exam({
                     {/* Real-time Save Indicator */}
                     {!is_review && (
                         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-500">
-                            <span className={`w-2 h-2 rounded-full transition-all ${
-                                saveStatus === 'saving' 
-                                    ? 'bg-amber-400 animate-ping' 
-                                    : 'bg-emerald-500'
-                            }`} />
-                            <span>{saveStatus === 'saving' ? 'Saving locally...' : 'Auto-saved'}</span>
+                            <span
+                                className={`w-2 h-2 rounded-full transition-all ${
+                                    saveStatus === "saving"
+                                        ? "bg-amber-400 animate-ping"
+                                        : "bg-emerald-500"
+                                }`}
+                            />
+                            <span>
+                                {saveStatus === "saving"
+                                    ? "Saving locally..."
+                                    : "Auto-saved"}
+                            </span>
                         </div>
                     )}
 
@@ -222,18 +484,55 @@ export default function Exam({
                         onClick={toggleFullscreen}
                         type="button"
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold shadow-sm transition-all active:scale-95"
-                        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                        title={
+                            isFullscreen
+                                ? "Exit Fullscreen"
+                                : "Enter Fullscreen"
+                        }
                     >
-                        {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
-                        <span className="hidden md:inline">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
+                        {isFullscreen ? (
+                            <Minimize size={15} />
+                        ) : (
+                            <Maximize size={15} />
+                        )}
+                        <span className="hidden md:inline">
+                            {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                        </span>
                     </button>
 
-                    {isSectionTimer && activeSectionTimer?.skillType === 'speaking' ? (
+                    {is_review ? (
+                        <div className="flex items-center gap-2">
+                            {/* Achievement Pill */}
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 shadow-xs">
+                                <Trophy
+                                    size={15}
+                                    className="text-amber-600 shrink-0"
+                                />
+                                <div className="text-xs font-black tracking-tight flex items-center gap-1.5">
+                                    <span>
+                                        Benar {computedStats.correct_answers}{" "}
+                                        dari {computedStats.total_questions}{" "}
+                                        {computedStats.unit_label || "Soal"}
+                                    </span>
+                                    {computedStats.percentage !== null &&
+                                        computedStats.percentage !==
+                                            undefined && (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-amber-200 text-amber-900 text-[10px] font-black">
+                                                {computedStats.percentage}%
+                                            </span>
+                                        )}
+                                </div>
+                            </div>
+                        </div>
+                    ) : isSectionTimer &&
+                      activeSectionTimer?.skillType === "speaking" ? (
                         <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 font-mono text-xs font-black uppercase tracking-wider shadow-sm">
                             <span>Live Interview</span>
                         </div>
                     ) : (
-                        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-mono text-sm font-bold shadow-sm transition-all duration-300 ${getTimerColorClass()}`}>
+                        <div
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-mono text-sm font-bold shadow-sm transition-all duration-300 ${getTimerColorClass()}`}
+                        >
                             <Clock size={16} />
                             <span>{formatTime(timeLeft)}</span>
                             {isSectionTimer && (
@@ -244,17 +543,29 @@ export default function Exam({
                         </div>
                     )}
 
-                    {/* Header Finish / Close Review Button for IELTS (when sidebar is hidden) */}
-                    {exam_category === 'IELTS' && (
-                        !is_review ? (
-                            <button
-                                onClick={confirmFinish}
-                                disabled={processing}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                <Check size={15} />
-                                <span>Finish Test</span>
-                            </button>
+                    {/* Header Next / Finish / Close Review Button for IELTS (when sidebar is hidden) */}
+                    {exam_category === "IELTS" &&
+                        (!is_review ? (
+                            currentPageIndex < pages.length - 1 ? (
+                                <button
+                                    type="button"
+                                    onClick={handleNextNavigation}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold shadow-md shadow-gray-900/10 transition-all active:scale-95 cursor-pointer"
+                                >
+                                    <span>Next</span>
+                                    <ChevronRight size={15} />
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={confirmFinish}
+                                    disabled={processing}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                                >
+                                    <Check size={15} />
+                                    <span>Finish Test</span>
+                                </button>
+                            )
                         ) : (
                             <button
                                 onClick={() => window.close()}
@@ -262,14 +573,13 @@ export default function Exam({
                             >
                                 <span>Close Review</span>
                             </button>
-                        )
-                    )}
+                        ))}
                 </div>
             </header>
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar Navigation - Hidden for IELTS */}
-                {exam_category !== 'IELTS' && (
+                {exam_category !== "IELTS" && (
                     <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
                         <div className="p-5 border-b border-gray-100 bg-gray-50/30">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
@@ -292,7 +602,7 @@ export default function Exam({
                                 </button>
                             )}
                             {is_review && (
-                                 <button
+                                <button
                                     onClick={() => window.close()}
                                     className="w-full inline-flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-500/20 transition-all active:scale-[0.98]"
                                 >
@@ -304,8 +614,13 @@ export default function Exam({
                 )}
 
                 {/* Main Content */}
-                <main ref={mainRef} className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-4 sm:px-8">
-                    <div className={`${(exam_category === 'IELTS' || exam_category === 'Kids') ? 'max-w-[1500px]' : 'max-w-3xl'} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}>
+                <main
+                    ref={mainRef}
+                    className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-4 sm:px-8"
+                >
+                    <div
+                        className={`${exam_category === "IELTS" || exam_category === "Kids" ? "max-w-[1500px]" : "max-w-3xl"} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}
+                    >
                         {/* Section Expiry Notice Banner */}
                         {sectionExpiryNotice && (
                             <div className="mb-8 p-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl flex items-center justify-between gap-3 text-amber-900 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -317,7 +632,7 @@ export default function Exam({
                                         {sectionExpiryNotice}
                                     </p>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setSectionExpiryNotice(null)}
                                     className="text-xs font-bold text-amber-700 hover:text-amber-900 px-2 py-1"
                                 >
@@ -329,9 +644,17 @@ export default function Exam({
                         {/* Current Section Locked Warning (if expired) */}
                         {isCurrentSectionLocked && !is_review && (
                             <div className="mb-8 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800">
-                                <AlertCircle size={20} className="shrink-0 text-rose-600" />
+                                <AlertCircle
+                                    size={20}
+                                    className="shrink-0 text-rose-600"
+                                />
                                 <div className="text-xs">
-                                    <span className="font-bold uppercase tracking-wider">Section Locked:</span> Time for this section has expired. Your responses have been automatically saved and cannot be edited.
+                                    <span className="font-bold uppercase tracking-wider">
+                                        Section Locked:
+                                    </span>{" "}
+                                    Time for this section has expired. Your
+                                    responses have been automatically saved and
+                                    cannot be edited.
                                 </div>
                             </div>
                         )}
@@ -342,19 +665,66 @@ export default function Exam({
                                 {/* Section Type Badge */}
                                 {activePage.section_type && (
                                     <div className="mb-5">
-                                        {activePage.section_type === 'reading' ? (
+                                        {activePage.section_type ===
+                                        "reading" ? (
                                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] bg-blue-50 text-blue-600 border border-blue-100 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="12"
+                                                    height="12"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                                                </svg>
                                                 Reading Section
                                             </span>
-                                        ) : activePage.section_type === 'listening' ? (
+                                        ) : activePage.section_type ===
+                                          "listening" ? (
                                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="12"
+                                                    height="12"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                                                    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                                                </svg>
                                                 Listening Section
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] bg-violet-50 text-violet-600 border border-violet-100 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="12"
+                                                    height="12"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
+                                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                                    <line
+                                                        x1="12"
+                                                        x2="12"
+                                                        y1="19"
+                                                        y2="22"
+                                                    />
+                                                </svg>
                                                 Speaking Section
                                             </span>
                                         )}
@@ -373,11 +743,13 @@ export default function Exam({
 
                                 {activePage.file_path && (
                                     <div className="mb-6">
-                                        {activePage.file_path.match(/\.(jpeg|jpg|png|webp|gif|svg)$/i) ? (
+                                        {activePage.file_path.match(
+                                            /\.(jpeg|jpg|png|webp|gif|svg)$/i,
+                                        ) ? (
                                             <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 p-2 shadow-xs">
-                                                <img 
-                                                    src={activePage.file_path} 
-                                                    alt="Reading Passage Material" 
+                                                <img
+                                                    src={activePage.file_path}
+                                                    alt="Reading Passage Material"
                                                     className="w-full max-h-[500px] object-contain rounded-xl mx-auto"
                                                 />
                                             </div>
@@ -389,9 +761,17 @@ export default function Exam({
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-primary-500 hover:bg-primary-50 text-slate-700 hover:text-primary-700 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all group"
                                                 >
-                                                    <FileText size={16} className="text-slate-400 group-hover:text-primary-500" />
-                                                    <span>Buka Dokumen Passage</span>
-                                                    <ExternalLink size={14} className="opacity-40" />
+                                                    <FileText
+                                                        size={16}
+                                                        className="text-slate-400 group-hover:text-primary-500"
+                                                    />
+                                                    <span>
+                                                        Buka Dokumen Passage
+                                                    </span>
+                                                    <ExternalLink
+                                                        size={14}
+                                                        className="opacity-40"
+                                                    />
                                                 </a>
                                             </div>
                                         )}
@@ -399,14 +779,18 @@ export default function Exam({
                                 )}
 
                                 {activePage.audio_path && (
-                                    <audio 
-                                        key={activePage.audio_path} 
-                                        controls 
+                                    <audio
+                                        key={activePage.audio_path}
+                                        controls
                                         preload="auto"
                                         className="w-full max-w-sm mb-6 h-10"
                                     >
-                                        <source src={activePage.audio_path} type="audio/mpeg" />
-                                        Browser Anda tidak mendukung pemutar audio.
+                                        <source
+                                            src={activePage.audio_path}
+                                            type="audio/mpeg"
+                                        />
+                                        Browser Anda tidak mendukung pemutar
+                                        audio.
                                     </audio>
                                 )}
                                 {activePage.reading_text && (
@@ -420,15 +804,21 @@ export default function Exam({
 
                         {/* Questions */}
                         {activePage.questions.map((q) => {
-                            if (q.type === 'ielts_task') {
+                            if (q.type === "ielts_task") {
                                 return (
                                     <div key={q.id} className="mb-8">
                                         <IeltsDigitalAnswerSheet
                                             task={q}
                                             answer={answers[q.id]}
-                                            onAnswerChange={(taskId, newAnswer) => {
+                                            onAnswerChange={(
+                                                taskId,
+                                                newAnswer,
+                                            ) => {
                                                 if (is_review) return;
-                                                handleCustomAnswer(taskId, newAnswer);
+                                                handleCustomAnswer(
+                                                    taskId,
+                                                    newAnswer,
+                                                );
                                             }}
                                             onFileSelect={handleFileSelect}
                                             isReview={is_review}
@@ -437,24 +827,97 @@ export default function Exam({
                                 );
                             }
 
-                            const isDragDropQuestion = q.type === 'drag_drop';
+                            const isDragDropQuestion = q.type === "drag_drop";
 
                             return (
                                 <div
                                     key={q.id}
                                     className={`mb-8 bg-white border border-gray-200 shadow-sm rounded-3xl transition-all hover:shadow-gray-200/50 ${
-                                        isDragDropQuestion ? 'p-4 sm:p-6 lg:p-8' : 'p-8'
+                                        isDragDropQuestion
+                                            ? "p-4 sm:p-6 lg:p-8"
+                                            : "p-8"
                                     }`}
                                 >
-                                    <div className="flex gap-6">
-                                        <div className="shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-gray-900/10">
-                                            {q.number}
+                                    <div className="flex items-start justify-between gap-4 mb-4">
+                                        <div className="flex items-start gap-4 sm:gap-6 flex-1">
+                                            <div className="shrink-0 w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-gray-900/10">
+                                                {q.number}
+                                            </div>
+                                            <div className="flex-1 pt-1">
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <p className="text-lg font-bold text-gray-900 leading-snug">
+                                                        {q.text}
+                                                    </p>
+                                                    {is_review &&
+                                                        answers[q.id] &&
+                                                        answers[q.id]
+                                                            ?.is_correct !==
+                                                            undefined &&
+                                                        answers[q.id]
+                                                            ?.is_correct !==
+                                                            null && (
+                                                            <span
+                                                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider ${
+                                                                    answers[
+                                                                        q.id
+                                                                    ]
+                                                                        ?.is_correct
+                                                                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                                                        : "bg-rose-100 text-rose-800 border border-rose-300"
+                                                                }`}
+                                                            >
+                                                                {answers[q.id]
+                                                                    ?.is_correct
+                                                                    ? "✔ Benar"
+                                                                    : "✖ Salah"}
+                                                            </span>
+                                                        )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 pt-1">
-                                            <p className="text-lg font-bold text-gray-900 mb-4 leading-snug">
-                                                {q.text}
-                                            </p>
 
+                                        {/* Top-Right Next / Finish Navigation Button (Hidden for Multiple Choice / MCQ) */}
+                                        {q.type !== "mcq" && (
+                                            <div className="shrink-0 pt-0.5">
+                                                {currentPageIndex <
+                                                pages.length - 1 ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={
+                                                            handleNextNavigation
+                                                        }
+                                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-md shadow-red-500/20 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
+                                                        title="Lanjut ke pertanyaan berikutnya"
+                                                    >
+                                                        <span>Next</span>
+                                                        <ChevronRight
+                                                            size={14}
+                                                        />
+                                                    </button>
+                                                ) : (
+                                                    !is_review && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={
+                                                                confirmFinish
+                                                            }
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer uppercase tracking-wider"
+                                                            title="Selesaikan ujian"
+                                                        >
+                                                            <span>Finish</span>
+                                                            <Check size={14} />
+                                                        </button>
+                                                    )
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="w-full">
+                                        <div className="pt-1">
                                             {/* Question-Level Audio Player */}
                                             {q.audio_path && (
                                                 <div className="mb-6 bg-blue-50/50 border border-blue-100 rounded-2xl p-3.5 flex items-center gap-3">
@@ -463,206 +926,439 @@ export default function Exam({
                                                     </div>
                                                     <div className="flex-1">
                                                         <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">
-                                                            Listening Audio Question
+                                                            Listening Audio
+                                                            Question
                                                         </p>
-                                                        <audio controls className="w-full h-9">
-                                                            <source src={q.audio_path} type="audio/mpeg" />
-                                                            Browser Anda tidak mendukung pemutaran audio.
+                                                        <audio
+                                                            controls
+                                                            className="w-full h-9"
+                                                        >
+                                                            <source
+                                                                src={
+                                                                    q.audio_path
+                                                                }
+                                                                type="audio/mpeg"
+                                                            />
+                                                            Browser Anda tidak
+                                                            mendukung pemutaran
+                                                            audio.
                                                         </audio>
                                                     </div>
                                                 </div>
                                             )}
 
                                             {/* MCQ Rendering */}
-                                            {q.type === 'mcq' && (
-                                            <div className="grid grid-cols-1 gap-3">
-                                                {q.options.map((opt, idx) => {
-                                                    const isSelected = is_review 
-                                                        ? answers[q.id]?.option_id === opt.id
-                                                        : answers[q.id] === opt.id;
-                                                    
-                                                    let optionStyle = isSelected
-                                                        ? "bg-primary-50 border-primary-400 ring-2 ring-primary-400/20"
-                                                        : "bg-white border-gray-100 shadow-sm hover:border-primary-200 hover:bg-gray-50/50";
-                                                    
-                                                    let reviewBadge = null;
+                                            {q.type === "mcq" && (
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {q.options.map(
+                                                        (opt, idx) => {
+                                                            const isSelected =
+                                                                is_review
+                                                                    ? answers[
+                                                                          q.id
+                                                                      ]
+                                                                          ?.option_id ===
+                                                                      opt.id
+                                                                    : answers[
+                                                                          q.id
+                                                                      ] ===
+                                                                      opt.id;
 
-                                                    if (is_review) {
-                                                        const isCorrectAns = answers[q.id]?.is_correct;
-                                                        optionStyle = "bg-white border-gray-100 opacity-60";
-                                                        if (opt.is_correct && isSelected) {
-                                                            optionStyle = "bg-emerald-50 border-emerald-500 ring-4 ring-emerald-500/10 opacity-100 shadow-md";
-                                                            reviewBadge = <span className="ml-auto text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Correct Answer</span>;
-                                                        } else if (opt.is_correct && !isSelected) {
-                                                            optionStyle = "bg-emerald-50 border-emerald-500 ring-4 ring-emerald-500/10 opacity-100 shadow-md translate-x-1";
-                                                            reviewBadge = <span className="ml-auto text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">Correct Answer</span>;
-                                                        } else if (!opt.is_correct && isSelected) {
-                                                            optionStyle = "bg-rose-50 border-rose-500 ring-4 ring-rose-500/10 opacity-100 shadow-md";
-                                                            reviewBadge = <span className="ml-auto text-[10px] font-black text-rose-700 bg-rose-100 px-2 py-1 rounded-lg uppercase tracking-wider">Your Answer</span>;
+                                                            let optionStyle =
+                                                                isSelected
+                                                                    ? "bg-primary-50 border-primary-400 ring-2 ring-primary-400/20"
+                                                                    : "bg-white border-gray-100 shadow-sm hover:border-primary-200 hover:bg-gray-50/50";
+
+                                                            let reviewBadge =
+                                                                null;
+
+                                                            if (is_review) {
+                                                                const isCorrectAns =
+                                                                    answers[
+                                                                        q.id
+                                                                    ]
+                                                                        ?.is_correct;
+                                                                optionStyle =
+                                                                    "bg-white border-gray-100 opacity-60";
+                                                                if (
+                                                                    opt.is_correct &&
+                                                                    isSelected
+                                                                ) {
+                                                                    optionStyle =
+                                                                        "bg-emerald-50 border-emerald-500 ring-4 ring-emerald-500/10 opacity-100 shadow-md";
+                                                                    reviewBadge =
+                                                                        (
+                                                                            <span className="ml-auto text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                                                                Correct
+                                                                                Answer
+                                                                            </span>
+                                                                        );
+                                                                } else if (
+                                                                    opt.is_correct &&
+                                                                    !isSelected
+                                                                ) {
+                                                                    optionStyle =
+                                                                        "bg-emerald-50 border-emerald-500 ring-4 ring-emerald-500/10 opacity-100 shadow-md translate-x-1";
+                                                                    reviewBadge =
+                                                                        (
+                                                                            <span className="ml-auto text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                                                                Correct
+                                                                                Answer
+                                                                            </span>
+                                                                        );
+                                                                } else if (
+                                                                    !opt.is_correct &&
+                                                                    isSelected
+                                                                ) {
+                                                                    optionStyle =
+                                                                        "bg-rose-50 border-rose-500 ring-4 ring-rose-500/10 opacity-100 shadow-md";
+                                                                    reviewBadge =
+                                                                        (
+                                                                            <span className="ml-auto text-[10px] font-black text-rose-700 bg-rose-100 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                                                                Your
+                                                                                Answer
+                                                                            </span>
+                                                                        );
+                                                                }
+                                                            }
+
+                                                            return (
+                                                                <label
+                                                                    key={opt.id}
+                                                                    className={`flex items-center gap-4 p-4 border rounded-2xl transition-all duration-200 ${!is_review ? "cursor-pointer active:scale-[0.99]" : ""} ${optionStyle}`}
+                                                                >
+                                                                    <div
+                                                                        className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${isSelected ? "bg-primary-600 border-primary-600 text-white" : "border-gray-200 text-gray-400"}`}
+                                                                    >
+                                                                        <span className="text-[10px] font-black">
+                                                                            {String.fromCharCode(
+                                                                                65 +
+                                                                                    idx,
+                                                                            )}
+                                                                        </span>
+                                                                    </div>
+                                                                    <input
+                                                                        type="radio"
+                                                                        className="hidden"
+                                                                        checked={
+                                                                            isSelected
+                                                                        }
+                                                                        disabled={
+                                                                            is_review
+                                                                        }
+                                                                        onChange={() =>
+                                                                            handleOptionSelect(
+                                                                                q.id,
+                                                                                opt.id,
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                    <span
+                                                                        className={`text-sm font-bold ${isSelected ? "text-primary-900" : "text-gray-600"}`}
+                                                                    >
+                                                                        {
+                                                                            opt.text
+                                                                        }
+                                                                    </span>
+                                                                    {
+                                                                        reviewBadge
+                                                                    }
+                                                                </label>
+                                                            );
+                                                        },
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Kids Drag & Drop Canvas Question Rendering */}
+                                            {q.type === "drag_drop" &&
+                                                (() => {
+                                                    let canvasMode = "category";
+                                                    if (
+                                                        q.kid_canvas
+                                                            ?.canvas_data
+                                                    ) {
+                                                        const canvasObj =
+                                                            typeof q.kid_canvas
+                                                                .canvas_data ===
+                                                            "string"
+                                                                ? JSON.parse(
+                                                                      q
+                                                                          .kid_canvas
+                                                                          .canvas_data,
+                                                                  )
+                                                                : q.kid_canvas
+                                                                      .canvas_data;
+                                                        if (
+                                                            canvasObj?.mode ===
+                                                                "freeform_canvas" ||
+                                                            canvasObj?.elements
+                                                        ) {
+                                                            canvasMode =
+                                                                "freeform";
+                                                        } else if (
+                                                            canvasObj?.mode ===
+                                                                "image_pin_gap_fill" ||
+                                                            canvasObj?.drop_zones
+                                                        ) {
+                                                            canvasMode =
+                                                                "image_pin";
+                                                        }
+                                                    } else {
+                                                        const firstOpt =
+                                                            (q.options ||
+                                                                [])[0];
+                                                        if (firstOpt) {
+                                                            try {
+                                                                const parsed =
+                                                                    JSON.parse(
+                                                                        firstOpt.text ||
+                                                                            firstOpt.option_text,
+                                                                    );
+                                                                if (
+                                                                    parsed?.mode ===
+                                                                        "freeform_canvas" ||
+                                                                    parsed?.elements
+                                                                ) {
+                                                                    canvasMode =
+                                                                        "freeform";
+                                                                } else if (
+                                                                    parsed?.mode ===
+                                                                        "image_pin_gap_fill" ||
+                                                                    parsed?.drop_zones
+                                                                ) {
+                                                                    canvasMode =
+                                                                        "image_pin";
+                                                                }
+                                                            } catch (e) {}
                                                         }
                                                     }
 
-                                                    return (
-                                                        <label
-                                                            key={opt.id}
-                                                            className={`flex items-center gap-4 p-4 border rounded-2xl transition-all duration-200 ${!is_review ? "cursor-pointer active:scale-[0.99]" : ""} ${optionStyle}`}
-                                                        >
-                                                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${isSelected ? "bg-primary-600 border-primary-600 text-white" : "border-gray-200 text-gray-400"}`}>
-                                                                <span className="text-[10px] font-black">{String.fromCharCode(65 + idx)}</span>
-                                                            </div>
-                                                            <input
-                                                                type="radio"
-                                                                className="hidden"
-                                                                checked={isSelected}
-                                                                disabled={is_review}
-                                                                onChange={() => handleOptionSelect(q.id, opt.id)}
+                                                    const kidAnswerValue =
+                                                        answers[q.id]
+                                                            ?.user_mapping !==
+                                                        undefined
+                                                            ? answers[q.id]
+                                                                  .user_mapping
+                                                            : answers[q.id];
+
+                                                    if (
+                                                        canvasMode ===
+                                                        "freeform"
+                                                    ) {
+                                                        return (
+                                                            <KidsFreeformCanvasQuestion
+                                                                question={q}
+                                                                value={
+                                                                    kidAnswerValue
+                                                                }
+                                                                onChange={(
+                                                                    val,
+                                                                ) =>
+                                                                    handleTextChange(
+                                                                        q.id,
+                                                                        val,
+                                                                    )
+                                                                }
+                                                                isReview={
+                                                                    is_review
+                                                                }
                                                             />
-                                                            <span className={`text-sm font-bold ${isSelected ? "text-primary-900" : "text-gray-600"}`}>
-                                                                {opt.text}
-                                                            </span>
-                                                            {reviewBadge}
-                                                        </label>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-
-                                        {/* Kids Drag & Drop Canvas Question Rendering */}
-                                        {q.type === 'drag_drop' && (
-                                            (() => {
-                                                let canvasMode = 'category';
-                                                if (q.kid_canvas?.canvas_data) {
-                                                    const canvasObj = typeof q.kid_canvas.canvas_data === 'string'
-                                                        ? JSON.parse(q.kid_canvas.canvas_data)
-                                                        : q.kid_canvas.canvas_data;
-                                                    if (canvasObj?.mode === 'freeform_canvas' || canvasObj?.elements) {
-                                                        canvasMode = 'freeform';
-                                                    } else if (canvasObj?.mode === 'image_pin_gap_fill' || canvasObj?.drop_zones) {
-                                                        canvasMode = 'image_pin';
+                                                        );
                                                     }
-                                                } else {
-                                                    const firstOpt = (q.options || [])[0];
-                                                    if (firstOpt) {
-                                                        try {
-                                                            const parsed = JSON.parse(firstOpt.text || firstOpt.option_text);
-                                                            if (parsed?.mode === 'freeform_canvas' || parsed?.elements) {
-                                                                canvasMode = 'freeform';
-                                                            } else if (parsed?.mode === 'image_pin_gap_fill' || parsed?.drop_zones) {
-                                                                canvasMode = 'image_pin';
+
+                                                    if (
+                                                        canvasMode ===
+                                                        "image_pin"
+                                                    ) {
+                                                        return (
+                                                            <KidsImagePinQuestion
+                                                                question={q}
+                                                                value={
+                                                                    kidAnswerValue
+                                                                }
+                                                                onChange={(
+                                                                    val,
+                                                                ) =>
+                                                                    handleTextChange(
+                                                                        q.id,
+                                                                        val,
+                                                                    )
+                                                                }
+                                                                isReview={
+                                                                    is_review
+                                                                }
+                                                            />
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <KidsCanvasQuestion
+                                                            question={q}
+                                                            value={
+                                                                kidAnswerValue
                                                             }
-                                                        } catch (e) {}
-                                                    }
-                                                }
-
-                                                if (canvasMode === 'freeform') {
-                                                    return (
-                                                        <KidsFreeformCanvasQuestion
-                                                            question={q}
-                                                            value={answers[q.id]}
-                                                            onChange={(val) => handleTextChange(q.id, val)}
+                                                            onChange={(val) =>
+                                                                handleTextChange(
+                                                                    q.id,
+                                                                    val,
+                                                                )
+                                                            }
                                                             isReview={is_review}
                                                         />
                                                     );
-                                                }
+                                                })()}
 
-                                                if (canvasMode === 'image_pin') {
-                                                    return (
-                                                        <KidsImagePinQuestion
-                                                            question={q}
-                                                            value={answers[q.id]}
-                                                            onChange={(val) => handleTextChange(q.id, val)}
-                                                            isReview={is_review}
-                                                        />
-                                                    );
-                                                }
-
-                                                return (
-                                                    <KidsCanvasQuestion
-                                                        question={q}
-                                                        value={answers[q.id]}
-                                                        onChange={(val) => handleTextChange(q.id, val)}
-                                                        isReview={is_review}
-                                                    />
-                                                );
-                                            })()
-                                        )}
-
-                                        {/* Essay / Text Rendering */}
-                                        {q.type === 'text' && (
-                                            <div className="space-y-4">
-                                                {is_review ? (
-                                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
-                                                        {answers[q.id]?.answer_text || "(No answer provided)"}
-                                                    </div>
-                                                ) : (
-                                                    <textarea 
-                                                        className="w-full bg-white border-gray-200 rounded-2xl text-sm font-semibold focus:ring-4 focus:ring-primary-100 focus:border-primary-500 transition-all p-4 shadow-sm min-h-[200px]"
-                                                        placeholder="Type your answer here..."
-                                                        value={answers[q.id] || ''}
-                                                        onChange={(e) => handleTextChange(q.id, e.target.value)}
-                                                    />
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* File Upload Rendering */}
-                                        {q.type === 'file' && (
-                                            <div className="space-y-4">
-                                                {is_review ? (
-                                                    <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-primary-600">
-                                                                <FileIcon size={20} />
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">Attachment Answer</p>
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Uploaded Document</p>
-                                                            </div>
+                                            {/* Essay / Text Rendering */}
+                                            {q.type === "text" && (
+                                                <div className="space-y-4">
+                                                    {is_review ? (
+                                                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
+                                                            {answers[q.id]
+                                                                ?.answer_text ||
+                                                                "(No answer provided)"}
                                                         </div>
-                                                        {answers[q.id]?.file_path ? (
-                                                            <a 
-                                                                href={answers[q.id].file_path} 
-                                                                target="_blank"
-                                                                className="px-4 py-2 bg-primary-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-md"
+                                                    ) : (
+                                                        <textarea
+                                                            className="w-full bg-white border-gray-200 rounded-2xl text-sm font-semibold focus:ring-4 focus:ring-primary-100 focus:border-primary-500 transition-all p-4 shadow-sm min-h-[200px]"
+                                                            placeholder="Type your answer here..."
+                                                            value={
+                                                                answers[q.id] ||
+                                                                ""
+                                                            }
+                                                            onChange={(e) =>
+                                                                handleTextChange(
+                                                                    q.id,
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* File Upload Rendering */}
+                                            {q.type === "file" && (
+                                                <div className="space-y-4">
+                                                    {is_review ? (
+                                                        <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-primary-600">
+                                                                    <FileIcon
+                                                                        size={
+                                                                            20
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">
+                                                                        Attachment
+                                                                        Answer
+                                                                    </p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                                                                        Uploaded
+                                                                        Document
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            {answers[q.id]
+                                                                ?.file_path ? (
+                                                                <a
+                                                                    href={
+                                                                        answers[
+                                                                            q.id
+                                                                        ]
+                                                                            .file_path
+                                                                    }
+                                                                    target="_blank"
+                                                                    className="px-4 py-2 bg-primary-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-md"
+                                                                >
+                                                                    Download /
+                                                                    View
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                                    No file
+                                                                    uploaded
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="relative group">
+                                                            <input
+                                                                type="file"
+                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                                onChange={(e) =>
+                                                                    handleFileSelect(
+                                                                        q.id,
+                                                                        e.target
+                                                                            .files[0],
+                                                                    )
+                                                                }
+                                                            />
+                                                            <div
+                                                                className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center gap-4 transition-all ${
+                                                                    answers[
+                                                                        q.id
+                                                                    ] instanceof
+                                                                    File
+                                                                        ? "border-emerald-200 bg-emerald-50/50"
+                                                                        : "border-slate-200 bg-slate-50/50 group-hover:border-primary-200 group-hover:bg-primary-50/30"
+                                                                }`}
                                                             >
-                                                                Download / View
-                                                            </a>
-                                                        ) : (
-                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No file uploaded</span>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <div className="relative group">
-                                                        <input 
-                                                            type="file" 
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                            onChange={(e) => handleFileSelect(q.id, e.target.files[0])}
-                                                        />
-                                                        <div className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center gap-4 transition-all ${
-                                                            answers[q.id] instanceof File 
-                                                            ? 'border-emerald-200 bg-emerald-50/50' 
-                                                            : 'border-slate-200 bg-slate-50/50 group-hover:border-primary-200 group-hover:bg-primary-50/30'
-                                                        }`}>
-                                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${
-                                                                answers[q.id] instanceof File 
-                                                                ? 'bg-emerald-600 text-white' 
-                                                                : 'bg-white text-slate-400'
-                                                            }`}>
-                                                                {answers[q.id] instanceof File ? <Check size={24} /> : <Upload size={24} />}
-                                                            </div>
-                                                            <div className="text-center">
-                                                                <p className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                                                                    {answers[q.id] instanceof File ? answers[q.id].name : 'Upload Your Assignment'}
-                                                                </p>
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                                                                    PDF or DOCX (Max 10MB)
-                                                                </p>
+                                                                <div
+                                                                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${
+                                                                        answers[
+                                                                            q.id
+                                                                        ] instanceof
+                                                                        File
+                                                                            ? "bg-emerald-600 text-white"
+                                                                            : "bg-white text-slate-400"
+                                                                    }`}
+                                                                >
+                                                                    {answers[
+                                                                        q.id
+                                                                    ] instanceof
+                                                                    File ? (
+                                                                        <Check
+                                                                            size={
+                                                                                24
+                                                                            }
+                                                                        />
+                                                                    ) : (
+                                                                        <Upload
+                                                                            size={
+                                                                                24
+                                                                            }
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <p className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                                                                        {answers[
+                                                                            q.id
+                                                                        ] instanceof
+                                                                        File
+                                                                            ? answers[
+                                                                                  q
+                                                                                      .id
+                                                                              ]
+                                                                                  .name
+                                                                            : "Upload Your Assignment"}
+                                                                    </p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                                                                        PDF or
+                                                                        DOCX
+                                                                        (Max
+                                                                        10MB)
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -673,44 +1369,43 @@ export default function Exam({
                         <div className="mt-12 flex items-center justify-between border-t border-gray-100 pt-8 pb-20">
                             {(() => {
                                 const prevIndex = currentPageIndex - 1;
-                                const isPrevLocked = isSectionTimer && prevIndex >= 0 && (questionMap.find(q => q.pageIndex === prevIndex)?.isLocked);
+                                const isPrevLocked =
+                                    isSectionTimer &&
+                                    prevIndex >= 0 &&
+                                    questionMap.find(
+                                        (q) => q.pageIndex === prevIndex,
+                                    )?.isLocked;
                                 return (
                                     <button
-                                        onClick={() => setCurrentPageIndex(Math.max(0, currentPageIndex - 1))}
-                                        disabled={currentPageIndex === 0 || isPrevLocked}
+                                        onClick={() =>
+                                            setCurrentPageIndex(
+                                                Math.max(
+                                                    0,
+                                                    currentPageIndex - 1,
+                                                ),
+                                            )
+                                        }
+                                        disabled={
+                                            currentPageIndex === 0 ||
+                                            isPrevLocked
+                                        }
                                         className={`inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-2xl transition-all ${
-                                            currentPageIndex === 0 || isPrevLocked
+                                            currentPageIndex === 0 ||
+                                            isPrevLocked
                                                 ? "opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200"
                                                 : "bg-white text-gray-700 border border-gray-200 shadow-lg shadow-gray-200/50 hover:bg-gray-50 active:scale-95"
                                         }`}
                                     >
-                                        <ChevronLeft size={18} /> Previous {isPrevLocked ? '(Locked)' : ''}
+                                        <ChevronLeft size={18} /> Previous{" "}
+                                        {isPrevLocked ? "(Locked)" : ""}
                                     </button>
                                 );
                             })()}
 
                             {currentPageIndex < pages.length - 1 ? (
                                 <button
-                                    onClick={() => {
-                                        const nextIdx = currentPageIndex + 1;
-                                        if (exam_category === 'IELTS' && !is_review) {
-                                            // Open confirmation modal
-                                            const currentTitle = activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
-                                            const nextSection = pages[nextIdx];
-                                            const nextTask = nextSection?.questions?.[0] || {};
-                                            const nextTitle = nextTask.title || `Section ${nextIdx + 1}`;
-                                            const nextSkill = nextTask.skill_type || 'Section';
-                                            setPendingNextPage({
-                                                nextIndex: nextIdx,
-                                                currentTitle,
-                                                nextTitle,
-                                                nextSkill,
-                                            });
-                                        } else {
-                                            setCurrentPageIndex(nextIdx);
-                                        }
-                                    }}
-                                    className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl shadow-lg shadow-gray-900/10 hover:bg-black transition-all active:scale-95"
+                                    onClick={handleNextNavigation}
+                                    className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl shadow-lg shadow-gray-900/10 hover:bg-black transition-all active:scale-95 cursor-pointer"
                                 >
                                     Next <ChevronRight size={18} />
                                 </button>
@@ -737,20 +1432,31 @@ export default function Exam({
                         <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-5 shadow-sm">
                             <AlertCircle size={28} />
                         </div>
-                        
+
                         <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
-                            Proceed to {pendingNextPage.nextSkill.toUpperCase()} Section?
+                            Proceed to {pendingNextPage.nextSkill.toUpperCase()}{" "}
+                            Section?
                         </h3>
-                        
+
                         <div className="space-y-3 text-sm text-slate-600 leading-relaxed mb-6">
                             <p>
-                                You are about to finish <strong>{pendingNextPage.currentTitle}</strong> and move to <strong>{pendingNextPage.nextTitle}</strong>.
+                                You are about to finish{" "}
+                                <strong>{pendingNextPage.currentTitle}</strong>{" "}
+                                and move to{" "}
+                                <strong>{pendingNextPage.nextTitle}</strong>.
                             </p>
                             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-800 flex items-start gap-2.5">
-                                <span className="text-base leading-none">⚠️</span>
+                                <span className="text-base leading-none">
+                                    ⚠️
+                                </span>
                                 <div>
-                                    <p className="font-bold uppercase tracking-wider text-rose-900 mb-0.5">Important:</p>
-                                    This current section will be permanently closed and locked. You will <strong>NOT</strong> be able to return or change your answers once you proceed.
+                                    <p className="font-bold uppercase tracking-wider text-rose-900 mb-0.5">
+                                        Important:
+                                    </p>
+                                    This current section will be permanently
+                                    closed and locked. You will{" "}
+                                    <strong>NOT</strong> be able to return or
+                                    change your answers once you proceed.
                                 </div>
                             </div>
                         </div>
@@ -778,13 +1484,17 @@ export default function Exam({
                     </div>
                 </div>
             )}
-            
-            <style dangerouslySetInnerHTML={{ __html: `
+
+            <style
+                dangerouslySetInnerHTML={{
+                    __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
-            `}} />
+            `,
+                }}
+            />
         </div>
     );
 }

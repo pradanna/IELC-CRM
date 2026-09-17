@@ -15,7 +15,9 @@ class LeadRelationshipStoreTest extends TestCase
 
     public function test_creating_lead_with_relationships_saves_relationships_bidirectionally(): void
     {
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'superadmin']);
         $user = User::factory()->create();
+        $user->assignRole('superadmin');
         $branch = Branch::create(['name' => 'Solo', 'code' => 'SOLO']);
 
         $existingLead = Lead::create([

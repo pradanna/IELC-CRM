@@ -128,12 +128,12 @@ export default function InvoiceIndex({ auth, invoices, filters, summary = {}, cl
         let msg = `Halo *${customerName}*,\n\n`;
         if (isPaid) {
             msg += `Berikut adalah bukti pembayaran ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
-                   `📄 No. Invoice: *${invoice.invoice_number}*\n💰 Total Terbayar: *${amount}*\n\n` +
-                   `Silakan klik link berikut untuk melihat / mengunduh bukti pembayaran Anda:\n🔗 ${magicUrl}\n\nTerima kasih! 🙏`;
+                   `Nomor Invoice: *${invoice.invoice_number}*\nTotal Terbayar: *${amount}*\n\n` +
+                   `Silakan klik link berikut untuk melihat / mengunduh bukti pembayaran Anda:\n${magicUrl}\n\nTerima kasih!`;
         } else {
             msg += `Berikut adalah tagihan ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
-                   `📄 No. Invoice: *${invoice.invoice_number}*\n💰 Total Tagihan: *${amount}*\n\n` +
-                   `Silakan klik link berikut untuk melihat / mengunduh invoice Anda:\n🔗 ${magicUrl}\n\nSilakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+                   `Nomor Invoice: *${invoice.invoice_number}*\nTotal Tagihan: *${amount}*\n\n` +
+                   `Silakan klik link berikut untuk melihat / mengunduh invoice Anda:\n${magicUrl}\n\nSilakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih!`;
         }
 
         if (!confirm(`Kirim invoice ke ${customerName} (${normalized}) via WhatsApp?`)) return;

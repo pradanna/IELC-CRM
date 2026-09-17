@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Modal from '@/Components/ui/Modal';
+import Modal from '@/Components/Modal';
 import { 
     GraduationCap, Users, Calendar, MapPin, 
     User, Clock, Tag, X, CheckCircle2, 
     AlertCircle, Phone, Plus, Trash2, BookOpen, 
-    Layers, Check, Sparkles, AlertTriangle, Edit3, Save,
+    Layers, Check, AlertTriangle, Edit3, Save,
     Loader2
 } from 'lucide-react';
 import { router, useForm } from '@inertiajs/react';
@@ -121,49 +121,46 @@ export default function ClassDetailModal({ isOpen, onClose, studyClass }) {
     };
 
     return (
-        <Modal show={isOpen} onClose={onClose} maxWidth="4xl">
-            <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl">
-                {/* Modal Header */}
-                <div className="relative p-6 sm:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-                    <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-red-600/20 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-
-                    <div className="relative flex justify-between items-start gap-4">
-                        <div className="space-y-3 flex-1">
+        <Modal show={isOpen} onClose={onClose} maxWidth="6xl">
+            <div className="relative bg-white rounded-2xl overflow-hidden">
+                {/* Clean White Modal Header */}
+                <div className="relative p-6 sm:p-7 bg-white border-b border-slate-100">
+                    <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-2 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="px-2.5 py-1 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-sm">
+                                <span className="px-2.5 py-1 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-xs">
                                     Cycle #{currentCycle}
                                 </span>
                                 <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
                                     isActive 
-                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                                        : 'bg-slate-700/50 text-slate-400 border-slate-600'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                        : 'bg-slate-100 text-slate-500 border-slate-200'
                                 }`}>
                                     {isActive ? 'Active Class' : 'Inactive'}
                                 </span>
                                 <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
                                     isPrivate
-                                        ? 'bg-orange-500/20 text-orange-300 border-orange-500/30'
-                                        : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                        ? 'bg-orange-50 text-orange-700 border-orange-200'
+                                        : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                                 }`}>
                                     {isPrivate ? 'Non-Group / Private' : 'Group Class'}
                                 </span>
-                                <span className="px-2.5 py-1 bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-black uppercase tracking-widest rounded-lg">
+                                <span className="px-2.5 py-1 bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-black uppercase tracking-widest rounded-lg">
                                     {studyClass.type || 'offline'}
                                 </span>
                             </div>
 
                             <div>
-                                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white uppercase">
+                                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase">
                                     {studyClass.name}
                                 </h2>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1 flex items-center gap-2">
                                     <MapPin className="w-3.5 h-3.5 text-red-500" />
                                     <span>{studyClass.branch?.name || 'Central Campus'}</span>
                                     {studyClass.instructor_name && (
                                         <>
-                                            <span className="text-slate-600">•</span>
-                                            <User className="w-3.5 h-3.5 text-amber-400" />
+                                            <span className="text-slate-300">•</span>
+                                            <User className="w-3.5 h-3.5 text-amber-500" />
                                             <span>Instructor: {studyClass.instructor_name}</span>
                                         </>
                                     )}
@@ -173,20 +170,20 @@ export default function ClassDetailModal({ isOpen, onClose, studyClass }) {
 
                         <button 
                             onClick={onClose} 
-                            className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all"
+                            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition-all"
                         >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
 
                     {/* Navigation Tabs in Modal Header */}
-                    <div className="flex gap-6 mt-6 border-b border-slate-700/60 pt-2">
+                    <div className="flex gap-6 mt-6 border-b border-slate-100 pt-1 -mb-7">
                         <button
                             onClick={() => setActiveTab('overview')}
                             className={`pb-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
                                 activeTab === 'overview'
-                                    ? 'border-red-500 text-white'
-                                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                                    ? 'border-red-600 text-red-600'
+                                    : 'border-transparent text-slate-400 hover:text-slate-700'
                             }`}
                         >
                             <BookOpen className="w-3.5 h-3.5" />
@@ -197,13 +194,13 @@ export default function ClassDetailModal({ isOpen, onClose, studyClass }) {
                             onClick={() => setActiveTab('attendances')}
                             className={`pb-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
                                 activeTab === 'attendances'
-                                    ? 'border-red-500 text-white'
-                                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                                    ? 'border-red-600 text-red-600'
+                                    : 'border-transparent text-slate-400 hover:text-slate-700'
                             }`}
                         >
                             <Calendar className="w-3.5 h-3.5" />
                             <span>Log Sesi / Kehadiran</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-700 text-amber-300 font-bold">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-700 font-bold border border-slate-200">
                                 {studyClass.session_progress}/{studyClass.total_meetings}
                             </span>
                         </button>
@@ -211,248 +208,254 @@ export default function ClassDetailModal({ isOpen, onClose, studyClass }) {
                 </div>
 
                 {/* Body Content */}
-                <div className="p-6 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto">
-                    {/* Key Stats Cards */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Users className="w-3.5 h-3.5 text-emerald-500" /> Total Siswa
-                            </span>
-                            <p className="text-xl font-black text-slate-900">{students.length} Siswa</p>
-                        </div>
-
-                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-indigo-500" /> Kuota Sesi
-                            </span>
-                            <p className="text-xl font-black text-slate-900">{studyClass.total_meetings || 0} Pertemuan</p>
-                        </div>
-
-                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Tag className="w-3.5 h-3.5 text-amber-500" /> Master Paket
-                            </span>
-                            <p className="text-xs font-black text-slate-800 truncate" title={studyClass.price_master?.name || '-'}>
-                                {studyClass.price_master?.name || '-'}
-                            </p>
-                            <p className="text-[10px] font-bold text-emerald-600">
-                                {studyClass.price_master ? formatCurrency(studyClass.price_master.price_per_session) : '-'}
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-red-500" /> Sisa Sesi
-                            </span>
-                            <p className={`text-xl font-black ${
-                                (studyClass.total_meetings - currentSessionProgress) <= 2
-                                    ? 'text-red-600'
-                                    : 'text-emerald-600'
-                            }`}>
-                                {Math.max(0, (studyClass.total_meetings || 0) - currentSessionProgress)} Sesi
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar Card */}
-                    <div className={`p-5 rounded-2xl border space-y-4 ${
-                        isPrivate
-                            ? 'bg-amber-50/50 border-amber-200/70'
-                            : 'bg-slate-50 border-slate-200/70'
-                    }`}>
-                        <div className="flex flex-wrap justify-between items-center gap-3">
-                            <div>
-                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                                    {isPrivate ? (
-                                        <>
-                                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                            <span>Progress Kuota Kedatangan / Kehadiran Sesi</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Calendar className="w-4 h-4 text-red-600" />
-                                            <span>Progress Periode Siklus Kelas</span>
-                                        </>
-                                    )}
-                                </h4>
-                                <p className="text-[11px] font-medium text-slate-500 mt-0.5">
-                                    {isPrivate 
-                                        ? `Tercatat ${currentSessionProgress} dari total ${studyClass.total_meetings} sesi pertemuan.`
-                                        : `Periode: ${studyClass.start_session_date ? new Date(studyClass.start_session_date).toLocaleDateString('id-ID') : '-'} s/d ${studyClass.end_session_date ? new Date(studyClass.end_session_date).toLocaleDateString('id-ID') : '-'}`
-                                    }
-                                </p>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-2">
-                                {isPrivate && !isEditingProgress && (
-                                    <>
-                                        <button
-                                            onClick={() => {
-                                                setManualProgressInput(currentSessionProgress);
-                                                setIsEditingProgress(true);
-                                            }}
-                                            className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-xs flex items-center gap-1.5 transition-all"
-                                            title="Ubah Angka Progress Manual"
-                                        >
-                                            <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                                            <span>Set Manual</span>
-                                        </button>
-                                        <button
-                                            onClick={handleQuickAddOne}
-                                            disabled={isQuickAdding}
-                                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl shadow-xs flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
-                                            title="Quick 1 Sesi Hari Ini"
-                                        >
-                                            {isQuickAdding ? (
-                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            ) : (
-                                                <Plus className="w-3.5 h-3.5" />
-                                            )}
-                                            <span>{isQuickAdding ? 'Menambah...' : '1 Sesi Cepat'}</span>
-                                        </button>
-                                    </>
-                                )}
-
-                                <span className="text-sm font-black text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs">
-                                    {currentSessionProgress} <span className="text-slate-400">/ {studyClass.total_meetings}</span> ({progress}%)
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Inline Edit Form for Manual Progress */}
-                        {isEditingProgress && (
-                            <form onSubmit={handleSaveManualProgress} className="p-3.5 bg-white rounded-xl border border-amber-300 shadow-sm flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
-                                <div className="flex items-center gap-2.5 flex-1 min-w-[240px]">
-                                    <span className="text-xs font-black text-slate-700 uppercase tracking-tight">
-                                        Input Sesi Selesai:
-                                    </span>
-                                    <div className="flex items-center gap-1.5">
-                                        <input 
-                                            type="number"
-                                            min="0"
-                                            max={studyClass.total_meetings || 100}
-                                            value={manualProgressInput}
-                                            onChange={(e) => setManualProgressInput(e.target.value)}
-                                            className="w-20 text-center font-black text-sm rounded-lg border-slate-300 focus:border-amber-500 focus:ring-amber-500 py-1"
-                                            required
-                                        />
-                                        <span className="text-xs font-bold text-slate-400">/ {studyClass.total_meetings} Sesi</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        disabled={isSavingManual}
-                                        onClick={() => setIsEditingProgress(false)}
-                                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all"
-                                    >
-                                        Batal
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSavingManual}
-                                        className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-lg shadow-xs flex items-center gap-1.5 transition-all disabled:opacity-50"
-                                    >
-                                        {isSavingManual ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        ) : (
-                                            <Save className="w-3.5 h-3.5" />
-                                        )}
-                                        <span>{isSavingManual ? 'Menyimpan...' : 'Simpan Progress'}</span>
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        <div className="h-2.5 w-full bg-white rounded-full overflow-hidden border border-slate-200">
-                            <div 
-                                className={`h-full transition-all duration-700 rounded-full ${
-                                    isPrivate 
-                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
-                                        : 'bg-red-600'
-                                }`}
-                                style={{ width: `${progress}%` }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* TAB CONTENT: Overview (Student List) */}
+                <div className="p-6 sm:p-7 max-h-[75vh] overflow-y-auto">
+                    {/* TAB CONTENT: Overview (2-Column Layout) */}
                     {activeTab === 'overview' && (
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-base font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
-                                        <Users className="w-4 h-4 text-red-600" />
-                                        Daftar Siswa Terdaftar ({students.length})
-                                    </h3>
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                        Data siswa yang sedang aktif mengikuti kelas ini
-                                    </p>
-                                </div>
-                            </div>
-
-                            {students.length > 0 ? (
-                                <div className="border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xs">
-                                    {students.map((student, idx) => {
-                                        const lead = student.lead;
-                                        return (
-                                            <div key={student.id} className="p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
-                                                <div className="flex items-center gap-3.5">
-                                                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-600 text-xs shrink-0">
-                                                        {idx + 1}
-                                                    </div>
-                                                    <div className="space-y-0.5">
-                                                        <p className="text-sm font-black text-slate-900 flex items-center gap-2">
-                                                            <span>{lead?.name || 'Nama Siswa'}</span>
-                                                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-wider rounded-md border border-emerald-200">
-                                                                {student.status || 'Active'}
-                                                            </span>
-                                                        </p>
-                                                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
-                                                            <span className="font-mono text-slate-600 font-bold">{student.student_number || '-'}</span>
-                                                            {lead?.phone && (
-                                                                <>
-                                                                    <span>•</span>
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Phone className="w-3 h-3 text-slate-400" />
-                                                                        {lead.phone}
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                            {lead?.school && (
-                                                                <>
-                                                                    <span>•</span>
-                                                                    <span>{lead.school} {lead.grade ? `(${lead.grade})` : ''}</span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="text-right shrink-0">
-                                                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Tanggal Join</span>
-                                                    <span className="text-xs font-black text-slate-700">
-                                                        {student.start_join ? new Date(student.start_join).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : (student.enrolled_at || '-')}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center space-y-3">
-                                    <div className="p-3 bg-white rounded-full shadow-xs">
-                                        <AlertCircle className="w-6 h-6 text-slate-300" />
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                            {/* Left Column: Stats & Progress */}
+                            <div className="lg:col-span-5 space-y-5">
+                                {/* Key Stats Cards */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Users className="w-3.5 h-3.5 text-emerald-500" /> Total Siswa
+                                        </span>
+                                        <p className="text-xl font-black text-slate-900">{students.length} Siswa</p>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Belum Ada Siswa</p>
-                                        <p className="text-[11px] text-slate-400 max-w-xs mt-0.5">
-                                            Kelas ini belum memiliki siswa yang terdaftar.
+
+                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5 text-indigo-500" /> Kuota Sesi
+                                        </span>
+                                        <p className="text-xl font-black text-slate-900">{studyClass.total_meetings || 0} Pertemuan</p>
+                                    </div>
+
+                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Tag className="w-3.5 h-3.5 text-amber-500" /> Master Paket
+                                        </span>
+                                        <p className="text-xs font-black text-slate-800 truncate" title={studyClass.price_master?.name || '-'}>
+                                            {studyClass.price_master?.name || '-'}
+                                        </p>
+                                        <p className="text-[10px] font-bold text-emerald-600">
+                                            {studyClass.price_master ? formatCurrency(studyClass.price_master.price_per_session) : '-'}
+                                        </p>
+                                    </div>
+
+                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Calendar className="w-3.5 h-3.5 text-red-500" /> Sisa Sesi
+                                        </span>
+                                        <p className={`text-xl font-black ${
+                                            (studyClass.total_meetings - currentSessionProgress) <= 2
+                                                ? 'text-red-600'
+                                                : 'text-emerald-600'
+                                        }`}>
+                                            {Math.max(0, (studyClass.total_meetings || 0) - currentSessionProgress)} Sesi
                                         </p>
                                     </div>
                                 </div>
-                            )}
+
+                                {/* Progress Bar Card */}
+                                <div className={`p-5 rounded-2xl border space-y-4 ${
+                                    isPrivate
+                                        ? 'bg-amber-50/50 border-amber-200/70'
+                                        : 'bg-slate-50 border-slate-200/70'
+                                }`}>
+                                    <div className="flex flex-wrap justify-between items-center gap-3">
+                                        <div>
+                                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                                                {isPrivate ? (
+                                                    <>
+                                                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                                        <span>Progress Kedatangan Sesi</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Calendar className="w-4 h-4 text-red-600" />
+                                                        <span>Progress Siklus Kelas</span>
+                                                    </>
+                                                )}
+                                            </h4>
+                                            <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                                                {isPrivate 
+                                                    ? `Tercatat ${currentSessionProgress} dari ${studyClass.total_meetings} sesi.`
+                                                    : `Periode: ${studyClass.start_session_date ? new Date(studyClass.start_session_date).toLocaleDateString('id-ID') : '-'} s/d ${studyClass.end_session_date ? new Date(studyClass.end_session_date).toLocaleDateString('id-ID') : '-'}`
+                                                }
+                                            </p>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {isPrivate && !isEditingProgress && (
+                                                <>
+                                                    <button
+                                                        onClick={() => {
+                                                            setManualProgressInput(currentSessionProgress);
+                                                            setIsEditingProgress(true);
+                                                        }}
+                                                        className="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 shadow-xs flex items-center gap-1 transition-all"
+                                                        title="Ubah Angka Progress Manual"
+                                                    >
+                                                        <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                                                        <span>Manual</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={handleQuickAddOne}
+                                                        disabled={isQuickAdding}
+                                                        className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl shadow-xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                                                        title="Quick 1 Sesi Hari Ini"
+                                                    >
+                                                        {isQuickAdding ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Plus className="w-3.5 h-3.5" />
+                                                        )}
+                                                        <span>{isQuickAdding ? '...' : '+1 Sesi'}</span>
+                                                    </button>
+                                                </>
+                                            )}
+
+                                            <span className="text-xs font-black text-slate-900 bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-xs">
+                                                {currentSessionProgress}/{studyClass.total_meetings} ({progress}%)
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Inline Edit Form for Manual Progress */}
+                                    {isEditingProgress && (
+                                        <form onSubmit={handleSaveManualProgress} className="p-3 bg-white rounded-xl border border-amber-300 shadow-sm flex flex-wrap items-center justify-between gap-2 animate-in fade-in">
+                                            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                                                <span className="text-[11px] font-black text-slate-700 uppercase">
+                                                    Sesi Selesai:
+                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <input 
+                                                        type="number"
+                                                        min="0"
+                                                        max={studyClass.total_meetings || 100}
+                                                        value={manualProgressInput}
+                                                        onChange={(e) => setManualProgressInput(e.target.value)}
+                                                        className="w-16 text-center font-black text-xs rounded-lg border-slate-300 focus:border-amber-500 focus:ring-amber-500 py-1"
+                                                        required
+                                                    />
+                                                    <span className="text-[11px] font-bold text-slate-400">/ {studyClass.total_meetings}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    disabled={isSavingManual}
+                                                    onClick={() => setIsEditingProgress(false)}
+                                                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all"
+                                                >
+                                                    Batal
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSavingManual}
+                                                    className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-lg shadow-xs flex items-center gap-1 transition-all disabled:opacity-50"
+                                                >
+                                                    {isSavingManual ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <Save className="w-3 h-3" />
+                                                    )}
+                                                    <span>{isSavingManual ? 'Simpan...' : 'Simpan'}</span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    <div className="h-2.5 w-full bg-white rounded-full overflow-hidden border border-slate-200">
+                                        <div 
+                                            className={`h-full transition-all duration-700 rounded-full ${
+                                                isPrivate 
+                                                    ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
+                                                    : 'bg-red-600'
+                                            }`}
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Daftar Siswa Terdaftar */}
+                            <div className="lg:col-span-7 space-y-3">
+                                <div className="flex justify-between items-center pb-1">
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                                            <Users className="w-4 h-4 text-red-600" />
+                                            Daftar Siswa Terdaftar ({students.length})
+                                        </h3>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Siswa aktif yang terdaftar di kelas ini
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {students.length > 0 ? (
+                                    <div className="border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xs max-h-[480px] overflow-y-auto">
+                                        {students.map((student, idx) => {
+                                            const lead = student.lead;
+                                            return (
+                                                <div key={student.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-600 text-xs shrink-0">
+                                                            {idx + 1}
+                                                        </div>
+                                                        <div className="space-y-0.5">
+                                                            <p className="text-xs font-black text-slate-900 flex items-center gap-2">
+                                                                <span>{lead?.name || 'Nama Siswa'}</span>
+                                                                <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-wider rounded-md border border-emerald-200">
+                                                                    {student.status || 'Active'}
+                                                                </span>
+                                                            </p>
+                                                            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-slate-400">
+                                                                <span className="font-mono text-slate-600 font-bold">{student.student_number || '-'}</span>
+                                                                {lead?.phone && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Phone className="w-3 h-3 text-slate-400" />
+                                                                            {lead.phone}
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                                {lead?.school && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span>{lead.school} {lead.grade ? `(${lead.grade})` : ''}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-right shrink-0">
+                                                        <span className="text-[9px] font-bold text-slate-400 block uppercase">Tanggal Join</span>
+                                                        <span className="text-[11px] font-black text-slate-700">
+                                                            {student.start_join ? new Date(student.start_join).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : (student.enrolled_at || '-')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center space-y-3">
+                                        <div className="p-3 bg-white rounded-full shadow-xs">
+                                            <AlertCircle className="w-6 h-6 text-slate-300" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Belum Ada Siswa</p>
+                                            <p className="text-[11px] text-slate-400 max-w-xs mt-0.5">
+                                                Kelas ini belum memiliki siswa yang terdaftar.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -487,7 +490,7 @@ export default function ClassDetailModal({ isOpen, onClose, studyClass }) {
                                 <form onSubmit={handleRecordAttendance} className="p-5 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Sparkles className="w-4 h-4 text-amber-600" />
+                                            <Calendar className="w-4 h-4 text-amber-600" />
                                             Input Data Sesi Baru (Sesi ke-{data.session_number})
                                         </h4>
                                         <span className="text-[10px] font-bold text-amber-700 uppercase">Cycle #{currentCycle}</span>

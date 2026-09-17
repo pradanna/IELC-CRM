@@ -6,6 +6,7 @@ import DataTable from '@/Components/ui/DataTable';
 import SearchInput from '@/Components/ui/SearchInput';
 import Button from '@/Components/ui/Button';
 import TableActionDropdown from '@/Components/ui/TableActionDropdown';
+import CurrencyInput from '@/Components/form/CurrencyInput';
 import CreateEditPriceMasterModal from './modals/CreateEditPriceMasterModal';
 
 export default function Index({ priceMasters, initialFeeSettings = {} }) {
@@ -65,7 +66,9 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
                     </div>
                     <div>
                         <p className="font-black text-slate-900 tracking-tight">{row.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Harga per paket</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {row.total_sessions ? `${row.total_sessions} Sesi • ` : ''}Harga per paket
+                        </p>
                     </div>
                 </div>
             )
@@ -76,6 +79,15 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
             render: (row) => (
                 <div className="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl font-black text-sm border border-emerald-100">
                     {formatCurrency(row.price_per_session)}
+                </div>
+            )
+        },
+        {
+            header: 'Jumlah Sesi',
+            accessor: 'total_sessions',
+            render: (row) => (
+                <div className="inline-flex items-center px-3.5 py-1.5 bg-blue-50 text-blue-700 rounded-xl font-black text-xs border border-blue-100">
+                    {row.total_sessions ? `${row.total_sessions} Sesi` : '-'}
                 </div>
             )
         },
@@ -219,12 +231,10 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
                                 </label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">Rp</span>
-                                    <input
-                                        type="number"
-                                        min="0"
+                                    <CurrencyInput
                                         value={initialFeeForm.data.placement_test_fee}
                                         onChange={(e) => initialFeeForm.setData('placement_test_fee', e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 text-slate-900 font-bold focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+                                        className="w-full !pl-12 !pr-4 !py-3 !rounded-2xl border border-slate-200 text-slate-900 font-bold focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                                         placeholder="100000"
                                     />
                                 </div>
@@ -239,12 +249,10 @@ export default function Index({ priceMasters, initialFeeSettings = {} }) {
                                 </label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">Rp</span>
-                                    <input
-                                        type="number"
-                                        min="0"
+                                    <CurrencyInput
                                         value={initialFeeForm.data.registration_fee}
                                         onChange={(e) => initialFeeForm.setData('registration_fee', e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 text-slate-900 font-bold focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+                                        className="w-full !pl-12 !pr-4 !py-3 !rounded-2xl border border-slate-200 text-slate-900 font-bold focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
                                         placeholder="25000"
                                     />
                                 </div>

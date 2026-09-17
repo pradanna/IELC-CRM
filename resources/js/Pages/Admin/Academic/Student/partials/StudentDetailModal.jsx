@@ -139,19 +139,19 @@ function StudentProfilePhoto({ student, lead }) {
                     }
                 }}
                 title={currentPhoto ? "Klik untuk melihat foto" : "Klik untuk unggah foto"}
-                className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner overflow-hidden relative group/avatar cursor-pointer hover:border-white/40 transition-all"
+                className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm overflow-hidden relative group/avatar cursor-pointer hover:border-slate-300 hover:shadow transition-all"
             >
                 {isUploadingPhoto ? (
-                    <Loader2 size={24} className="text-white animate-spin" />
+                    <Loader2 size={24} className="text-slate-400 animate-spin" />
                 ) : currentPhoto ? (
                     <>
                         <img src={currentPhoto} alt="" className="w-full h-full object-cover rounded-2xl" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
                             <Maximize2 size={16} className="text-white" />
                         </div>
                     </>
                 ) : (
-                    <User size={30} className="text-red-400 group-hover/avatar:scale-90 transition-transform" />
+                    <User size={30} className="text-slate-400 group-hover/avatar:scale-90 transition-transform" />
                 )}
             </div>
 
@@ -163,7 +163,7 @@ function StudentProfilePhoto({ student, lead }) {
                 }}
                 disabled={isUploadingPhoto}
                 title="Unggah / Ganti Foto Siswa"
-                className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center border-2 border-slate-900 shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center border-2 border-white shadow-sm transition-transform hover:scale-110 active:scale-95 cursor-pointer disabled:opacity-50"
             >
                 <Pencil size={11} />
             </button>
@@ -447,29 +447,29 @@ export default function StudentDetailModal({ show, onClose, student, onTransferC
                                 </div>
 
                                 <div className="p-8 space-y-6 max-h-[80vh] overflow-y-auto">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-6 rounded-3xl shadow-md relative overflow-hidden">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50 via-slate-50/80 to-indigo-50/30 border border-slate-200/80 p-6 rounded-3xl shadow-xs relative overflow-hidden">
                                         <div className="flex items-center gap-4 relative z-10">
                                             <StudentProfilePhoto student={student} lead={lead} />
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className="font-black text-xl tracking-tight leading-none text-white">
+                                                    <h3 className="font-black text-xl tracking-tight leading-none text-slate-900">
                                                         {lead.name || 'Unknown Student'}
                                                     </h3>
                                                     {lead.nickname && (
-                                                        <span className="px-2.5 py-0.5 bg-white/10 text-slate-200 text-xs font-bold rounded-lg border border-white/10">
+                                                        <span className="px-2.5 py-0.5 bg-slate-200/60 text-slate-700 text-xs font-bold rounded-lg border border-slate-200">
                                                             "{lead.nickname}"
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 flex-wrap">
-                                                    <span>{student.student_number}</span>
+                                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 flex-wrap">
+                                                    <span className="font-bold text-slate-700">{student.student_number}</span>
                                                     <span>•</span>
                                                     <span>{lead.branch?.name || 'Central'}</span>
                                                     {lead.is_online !== undefined && (
                                                         <>
                                                             <span>•</span>
                                                             <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded ${
-                                                                lead.is_online ? 'bg-sky-500/20 text-sky-300 border border-sky-400/30' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                                                                lead.is_online ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                                                             }`}>
                                                                 {lead.is_online ? 'Online' : 'Offline'}
                                                             </span>
@@ -481,11 +481,11 @@ export default function StudentDetailModal({ show, onClose, student, onTransferC
 
                                         <div className="flex items-center gap-2 relative z-10 shrink-0">
                                             {student.loyalty_tier && (
-                                                <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border shadow-sm flex items-center gap-1.5 ${
-                                                    student.loyalty_tier.toLowerCase() === 'silver' ? 'bg-slate-700/80 text-slate-200 border-slate-500' :
-                                                    student.loyalty_tier.toLowerCase() === 'gold' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                                                    student.loyalty_tier.toLowerCase() === 'platinum' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' :
-                                                    'bg-red-500/20 text-red-300 border-red-500/40'
+                                                <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs flex items-center gap-1.5 ${
+                                                    student.loyalty_tier.toLowerCase() === 'silver' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+                                                    student.loyalty_tier.toLowerCase() === 'gold' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                    student.loyalty_tier.toLowerCase() === 'platinum' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                    'bg-red-50 text-red-700 border-red-200'
                                                 }`}>
                                                     <Award size={14} />
                                                     Tier {student.loyalty_tier}

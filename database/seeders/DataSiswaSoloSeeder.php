@@ -13,6 +13,7 @@ use App\Domains\Master\Domain\Models\LeadSource;
 use App\Domains\Master\Domain\Models\LeadType;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DataSiswaSoloSeeder extends Seeder
 {
@@ -161,6 +162,7 @@ class DataSiswaSoloSeeder extends Seeder
                     'lead_source_id' => $leadSourceId,
                     'is_online' => $isOnline,
                     'enrolled_at' => $joinDate->toDateString(),
+                    'self_registration_token' => (string) Str::uuid(),
                 ]);
             } else {
                 $lead->update([
@@ -175,6 +177,7 @@ class DataSiswaSoloSeeder extends Seeder
                     'branch_id' => $branchId,
                     'is_online' => $isOnline,
                     'enrolled_at' => $joinDate->toDateString(),
+                    'self_registration_token' => $lead->self_registration_token ?: (string) Str::uuid(),
                 ]);
             }
 
@@ -350,6 +353,7 @@ class DataSiswaSoloSeeder extends Seeder
                     'lead_source_id' => $leadSourceId,
                     'is_online' => $isOnline,
                     'enrolled_at' => $joinDate->toDateString(),
+                    'self_registration_token' => (string) Str::uuid(),
                 ]);
             }
 

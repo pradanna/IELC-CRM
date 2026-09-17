@@ -20,7 +20,7 @@ export default function ChatSidebar({
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={`Cari percakapan ${activeTab === 'official' ? 'Official' : 'Baileys'}...`}
+                        placeholder={`Cari percakapan ${activeTab === 'official' ? 'Official' : 'Unofficial'}...`}
                         className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     />
                 </div>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-export function useWhatsappInbox(branches = [], defaultChannel = 'official') {
-    const [activeTab, setActiveTab] = useState(defaultChannel); // 'official' | 'baileys'
+export function useWhatsappInbox(branches = [], defaultChannel = 'baileys') {
+    const [activeTab, setActiveTab] = useState(defaultChannel); // 'baileys' (Unofficial) | 'official'
     const [selectedBranch, setSelectedBranch] = useState(branches[0]?.code || 'solo');
     
     const [contacts, setContacts] = useState([]);

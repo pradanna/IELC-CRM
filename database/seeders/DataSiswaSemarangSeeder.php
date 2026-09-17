@@ -13,6 +13,7 @@ use App\Domains\Master\Domain\Models\LeadSource;
 use App\Domains\Master\Domain\Models\LeadType;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DataSiswaSemarangSeeder extends Seeder
 {
@@ -165,6 +166,7 @@ class DataSiswaSemarangSeeder extends Seeder
                     'lead_source_id' => $leadSourceId,
                     'is_online' => $isOnline,
                     'enrolled_at' => $joinDate->toDateString(),
+                    'self_registration_token' => (string) Str::uuid(),
                 ]);
             } else {
                 $lead->update([
@@ -179,6 +181,7 @@ class DataSiswaSemarangSeeder extends Seeder
                     'branch_id' => $branchId,
                     'is_online' => $isOnline,
                     'enrolled_at' => $joinDate->toDateString(),
+                    'self_registration_token' => $lead->self_registration_token ?: (string) Str::uuid(),
                 ]);
             }
 
@@ -360,6 +363,7 @@ class DataSiswaSemarangSeeder extends Seeder
                     'lead_source_id' => $leadSourceId,
                     'is_online' => $isOnline,
                     'enrolled_at' => $joinDate->toDateString(),
+                    'self_registration_token' => (string) Str::uuid(),
                 ]);
             }
 

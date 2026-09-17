@@ -96,6 +96,43 @@
             color: #0f172a;
             font-weight: 500;
         }
+        .ans-correct {
+            background-color: #f0fdf4;
+        }
+        .ans-incorrect {
+            background-color: #fef2f2;
+        }
+        .ans-empty {
+            background-color: #f8fafc;
+        }
+        .user-val {
+            font-size: 8.5px;
+            font-weight: bold;
+            word-break: break-word;
+            margin-bottom: 2px;
+        }
+        .eval-tag {
+            display: inline-block;
+            font-size: 7.5px;
+            font-weight: bold;
+            padding: 1px 3px;
+            border-radius: 2px;
+            margin-bottom: 2px;
+        }
+        .eval-tag-correct {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+        .eval-tag-incorrect {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .correct-key-text {
+            font-size: 7px;
+            color: #991b1b;
+            line-height: 1.1;
+            word-break: break-word;
+        }
         .empty-val {
             color: #94a3b8;
             font-style: italic;
@@ -183,11 +220,24 @@
                     </tr>
                     <tr>
                         @foreach($chunk as $num)
-                            <td class="q-ans">
-                                @if(isset($taskItem['grid'][$num]) && trim((string)$taskItem['grid'][$num]) !== '')
-                                    {{ $taskItem['grid'][$num] }}
+                            @php
+                                $itemEval = $taskItem['eval']['item_results'][$num] ?? null;
+                                $isCorrect = $itemEval['is_correct'] ?? false;
+                                $userVal = isset($taskItem['grid'][$num]) && trim((string)$taskItem['grid'][$num]) !== '' ? $taskItem['grid'][$num] : null;
+                                $keys = $itemEval['acceptable_keys'] ?? [];
+                                $keyStr = is_array($keys) ? implode(' / ', array_slice($keys, 0, 2)) : (string)$keys;
+                            @endphp
+                            <td class="q-ans {{ $isCorrect ? 'ans-correct' : ($userVal ? 'ans-incorrect' : 'ans-empty') }}" style="text-align: center;">
+                                <div class="user-val" style="color: {{ $isCorrect ? '#16a34a' : ($userVal ? '#dc2626' : '#94a3b8') }};">
+                                    {{ $userVal ?? '-' }}
+                                </div>
+                                @if($isCorrect)
+                                    <span class="eval-tag eval-tag-correct">Benar</span>
                                 @else
-                                    <span class="empty-val">-</span>
+                                    <span class="eval-tag eval-tag-incorrect">Salah</span>
+                                    @if(!empty($keyStr))
+                                        <div class="correct-key-text">Kunci: {{ $keyStr }}</div>
+                                    @endif
                                 @endif
                             </td>
                         @endforeach
@@ -227,11 +277,24 @@
                     </tr>
                     <tr>
                         @foreach($chunk as $num)
-                            <td class="q-ans">
-                                @if(isset($taskItem['grid'][$num]) && trim((string)$taskItem['grid'][$num]) !== '')
-                                    {{ $taskItem['grid'][$num] }}
+                            @php
+                                $itemEval = $taskItem['eval']['item_results'][$num] ?? null;
+                                $isCorrect = $itemEval['is_correct'] ?? false;
+                                $userVal = isset($taskItem['grid'][$num]) && trim((string)$taskItem['grid'][$num]) !== '' ? $taskItem['grid'][$num] : null;
+                                $keys = $itemEval['acceptable_keys'] ?? [];
+                                $keyStr = is_array($keys) ? implode(' / ', array_slice($keys, 0, 2)) : (string)$keys;
+                            @endphp
+                            <td class="q-ans {{ $isCorrect ? 'ans-correct' : ($userVal ? 'ans-incorrect' : 'ans-empty') }}" style="text-align: center;">
+                                <div class="user-val" style="color: {{ $isCorrect ? '#16a34a' : ($userVal ? '#dc2626' : '#94a3b8') }};">
+                                    {{ $userVal ?? '-' }}
+                                </div>
+                                @if($isCorrect)
+                                    <span class="eval-tag eval-tag-correct">Benar</span>
                                 @else
-                                    <span class="empty-val">-</span>
+                                    <span class="eval-tag eval-tag-incorrect">Salah</span>
+                                    @if(!empty($keyStr))
+                                        <div class="correct-key-text">Kunci: {{ $keyStr }}</div>
+                                    @endif
                                 @endif
                             </td>
                         @endforeach

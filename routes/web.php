@@ -35,9 +35,12 @@ Route::post('/placement-test/{token}/start', [\App\Http\Controllers\Crm\PtExam\P
 Route::get('/placement-test/{token}/exam', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'exam'])->name('public.placement-test.exam');
 Route::post('/placement-test/{token}/submit', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'submit'])->name('public.placement-test.submit');
 Route::get('/placement-test/{token}/result', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'result'])->name('public.placement-test.result');
+Route::get('/placement-test/{token}/download-result-pdf', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'downloadResultPdf'])->name('public.placement-test.download-result-pdf');
+Route::get('/placement-test/{token}/download-answers-pdf', [\App\Http\Controllers\Crm\PtExam\PublicPlacementTestController::class, 'downloadAnswersPdf'])->name('public.placement-test.download-answers-pdf');
 
 // Public Lead Registration
 Route::get('/join', [\App\Http\Controllers\Public\PublicLeadController::class, 'form'])->name('public.join.form');
+Route::get('/join/success', [\App\Http\Controllers\Public\PublicLeadController::class, 'success'])->name('public.join.success');
 Route::get('/join/api/cities', [\App\Http\Controllers\Public\PublicLeadController::class, 'getCities'])->name('public.join.cities');
 Route::post('/join', [\App\Http\Controllers\Public\PublicLeadController::class, 'store'])->name('public.join.store');
 Route::get('/join/{branch}', function () {
@@ -77,78 +80,116 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
     // CRM Leads
-    Route::get('/crm/leads', [\App\Http\Controllers\Admin\Crm\CrmDashboardController::class, 'index'])->name('crm.leads.index');
-    Route::get('/crm/leads/list', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'index'])->name('crm.leads.list');
-    Route::get('/crm/leads/kanban', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'kanban'])->name('crm.leads.kanban');
-    Route::get('/crm/reports', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'index'])->name('crm.reports.index');
-    Route::get('/crm/reports/download', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'download'])->name('crm.reports.download');
-    Route::get('/crm/reports/daily', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'daily'])->name('crm.reports.daily');
-    Route::get('/crm/reports/daily/download', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'downloadDaily'])->name('crm.reports.daily.download');
-    Route::get('/crm/reports/daily/word', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'downloadDailyWord'])->name('crm.reports.daily.word');
-    Route::get('/crm/leads/quick-search', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'quickSearch'])->name('crm.leads.quick-search');
-    Route::get('/crm/leads/relatables', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getRelatables'])->name('crm.leads.relatables');
-    Route::get('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'show'])->name('crm.leads.show');
-    Route::get('/crm/leads/{lead}/activities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'activities'])->name('crm.leads.activities');
-    Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'update'])->name('crm.leads.update');
-    Route::patch('/crm/leads/{lead}/phase', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updatePhase'])->name('crm.leads.update-phase');
-    Route::patch('/crm/leads/{lead}/qualification', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updateQualification'])->name('crm.leads.update-qualification');
-    Route::post('/crm/leads/{lead}/notes', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeNote'])->name('crm.leads.store-note');
-    Route::post('/crm/leads/{lead}/plot-class', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'plotClass'])->name('crm.leads.plot-class');
-    Route::patch('/crm/leads/{lead}/record-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'recordFollowUp'])->name('crm.leads.record-followup');
-    Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
-    Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'destroy'])->name('crm.leads.destroy');
-    Route::post('/crm/leads/{lead}/send-template', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendTemplate'])->name('crm.leads.send-template');
-    Route::post('/crm/leads/{lead}/send-whatsapp', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendMessage'])->name('crm.leads.send-whatsapp');
-    Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
-    Route::post('/crm/leads/{lead}/add-enrollment', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'addEnrollment'])->name('crm.leads.add-enrollment');
+    Route::middleware('role:superadmin|it_staff|frontdesk|marketing')->group(function () {
+        Route::get('/crm/leads', [\App\Http\Controllers\Admin\Crm\CrmDashboardController::class, 'index'])->name('crm.leads.index');
+        Route::get('/crm/leads/list', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'index'])->name('crm.leads.list');
+        Route::get('/crm/leads/kanban', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'kanban'])->name('crm.leads.kanban');
+        Route::get('/crm/reports', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'index'])->name('crm.reports.index');
+        Route::get('/crm/reports/download', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'download'])->name('crm.reports.download');
+        Route::get('/crm/reports/daily', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'daily'])->name('crm.reports.daily');
+        Route::get('/crm/reports/daily/download', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'downloadDaily'])->name('crm.reports.daily.download');
+        Route::get('/crm/reports/daily/word', [\App\Http\Controllers\Admin\Crm\CrmReportController::class, 'downloadDailyWord'])->name('crm.reports.daily.word');
+        Route::get('/crm/leads/quick-search', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'quickSearch'])->name('crm.leads.quick-search');
+        Route::get('/crm/leads/relatables', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getRelatables'])->name('crm.leads.relatables');
+        Route::get('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'show'])->name('crm.leads.show');
+        Route::get('/crm/leads/{lead}/activities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'activities'])->name('crm.leads.activities');
+        Route::put('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'update'])->name('crm.leads.update');
+        Route::patch('/crm/leads/{lead}/phase', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updatePhase'])->name('crm.leads.update-phase');
+        Route::patch('/crm/leads/{lead}/qualification', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'updateQualification'])->name('crm.leads.update-qualification');
+        Route::post('/crm/leads/{lead}/notes', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeNote'])->name('crm.leads.store-note');
+        Route::post('/crm/leads/{lead}/plot-class', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'plotClass'])->name('crm.leads.plot-class');
+        Route::patch('/crm/leads/{lead}/record-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'recordFollowUp'])->name('crm.leads.record-followup');
+        Route::patch('/crm/leads/{lead}/reset-followup', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'resetFollowUp'])->name('crm.leads.reset-followup');
+        Route::delete('/crm/leads/{lead}', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'destroy'])->name('crm.leads.destroy');
+        Route::post('/crm/leads/{lead}/store-consultation', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'storeConsultation'])->name('crm.leads.store-consultation');
+        Route::post('/crm/leads/{lead}/add-enrollment', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'addEnrollment'])->name('crm.leads.add-enrollment');
 
-    Route::post('/crm/leads', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'store'])->name('crm.leads.store');
-    Route::get('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'index'])->name('crm.settings.index');
-    Route::put('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'update'])->name('crm.settings.update');
-    Route::get('/crm/cities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getCities'])->name('crm.cities');
+        Route::post('/crm/leads', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'store'])->name('crm.leads.store');
+        Route::get('/crm/cities', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'getCities'])->name('crm.cities');
 
-    // Registration Inbox (Admin Approval)
-    Route::get('/crm/registrations', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'index'])->name('crm.registrations.index');
-    Route::post('/crm/registrations/{registration}/approve', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'approve'])->name('crm.registrations.approve');
-    Route::post('/crm/registrations/{registration}/reject', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'reject'])->name('crm.registrations.reject');
-    
-    // Self-filling Updates Approval
-    Route::post('/crm/registrations/{lead}/approve-update', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'approveUpdate'])->name('crm.registrations.approve-update');
-    Route::post('/crm/registrations/{lead}/reject-update', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'rejectUpdate'])->name('crm.registrations.reject-update');
+        // Registration Inbox (Admin Approval)
+        Route::get('/crm/registrations', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'index'])->name('crm.registrations.index');
+        Route::post('/crm/registrations/{registration}/approve', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'approve'])->name('crm.registrations.approve');
+        Route::post('/crm/registrations/{registration}/reject', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'reject'])->name('crm.registrations.reject');
+        
+        // Self-filling Updates Approval
+        Route::post('/crm/registrations/{lead}/approve-update', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'approveUpdate'])->name('crm.registrations.approve-update');
+        Route::post('/crm/registrations/{lead}/reject-update', [\App\Http\Controllers\Admin\Crm\RegistrationApprovalController::class, 'rejectUpdate'])->name('crm.registrations.reject-update');
+    });
+
+    // CRM Leads WhatsApp Sending (All authenticated admin roles: Superadmin, Frontdesk, Marketing, Finance, Teacher)
+    Route::post('/crm/leads/{lead}/send-template', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendTemplate'])
+        ->middleware('throttle:whatsapp-send')
+        ->name('crm.leads.send-template');
+    Route::post('/crm/leads/{lead}/send-whatsapp', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'sendMessage'])
+        ->middleware('throttle:whatsapp-send')
+        ->name('crm.leads.send-whatsapp');
 
     // Placement Tests
-    Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
-    Route::get('/crm/pt-sessions/completed', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'completedList'])->name('crm.pt-sessions.completed');
-    Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
-    Route::get('/crm/pt-sessions/{pt_session}/result', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'getResult'])->name('crm.pt-sessions.get-result');
-    Route::get('/crm/pt-sessions/{pt_session}/download-writing', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'downloadWritingPdf'])->name('crm.pt-sessions.download-writing-pdf');
-    Route::patch('/crm/pt-sessions/{pt_session}/grade', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'updateGrade'])->name('crm.pt-sessions.update-grade');
-    Route::delete('/crm/pt-sessions/{pt_session}', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'destroy'])->name('crm.pt-sessions.destroy');
+    Route::middleware('role:superadmin|it_staff|frontdesk|marketing|teacher')->group(function () {
+        Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
+        Route::get('/crm/pt-sessions/completed', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'completedList'])->name('crm.pt-sessions.completed');
+        Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
+        Route::get('/crm/pt-sessions/{pt_session}/result', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'getResult'])->name('crm.pt-sessions.get-result');
+        Route::get('/crm/pt-sessions/{pt_session}/download-writing', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'downloadWritingPdf'])->name('crm.pt-sessions.download-writing-pdf');
+        Route::get('/crm/pt-sessions/{pt_session}/download-writing-docx', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'downloadWritingDocx'])->name('crm.pt-sessions.download-writing-docx');
+        Route::get('/crm/pt-sessions/{pt_session}/download-result-pdf', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'downloadResultPdf'])->name('crm.pt-sessions.download-result-pdf');
+        Route::get('/crm/pt-sessions/{pt_session}/download-answers-pdf', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'downloadAnswersPdf'])->name('crm.pt-sessions.download-answers-pdf');
+        Route::patch('/crm/pt-sessions/{pt_session}/grade', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'updateGrade'])->name('crm.pt-sessions.update-grade');
+        Route::delete('/crm/pt-sessions/{pt_session}', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'destroy'])->name('crm.pt-sessions.destroy');
+
+        Route::prefix('placement-tests')->name('placement-tests.')->group(function () {
+            Route::get('/', [PtExamController::class, 'index'])->name('index');
+            Route::post('/', [PtExamController::class, 'store'])->name('store');
+            Route::post('/upload-canvas-image', [PtExamController::class, 'uploadCanvasImage'])->name('upload-canvas-image');
+            Route::post('/upload-canvas-audio', [PtExamController::class, 'uploadCanvasAudio'])->name('upload-canvas-audio');
+            Route::get('/{pt_exam}', [PtExamController::class, 'show'])->name('show');
+            Route::put('/{pt_exam}', [PtExamController::class, 'update'])->name('update');
+            Route::delete('/{pt_exam}', [PtExamController::class, 'destroy'])->name('destroy');
+
+            // Questions within Exam
+            Route::post('/{pt_exam}/questions', [PtQuestionController::class, 'store'])->name('questions.store');
+            Route::post('/{pt_exam}/questions/{pt_question}', [PtQuestionController::class, 'update'])->name('questions.update');
+            Route::delete('/{pt_exam}/questions/{pt_question}', [PtQuestionController::class, 'destroy'])->name('questions.destroy');
+
+            // Question Groups within Exam
+            Route::post('/{pt_exam}/question-groups', [PtQuestionGroupController::class, 'store'])->name('question-groups.store');
+            Route::post('/{pt_exam}/question-groups/{pt_question_group}', [PtQuestionGroupController::class, 'update'])->name('question-groups.update');
+            Route::delete('/{pt_exam}/question-groups/{pt_question_group}', [PtQuestionGroupController::class, 'destroy'])->name('question-groups.destroy');
+        });
+    });
 
     // Academic Module
     Route::group(['prefix' => 'academic', 'as' => 'academic.'], function () {
-        Route::resource('study-classes', \App\Http\Controllers\Admin\Academic\StudyClassController::class);
-        Route::post('study-classes/{study_class}/reset-cycle', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'resetCycle'])->name('study-classes.reset-cycle');
-        Route::patch('study-classes/{study_class}/update-progress', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'updateProgress'])->name('study-classes.update-progress');
-        Route::post('study-classes/{study_class}/attendances', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'recordAttendance'])->name('study-classes.attendances.store');
-        Route::delete('study-classes/{study_class}/attendances/{attendance}', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'deleteAttendance'])->name('study-classes.attendances.destroy');
-        Route::post('study-classes/{study_class}/enroll', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'enroll'])->name('study-classes.enroll');
-        Route::delete('study-classes/{study_class}/unenroll/{student}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'unenroll'])->name('study-classes.unenroll');
+        // Study Classes: Accessible by superadmin, it_staff, frontdesk, finance, and marketing
+        Route::middleware('role:superadmin|it_staff|frontdesk|finance|marketing')->group(function () {
+            Route::get('study-classes/form-data', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'formData'])->name('study-classes.form-data');
+            Route::resource('study-classes', \App\Http\Controllers\Admin\Academic\StudyClassController::class);
+            Route::post('study-classes/{study_class}/reset-cycle', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'resetCycle'])->name('study-classes.reset-cycle');
+            Route::patch('study-classes/{study_class}/update-progress', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'updateProgress'])->name('study-classes.update-progress');
+            Route::post('study-classes/{study_class}/attendances', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'recordAttendance'])->name('study-classes.attendances.store');
+            Route::delete('study-classes/{study_class}/attendances/{attendance}', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'deleteAttendance'])->name('study-classes.attendances.destroy');
+            Route::post('study-classes/{study_class}/enroll', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'enroll'])->name('study-classes.enroll');
+            Route::delete('study-classes/{study_class}/unenroll/{student}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'unenroll'])->name('study-classes.unenroll');
+            Route::post('students/{student}/transfer-class', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'transferClass'])->name('students.transfer-class');
+            Route::post('leads/{lead}/promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'promoteFromLead'])->name('students.promote');
+            Route::post('students/bulk-promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
+        });
 
-        Route::get('students/search', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'search'])->name('students.search');
-        Route::get('students/export/excel', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportExcel'])->name('students.export.excel');
-        Route::get('students/export/pdf', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportPdf'])->name('students.export.pdf');
-        Route::post('students/bulk-promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
-        Route::post('students/{student}/progress-reports', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'storeProgressReport'])->name('students.progress-reports.store');
-        Route::delete('students/{student}/progress-reports/{report}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'destroyProgressReport'])->name('students.progress-reports.destroy');
-        Route::post('students/{student}/upload-photo', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'uploadProfilePicture'])->name('students.upload-photo');
-        Route::post('students/{student}/transfer-class', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'transferClass'])->name('students.transfer-class');
-        Route::resource('students', \App\Http\Controllers\Admin\Academic\StudentController::class);
-        Route::post('leads/{lead}/promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'promoteFromLead'])->name('students.promote');
+        // Students: Viewable by superadmin, it_staff, frontdesk, and teacher
+        Route::middleware('role:superadmin|it_staff|frontdesk|teacher')->group(function () {
+            Route::get('students/search', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'search'])->name('students.search');
+            Route::get('students/export/excel', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportExcel'])->name('students.export.excel');
+            Route::get('students/export/pdf', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportPdf'])->name('students.export.pdf');
+            Route::post('students/{student}/progress-reports', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'storeProgressReport'])->name('students.progress-reports.store');
+            Route::delete('students/{student}/progress-reports/{report}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'destroyProgressReport'])->name('students.progress-reports.destroy');
+            Route::post('students/{student}/upload-photo', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'uploadProfilePicture'])->name('students.upload-photo');
+            Route::resource('students', \App\Http\Controllers\Admin\Academic\StudentController::class);
+        });
     });
 
     // Finance Module
-    Route::group(['prefix' => 'finance', 'as' => 'finance.', 'middleware' => ['role:superadmin|finance']], function () {
+    Route::group(['prefix' => 'finance', 'as' => 'finance.', 'middleware' => ['role:superadmin|it_staff|finance']], function () {
         Route::get('/dashboard', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'index'])->name('dashboard');
         Route::get('/invoices', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'invoices'])->name('invoices.index');
         Route::post('/invoices/generate', [\App\Http\Controllers\Admin\Finance\FinanceController::class, 'generate'])->name('invoices.generate');
@@ -166,74 +207,78 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::resource('loyalty-settings', \App\Http\Controllers\Admin\Finance\LoyaltySettingsController::class);
     });
 
-    // Add others as placeholders for now
-    // Placement Tests Management
-    Route::prefix('placement-tests')->name('placement-tests.')->group(function () {
-        Route::get('/', [PtExamController::class, 'index'])->name('index');
-        Route::post('/', [PtExamController::class, 'store'])->name('store');
-        Route::post('/upload-canvas-image', [PtExamController::class, 'uploadCanvasImage'])->name('upload-canvas-image');
-        Route::post('/upload-canvas-audio', [PtExamController::class, 'uploadCanvasAudio'])->name('upload-canvas-audio');
-        Route::get('/{pt_exam}', [PtExamController::class, 'show'])->name('show');
-        Route::put('/{pt_exam}', [PtExamController::class, 'update'])->name('update');
-        Route::delete('/{pt_exam}', [PtExamController::class, 'destroy'])->name('destroy');
+    // Master Data (Lead configuration, Chat Templates, Media Assets)
+    Route::middleware('role:superadmin|it_staff|frontdesk|marketing')->group(function () {
+        Route::get('/master', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'index'])->name('master.index');
+        Route::post('/master/lead-types', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadType'])->name('master.lead-types.store');
+        Route::put('/master/lead-types/{leadType}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadType'])->name('master.lead-types.update');
+        Route::delete('/master/lead-types/{leadType}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyLeadType'])->name('master.lead-types.destroy');
+        Route::post('/master/lead-phases', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadPhase'])->name('master.lead-phases.store');
+        Route::put('/master/lead-phases/{leadPhase}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadPhase'])->name('master.lead-phases.update');
+        Route::delete('/master/lead-phases/{leadPhase}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyLeadPhase'])->name('master.lead-phases.destroy');
+        Route::post('/master/lead-sources', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadSource'])->name('master.lead-sources.store');
+        Route::put('/master/lead-sources/{leadSource}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadSource'])->name('master.lead-sources.update');
+        Route::delete('/master/lead-sources/{leadSource}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyLeadSource'])->name('master.lead-sources.destroy');
 
-        // Questions within Exam
-        Route::post('/{pt_exam}/questions', [PtQuestionController::class, 'store'])->name('questions.store');
-        Route::post('/{pt_exam}/questions/{pt_question}', [PtQuestionController::class, 'update'])->name('questions.update'); // Using POST for file upload compatibility
-        Route::delete('/{pt_exam}/questions/{pt_question}', [PtQuestionController::class, 'destroy'])->name('questions.destroy');
+        Route::post('/master/monthly-targets', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeMonthlyTarget'])->name('master.monthly-targets.store');
+        Route::put('/master/monthly-targets/{monthlyTarget}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateMonthlyTarget'])->name('master.monthly-targets.update');
+        Route::delete('/master/monthly-targets/{monthlyTarget}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyMonthlyTarget'])->name('master.monthly-targets.destroy');
+        
+        // Chat Templates
+        Route::post('/master/chat-templates', [\App\Http\Controllers\Admin\Master\ChatTemplateController::class, 'store'])->name('master.chat-templates.store');
+        Route::put('/master/chat-templates/{chatTemplate}', [\App\Http\Controllers\Admin\Master\ChatTemplateController::class, 'update'])->name('master.chat-templates.update');
+        Route::delete('/master/chat-templates/{chatTemplate}', [\App\Http\Controllers\Admin\Master\ChatTemplateController::class, 'destroy'])->name('master.chat-templates.destroy');
 
-        // Question Groups within Exam
-        Route::post('/{pt_exam}/question-groups', [PtQuestionGroupController::class, 'store'])->name('question-groups.store');
-        Route::post('/{pt_exam}/question-groups/{pt_question_group}', [PtQuestionGroupController::class, 'update'])->name('question-groups.update'); // Using POST for file upload compatibility
-        Route::delete('/{pt_exam}/question-groups/{pt_question_group}', [PtQuestionGroupController::class, 'destroy'])->name('question-groups.destroy');
+        // Media Assets
+        Route::post('/master/media-assets', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'store'])->name('master.media-assets.store');
+        Route::delete('/master/media-assets/{mediaAsset}', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'destroy'])->name('master.media-assets.destroy');
     });
-    // Master Data
-    Route::get('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'index'])->name('master.users.index');
-    Route::post('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'store'])->name('master.users.store');
-    Route::put('/master/users/{user}', [\App\Http\Controllers\Admin\Master\UserController::class, 'update'])->name('master.users.update');
-    Route::delete('/master/users/{user}', [\App\Http\Controllers\Admin\Master\UserController::class, 'destroy'])->name('master.users.destroy');
 
-    Route::get('/master', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'index'])->name('master.index');
-    Route::post('/master/lead-types', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadType'])->name('master.lead-types.store');
-    Route::put('/master/lead-types/{leadType}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadType'])->name('master.lead-types.update');
-    Route::delete('/master/lead-types/{leadType}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyLeadType'])->name('master.lead-types.destroy');
-    Route::post('/master/lead-phases', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadPhase'])->name('master.lead-phases.store');
-    Route::put('/master/lead-phases/{leadPhase}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadPhase'])->name('master.lead-phases.update');
-    Route::delete('/master/lead-phases/{leadPhase}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyLeadPhase'])->name('master.lead-phases.destroy');
-    Route::post('/master/lead-sources', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadSource'])->name('master.lead-sources.store');
-    Route::put('/master/lead-sources/{leadSource}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadSource'])->name('master.lead-sources.update');
-    Route::delete('/master/lead-sources/{leadSource}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyLeadSource'])->name('master.lead-sources.destroy');
+    // Staff Accounts & System Management: Strictly Superadmin & IT Staff
+    Route::middleware('role:superadmin|it_staff')->group(function () {
+        Route::get('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'index'])->name('master.users.index');
+        Route::post('/master/users', [\App\Http\Controllers\Admin\Master\UserController::class, 'store'])->name('master.users.store');
+        Route::put('/master/users/{user}', [\App\Http\Controllers\Admin\Master\UserController::class, 'update'])->name('master.users.update');
+        Route::delete('/master/users/{user}', [\App\Http\Controllers\Admin\Master\UserController::class, 'destroy'])->name('master.users.destroy');
+        Route::patch('/master/users/{id}/restore', [\App\Http\Controllers\Admin\Master\UserController::class, 'restore'])->name('master.users.restore');
+        Route::delete('/master/users/{id}/force-delete', [\App\Http\Controllers\Admin\Master\UserController::class, 'forceDelete'])->name('master.users.force-delete');
 
-    Route::post('/master/monthly-targets', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeMonthlyTarget'])->name('master.monthly-targets.store');
-    Route::put('/master/monthly-targets/{monthlyTarget}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateMonthlyTarget'])->name('master.monthly-targets.update');
-    Route::delete('/master/monthly-targets/{monthlyTarget}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'destroyMonthlyTarget'])->name('master.monthly-targets.destroy');
-    
-    // Chat Templates
-    Route::post('/master/chat-templates', [\App\Http\Controllers\Admin\Master\ChatTemplateController::class, 'store'])->name('master.chat-templates.store');
-    Route::put('/master/chat-templates/{chatTemplate}', [\App\Http\Controllers\Admin\Master\ChatTemplateController::class, 'update'])->name('master.chat-templates.update');
-    Route::delete('/master/chat-templates/{chatTemplate}', [\App\Http\Controllers\Admin\Master\ChatTemplateController::class, 'destroy'])->name('master.chat-templates.destroy');
+        Route::get('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'index'])->name('crm.settings.index');
+        Route::put('/crm/settings', [\App\Http\Controllers\Admin\Crm\CrmSettingController::class, 'update'])->name('crm.settings.update');
 
-    // Media Assets
-    Route::post('/master/media-assets', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'store'])->name('master.media-assets.store');
-    Route::delete('/master/media-assets/{mediaAsset}', [\App\Http\Controllers\Admin\Master\MediaAssetController::class, 'destroy'])->name('master.media-assets.destroy');
-    
-    // WhatsApp Proxy & Inbox
+        // WhatsApp System Device Logout
+        Route::delete('/whatsapp/logout/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'logout'])->name('whatsapp.logout');
+
+        // Database Backup
+        Route::prefix('system')->name('system.')->group(function () {
+            Route::get('/backup', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'index'])->name('backup.index');
+            Route::match(['get', 'post'], '/backup/generate', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'generate'])->name('backup.generate');
+            Route::get('/backup/download/{filename}', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'download'])->name('backup.download');
+            Route::delete('/backup/{filename}', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'destroy'])->name('backup.destroy');
+        });
+    });
+
+    // WhatsApp Management, Live Chat & Messaging Services (Accessible to all authenticated staff)
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
-        Route::get('/inbox', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'index'])->name('inbox');
-        Route::get('/official/conversations', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialConversations'])->name('official.conversations');
-        Route::get('/official/templates', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialTemplates'])->name('official.templates');
-        Route::post('/official/send', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'sendOfficialMessage'])->name('official.send');
-        Route::get('/baileys/conversations/{branch}', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getBaileysConversations'])->name('baileys.conversations');
-        Route::get('/history-chat', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getChatHistory'])->name('chat-history');
-
         Route::get('/', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('index');
         Route::get('/status/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
         Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');
-        Route::post('/send', [\App\Http\Controllers\Admin\WhatsAppController::class, 'sendMessage'])->name('send');
-        Route::delete('/logout/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'logout'])->middleware('role:superadmin')->name('logout');
+        Route::post('/send', [\App\Http\Controllers\Admin\WhatsAppController::class, 'sendMessage'])
+            ->middleware('throttle:whatsapp-send')
+            ->name('send');
+
+        // WhatsApp Live Chat / Inbox (All authenticated staff)
+        Route::get('/inbox', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'index'])->name('inbox');
+        Route::get('/official/conversations', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialConversations'])->name('official.conversations');
+        Route::get('/official/templates', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getOfficialTemplates'])->name('official.templates');
+        Route::post('/official/send', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'sendOfficialMessage'])
+            ->middleware('throttle:whatsapp-send')
+            ->name('official.send');
+        Route::get('/baileys/conversations/{branch}', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getBaileysConversations'])->name('baileys.conversations');
+        Route::get('/history-chat', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getChatHistory'])->name('chat-history');
     });
 
-    // Notifications
+    // Notifications (All authenticated admin roles)
     Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');

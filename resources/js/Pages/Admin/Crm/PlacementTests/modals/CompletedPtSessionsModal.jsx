@@ -191,8 +191,20 @@ export default function CompletedPtSessionsModal({ isOpen, onClose, exams = [], 
                                     <div className="flex items-center gap-4 shrink-0">
                                         <div className="text-right">
                                             {session.final_score !== null && (
-                                                <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                                                    <Trophy size={13} /> {session.final_score}
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                                                    <Trophy size={13} className="shrink-0" />
+                                                    {session.percentage !== null && session.percentage !== undefined ? (
+                                                        <>
+                                                            <span>{session.percentage}%</span>
+                                                            {session.total_questions > 0 && (
+                                                                <span className="text-emerald-700/70 font-bold text-[11px]">
+                                                                    ({session.correct_answers ?? session.final_score}/{session.total_questions})
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span>{session.final_score}</span>
+                                                    )}
                                                 </span>
                                             )}
                                             {session.recommended_level && (

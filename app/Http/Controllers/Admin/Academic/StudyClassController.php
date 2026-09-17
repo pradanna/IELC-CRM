@@ -16,6 +16,7 @@ use App\Domains\Finance\Domain\Models\PriceMaster;
 use App\Http\Resources\Academic\StudyClassResource;
 use App\Http\Resources\Master\BranchResource;
 use App\Http\Resources\Finance\PriceMasterResource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -37,9 +38,27 @@ class StudyClassController extends Controller
         ]);
     }
 
-    public function store(StoreStudyClassRequest $request, StoreStudyClass $action): RedirectResponse
+    public function formData(): JsonResponse
     {
-        $action->handle($request->validated());
+        return response()->json([
+            'branches' => Branch::select('id', 'name', 'code')->get(),
+            'instructors' => User::select('id', 'name')->orderBy('name')->get(),
+            'priceMasters' => PriceMaster::select('id', 'name', 'price_per_session', 'total_sessions')->get(),
+            'leadTypes' => \Illuminate\Support\Facades\DB::table('lead_types')->select('id', 'code', 'name')->orderBy('name')->get(),
+        ]);
+    }
+
+    public function store(StoreStudyClassRequest $request, StoreStudyClass $action): RedirectResponse|JsonResponse
+    {
+        $studyClass = $action->handle($request->validated());
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Class created successfully.',
+                'class' => new StudyClassResource($studyClass->load(['branch', 'instructor', 'priceMaster'])),
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Class created successfully.');
     }

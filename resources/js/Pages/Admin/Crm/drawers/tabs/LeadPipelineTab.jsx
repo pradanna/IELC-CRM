@@ -16,10 +16,13 @@ import {
     Snowflake,
     LogOut,
     Loader2,
-    ArrowDown
+    ArrowDown,
+    Calendar
 } from 'lucide-react';
 import useLeadPlotting from './hooks/useLeadPlotting';
 import PlotAndInvoiceModal from '../../../Finance/modals/PlotAndInvoiceModal';
+import Modal from '@/Components/Modal';
+import DatePicker from '@/Components/form/DatePicker';
 
 // Modularized pipeline components
 import PhaseSection from './pipeline/PhaseSection';
@@ -84,6 +87,11 @@ export default function LeadPipelineTab({
     const [savingConsultation, setSavingConsultation] = useState(false);
     const [consultationForm, setConsultationForm] = useState({
         consultation_date: new Date().toISOString().split('T')[0]
+    });
+    const [schedulePromptModal, setSchedulePromptModal] = useState({
+        isOpen: false,
+        template: null,
+        date: new Date().toISOString().split('T')[0]
     });
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [updatingQualification, setUpdatingQualification] = useState(false);
@@ -198,11 +206,11 @@ export default function LeadPipelineTab({
         if (isPaid) {
             message += `Berikut adalah bukti pembayaran ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
                 `${publicUrl}\n\n` +
-                `Terima kasih! 🙏`;
+                `Terima kasih!`;
         } else {
             message += `Berikut adalah tagihan ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
                 `${publicUrl}\n\n` +
-                `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+                `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih!`;
         }
 
         if (window.confirm(`Kirim invoice ${invoice.invoice_number} via WhatsApp?`)) {
@@ -232,48 +240,108 @@ export default function LeadPipelineTab({
         return clean;
     };
 
-    const parseTemplateMessage = (text) => {
+    const formatDisplayDate = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
+    const getLeadSchedule = () => {
+        const latest = lead?.consultations?.[0];
+        if (latest?.formatted_date) return latest.formatted_date;
+        if (latest?.consultation_date) return formatDisplayDate(latest.consultation_date);
+        return null;
+    };
+
+    const parseTemplateMessage = (text, customSchedule = null) => {
         if (!text) return '';
+        const scheduleVal = customSchedule || getLeadSchedule() || '';
+        const updateFormUrl = lead?.self_registration_token
+            ? `${window.location.origin}/fill-data/${lead.self_registration_token}`
+            : '';
         return text
             .replace(/{{name}}/g, lead?.name || 'Kak')
             .replace(/{{nickname}}/g, lead?.nickname || lead?.name || 'Kak')
             .replace(/{{lead_number}}/g, lead?.lead_number || '')
-            .replace(/{{admin_name}}/g, user?.name || '');
+            .replace(/{{admin_name}}/g, user?.name || '')
+            .replace(/\[JADWAL\]/gi, scheduleVal)
+            .replace(/\[UPDATE_FORM\]/gi, updateFormUrl)
+            .replace(/\[LINK_ZOHO\]/gi, updateFormUrl);
     };
 
-    const openWaWeb = (msg) => {
-        const parsedMsg = parseTemplateMessage(msg);
+    const openWaWeb = (msg, customSchedule = null) => {
+        const parsedMsg = parseTemplateMessage(msg, customSchedule);
         const cleanPhone = formatPhone(lead.phone);
         const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(parsedMsg)}`;
         window.open(url, '_blank');
     };
 
-    const handleSendTemplate = async (template) => {
-        if (!window.confirm(`Kirim template "${template.title}" ke ${lead.name}?`)) {
-            return;
-        }
-
+    const executeSendTemplate = async (template, scheduleDate = null) => {
         setSendingTemplateId(template.id);
         try {
+            // Jika ada scheduleDate yang baru diinput, simpan juga sebagai konsultasi lead jika belum tercatat
+            if (scheduleDate) {
+                try {
+                    await axios.post(route('admin.crm.leads.store-consultation', lead.id), {
+                        consultation_date: scheduleDate
+                    });
+                } catch (e) {
+                    console.warn('Gagal mencatat konsultasi otomatis:', e);
+                }
+            }
+
+            const formattedSchedule = scheduleDate ? formatDisplayDate(scheduleDate) : null;
             await axios.post(route('admin.crm.leads.send-template', lead.id), {
-                chat_template_id: template.id
+                chat_template_id: template.id,
+                schedule_date: formattedSchedule
             });
             onRefresh(true);
         } catch (err) {
             console.error('Gagal mengirim template:', err);
             const errMsg = err.response?.data?.error || err.message || "Unknown error";
             if (confirm(`Gagal kirim via sistem: ${errMsg}\n\nApakah Anda ingin mencoba kirim via WhatsApp Web?`)) {
-                openWaWeb(template.message);
+                openWaWeb(template.message, scheduleDate ? formatDisplayDate(scheduleDate) : null);
             }
         } finally {
             setSendingTemplateId(null);
+            setSchedulePromptModal({ isOpen: false, template: null, date: new Date().toISOString().split('T')[0] });
         }
     };
 
-    const handleSaveConsultation = async () => {
+    const handleSendTemplate = async (template) => {
+        const containsJadwal = /\[JADWAL\]/i.test(template.message);
+        const existingSchedule = getLeadSchedule();
+
+        if (containsJadwal && !existingSchedule) {
+            // Jadwal masih kosong, tampilkan dialog pengisian jadwal
+            setSchedulePromptModal({
+                isOpen: true,
+                template: template,
+                date: new Date().toISOString().split('T')[0]
+            });
+            return;
+        }
+
+        if (!window.confirm(`Kirim template "${template.title}" ke ${lead.name}?`)) {
+            return;
+        }
+
+        executeSendTemplate(template);
+    };
+
+    const handleSaveConsultation = async (customData = null) => {
         setSavingConsultation(true);
+        const payload = customData || consultationForm;
         try {
-            await axios.post(route('admin.crm.leads.store-consultation', lead.id), consultationForm);
+            await axios.post(route('admin.crm.leads.store-consultation', lead.id), payload);
             setConsultationForm({
                 consultation_date: new Date().toISOString().split('T')[0]
             });
@@ -408,7 +476,7 @@ export default function LeadPipelineTab({
                 )}
             </div>
 
-            <div className="space-y-12 px-10 pb-20">
+            <div className="space-y-6 px-10 pb-20">
                 {/* 1. Lead Phase */}
                 <PhaseSection
                     {...sectionProps}
@@ -578,6 +646,72 @@ export default function LeadPipelineTab({
                 classes={availableClasses}
                 priceMasters={priceMasters}
             />
+
+            {/* Schedule Input Dialog for Templates containing [JADWAL] */}
+            <Modal
+                show={schedulePromptModal.isOpen}
+                onClose={() => setSchedulePromptModal({ isOpen: false, template: null, date: new Date().toISOString().split('T')[0] })}
+                maxWidth="md"
+            >
+                <div className="p-6 bg-white rounded-3xl space-y-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-bold">
+                            <Calendar size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-slate-900">Jadwal Konsultasi Diperlukan</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Template membutuhkan informasi tanggal [JADWAL]
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p className="text-xs text-slate-600 font-medium italic line-clamp-3">
+                            "{schedulePromptModal.template?.message}"
+                        </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                            Pilih Tanggal Jadwal Konsultasi
+                        </label>
+                        <DatePicker 
+                            value={schedulePromptModal.date}
+                            onChange={(val) => setSchedulePromptModal(prev => ({ ...prev, date: val }))}
+                            inputClassName="!py-2.5 !h-auto !bg-slate-50 !border-slate-200 !rounded-xl !text-xs !font-bold !text-slate-700 !shadow-none !ring-red-500/20"
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                            type="button"
+                            onClick={() => setSchedulePromptModal({ isOpen: false, template: null, date: new Date().toISOString().split('T')[0] })}
+                            className="px-4 py-2.5 text-slate-500 hover:text-slate-700 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            disabled={!schedulePromptModal.date || sendingTemplateId}
+                            onClick={() => {
+                                if (schedulePromptModal.template && schedulePromptModal.date) {
+                                    executeSendTemplate(schedulePromptModal.template, schedulePromptModal.date);
+                                }
+                            }}
+                            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-red-500/20 flex items-center gap-2 disabled:opacity-50"
+                        >
+                            {sendingTemplateId ? (
+                                <>
+                                    <Loader2 size={12} className="animate-spin" /> Mengirim...
+                                </>
+                            ) : (
+                                'Simpan & Kirim Pesan'
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

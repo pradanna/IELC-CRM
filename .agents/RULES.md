@@ -25,6 +25,7 @@ Before starting any task, you MUST read the following skill files in `.agents/sk
 - **DISCUSS & APPROVE**: Anda **TIDAK BOLEH** memulai eksekusi (menulis kode) sebelum Kapten membaca rencana tersebut dan memberikan persetujuan (katakan "OK" atau berikan masukan).
 - **TASK TRACKING**: Setelah disetujui, update `task.md` secara berkala untuk menunjukkan progres kerja Anda.
 - **NO AUTO-BROWSER TEST**: Jangan melakukan pengetesan menggunakan `browser_subagent` atau alat browser lainnya kecuali diminta secara spesifik oleh Kapten.
+- **DEV SERVER / NO AUTO BUILD**: Kapten menjalankan `npm run dev` secara aktif. **DILARANG** menjalankan `npm run build` setelah perubahan frontend, kecuali diminta secara eksplisit oleh Kapten.
 - Jangan pernah melompati tahapan di **Feature Implementation Checklist**.
 
 ### Clean Architecture (Domain-Driven Design / DDD)

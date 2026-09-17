@@ -8,13 +8,11 @@ class DataSiswaSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('Memulai seeding Data Siswa Solo & Semarang...');
+        $this->command->info('Seeder data siswa sementara dikosongkan (menunggu data terbaru).');
 
-        $this->call([
-            DataSiswaSoloSeeder::class,
-            DataSiswaSemarangSeeder::class,
-        ]);
-
-        $this->command->info('Selesai seeding seluruh Data Siswa!');
+        // $this->call([
+        //     DataSiswaSoloSeeder::class,
+        //     DataSiswaSemarangSeeder::class,
+        // ]);
     }
 }

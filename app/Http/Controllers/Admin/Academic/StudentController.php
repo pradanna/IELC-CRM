@@ -61,8 +61,8 @@ class StudentController extends Controller
             }
         }
 
-        $statusFilter = $request->input('status', 'active');
-        if ($statusFilter !== 'all' && $statusFilter !== '') {
+        $statusFilter = $request->input('status');
+        if ($statusFilter && $statusFilter !== 'all') {
             $query->where('status', $statusFilter);
         }
 
@@ -207,17 +207,43 @@ class StudentController extends Controller
             'Umum',
         ]);
 
+        $listFilters = array_filter(
+            $request->only(['search', 'expiry_status', 'status', 'loyalty_tier', 'class_category', 'study_class_id', 'price_master_id', 'grade', 'sort_field', 'sort_direction', 'branch_id', 'mode']),
+            fn($v) => !is_null($v) && $v !== ''
+        );
+
         $allFilters = array_merge(
-            ['status' => $statusFilter],
             $dashboardData['filters'],
-            array_filter($request->only(['search', 'expiry_status', 'status', 'loyalty_tier', 'class_category', 'study_class_id', 'price_master_id', 'grade', 'sort_field', 'sort_direction', 'branch_id', 'mode']), fn($v) => !is_null($v) && $v !== '')
+            $statusFilter ? ['status' => $statusFilter] : [],
+            $listFilters
         );
 
         $branchesList = \Illuminate\Support\Facades\DB::table('branches')->select('id', 'name')->orderBy('name')->get();
         $loyaltyTiersList = \App\Domains\Finance\Domain\Models\LoyaltySetting::orderBy('min_rejoin_count', 'asc')->pluck('tier_name')->unique()->values();
 
+        $branchIdFilter = $request->input('branch_id');
+
+        $activeStudentsCountQuery = Student::where('status', 'active');
+        $stoppedStudentsCountQuery = Student::where('status', 'stop');
+        $expiringSoonCountQuery = Student::where('status', 'active')->whereHas('studyClasses', function ($q) {
+            $q->whereBetween('end_session_date', [now()->toDateString(), now()->addDays(21)->toDateString()]);
+        });
+
+        if ($branchIdFilter) {
+            $activeStudentsCountQuery->whereHas('lead', fn($q) => $q->where('branch_id', $branchIdFilter));
+            $stoppedStudentsCountQuery->whereHas('lead', fn($q) => $q->where('branch_id', $branchIdFilter));
+            $expiringSoonCountQuery->whereHas('lead', fn($q) => $q->where('branch_id', $branchIdFilter));
+        }
+
+        $studentStats = [
+            'total_active'   => $activeStudentsCountQuery->count(),
+            'expiring_soon'  => $expiringSoonCountQuery->count(),
+            'total_stopped'  => $stoppedStudentsCountQuery->count(),
+        ];
+
         return Inertia::render('Admin/Academic/Student/Index', array_merge($dashboardData, [
             'students' => StudentResource::collection($query->paginate(12)->withQueryString()),
+            'studentStats' => $studentStats,
             'studyClassesList' => $studyClassesList,
             'priceMastersList' => $priceMastersList,
             'gradesList' => $gradesList,

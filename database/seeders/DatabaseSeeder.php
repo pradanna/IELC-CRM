@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             MonthlyTargetSeeder::class,
             TaskSeeder::class,
             ChatTemplateSeeder::class,
+            CrmSettingSeeder::class,
             PtExamSeeder::class,
             PlacementTestConnectSeeder::class,
             PlacementTestInterchangeSeeder::class,
@@ -39,8 +40,8 @@ class DatabaseSeeder extends Seeder
             LoyaltySettingSeeder::class,
             PaymentAccountSeeder::class,
             PriceMasterSeeder::class,
-            StudyClassSeeder::class,
-            DataSiswaSeeder::class,
+            // StudyClassSeeder::class, // Dikosongkan sementara menunggu data terbaru
+            // DataSiswaSeeder::class, // Dikosongkan sementara menunggu data terbaru
         ]);
     }
 }

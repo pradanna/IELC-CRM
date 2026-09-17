@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Head, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import {
@@ -11,6 +11,8 @@ import {
     Layers,
     FileQuestion,
     PlayCircle,
+    Maximize2,
+    Minimize2,
 } from "lucide-react";
 import DataTable from "@/Components/ui/DataTable";
 import Button from "@/Components/ui/Button";
@@ -59,6 +61,8 @@ export default function ShowGeneral({ exam }) {
         setIsPreviewOpen,
         previewPages,
     } = usePtExamShow(examData);
+
+    const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
 
     const columns = [
         {
@@ -282,7 +286,7 @@ export default function ShowGeneral({ exam }) {
                 }
                 actions={
                     <div className="flex items-center gap-2">
-                        <Link href={route('admin.placement-tests.index')}>
+                        <Link href={route("admin.placement-tests.index")}>
                             <Button
                                 variant="outline"
                                 icon={ArrowLeft}
@@ -450,28 +454,61 @@ export default function ShowGeneral({ exam }) {
             {/* Public Exam Preview Modal */}
             <Modal
                 show={isPreviewOpen}
-                onClose={() => setIsPreviewOpen(false)}
-                maxWidth="6xl"
+                onClose={() => {
+                    setIsPreviewOpen(false);
+                    setIsPreviewFullscreen(false);
+                }}
+                maxWidth={isPreviewFullscreen ? "screen" : "6xl"}
             >
-                <div className="p-6 h-[85vh] flex flex-col">
-                    <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div
+                    className={`${isPreviewFullscreen ? "h-screen w-screen p-4" : "p-6 h-[88vh]"} flex flex-col transition-all duration-300`}
+                >
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
                         <div>
                             <h3 className="text-base font-black text-slate-900 tracking-tight">
                                 Interactive General Test Preview
                             </h3>
                             <p className="text-xs text-slate-400">
-                                Live candidate view
+                                Live candidate view (Tampilan langsung peserta)
                             </p>
                         </div>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsPreviewOpen(false)}
-                            className="text-xs"
-                        >
-                            Close Preview
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() =>
+                                    setIsPreviewFullscreen(!isPreviewFullscreen)
+                                }
+                                className="text-xs flex items-center gap-1.5"
+                                title={
+                                    isPreviewFullscreen
+                                        ? "Keluar Fullscreen"
+                                        : "Fullscreen Preview"
+                                }
+                            >
+                                {isPreviewFullscreen ? (
+                                    <Minimize2 size={13} />
+                                ) : (
+                                    <Maximize2 size={13} />
+                                )}
+                                <span>
+                                    {isPreviewFullscreen
+                                        ? "Perkecil"
+                                        : "Full Screen"}
+                                </span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setIsPreviewOpen(false);
+                                    setIsPreviewFullscreen(false);
+                                }}
+                                className="text-xs"
+                            >
+                                Tutup Preview
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto mt-4 rounded-2xl border border-slate-100 p-2">
+                    <div className="flex-1 overflow-y-auto mt-3 rounded-2xl border border-slate-100 p-2 min-h-0 bg-slate-50/50">
                         {previewPages.length > 0 ? (
                             <Exam
                                 pages={previewPages}
@@ -480,7 +517,8 @@ export default function ShowGeneral({ exam }) {
                                 session={{
                                     session_token: "PREVIEW_MODE",
                                     is_preview: true,
-                                    remaining_seconds: (examData.duration_minutes || 60) * 60,
+                                    remaining_seconds:
+                                        (examData.duration_minutes || 60) * 60,
                                 }}
                             />
                         ) : (

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 
-export function useUserManagement(users) {
+export function useUserManagement(users, currentStatus = 'active') {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -28,9 +28,34 @@ export function useUserManagement(users) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus user ini?')) {
-            router.delete(route('admin.master.users.destroy', id));
+        if (confirm('Apakah Anda yakin ingin menonaktifkan akun staff ini (soft delete)? Riwayat data tetap aman.')) {
+            router.delete(route('admin.master.users.destroy', id), {
+                preserveScroll: true,
+            });
         }
+    };
+
+    const handleRestore = (id) => {
+        if (confirm('Pulihkan akun user ini agar dapat aktif dan login kembali?')) {
+            router.patch(route('admin.master.users.restore', id), {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const handleForceDelete = (id) => {
+        if (confirm('PERINGATAN: Tindakan ini akan menghapus akun secara permanen dari database. Lanjutkan?')) {
+            router.delete(route('admin.master.users.force-delete', id), {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const handleStatusChange = (status) => {
+        router.get(route('admin.master.users.index'), { status }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     const closeModal = () => {
@@ -49,6 +74,9 @@ export function useUserManagement(users) {
         handleAdd,
         handleEdit,
         handleDelete,
+        handleRestore,
+        handleForceDelete,
+        handleStatusChange,
         closeModal
     };
 }

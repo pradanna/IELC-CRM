@@ -234,7 +234,7 @@
                             "y": "352.54099316381456",
                             "width": "60",
                             "height": "20",
-                            "correct_token_id": "tok_w_1788191835049",
+                            "correct_token_id": "tok_w_1788321874123",
                             "label": "5..........",
                             "fontSize": "12"
                         }
@@ -1157,10 +1157,10 @@
             "audio_path": null,
             "canvas": {
                 "mode": "freeform_canvas",
-                "instruction": "",
+                "instruction": "Tarik kata yang tepat dari kotak dibawah untuk melengkapi kalimat",
                 "canvas_data": {
                     "mode": "freeform_canvas",
-                    "instruction": null,
+                    "instruction": "Tarik kata yang tepat dari kotak dibawah untuk melengkapi kalimat",
                     "tokens": [
                         {
                             "id": "tok_w_1788485226107",
@@ -1212,6 +1212,17 @@
                             "y": "149.33313749028343",
                             "width": "770",
                             "height": "444"
+                        },
+                        {
+                            "id": "txt_1789446564104",
+                            "type": "text",
+                            "text": "Tarik kata yang tepat dari kotak dibawah untuk melengkapi kalimat",
+                            "x": "268",
+                            "y": "36",
+                            "fontSize": "18",
+                            "fontStyle": "normal",
+                            "fill": "#1e293b",
+                            "align": "center"
                         }
                     ],
                     "targets": [
@@ -1580,7 +1591,9 @@
                             "y": "105.99999182128853",
                             "radius": "24",
                             "correct_token_type": "ring",
-                            "label": "woman"
+                            "label": "woman",
+                            "is_correct_answer": "0",
+                            "is_example": "1"
                         }
                     ]
                 }
@@ -2064,7 +2077,7 @@
                             "y": "770.0000311279314",
                             "width": "259",
                             "height": "32",
-                            "correct_token_id": "tok_w_1788494146461",
+                            "correct_token_id": "tok_w_1788494124140",
                             "label": null
                         },
                         {
@@ -2074,7 +2087,7 @@
                             "y": "888.0000371093771",
                             "width": "259",
                             "height": "32",
-                            "correct_token_id": null,
+                            "correct_token_id": "tok_w_1788494146461",
                             "label": null
                         }
                     ]
@@ -2234,7 +2247,7 @@
             "audio_path": null,
             "canvas": {
                 "mode": "freeform_canvas",
-                "instruction": "",
+                "instruction": null,
                 "canvas_data": {
                     "mode": "freeform_canvas",
                     "instruction": null,
@@ -2418,7 +2431,7 @@
                             "y": "589.0000200805671",
                             "width": "68",
                             "height": "32",
-                            "correct_token_id": "tok_w_1788495046472",
+                            "correct_token_id": "tok_w_1788495039584",
                             "label": null
                         },
                         {
@@ -2428,7 +2441,7 @@
                             "y": "583.0000184936529",
                             "width": "68",
                             "height": "32",
-                            "correct_token_id": "tok_w_1788495037392",
+                            "correct_token_id": "tok_w_1788495046472",
                             "label": null
                         }
                     ]
@@ -3461,7 +3474,7 @@
                             "correct_symbol": null,
                             "label": "Kotak True/False (Copy) (Copy) (Copy)",
                             "box_mode": "image",
-                            "correct_token_id": "tok_img_1788508267298"
+                            "correct_token_id": "tok_img_1788508269183"
                         }
                     ]
                 }
@@ -4085,10 +4098,10 @@
             "audio_path": null,
             "canvas": {
                 "mode": "freeform_canvas",
-                "instruction": "Pilih jawaban yang tepat. Lihat contoh.",
+                "instruction": "Tarik Lingkaran hijau ke jawaban yang tepat",
                 "canvas_data": {
                     "mode": "freeform_canvas",
-                    "instruction": "Pilih jawaban yang tepat. Lihat contoh.",
+                    "instruction": "Tarik Lingkaran hijau ke jawaban yang tepat",
                     "tokens": [
                         {
                             "id": "tok_ring_1788791519485",
@@ -4174,8 +4187,8 @@
                         {
                             "id": "txt_1788791317693",
                             "type": "text",
-                            "text": "Pilih jawaban yang tepat. Lihat contoh.",
-                            "x": "404",
+                            "text": "Tarik Lingkaran hijau ke jawaban yang tepat",
+                            "x": "385",
                             "y": "39",
                             "fontSize": "18",
                             "fontStyle": "bold",
@@ -4711,7 +4724,7 @@
                             "radius": "12",
                             "correct_token_type": "ring",
                             "label": null,
-                            "is_correct_answer": "1"
+                            "is_correct_answer": "0"
                         }
                     ]
                 }

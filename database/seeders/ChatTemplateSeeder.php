@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Domains\Master\Domain\Models\ChatTemplate;
 use App\Domains\Master\Domain\Models\LeadPhase;
+use App\Domains\Master\Domain\Models\LeadType;
 use Illuminate\Database\Seeder;
 
 class ChatTemplateSeeder extends Seeder
@@ -107,7 +108,7 @@ class ChatTemplateSeeder extends Seeder
             'placement-test' => [
                 [
                     'title' => '[PT] Kids Send Customer Data Form',
-                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[LINK_ZOHO]",
+                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[UPDATE_FORM]",
                 ],
                 [
                     'title' => '[PT] Kids Send Zoom and PT Link',
@@ -123,7 +124,7 @@ class ChatTemplateSeeder extends Seeder
                 ],
                 [
                     'title' => '[PT] Teens Send Customer Data Form',
-                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[LINK_ZOHO]",
+                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[UPDATE_FORM]",
                 ],
                 [
                     'title' => '[PT] Teens Send Zoom and PT Link',
@@ -139,7 +140,7 @@ class ChatTemplateSeeder extends Seeder
                 ],
                 [
                     'title' => '[PT] Adult Send Customer Data Form',
-                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[LINK_ZOHO]",
+                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[UPDATE_FORM]",
                 ],
                 [
                     'title' => '[PT] Adult Send Zoom and PT Link',
@@ -163,7 +164,7 @@ class ChatTemplateSeeder extends Seeder
                 ],
                 [
                     'title' => '[PT] IELTS Send Customer Data Form',
-                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[LINK_ZOHO]",
+                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[UPDATE_FORM]",
                 ],
                 [
                     'title' => '[PT] IELTS Schedule AD Consultation',
@@ -187,7 +188,7 @@ class ChatTemplateSeeder extends Seeder
                 ],
                 [
                     'title' => '[PT] TOEFL iBT Send Customer Data Form',
-                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[LINK_ZOHO]",
+                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[UPDATE_FORM]",
                 ],
                 [
                     'title' => '[PT] TOEFL iBT Send Consultation Schedule Link',
@@ -207,7 +208,7 @@ class ChatTemplateSeeder extends Seeder
                 ],
                 [
                     'title' => '[PT] TOEFL PBT Send Customer Data Form',
-                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[LINK_ZOHO]",
+                    'message' => "Sebelum Placement Test, boleh saya minta bantuan {{name}} untuk mengisi data pada form berikut:\n\n[UPDATE_FORM]",
                 ],
                 [
                     'title' => '[PT] TOEFL PBT Send Consultation Schedule Link',
@@ -270,6 +271,8 @@ class ChatTemplateSeeder extends Seeder
             ],
         ];
 
+        $leadTypes = LeadType::all()->keyBy('code');
+
         foreach ($phaseTemplates as $phaseCode => $templates) {
             $phase = LeadPhase::where('code', $phaseCode)->first();
             if (!$phase) {
@@ -282,6 +285,25 @@ class ChatTemplateSeeder extends Seeder
                 ]);
 
                 $template->leadPhases()->syncWithoutDetaching([$phase->id]);
+
+                // Hubungkan khusus dengan Lead Type yang sesuai (Kids, Teens, Adult, IELTS, TOEFL)
+                // Jika pesan umum (Global Greeting/Location), biarkan kosong agar bisa diakses semua
+                $typeCode = $tpl['lead_type'] ?? null;
+                if (!$typeCode) {
+                    $titleLower = strtolower($tpl['title']);
+                    if (str_contains($titleLower, 'kids')) $typeCode = 'kids';
+                    elseif (str_contains($titleLower, 'teen')) $typeCode = 'teens';
+                    elseif (str_contains($titleLower, 'adult')) $typeCode = 'adult';
+                    elseif (str_contains($titleLower, 'ielts')) $typeCode = 'ielts';
+                    elseif (str_contains($titleLower, 'toefl ibt') || str_contains($titleLower, 'toefl_ibt')) $typeCode = 'toefl_ibt';
+                    elseif (str_contains($titleLower, 'toefl')) $typeCode = 'toefl';
+                }
+
+                if ($typeCode && isset($leadTypes[$typeCode])) {
+                    $template->leadTypes()->sync([$leadTypes[$typeCode]->id]);
+                } else {
+                    $template->leadTypes()->detach();
+                }
             }
         }
     }

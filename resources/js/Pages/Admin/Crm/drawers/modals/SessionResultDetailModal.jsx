@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '@/Components/ui/Modal';
 import Exam from '@/Pages/Public/PlacementTest/Exam';
-import { Loader2, AlertCircle, FileText, CheckCircle2, Save, Star, Download, Paperclip } from 'lucide-react';
+import { Loader2, AlertCircle, FileText, CheckCircle2, Save, Star, Download, Paperclip, Award } from 'lucide-react';
 import { useForm } from '@inertiajs/react';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import InputLabel from '@/Components/form/InputLabel';
@@ -149,7 +149,20 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
+                        {data?.download_urls?.result_pdf && (
+                            <a
+                                href={data.download_urls.result_pdf}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm"
+                                title="Download Laporan Nilai & Pencapaian Siswa (PDF)"
+                            >
+                                <Award size={14} />
+                                <span>Download Nilai (PDF)</span>
+                            </a>
+                        )}
+
                         <button 
                             onClick={onClose}
                             className="px-4 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl text-xs font-black transition-all flex items-center gap-1.5"
@@ -189,11 +202,14 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                     exam_category={data.exam.category}
                                     pages={data.exam.pages}
                                     session={{ 
-                                        token: 'review', 
+                                        id: data.session?.id || session?.id,
+                                        token: data.session?.token || session?.token || 'review', 
                                         remaining_seconds: 0
                                     }}
                                     is_review={true}
                                     user_answers={data.answers}
+                                    stats={data.stats}
+                                    download_urls={data.download_urls}
                                 />
                             </div>
 
@@ -209,9 +225,9 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                     </div>
 
                                     <div className="flex-1 overflow-y-auto p-5 space-y-6">
-                                        {/* Download Complete Answer Sheet PDF Button */}
+                                        {/* Download Complete Answer Sheet Buttons (Word & PDF) */}
                                         <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4">
-                                            <div className="flex items-center gap-2.5 mb-2">
+                                            <div className="flex items-center gap-2.5 mb-2.5">
                                                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
                                                     <FileText size={16} />
                                                 </div>
@@ -220,15 +236,24 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Listening, Reading & Writing</p>
                                                 </div>
                                             </div>
-                                            <a 
-                                                href={session?.id ? route('admin.crm.pt-sessions.download-writing-pdf', session.id) : '#'}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="mt-2 inline-flex items-center justify-center gap-2 w-full bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98]"
-                                            >
-                                                <Download size={13} />
-                                                Download Answer Sheet PDF
-                                            </a>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <a 
+                                                    href={session?.id ? route('admin.crm.pt-sessions.download-writing-docx', session.id) : '#'}
+                                                    className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98] text-center"
+                                                >
+                                                    <Download size={13} />
+                                                    Word (.docx)
+                                                </a>
+                                                <a 
+                                                    href={session?.id ? route('admin.crm.pt-sessions.download-writing-pdf', session.id) : '#'}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98] text-center"
+                                                >
+                                                    <Download size={13} />
+                                                    PDF Document
+                                                </a>
+                                            </div>
                                         </div>
 
                                         {session?.result_file_url && (

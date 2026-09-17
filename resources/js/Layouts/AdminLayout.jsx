@@ -18,6 +18,7 @@ import {
     Receipt,
     Gift,
     BarChart3,
+    Database,
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
@@ -36,31 +37,14 @@ const menuItems = [
                 icon: <LayoutDashboard size={20} />,
                 text: "CRM Dashboard",
                 href: route("admin.crm.leads.index"),
-                name: "admin.crm.leads.index",
-            },
-            {
-                icon: <Users size={20} />,
-                text: "Leads List",
-                href: route("admin.crm.leads.list"),
-                name: "admin.crm.leads.list",
-            },
-            {
-                icon: <Building2 size={20} />,
-                text: "Kanban Pipeline",
-                href: route("admin.crm.leads.kanban"),
-                name: "admin.crm.leads.kanban",
+                name: "admin.crm.leads.*",
+                activeCheck: () => route().current('admin.crm.leads.*') || route().current('admin.crm.reports.*') || route().current('admin.crm.registrations.*'),
             },
             {
                 icon: <FileText size={20} />,
                 text: "Placement Tests",
                 href: route("admin.placement-tests.index"),
                 name: "admin.placement-tests.*",
-            },
-            {
-                icon: <FileText size={20} />,
-                text: "CRM Reports",
-                href: route("admin.crm.reports.index"),
-                name: "admin.crm.reports.*",
             },
             // WhatsApp Inbox hidden during development
             /*
@@ -113,7 +97,7 @@ const menuItems = [
             },
             {
                 icon: <Gift size={20} />,
-                text: "Diskon",
+                text: "Diskon dan Loyalty",
                 href: route("admin.finance.loyalty-settings.index"),
                 name: "admin.finance.loyalty-settings.*",
             },
@@ -157,6 +141,12 @@ const menuItems = [
                 href: route("admin.master.users.index"),
                 name: "admin.master.users.*",
             },
+            {
+                icon: <Database size={20} />,
+                text: "Database Backup",
+                href: route("admin.system.backup.index"),
+                name: "admin.system.backup.*",
+            },
         ],
     },
 ];
@@ -169,13 +159,14 @@ export default function AdminLayout({ children }) {
     const { auth } = usePage().props;
     const userRole = auth.user.role?.toLowerCase(); // Ensure case-insensitivity
     const isSuperAdmin = userRole === 'superadmin' || userRole === 'super-admin' || !!auth.user.superadmin;
+    const isItStaff = userRole === 'it_staff' || userRole === 'it-staff' || userRole === 'it staff' || !!auth.user.it_staff;
     const isFrontdesk = userRole === 'frontdesk' || !!auth.user.frontdesk;
     const isFinance = userRole === 'finance' || !!auth.user.finance;
     const isMarketing = userRole === 'marketing' || !!auth.user.marketing;
     const isTeacher = userRole === 'teacher' || !!auth.user.teacher;
 
     const filteredMenu = menuItems.filter(group => {
-        if (isSuperAdmin) return true;
+        if (isSuperAdmin || isItStaff) return true;
         
         if (isFrontdesk) {
             return ['CRM & Leads', 'Database', 'Management'].includes(group.category);
@@ -195,21 +186,21 @@ export default function AdminLayout({ children }) {
 
         return false;
     }).map(group => {
-        if (isSuperAdmin) return group;
+        if (isSuperAdmin || isItStaff) return group;
 
         return {
             ...group,
             items: group.items.filter(item => {
                 if (isFrontdesk) {
-                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
+                    const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
-                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon', 'Laporan', 'Staff Accounts', 'WhatsApp'];
+                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon dan Loyalty', 'Laporan', 'Staff Accounts', 'WhatsApp'];
                     return allowed.includes(item.text);
                 }
                 if (isMarketing) {
-                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'Master'];
+                    const allowed = ['CRM Dashboard', 'Placement Tests', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isTeacher) {
@@ -258,7 +249,7 @@ export default function AdminLayout({ children }) {
                                         <SidebarItem
                                             key={itemIndex}
                                             {...item}
-                                            active={route().current(item.name)}
+                                            active={item.activeCheck ? item.activeCheck() : route().current(item.name)}
                                         />
                                     ))}
                                 </React.Fragment>

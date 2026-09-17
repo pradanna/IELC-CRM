@@ -111,12 +111,13 @@ class PtExamPublicResource extends JsonResource
             foreach ($items as $item) {
                 if ($item->type === 'standalone') {
                     $q = $item->data;
+                    $qNum = $q->number ?? $questionNumber;
                     $pages[] = [
                         'id' => 'gen_q_' . $q->id,
                         'type' => 'standalone',
                         'questions' => [[
                             'id' => $q->id,
-                            'number' => $q->number ?? $questionNumber++,
+                            'number' => $qNum,
                             'type' => $q->type,
                             'text' => $q->question_text,
                             'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
@@ -129,6 +130,7 @@ class PtExamPublicResource extends JsonResource
                             }),
                         ]]
                     ];
+                    $questionNumber++;
                 } else {
                     $g = $item->data;
                     $groupQuestions = [];
@@ -136,9 +138,10 @@ class PtExamPublicResource extends JsonResource
                         return [$q->position ?? 0, $q->number ?? 0];
                     });
                     foreach ($sortedGroupQuestions as $q) {
+                        $qNum = $q->number ?? $questionNumber;
                         $groupQuestions[] = [
                             'id' => $q->id,
-                            'number' => $q->number ?? $questionNumber++,
+                            'number' => $qNum,
                             'type' => $q->type,
                             'text' => $q->question_text,
                             'audio_path' => $q->audio_path ? Storage::url($q->audio_path) : null,
@@ -150,6 +153,7 @@ class PtExamPublicResource extends JsonResource
                                 return $res;
                             }),
                         ];
+                        $questionNumber++;
                     }
                     $pages[] = [
                         'id' => 'gen_g_' . $g->id,

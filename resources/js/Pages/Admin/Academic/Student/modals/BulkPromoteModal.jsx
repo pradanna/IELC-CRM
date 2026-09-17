@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { 
-    X, Sparkles, AlertCircle, CheckCircle2, 
+    X, AlertCircle, CheckCircle2, 
     Layers, ArrowRight, Loader2, Award, AlertTriangle, CheckSquare, Square, Search, Filter
 } from 'lucide-react';
 import PremiumSelect from '@/Components/PremiumSelect';
@@ -135,7 +135,7 @@ export default function BulkPromoteModal({ isOpen, onClose, gradesList = [] }) {
                     <div className="p-6 space-y-5">
                         {/* Info Banner */}
                         <div className="p-3.5 bg-amber-50/70 border border-amber-200/70 rounded-2xl flex items-start gap-3 text-xs text-amber-950">
-                            <Sparkles size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                            <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                             <div>
                                 <span className="font-bold block mb-0.5">Mode Kenaikan Kelas Berurutan:</span>
                                 Menaikkan 1 tingkat kelas secara otomatis (<strong className="text-amber-900 font-extrabold">SD 1 ➔ SD 2</strong>, <strong className="text-amber-900 font-extrabold">SD 6 ➔ SMP 1</strong>, <strong className="text-amber-900 font-extrabold">SMP 3 ➔ SMA 1</strong>).

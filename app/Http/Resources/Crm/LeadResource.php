@@ -104,7 +104,12 @@ class LeadResource extends JsonResource
             'lead_relationships' => $this->whenLoaded('leadRelationships', fn() => 
                 $this->leadRelationships->map(fn($r) => [
                     'related_lead_id'   => $r->related_lead_id,
-                    'related_lead'      => $r->relatedLead ? ['name' => $r->relatedLead->name] : null,
+                    'related_lead'      => $r->relatedLead ? [
+                        'id'    => $r->relatedLead->id,
+                        'name'  => $r->relatedLead->name,
+                        'phone' => $r->relatedLead->phone,
+                        'email' => $r->relatedLead->email,
+                    ] : null,
                     'type'              => $r->type,
                     'is_main_contact'   => (bool)$r->is_main_contact,
                 ])

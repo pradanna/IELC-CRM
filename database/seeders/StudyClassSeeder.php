@@ -15,21 +15,23 @@ class StudyClassSeeder extends Seeder
      */
     public function run(): void
     {
-        $soloBranch = Branch::where('code', 'SOLO')->first() ?: Branch::first();
-        $semarangBranch = Branch::where('code', 'SMG')->first();
+        $this->command->info('Seeder data kelas (study classes) sementara dikosongkan (menunggu data terbaru).');
 
-        if (!$soloBranch) {
-            $this->command->warn('No branch found. Please run BranchSeeder first.');
-            return;
-        }
+        // $soloBranch = Branch::where('code', 'SOLO')->first() ?: Branch::first();
+        // $semarangBranch = Branch::where('code', 'SMG')->first();
 
-        // Load all price masters indexed by name
-        $priceMasters = PriceMaster::all()->keyBy('name');
+        // if (!$soloBranch) {
+        //     $this->command->warn('No branch found. Please run BranchSeeder first.');
+        //     return;
+        // }
 
-        $this->seedSoloClasses($soloBranch, $priceMasters);
-        if ($semarangBranch) {
-            $this->seedSemarangClasses($semarangBranch, $priceMasters);
-        }
+        // // Load all price masters indexed by name
+        // $priceMasters = PriceMaster::all()->keyBy('name');
+
+        // $this->seedSoloClasses($soloBranch, $priceMasters);
+        // if ($semarangBranch) {
+        //     $this->seedSemarangClasses($semarangBranch, $priceMasters);
+        // }
     }
 
     private function seedSoloClasses(Branch $soloBranch, $priceMasters): void

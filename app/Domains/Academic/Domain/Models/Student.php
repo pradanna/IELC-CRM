@@ -57,5 +57,10 @@ class Student extends Model
     {
         return $this->hasMany(StudentProgressReport::class)->latest();
     }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(\App\Domains\Finance\Domain\Models\Invoice::class);
+    }
 }
 

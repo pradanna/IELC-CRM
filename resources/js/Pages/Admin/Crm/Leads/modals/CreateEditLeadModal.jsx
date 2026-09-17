@@ -5,6 +5,7 @@ import { X, User, Phone, Mail, Building2, MapPin, Globe, Loader2, Save, Search, 
 import { useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
+import Select from '@/Components/ui/Select';
 import PremiumFormGroup from '@/Components/PremiumFormGroup';
 import DatePicker from '@/Components/form/DatePicker';
 import { Calendar } from 'lucide-react';
@@ -46,6 +47,7 @@ export default function CreateEditLeadModal({
         name: 'lead',
         nickname: '',
         gender: '',
+        nik: '',
         phone: '',
         email: '',
         birth_date: '',
@@ -169,6 +171,7 @@ export default function CreateEditLeadModal({
                     name: lead.name || '',
                     nickname: lead.nickname || '',
                     gender: lead.gender || '',
+                    nik: lead.nik || '',
                     phone: lead.phone || '',
                     email: lead.email || '',
                     birth_date: lead.birth_date || '',
@@ -194,6 +197,7 @@ export default function CreateEditLeadModal({
                     name: 'lead',
                     nickname: '',
                     gender: '',
+                    nik: '',
                     phone: '',
                     email: '',
                     birth_date: '',
@@ -265,7 +269,7 @@ export default function CreateEditLeadModal({
         { value: 'SD', label: 'SD' },
         { value: 'SMP', label: 'SMP' },
         { value: 'SMA', label: 'SMA / SMK' },
-        { value: 'UMUM', label: 'Umum / Profesional' },
+        { value: 'UMUM', label: 'UMUM / KULIAH / PROFESIONAL' },
     ];
 
     const getSchoolLevelOptions = (grade) => {
@@ -375,6 +379,16 @@ export default function CreateEditLeadModal({
                                                                 onChange={e => setData('nickname', e.target.value)}
                                                                 className={`w-full px-5 py-3 bg-white border ${errors.nickname ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
                                                                 placeholder="Panggilan"
+                                                            />
+                                                        </PremiumFormGroup>
+
+                                                        <PremiumFormGroup label="NIK (No. KTP/KK)" error={errors.nik}>
+                                                            <input
+                                                                type="text"
+                                                                value={data.nik}
+                                                                onChange={e => setData('nik', e.target.value)}
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.nik ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
+                                                                placeholder="NIK (Opsional)"
                                                             />
                                                         </PremiumFormGroup>
 
@@ -515,24 +529,25 @@ export default function CreateEditLeadModal({
                                                     <div className="space-y-5 pt-4 border-t border-slate-100">
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <PremiumFormGroup label="Provinsi" error={errors.province}>
-                                                                <PremiumSearchableSelect
+                                                                <Select
                                                                     options={normalizedProvinces.map(p => ({ value: p.name, label: p.name }))}
                                                                     value={data.province}
                                                                     onChange={val => setData(d => ({ ...d, province: val, city: '' }))}
-                                                                    placeholder="Provinsi"
-                                                                    error={errors.province}
+                                                                    placeholder="Pilih Provinsi"
+                                                                    searchPlaceholder="Cari Provinsi..."
+                                                                    error={!!errors.province}
                                                                 />
                                                             </PremiumFormGroup>
                                                             <div className="relative">
                                                                 <PremiumFormGroup label="Kota" error={errors.city}>
-                                                                    <PremiumSearchableSelect
+                                                                    <Select
                                                                         options={cities.map(c => ({ value: c.name, label: c.name }))}
                                                                         value={data.city}
                                                                         onChange={val => setData('city', val)}
-                                                                        placeholder={!data.province ? "---" : "Kota"}
-                                                                        className={!data.province || loadingCities ? "opacity-50" : ""}
+                                                                        placeholder={!data.province ? "Pilih Provinsi Dulu" : "Pilih Kota"}
+                                                                        searchPlaceholder="Cari Kota / Kabupaten..."
                                                                         disabled={!data.province || loadingCities}
-                                                                        error={errors.city}
+                                                                        error={!!errors.city}
                                                                     />
                                                                     {loadingCities && (
                                                                         <div className="absolute right-10 top-1/2 translate-y-[2px]">
@@ -574,22 +589,18 @@ export default function CreateEditLeadModal({
                                                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900">Academic & Assignment</h3>
                                                     </div>
                                                     <div className="space-y-5">
-                                                        <PremiumFormGroup label="Sekolah" error={errors.school}>
-                                                            <input
-                                                                type="text"
-                                                                value={data.school}
-                                                                onChange={e => setData('school', e.target.value)}
-                                                                className={`w-full px-5 py-3 bg-white border ${errors.school ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
-                                                                placeholder="Nama Sekolah 'diisi UMUM jika sudah tidak dalam fase sekolah'"
-                                                            />
-                                                        </PremiumFormGroup>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        <div className={`grid grid-cols-1 ${['SD', 'SMP', 'SMA'].includes(data.grade) ? 'sm:grid-cols-2' : ''} gap-3`}>
                                                             <PremiumFormGroup label="Jenjang Sekolah" error={errors.grade}>
                                                                 <PremiumSearchableSelect
                                                                     options={mainGradeOptions}
                                                                     value={data.grade}
                                                                     onChange={val => {
-                                                                        setData(prev => ({ ...prev, grade: val, school_level: '' }));
+                                                                        setData(prev => ({
+                                                                            ...prev,
+                                                                            grade: val,
+                                                                            school_level: '',
+                                                                            school: val === 'UMUM' ? 'UMUM' : (prev.school === 'UMUM' ? '' : prev.school)
+                                                                        }));
                                                                     }}
                                                                     placeholder="Pilih Jenjang"
                                                                     error={errors.grade}
@@ -608,6 +619,16 @@ export default function CreateEditLeadModal({
                                                                 </PremiumFormGroup>
                                                             )}
                                                         </div>
+
+                                                        <PremiumFormGroup label="Sekolah" error={errors.school}>
+                                                            <input
+                                                                type="text"
+                                                                value={data.school}
+                                                                onChange={e => setData('school', e.target.value)}
+                                                                className={`w-full px-5 py-3 bg-white border ${errors.school ? 'border-red-500' : 'border-slate-300'} rounded-xl text-sm font-bold text-slate-800 transition-all focus:ring-4 focus:ring-red-500/5 focus:border-red-500 outline-none placeholder:text-slate-400 shadow-sm`}
+                                                                placeholder="Nama Sekolah 'diisi UMUM jika sudah tidak dalam fase sekolah'"
+                                                            />
+                                                        </PremiumFormGroup>
                                                     </div>
 
                                                     <div className="pt-6 border-t border-slate-100">

@@ -15,7 +15,7 @@ class FetchCrmDailyReport
     {
         $start = Carbon::parse($date)->startOfDay();
         $end = Carbon::parse($date)->endOfDay();
-        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin', 'frontdesk', 'marketing']);
+        $isSuperadmin = $user->superadmin()->exists() || $user->hasRole(['superadmin', 'super-admin', 'frontdesk', 'marketing', 'it_staff']);
 
         $targetBranchId = $branchId;
         $targetOwnerId = null;

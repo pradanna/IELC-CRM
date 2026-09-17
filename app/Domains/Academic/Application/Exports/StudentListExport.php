@@ -152,13 +152,7 @@ class StudentListExport
             }
         }
 
-        $statusFilter = $request->input('status', 'active');
-        if ($statusFilter !== 'all' && $statusFilter !== '') {
-            $appliedFilters['Status Siswa'] = strtoupper($statusFilter);
-            $query->where('status', $statusFilter);
-        }
-
-        $allStudents = $query->orderBy('created_at', 'desc')->get();
+        $statusFilter = $request->input('status');
 
         $mapRow = function ($s, $i) {
             $lead = $s->lead;
@@ -183,8 +177,123 @@ class StudentListExport
             ];
         };
 
-        $activeRows = $allStudents->filter(fn($s) => $s->status !== 'stop')->values()->map($mapRow)->toArray();
-        $stopRows   = $allStudents->filter(fn($s) => $s->status === 'stop')->values()->map($mapRow)->toArray();
+        if ($statusFilter === 'stop') {
+            $appliedFilters['Status Siswa'] = 'STOP (BERHENTI)';
+            $activeRows = [];
+            $stopRows   = (clone $query)->where('status', 'stop')->orderBy('created_at', 'desc')->get()->map($mapRow)->toArray();
+        } else {
+            // When status is 'active', 'all', or default:
+            // Fetch active students for Tab 1 (Siswa Aktif)
+            $activeRows = (clone $query)->where('status', '!=', 'stop')->orderBy('created_at', 'desc')->get()->map($mapRow)->toArray();
+
+            // Fetch stopped students for Tab 2 (Siswa Stop) applying all other active filters (branch, grade, class, search, etc.)
+            $stopQuery = Student::with(['lead.branch', 'studyClasses'])->select('students.*');
+
+            if ($request->filled('loyalty_tier')) {
+                $tier = $request->loyalty_tier;
+                if ($tier === 'none') {
+                    $stopQuery->where(function ($q) {
+                        $q->whereNull('loyalty_tier')->orWhere('loyalty_tier', '');
+                    });
+                } else {
+                    $stopQuery->where('loyalty_tier', $tier);
+                }
+            }
+
+            if ($request->filled('search')) {
+                $s = $request->search;
+                $stopQuery->where(function ($q) use ($s) {
+                    $q->whereHas('lead', fn ($lq) =>
+                        $lq->where('name', 'like', "%{$s}%")->orWhere('phone', 'like', "%{$s}%")
+                    )->orWhere('student_number', 'like', "%{$s}%");
+                });
+            }
+
+            if ($request->filled('class_category')) {
+                $cat = strtolower($request->class_category);
+                $stopQuery->whereHas('studyClasses', fn ($q) => $q->where('category', $cat));
+            }
+
+            if ($request->filled('study_class_id')) {
+                $stopQuery->whereHas('studyClasses', fn ($q) =>
+                    $q->where('study_classes.id', $request->study_class_id)
+                );
+            }
+
+            if ($request->filled('grade')) {
+                $g = trim($request->grade);
+                $gUpper = strtoupper($g);
+                $stopQuery->whereHas('lead', function ($q) use ($g, $gUpper) {
+                    if (in_array($gUpper, ['TK / PAUD', 'TK', 'PAUD'])) {
+                        $q->where(function ($sub) {
+                            $sub->where('grade', 'like', '%TK%')
+                                ->orWhere('grade', 'like', '%PAUD%')
+                                ->orWhere('grade', 'like', '%PLAYGROUP%')
+                                ->orWhere('grade', 'like', '%PG%')
+                                ->orWhere('grade', 'like', '%KB%')
+                                ->orWhere('school_level', 'like', '%TK%')
+                                ->orWhere('school_level', 'like', '%PAUD%');
+                        });
+                    } elseif ($gUpper === 'SD') {
+                        $q->where(function ($sub) {
+                            $sub->where('grade', 'like', 'SD%')
+                                ->orWhere('grade', 'like', '% SD%')
+                                ->orWhere('grade', 'like', 'D %')
+                                ->orWhere('school_level', 'SD')
+                                ->orWhere('grade', 'like', 'Kelas 1%')
+                                ->orWhere('grade', 'like', 'Kelas 2%')
+                                ->orWhere('grade', 'like', 'Kelas 3%')
+                                ->orWhere('grade', 'like', 'Kelas 4%')
+                                ->orWhere('grade', 'like', 'Kelas 5%')
+                                ->orWhere('grade', 'like', 'Kelas 6%');
+                        });
+                    } elseif ($gUpper === 'SMP') {
+                        $q->where(function ($sub) {
+                            $sub->where('grade', 'like', 'SMP%')
+                                ->orWhere('grade', 'like', '% SMP%')
+                                ->orWhere('school_level', 'SMP')
+                                ->orWhere('grade', 'like', 'Kelas 7%')
+                                ->orWhere('grade', 'like', 'Kelas 8%')
+                                ->orWhere('grade', 'like', 'Kelas 9%');
+                        });
+                    } elseif (in_array($gUpper, ['SMA / SMK', 'SMA', 'SMK'])) {
+                        $q->where(function ($sub) {
+                            $sub->where('grade', 'like', 'SMA%')
+                                ->orWhere('grade', 'like', 'SMK%')
+                                ->orWhere('grade', 'like', '% SMA%')
+                                ->orWhere('grade', 'like', '% SMK%')
+                                ->orWhere('grade', 'like', 'Kelas 10%')
+                                ->orWhere('grade', 'like', 'Kelas 11%')
+                                ->orWhere('grade', 'like', 'Kelas 12%')
+                                ->orWhere('grade', '10th')
+                                ->orWhere('grade', 'XI')
+                                ->orWhere('grade', 'XII')
+                                ->orWhere('school_level', 'SMA')
+                                ->orWhere('school_level', 'SMK');
+                        });
+                    } elseif ($gUpper === 'UMUM') {
+                        $q->where(function ($sub) {
+                            $sub->where('grade', 'like', '%UMUM%')
+                                ->orWhere('grade', 'like', '%KULIAH%')
+                                ->orWhere('grade', 'like', '%KERJA%')
+                                ->orWhere('grade', 'like', '%MAHASISWA%')
+                                ->orWhere('grade', 'like', '%DEWASA%')
+                                ->orWhere('school_level', 'UMUM')
+                                ->orWhere('school_level', 'Kuliah')
+                                ->orWhere('school_level', 'Kerja');
+                        });
+                    } else {
+                        $q->where('grade', $g);
+                    }
+                });
+            }
+
+            if ($request->filled('branch_id')) {
+                $stopQuery->whereHas('lead', fn ($q) => $q->where('branch_id', $request->branch_id));
+            }
+
+            $stopRows = $stopQuery->where('status', 'stop')->orderBy('created_at', 'desc')->get()->map($mapRow)->toArray();
+        }
 
         $headers = [
             'No', 'No. Siswa', 'Nama Siswa', 'No. HP', 'Cabang', 
@@ -209,104 +318,87 @@ class StudentListExport
         $stopRows   = $rowsData['stop'] ?? [];
         $filters    = $rowsData['filters'] ?? [];
 
-        $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-        $html .= '<head><meta charset="UTF-8">';
-        $html .= '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>';
-        $html .= '<x:ExcelWorksheet><x:Name>Siswa Aktif</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
-        $html .= '<x:ExcelWorksheet><x:Name>Siswa Stop</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>';
-        $html .= '</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
-        $html .= '<style>';
-        $html .= 'body { font-family: Arial, sans-serif; font-size: 11px; }';
-        $html .= 'table { border-collapse: collapse; margin-bottom: 25px; width: 100%; }';
-        $html .= 'th, td { border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 11px; text-align: left; }';
-        $html .= 'th.title-active { background-color: #059669; color: #ffffff; font-size: 14px; font-weight: bold; text-align: left; padding: 10px; border: 1px solid #047857; }';
-        $html .= 'th.header-active { background-color: #10b981; color: #ffffff; font-weight: bold; }';
-        $html .= 'th.title-stop { background-color: #be123c; color: #ffffff; font-size: 14px; font-weight: bold; text-align: left; padding: 10px; border: 1px solid #9f1239; }';
-        $html .= 'th.header-stop { background-color: #f43f5e; color: #ffffff; font-weight: bold; }';
-        $html .= 'tr:nth-child(even) td { background-color: #f8fafc; }';
-        $html .= '.badge-active { color: #047857; font-weight: bold; }';
-        $html .= '.badge-stop { color: #be123c; font-weight: bold; }';
-        $html .= '.filter-box { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 12px; margin-bottom: 20px; font-size: 11px; }';
-        $html .= '</style></head><body>';
+        $xmlEscape = function ($val): string {
+            return htmlspecialchars((string) $val, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        };
 
-        // ── INFORMASI FILTER ──────────────────────────────────────────────────
-        $html .= '<table>';
-        $html .= '<tr><th colspan="' . count($headers) . '" style="background-color: #1e293b; color: #ffffff; font-size: 11px; font-weight: bold;">INFORMASI LAPORAN</th></tr>';
-        $html .= '<tr><td colspan="' . count($headers) . '" style="background-color: #f8fafc; padding: 10px;">';
-        $html .= '<b>Tanggal Eksport:</b> ' . date('d M Y H:i') . '<br/>';
-        if (empty($filters)) {
-            $html .= '<b>FILTER:</b> SEMUA SISWA<br/>';
-        } else {
-            $html .= '<b>FILTER:</b> ';
-            $filterStr = [];
-            foreach ($filters as $key => $val) {
-                $filterStr[] = "{$key}: <b>{$val}</b>";
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<?mso-application progid="Excel.Sheet"?>' . "\n";
+        $xml .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        $xml .= ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
+        $xml .= ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
+        $xml .= ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        $xml .= ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+
+        // Styles
+        $xml .= ' <Styles>' . "\n";
+        $xml .= '  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="HeaderActive"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#047857"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#047857"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#047857"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#047857"/></Borders><Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#059669" ss:Pattern="Solid"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="HeaderStop"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#9F1239"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#9F1239"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#9F1239"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#9F1239"/></Borders><Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#BE123C" ss:Pattern="Solid"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="TitleActive"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Font ss:FontName="Segoe UI" ss:Size="12" ss:Color="#047857" ss:Bold="1"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="TitleStop"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Font ss:FontName="Segoe UI" ss:Size="12" ss:Color="#BE123C" ss:Bold="1"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="FilterInfo"><Font ss:FontName="Segoe UI" ss:Size="9" ss:Color="#64748B" ss:Italic="1"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="CellData"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Segoe UI" ss:Size="9" ss:Color="#1E293B"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="CellCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Segoe UI" ss:Size="9" ss:Color="#1E293B"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="CellBold"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Segoe UI" ss:Size="9" ss:Color="#0F172A" ss:Bold="1"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="CellActive"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Segoe UI" ss:Size="9" ss:Color="#047857" ss:Bold="1"/></Style>' . "\n";
+        $xml .= '  <Style ss:ID="CellStop"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Segoe UI" ss:Size="9" ss:Color="#BE123C" ss:Bold="1"/></Style>' . "\n";
+        $xml .= ' </Styles>' . "\n";
+
+        $renderSheet = function (string $sheetName, string $titleText, string $titleStyle, string $headerStyle, string $statusStyle, array $rows) use ($headers, $filters, $xmlEscape): string {
+            $out = " <Worksheet ss:Name=\"{$sheetName}\">\n";
+            $out .= "  <Table>\n";
+            $widths = [35, 85, 160, 105, 90, 120, 85, 170, 120, 85, 65];
+            foreach ($widths as $w) {
+                $out .= "   <Column ss:Width=\"{$w}\"/>\n";
             }
-            $html .= implode(' | ', $filterStr) . '<br/>';
-        }
-        $html .= '</td></tr></table><br/>';
 
-        // ── TABLE 1: SISWA AKTIF ──────────────────────────────────────────────
-        $html .= '<table><thead>';
-        $html .= '<tr><th colspan="' . count($headers) . '" class="title-active">DAFTAR SISWA AKTIF (' . count($activeRows) . ' Siswa)</th></tr>';
-        $html .= '<tr>';
-        foreach ($headers as $h) {
-            $html .= '<th class="header-active">' . htmlspecialchars($h) . '</th>';
-        }
-        $html .= '</tr></thead><tbody>';
+            // Title Row
+            $out .= "   <Row ss:Height=\"24\"><Cell ss:StyleID=\"{$titleStyle}\"><Data ss:Type=\"String\">" . $xmlEscape($titleText) . "</Data></Cell></Row>\n";
 
-        if (empty($activeRows)) {
-            $html .= '<tr><td colspan="' . count($headers) . '" style="text-align:center; padding: 15px; color:#94a3b8;">Tidak ada data siswa aktif</td></tr>';
-        } else {
-            foreach ($activeRows as $r) {
-                $html .= '<tr>';
-                $html .= '<td style="text-align:center;">' . $r['no'] . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['student_number']) . '</td>';
-                $html .= '<td><b>' . htmlspecialchars($r['name']) . '</b></td>';
-                $html .= '<td>' . htmlspecialchars($r['phone']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['branch']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['school']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['grade']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['address']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['class']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['start_join']) . '</td>';
-                $html .= '<td class="badge-active">' . htmlspecialchars($r['status']) . '</td>';
-                $html .= '</tr>';
+            // Filter Information Row
+            $filterDesc = empty($filters) ? 'Filter: SEMUA SISWA' : 'Filter: ' . implode(' | ', array_map(fn($k, $v) => "{$k}: {$v}", array_keys($filters), array_values($filters)));
+            $filterDesc .= ' | Tanggal Export: ' . date('d M Y H:i');
+            $out .= "   <Row ss:Height=\"18\"><Cell ss:StyleID=\"FilterInfo\"><Data ss:Type=\"String\">" . $xmlEscape($filterDesc) . "</Data></Cell></Row>\n";
+            $out .= "   <Row ss:Height=\"8\"></Row>\n";
+
+            // Header Row
+            $out .= "   <Row ss:Height=\"22\">\n";
+            foreach ($headers as $h) {
+                $out .= "    <Cell ss:StyleID=\"{$headerStyle}\"><Data ss:Type=\"String\">" . $xmlEscape($h) . "</Data></Cell>\n";
             }
-        }
-        $html .= '</tbody></table><br/><br/>';
+            $out .= "   </Row>\n";
 
-        // ── TABLE 2: SISWA STOP ───────────────────────────────────────────────
-        $html .= '<table><thead>';
-        $html .= '<tr><th colspan="' . count($headers) . '" class="title-stop">DAFTAR SISWA STOP / BERHENTI (' . count($stopRows) . ' Siswa)</th></tr>';
-        $html .= '<tr>';
-        foreach ($headers as $h) {
-            $html .= '<th class="header-stop">' . htmlspecialchars($h) . '</th>';
-        }
-        $html .= '</tr></thead><tbody>';
-
-        if (empty($stopRows)) {
-            $html .= '<tr><td colspan="' . count($headers) . '" style="text-align:center; padding: 15px; color:#94a3b8;">Tidak ada data siswa stop</td></tr>';
-        } else {
-            foreach ($stopRows as $r) {
-                $html .= '<tr>';
-                $html .= '<td style="text-align:center;">' . $r['no'] . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['student_number']) . '</td>';
-                $html .= '<td><b>' . htmlspecialchars($r['name']) . '</b></td>';
-                $html .= '<td>' . htmlspecialchars($r['phone']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['branch']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['school']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['grade']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['address']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['class']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($r['start_join']) . '</td>';
-                $html .= '<td class="badge-stop">' . htmlspecialchars($r['status']) . '</td>';
-                $html .= '</tr>';
+            // Data Rows
+            if (empty($rows)) {
+                $out .= "   <Row ss:Height=\"22\"><Cell ss:StyleID=\"CellCenter\"><Data ss:Type=\"String\">Tidak ada data</Data></Cell></Row>\n";
+            } else {
+                foreach ($rows as $r) {
+                    $out .= "   <Row ss:Height=\"19\">\n";
+                    $out .= "    <Cell ss:StyleID=\"CellCenter\"><Data ss:Type=\"Number\">" . (int) $r['no'] . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellData\"><Data ss:Type=\"String\">" . $xmlEscape($r['student_number']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellBold\"><Data ss:Type=\"String\">" . $xmlEscape($r['name']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellData\"><Data ss:Type=\"String\">" . $xmlEscape($r['phone']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellData\"><Data ss:Type=\"String\">" . $xmlEscape($r['branch']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellData\"><Data ss:Type=\"String\">" . $xmlEscape($r['school']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellData\"><Data ss:Type=\"String\">" . $xmlEscape($r['grade']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellData\"><Data ss:Type=\"String\">" . $xmlEscape($r['address']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellData\"><Data ss:Type=\"String\">" . $xmlEscape($r['class']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"CellCenter\"><Data ss:Type=\"String\">" . $xmlEscape($r['start_join']) . "</Data></Cell>\n";
+                    $out .= "    <Cell ss:StyleID=\"{$statusStyle}\"><Data ss:Type=\"String\">" . $xmlEscape($r['status']) . "</Data></Cell>\n";
+                    $out .= "   </Row>\n";
+                }
             }
-        }
-        $html .= '</tbody></table>';
 
-        $html .= '</body></html>';
-        return $html;
+            $out .= "  </Table>\n";
+            $out .= " </Worksheet>\n";
+            return $out;
+        };
+
+        $xml .= $renderSheet('Siswa Aktif', 'DAFTAR SISWA AKTIF (' . count($activeRows) . ' Siswa)', 'TitleActive', 'HeaderActive', 'CellActive', $activeRows);
+        $xml .= $renderSheet('Siswa Stop', 'DAFTAR SISWA STOP / BERHENTI (' . count($stopRows) . ' Siswa)', 'TitleStop', 'HeaderStop', 'CellStop', $stopRows);
+
+        $xml .= '</Workbook>' . "\n";
+        return $xml;
     }
 }

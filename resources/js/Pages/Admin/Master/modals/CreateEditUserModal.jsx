@@ -4,6 +4,7 @@ import { X, User, Mail, Lock, Shield, Building2, Phone, MapPin, Loader2 } from '
 import PremiumFormGroup from '@/Components/PremiumFormGroup';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { sanitizePhoneInput } from '@/Utils/validation';
 
 export default function CreateEditUserModal({ isOpen, onClose, user = null, roles = [], branches = [] }) {
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
@@ -150,7 +151,9 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                                 >
                                                     <option value="">Select Role</option>
                                                     {roles.map(r => (
-                                                        <option key={r.id} value={r.name}>{r.name.toUpperCase()}</option>
+                                                        <option key={r.id} value={r.name}>
+                                                            {r.name === 'it_staff' ? 'IT STAFF' : r.name.replace(/_/g, ' ').toUpperCase()}
+                                                        </option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -212,11 +215,11 @@ export default function CreateEditUserModal({ isOpen, onClose, user = null, role
                                             <div className="relative group">
                                                 <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                                 <input
-                                                    type="text"
+                                                    type="tel"
                                                     value={data.phone}
-                                                    onChange={e => setData('phone', e.target.value)}
+                                                    onChange={e => setData('phone', sanitizePhoneInput(e.target.value))}
                                                     className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-red-500/5 transition-all ${errors.phone ? 'ring-2 ring-red-500' : ''}`}
-                                                    placeholder="0812..."
+                                                    placeholder="081234567890"
                                                 />
                                             </div>
                                         </PremiumFormGroup>

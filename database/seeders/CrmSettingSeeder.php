@@ -1,8 +1,8 @@
 <?php
 
-namespace database\seeders;
+namespace Database\Seeders;
 
-use App\Models\CrmSetting;
+use App\Domains\CRM\Domain\Models\CrmSetting;
 use Illuminate\Database\Seeder;
 
 class CrmSettingSeeder extends Seeder

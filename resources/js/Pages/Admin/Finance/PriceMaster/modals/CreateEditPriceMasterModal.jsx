@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import Modal from '@/Components/ui/Modal';
 import TextInput from '@/Components/form/TextInput';
+import CurrencyInput from '@/Components/form/CurrencyInput';
 import InputLabel from '@/Components/form/InputLabel';
 import InputError from '@/Components/form/InputError';
 import PrimaryButton from '@/Components/form/PrimaryButton';
@@ -12,6 +13,7 @@ export default function CreateEditPriceMasterModal({ isOpen, onClose, priceItem 
     const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         name: '',
         price_per_session: '',
+        total_sessions: '',
     });
 
     useEffect(() => {
@@ -21,6 +23,7 @@ export default function CreateEditPriceMasterModal({ isOpen, onClose, priceItem 
                 setData({
                     name: priceItem.name,
                     price_per_session: priceItem.price_per_session,
+                    total_sessions: priceItem.total_sessions || '',
                 });
             } else {
                 reset();
@@ -79,20 +82,36 @@ export default function CreateEditPriceMasterModal({ isOpen, onClose, priceItem 
                         <InputError message={errors.name} className="mt-2" />
                     </div>
 
-                    <div>
-                        <InputLabel htmlFor="price" value="Harga per Paket (IDR)" className="uppercase text-[10px] tracking-widest font-black text-slate-400 mb-2" />
-                        <div className="relative">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
-                            <TextInput
-                                id="price"
-                                type="number"
-                                value={data.price_per_session}
-                                onChange={(e) => setData('price_per_session', e.target.value)}
-                                className="w-full !rounded-2xl !bg-slate-50 border-none !py-4 !pl-12 font-bold text-slate-900 shadow-sm focus:ring-red-500"
-                                placeholder="0"
-                            />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel htmlFor="price" value="Harga per Paket (IDR)" className="uppercase text-[10px] tracking-widest font-black text-slate-400 mb-2" />
+                            <div className="relative">
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rp</span>
+                                <CurrencyInput
+                                    id="price"
+                                    value={data.price_per_session}
+                                    onChange={(e) => setData('price_per_session', e.target.value)}
+                                    className="w-full !rounded-2xl !bg-slate-50 border-none !py-4 !pl-12 font-bold text-slate-900 shadow-sm focus:ring-red-500"
+                                    placeholder="0"
+                                />
+                            </div>
+                            <InputError message={errors.price_per_session} className="mt-2" />
                         </div>
-                        <InputError message={errors.price_per_session} className="mt-2" />
+
+                        <div>
+                            <InputLabel htmlFor="total_sessions" value="Jumlah Sesi (Pertemuan)" className="uppercase text-[10px] tracking-widest font-black text-slate-400 mb-2" />
+                            <TextInput
+                                id="total_sessions"
+                                type="number"
+                                min="1"
+                                value={data.total_sessions}
+                                onChange={(e) => setData('total_sessions', e.target.value)}
+                                className="w-full !rounded-2xl !bg-slate-50 border-none !py-4 font-bold text-slate-900 shadow-sm focus:ring-red-500"
+                                placeholder="e.g. 10, 20, 36, 40..."
+                            />
+                            <p className="text-[10px] text-slate-400 font-medium mt-1">Otomatis mengisi total sesi saat buat kelas</p>
+                            <InputError message={errors.total_sessions} className="mt-2" />
+                        </div>
                     </div>
                 </div>
 

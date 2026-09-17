@@ -103,7 +103,7 @@ export default function Index({ classes, branches, instructors, priceMasters, le
                         }`}
                     >
                         <span className="w-2 h-2 rounded-full bg-orange-500" />
-                        <span>Non-Group / Private (Kedatangan)</span>
+                        <span>Non-Group / Private</span>
                     </button>
                 </div>
 

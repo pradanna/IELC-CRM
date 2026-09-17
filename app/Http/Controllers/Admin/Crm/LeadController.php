@@ -119,6 +119,9 @@ class LeadController extends Controller
                 'provinces'      => Province::select('id', 'name')->orderBy('name')->get(),
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            if (!request()->wantsJson()) {
+                abort(404);
+            }
             return response()->json(['error' => 'Lead not found.'], 404);
         } catch (\Exception $e) {
             \Log::error("Error in LeadController@show: " . $e->getMessage());
@@ -337,7 +340,7 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('superadmin'), 403, 'Unauthorized action.');
+        abort_unless(auth()->user()->hasRole(['superadmin', 'it_staff']), 403, 'Unauthorized action.');
         $lead->delete();
         $this->clearDashboardCache();
         return redirect()->back()->with('success', 'Lead deleted successfully.');

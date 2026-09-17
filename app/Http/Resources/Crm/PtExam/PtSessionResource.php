@@ -15,6 +15,21 @@ class PtSessionResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $stats = null;
+        if ($this->status === 'completed') {
+            try {
+                $reportData = app(\App\Domains\Academic\Application\Services\PtReportService::class)->getReportData($this->resource);
+                $stats = [
+                    'total_questions' => $reportData['total_targets'] ?? 0,
+                    'correct_answers' => $reportData['correct_targets'] ?? 0,
+                    'percentage' => $reportData['percentage'] ?? null,
+                    'unit_label' => $reportData['unit_label'] ?? 'Soal',
+                ];
+            } catch (\Throwable $e) {
+                // fallback silently
+            }
+        }
+
         return [
             'id' => $this->id,
             'lead_id' => $this->lead_id,
@@ -36,6 +51,10 @@ class PtSessionResource extends JsonResource
             'result_file_url' => $this->result_file_path ? \Illuminate\Support\Facades\Storage::url($this->result_file_path) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'stats' => $stats,
+            'total_questions' => $stats['total_questions'] ?? null,
+            'correct_answers' => $stats['correct_answers'] ?? null,
+            'percentage' => $stats['percentage'] ?? null,
             // Magic link for the lead
             'magic_link' => $this->status === 'pending' || $this->status === 'in_progress' 
                 ? config('app.url') . "/placement-test/" . $this->token 

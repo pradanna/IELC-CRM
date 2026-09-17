@@ -13,6 +13,7 @@ class PriceMasterResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'price_per_session' => $this->price_per_session,
+            'total_sessions' => $this->total_sessions,
             'total_price' => $this->total_price,
             'category' => $this->category,
         ];

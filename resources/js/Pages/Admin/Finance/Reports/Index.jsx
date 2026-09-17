@@ -427,25 +427,27 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                 {activeTab === 'summary' && (
                     <div className="space-y-8">
                         {/* Hero Section: Filtered Period Revenue Summary */}
-                        <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
-                            <div className="absolute right-0 top-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                        <div className="bg-gradient-to-r from-slate-50/90 via-white to-red-50/20 rounded-3xl p-7 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                            <div className="absolute right-0 top-0 w-80 h-80 bg-red-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                             
                             <div className="space-y-2 relative z-10">
-                                <div className="flex items-center gap-2">
-                                    <TrendingUp size={20} className="text-red-500" />
-                                    <span className="text-xs font-black uppercase tracking-widest text-slate-300">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-red-50 text-red-600 rounded-xl border border-red-100/70">
+                                        <TrendingUp size={16} />
+                                    </div>
+                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">
                                         Pendapatan Periode Filter ({startDate || 'Awal Bulan'} s/d {endDate || 'Hari Ini'})
                                     </span>
                                 </div>
-                                <h2 className="text-4xl font-black tracking-tight text-white">{formatCurrency(stats.total_revenue)}</h2>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                <h2 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">{formatCurrency(stats.total_revenue)}</h2>
+                                <p className="text-xs font-semibold text-slate-400">
                                     Akumulasi total pendapatan lunas terfilter berdasarkan kriteria periode & filter yang dipilih
                                 </p>
                             </div>
 
-                            <div className="px-6 py-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 space-y-1 shrink-0 relative z-10">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pendapatan Month-to-Date (Bulan Ini)</span>
-                                <p className="text-xl font-black text-emerald-400">
+                            <div className="px-6 py-4 bg-emerald-50/80 rounded-2xl border border-emerald-100/90 space-y-1 shrink-0 relative z-10 shadow-xs">
+                                <span className="text-[10px] font-black text-emerald-800/80 uppercase tracking-widest block">Pendapatan Month-to-Date (Bulan Ini)</span>
+                                <p className="text-xl font-black text-emerald-600">
                                     {formatCurrency(stats.mtd_revenue)}
                                 </p>
                             </div>
@@ -734,18 +736,20 @@ export default function Index({ stats, filters = {}, branches = [], studyClasses
                 {activeTab === 'daily' && (
                     <div className="space-y-8">
                         {/* Clean Daily Revenue Banner */}
-                        <div className="bg-[#007043] rounded-3xl p-8 text-white relative overflow-hidden shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-emerald-800">
-                            <div className="absolute right-0 top-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                        <div className="bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/30 rounded-3xl p-7 border border-emerald-100/90 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                            <div className="absolute right-0 top-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                             
                             <div className="space-y-2 relative z-10">
-                                <div className="flex items-center gap-2">
-                                    <CalendarDays size={20} className="text-emerald-200" />
-                                    <span className="text-xs font-black uppercase tracking-widest text-emerald-100">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100/80 shadow-xs">
+                                        <CalendarDays size={16} />
+                                    </div>
+                                    <span className="text-[11px] font-black uppercase tracking-widest text-emerald-800/80">
                                         Laporan Pendapatan Hari Ini ({new Date(dailyDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })})
                                     </span>
                                 </div>
-                                <h2 className="text-4xl font-black tracking-tight">{formatCurrency(stats.today_revenue)}</h2>
-                                <p className="text-xs font-bold text-emerald-100 uppercase tracking-wider">
+                                <h2 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">{formatCurrency(stats.today_revenue)}</h2>
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                                     Total {stats.today_invoices?.length || 0} Invoice Lunas Terfilter
                                 </p>
                             </div>

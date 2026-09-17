@@ -54,20 +54,12 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                         {/* Direct Shortcuts Header */}
                         <div className="flex items-center gap-1.5">
                             <Link
-                                href={route('admin.whatsapp.inbox', { tab: 'official' })}
+                                href={route('admin.whatsapp.inbox')}
                                 className="px-2.5 py-1 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl flex items-center gap-1 transition-all"
-                                title="Buka WA Official Meta"
+                                title="Buka WhatsApp Inbox"
                             >
-                                <ShieldCheck size={12} className="text-emerald-600" />
-                                <span>Official</span>
-                            </Link>
-                            <Link
-                                href={route('admin.whatsapp.inbox', { tab: 'baileys' })}
-                                className="px-2.5 py-1 text-[10px] font-black text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl flex items-center gap-1 transition-all"
-                                title="Buka WA Non-Official / Baileys Gateway"
-                            >
-                                <PhoneCall size={12} className="text-sky-600" />
-                                <span>Baileys</span>
+                                <Inbox size={12} className="text-emerald-600" />
+                                <span>Buka Inbox</span>
                             </Link>
                         </div>
                     </div>
@@ -143,7 +135,7 @@ export default function WhatsappNotificationDropdown({ notifications, onRemove }
                             className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-all text-center"
                         >
                             <PhoneCall size={14} />
-                            <span>WA Baileys</span>
+                            <span>WA Unofficial</span>
                         </Link>
                     </div>
                 </Menu.Items>

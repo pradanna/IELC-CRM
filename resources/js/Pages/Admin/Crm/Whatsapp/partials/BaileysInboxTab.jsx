@@ -30,7 +30,7 @@ export default function BaileysInboxTab({
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-black uppercase tracking-wider">WhatsApp Baileys Gateway Channel</h4>
+                            <h4 className="text-xs font-black uppercase tracking-wider">WhatsApp Unofficial Channel</h4>
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
                                 <CheckCircle2 size={10} /> Device Connected
                             </span>
