@@ -24,6 +24,28 @@ export default function Kanban({ auth, kanbanData, filters, branches, phases, so
 
     const scrollContainerRef = useRef(null);
 
+    React.useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openLeadId = urlParams.get('open_lead') || urlParams.get('id');
+        if (openLeadId && kanbanData) {
+            // Find which phase container holds this lead & scroll to it
+            const leadIdNum = parseInt(openLeadId, 10);
+            const targetPhase = kanbanData.find(p => {
+                const items = p.leads?.data || p.leads || [];
+                return items.some(l => l.id === leadIdNum || l.id === openLeadId);
+            });
+
+            if (targetPhase && scrollContainerRef.current) {
+                setTimeout(() => {
+                    const phaseEl = document.getElementById(`phase-column-${targetPhase.id}`);
+                    if (phaseEl) {
+                        phaseEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
+                }, 300);
+            }
+        }
+    }, [kanbanData]);
+
     const scrollBoard = (direction) => {
         if (scrollContainerRef.current) {
             const scrollAmount = 344;

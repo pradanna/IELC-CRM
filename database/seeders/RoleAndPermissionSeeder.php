@@ -34,6 +34,7 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Roles
         \Spatie\Permission\Models\Role::findOrCreate('superadmin')->givePermissionTo(\Spatie\Permission\Models\Permission::all());
+        \Spatie\Permission\Models\Role::findOrCreate('it_staff')->givePermissionTo(\Spatie\Permission\Models\Permission::all());
         \Spatie\Permission\Models\Role::findOrCreate('marketing')->givePermissionTo(['view leads', 'create leads', 'edit leads', 'view dashboard', 'view reports']);
         \Spatie\Permission\Models\Role::findOrCreate('frontdesk')->givePermissionTo(['view leads', 'create leads', 'edit leads', 'view dashboard']);
         \Spatie\Permission\Models\Role::findOrCreate('finance')->givePermissionTo(['view dashboard', 'view reports']);

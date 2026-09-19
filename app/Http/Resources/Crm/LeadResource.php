@@ -18,8 +18,11 @@ class LeadResource extends JsonResource
             'email'          => $this->email,
             'phone'          => $this->phone,
             'birth_date'     => $this->birth_date ? $this->birth_date->format('Y-m-d') : null,
+            'nik'            => $this->nik,
             'school'         => $this->school,
             'grade'          => $this->grade,
+            'school_level'   => $this->school_level,
+            'full_grade'     => $this->school_level ? "{$this->grade} ({$this->school_level})" : $this->grade,
             'city'           => $this->city,
             'province'       => $this->province,
             'address'        => $this->address,
@@ -101,7 +104,12 @@ class LeadResource extends JsonResource
             'lead_relationships' => $this->whenLoaded('leadRelationships', fn() => 
                 $this->leadRelationships->map(fn($r) => [
                     'related_lead_id'   => $r->related_lead_id,
-                    'related_lead'      => $r->relatedLead ? ['name' => $r->relatedLead->name] : null,
+                    'related_lead'      => $r->relatedLead ? [
+                        'id'    => $r->relatedLead->id,
+                        'name'  => $r->relatedLead->name,
+                        'phone' => $r->relatedLead->phone,
+                        'email' => $r->relatedLead->email,
+                    ] : null,
                     'type'              => $r->type,
                     'is_main_contact'   => (bool)$r->is_main_contact,
                 ])
@@ -180,9 +188,9 @@ class LeadResource extends JsonResource
                 ])
             ),
 
-            'created_at'     => $this->created_at->toISOString(),
-            'formatted_at'   => $this->created_at->format('d M Y'),
-            'human_at'       => $this->created_at->diffForHumans(),
+            'created_at'     => $this->created_at ? $this->created_at->toISOString() : null,
+            'formatted_at'   => $this->created_at ? $this->created_at->format('d M Y') : null,
+            'human_at'       => $this->created_at ? $this->created_at->diffForHumans() : null,
             'enrolled_at'    => $this->enrolled_at ? $this->enrolled_at->toISOString() : null,
             'formatted_enrolled_at' => $this->enrolled_at ? $this->enrolled_at->format('d M Y') : null,
             'last_activity_at' => $this->last_activity_at ? $this->last_activity_at->toISOString() : null,

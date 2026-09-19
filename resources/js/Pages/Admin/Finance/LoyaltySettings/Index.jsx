@@ -143,7 +143,8 @@ export default function Index({ settings = [], siblingSettings = { use_sibling_d
             header: 'Actions',
             className: 'text-right',
             render: (row, index) => {
-                const isNearBottom = index >= filteredSettings.length - 2 && filteredSettings.length > 2;
+                const total = filteredSettings.length;
+                const isNearBottom = total > 1 && index >= total - (total <= 2 ? 1 : 2);
                 return (
                     <div className="flex justify-end">
                         <TableActionDropdown align={isNearBottom ? "top-right" : "right"}>
@@ -175,14 +176,14 @@ export default function Index({ settings = [], siblingSettings = { use_sibling_d
 
     return (
         <AuthenticatedLayout>
-            <Head title="Pengaturan Diskon" />
+            <Head title="Diskon dan Loyalty" />
 
             <div className="max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                            Pengaturan <span className="text-red-600">Diskon</span>
+                            Diskon & <span className="text-red-600">Loyalty</span>
                         </h1>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <Settings className="w-3.5 h-3.5" />

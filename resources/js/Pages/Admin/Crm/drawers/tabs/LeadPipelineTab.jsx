@@ -2,11 +2,11 @@ import React, { Fragment, useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import { Menu, Transition } from '@headlessui/react';
 import axios from 'axios';
-import { 
-    ChevronDown, 
-    Check, 
-    Zap, 
-    GraduationCap, 
+import {
+    ChevronDown,
+    Check,
+    Zap,
+    GraduationCap,
     Target,
     Trophy,
     UserPlus,
@@ -16,10 +16,13 @@ import {
     Snowflake,
     LogOut,
     Loader2,
-    ArrowDown
+    ArrowDown,
+    Calendar
 } from 'lucide-react';
 import useLeadPlotting from './hooks/useLeadPlotting';
 import PlotAndInvoiceModal from '../../../Finance/modals/PlotAndInvoiceModal';
+import Modal from '@/Components/Modal';
+import DatePicker from '@/Components/form/DatePicker';
 
 // Modularized pipeline components
 import PhaseSection from './pipeline/PhaseSection';
@@ -40,12 +43,12 @@ const normalizeCollection = (collection) => {
     return [];
 };
 
-export default function LeadPipelineTab({ 
-    lead, 
-    loading, 
+export default function LeadPipelineTab({
+    lead,
+    loading,
     updatingPhase = false,
-    getPhaseStyle, 
-    phases = [], 
+    getPhaseStyle,
+    phases = [],
     onUpdatePhase,
     availableExams = [],
     availableClasses = [],
@@ -74,8 +77,8 @@ export default function LeadPipelineTab({
 
     // Helpers to determine phase focus
     const isStageActive = (codes) => codes.includes(currentPhaseCode);
-    const getSectionStyle = (codes) => isStageActive(codes) 
-        ? "border-red-500/30 bg-white ring-1 ring-red-500/10 shadow-[0_20px_50px_rgba(239,68,68,0.15)] scale-[1.02] border-l-8 border-l-red-500" 
+    const getSectionStyle = (codes) => isStageActive(codes)
+        ? "border-red-500/30 bg-white ring-1 ring-red-500/10 shadow-[0_20px_50px_rgba(239,68,68,0.15)] scale-[1.02] border-l-8 border-l-red-500"
         : "border-slate-100 bg-slate-50/50 grayscale-[0.3] opacity-80 hover:opacity-100 transition-all duration-300";
 
     const { auth } = usePage().props;
@@ -84,6 +87,11 @@ export default function LeadPipelineTab({
     const [savingConsultation, setSavingConsultation] = useState(false);
     const [consultationForm, setConsultationForm] = useState({
         consultation_date: new Date().toISOString().split('T')[0]
+    });
+    const [schedulePromptModal, setSchedulePromptModal] = useState({
+        isOpen: false,
+        template: null,
+        date: new Date().toISOString().split('T')[0]
     });
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const [updatingQualification, setUpdatingQualification] = useState(false);
@@ -98,6 +106,19 @@ export default function LeadPipelineTab({
 
     const [savingFields, setSavingFields] = useState({});
     const [successFields, setSuccessFields] = useState({});
+
+    // Listen for enrollment added from EnrollmentStage and refresh lead data
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.detail?.leadId === lead?.id && onRefresh) {
+                onRefresh();
+            }
+        };
+        window.addEventListener('lead-enrollment-added', handler);
+        return () => window.removeEventListener('lead-enrollment-added', handler);
+    }, [lead?.id, onRefresh]);
+
+
 
     const FieldStatus = ({ name }) => {
         if (savingFields[name]) {
@@ -149,7 +170,7 @@ export default function LeadPipelineTab({
         try {
             await axios.patch(route('admin.crm.leads.update-qualification', lead.id), updates);
             onRefresh(true);
-            
+
             if (fieldName) {
                 setSuccessFields(prev => ({ ...prev, [fieldName]: true }));
                 setTimeout(() => {
@@ -184,14 +205,14 @@ export default function LeadPipelineTab({
         let message = `Halo *${name}*,\n\n`;
         if (isPaid) {
             message += `Berikut adalah bukti pembayaran ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
-                       `${publicUrl}\n\n` +
-                       `Terima kasih! 🙏`;
+                `${publicUrl}\n\n` +
+                `Terima kasih!`;
         } else {
             message += `Berikut adalah tagihan ${typeLabel} Anda untuk nomor *${invoice.invoice_number}*:\n\n` +
-                       `${publicUrl}\n\n` +
-                       `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih! 🙏`;
+                `${publicUrl}\n\n` +
+                `Silakan lakukan pembayaran dan kirimkan bukti transfernya ya. Terima kasih!`;
         }
-        
+
         if (window.confirm(`Kirim invoice ${invoice.invoice_number} via WhatsApp?`)) {
             try {
                 await axios.post(route('admin.crm.leads.send-whatsapp', lead.id), { message });
@@ -219,48 +240,108 @@ export default function LeadPipelineTab({
         return clean;
     };
 
-    const parseTemplateMessage = (text) => {
+    const formatDisplayDate = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
+    const getLeadSchedule = () => {
+        const latest = lead?.consultations?.[0];
+        if (latest?.formatted_date) return latest.formatted_date;
+        if (latest?.consultation_date) return formatDisplayDate(latest.consultation_date);
+        return null;
+    };
+
+    const parseTemplateMessage = (text, customSchedule = null) => {
         if (!text) return '';
+        const scheduleVal = customSchedule || getLeadSchedule() || '';
+        const updateFormUrl = lead?.self_registration_token
+            ? `${window.location.origin}/fill-data/${lead.self_registration_token}`
+            : '';
         return text
             .replace(/{{name}}/g, lead?.name || 'Kak')
             .replace(/{{nickname}}/g, lead?.nickname || lead?.name || 'Kak')
             .replace(/{{lead_number}}/g, lead?.lead_number || '')
-            .replace(/{{admin_name}}/g, user?.name || '');
+            .replace(/{{admin_name}}/g, user?.name || '')
+            .replace(/\[JADWAL\]/gi, scheduleVal)
+            .replace(/\[UPDATE_FORM\]/gi, updateFormUrl)
+            .replace(/\[LINK_ZOHO\]/gi, updateFormUrl);
     };
 
-    const openWaWeb = (msg) => {
-        const parsedMsg = parseTemplateMessage(msg);
+    const openWaWeb = (msg, customSchedule = null) => {
+        const parsedMsg = parseTemplateMessage(msg, customSchedule);
         const cleanPhone = formatPhone(lead.phone);
         const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(parsedMsg)}`;
         window.open(url, '_blank');
     };
 
-    const handleSendTemplate = async (template) => {
-        if (!window.confirm(`Kirim template "${template.title}" ke ${lead.name}?`)) {
-            return;
-        }
-
+    const executeSendTemplate = async (template, scheduleDate = null) => {
         setSendingTemplateId(template.id);
         try {
+            // Jika ada scheduleDate yang baru diinput, simpan juga sebagai konsultasi lead jika belum tercatat
+            if (scheduleDate) {
+                try {
+                    await axios.post(route('admin.crm.leads.store-consultation', lead.id), {
+                        consultation_date: scheduleDate
+                    });
+                } catch (e) {
+                    console.warn('Gagal mencatat konsultasi otomatis:', e);
+                }
+            }
+
+            const formattedSchedule = scheduleDate ? formatDisplayDate(scheduleDate) : null;
             await axios.post(route('admin.crm.leads.send-template', lead.id), {
-                chat_template_id: template.id
+                chat_template_id: template.id,
+                schedule_date: formattedSchedule
             });
             onRefresh(true);
         } catch (err) {
             console.error('Gagal mengirim template:', err);
             const errMsg = err.response?.data?.error || err.message || "Unknown error";
             if (confirm(`Gagal kirim via sistem: ${errMsg}\n\nApakah Anda ingin mencoba kirim via WhatsApp Web?`)) {
-                openWaWeb(template.message);
+                openWaWeb(template.message, scheduleDate ? formatDisplayDate(scheduleDate) : null);
             }
         } finally {
             setSendingTemplateId(null);
+            setSchedulePromptModal({ isOpen: false, template: null, date: new Date().toISOString().split('T')[0] });
         }
     };
 
-    const handleSaveConsultation = async () => {
+    const handleSendTemplate = async (template) => {
+        const containsJadwal = /\[JADWAL\]/i.test(template.message);
+        const existingSchedule = getLeadSchedule();
+
+        if (containsJadwal && !existingSchedule) {
+            // Jadwal masih kosong, tampilkan dialog pengisian jadwal
+            setSchedulePromptModal({
+                isOpen: true,
+                template: template,
+                date: new Date().toISOString().split('T')[0]
+            });
+            return;
+        }
+
+        if (!window.confirm(`Kirim template "${template.title}" ke ${lead.name}?`)) {
+            return;
+        }
+
+        executeSendTemplate(template);
+    };
+
+    const handleSaveConsultation = async (customData = null) => {
         setSavingConsultation(true);
+        const payload = customData || consultationForm;
         try {
-            await axios.post(route('admin.crm.leads.store-consultation', lead.id), consultationForm);
+            await axios.post(route('admin.crm.leads.store-consultation', lead.id), payload);
             setConsultationForm({
                 consultation_date: new Date().toISOString().split('T')[0]
             });
@@ -317,7 +398,7 @@ export default function LeadPipelineTab({
                         </button>
 
                         <Menu as="div" className="relative">
-                            <Menu.Button 
+                            <Menu.Button
                                 disabled={updatingPhase}
                                 className="flex items-center gap-2 pl-6 pr-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-slate-200 disabled:opacity-75 disabled:cursor-wait"
                             >
@@ -333,55 +414,55 @@ export default function LeadPipelineTab({
                                     </>
                                 )}
                             </Menu.Button>
-                        <Transition
-                            as={Fragment}
-                            enter="transition ease-out duration-100"
-                            enterFrom="transform opacity-0 scale-95"
-                            enterTo="transform opacity-100 scale-100"
-                            leave="transition ease-in duration-75"
-                            leaveFrom="transform opacity-100 scale-100"
-                            leaveTo="transform opacity-0 scale-95"
-                        >
-                            <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right divide-y divide-slate-100 rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-slate-100">
-                                <div className="py-2">
-                                    {normalizedPhases.map((phase) => {
-                                        const isActive = lead?.lead_phase_id === phase.id;
-                                        const pStyle = getPhaseStyle(phase.code);
-                                        const isOptionDisabled = phase.code === 'enrollment' && !lead?.invoices?.some(inv => inv.status === 'paid');
-                                        return (
-                                            <Menu.Item key={phase.id}>
-                                                {({ active }) => (
-                                                    <button
-                                                        onClick={() => {
-                                                            if (!isOptionDisabled) {
-                                                                onUpdatePhase(phase.id);
-                                                            }
-                                                        }}
-                                                        disabled={isOptionDisabled || updatingPhase}
-                                                        className={`
+                            <Transition
+                                as={Fragment}
+                                enter="transition ease-out duration-100"
+                                enterFrom="transform opacity-0 scale-95"
+                                enterTo="transform opacity-100 scale-100"
+                                leave="transition ease-in duration-75"
+                                leaveFrom="transform opacity-100 scale-100"
+                                leaveTo="transform opacity-0 scale-95"
+                            >
+                                <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right divide-y divide-slate-100 rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-slate-100">
+                                    <div className="py-2">
+                                        {normalizedPhases.map((phase) => {
+                                            const isActive = lead?.lead_phase_id === phase.id;
+                                            const pStyle = getPhaseStyle(phase.code);
+                                            const isOptionDisabled = phase.code === 'enrollment' && !lead?.invoices?.some(inv => inv.status === 'paid');
+                                            return (
+                                                <Menu.Item key={phase.id}>
+                                                    {({ active }) => (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!isOptionDisabled) {
+                                                                    onUpdatePhase(phase.id);
+                                                                }
+                                                            }}
+                                                            disabled={isOptionDisabled || updatingPhase}
+                                                            className={`
                                                             ${active && !isOptionDisabled ? 'bg-slate-50' : ''} 
                                                             group flex w-full items-center justify-between px-5 py-4 text-[10px] font-black uppercase tracking-widest transition-colors
                                                             ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}
                                                         `}
-                                                        title={isOptionDisabled ? "Invoice belum lunas" : undefined}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-2 h-2 rounded-full ${pStyle.color.replace('text-', 'bg-')}`} />
-                                                            <span className={isActive ? 'text-slate-900' : 'text-slate-500 font-bold'}>
-                                                                {phase.name}
-                                                            </span>
-                                                        </div>
-                                                        {isActive && <Check size={14} className="text-emerald-500" />}
-                                                    </button>
-                                                )}
-                                            </Menu.Item>
-                                        );
-                                    })}
-                                </div>
-                            </Menu.Items>
-                        </Transition>
-                    </Menu>
-                </div>
+                                                            title={isOptionDisabled ? "Invoice belum lunas" : undefined}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-2 h-2 rounded-full ${pStyle.color.replace('text-', 'bg-')}`} />
+                                                                <span className={isActive ? 'text-slate-900' : 'text-slate-500 font-bold'}>
+                                                                    {phase.name}
+                                                                </span>
+                                                            </div>
+                                                            {isActive && <Check size={14} className="text-emerald-500" />}
+                                                        </button>
+                                                    )}
+                                                </Menu.Item>
+                                            );
+                                        })}
+                                    </div>
+                                </Menu.Items>
+                            </Transition>
+                        </Menu>
+                    </div>
                 </div>
 
                 {updatingPhase && (
@@ -395,12 +476,12 @@ export default function LeadPipelineTab({
                 )}
             </div>
 
-            <div className="space-y-12 px-10 pb-20">
+            <div className="space-y-6 px-10 pb-20">
                 {/* 1. Lead Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={UserPlus} 
-                    title="Lead / Inquiry" 
+                    icon={UserPlus}
+                    title="Lead / Inquiry"
                     subtitle="Initial point of contact"
                     codes={['lead']}
                 >
@@ -428,10 +509,10 @@ export default function LeadPipelineTab({
                 </PhaseSection>
 
                 {/* 2. Prospect Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={Compass} 
-                    title="Prospect" 
+                    icon={Compass}
+                    title="Prospect"
                     subtitle="Qualified and interested"
                     codes={['prospect']}
                 >
@@ -445,10 +526,10 @@ export default function LeadPipelineTab({
                 </PhaseSection>
 
                 {/* 3. Consultation Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={GraduationCap} 
-                    title="Consultation" 
+                    icon={GraduationCap}
+                    title="Consultation"
                     subtitle="Academic review & advice"
                     codes={['consultation']}
                 >
@@ -463,10 +544,10 @@ export default function LeadPipelineTab({
                 </PhaseSection>
 
                 {/* 4. Placement Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={Target} 
-                    title="Placement" 
+                    icon={Target}
+                    title="Placement"
                     subtitle="English proficiency evaluation"
                     codes={['placement-test']}
                 >
@@ -478,10 +559,10 @@ export default function LeadPipelineTab({
                 </PhaseSection>
 
                 {/* 5. Pre-Enrollment Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={FileCheck} 
-                    title="Pre-Enrollment" 
+                    icon={FileCheck}
+                    title="Pre-Enrollment"
                     subtitle="Data completion & registration"
                     codes={['pre-enrollment']}
                 >
@@ -499,10 +580,10 @@ export default function LeadPipelineTab({
                 </PhaseSection>
 
                 {/* 6. Invoice Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={CreditCard} 
-                    title="Invoice" 
+                    icon={CreditCard}
+                    title="Invoice"
                     subtitle="Financial arrangements"
                     codes={['invoice']}
                 >
@@ -513,24 +594,26 @@ export default function LeadPipelineTab({
                 </PhaseSection>
 
                 {/* 7. Enrollment Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={Trophy} 
-                    title="Enrollment" 
+                    icon={Trophy}
+                    title="Enrollment"
                     subtitle="Final closing & conversion"
                     codes={['enrollment', 'enrolled']}
                 >
                     <EnrollmentStage
                         lead={lead}
+                        availableClasses={availableClasses}
+                        priceMasters={priceMasters}
                         setIsInvoiceModalOpen={setIsInvoiceModalOpen}
                     />
                 </PhaseSection>
 
                 {/* 8. Cold Leads Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={Snowflake} 
-                    title="Cold Leads" 
+                    icon={Snowflake}
+                    title="Cold Leads"
                     subtitle="Inactive or unresponded"
                     codes={['cold-leads']}
                 >
@@ -541,10 +624,10 @@ export default function LeadPipelineTab({
                 </PhaseSection>
 
                 {/* 9. DO Phase */}
-                <PhaseSection 
+                <PhaseSection
                     {...sectionProps}
-                    icon={LogOut} 
-                    title="Dropped Out" 
+                    icon={LogOut}
+                    title="Dropped Out"
                     subtitle="Lead has exited pipeline"
                     codes={['dropout-leads']}
                 >
@@ -555,7 +638,7 @@ export default function LeadPipelineTab({
                 </PhaseSection>
             </div>
 
-            <PlotAndInvoiceModal 
+            <PlotAndInvoiceModal
                 show={isInvoiceModalOpen}
                 onClose={() => setIsInvoiceModalOpen(false)}
                 lead={lead}
@@ -563,6 +646,72 @@ export default function LeadPipelineTab({
                 classes={availableClasses}
                 priceMasters={priceMasters}
             />
+
+            {/* Schedule Input Dialog for Templates containing [JADWAL] */}
+            <Modal
+                show={schedulePromptModal.isOpen}
+                onClose={() => setSchedulePromptModal({ isOpen: false, template: null, date: new Date().toISOString().split('T')[0] })}
+                maxWidth="md"
+            >
+                <div className="p-6 bg-white rounded-3xl space-y-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-bold">
+                            <Calendar size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-slate-900">Jadwal Konsultasi Diperlukan</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Template membutuhkan informasi tanggal [JADWAL]
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p className="text-xs text-slate-600 font-medium italic line-clamp-3">
+                            "{schedulePromptModal.template?.message}"
+                        </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                            Pilih Tanggal Jadwal Konsultasi
+                        </label>
+                        <DatePicker 
+                            value={schedulePromptModal.date}
+                            onChange={(val) => setSchedulePromptModal(prev => ({ ...prev, date: val }))}
+                            inputClassName="!py-2.5 !h-auto !bg-slate-50 !border-slate-200 !rounded-xl !text-xs !font-bold !text-slate-700 !shadow-none !ring-red-500/20"
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button
+                            type="button"
+                            onClick={() => setSchedulePromptModal({ isOpen: false, template: null, date: new Date().toISOString().split('T')[0] })}
+                            className="px-4 py-2.5 text-slate-500 hover:text-slate-700 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="button"
+                            disabled={!schedulePromptModal.date || sendingTemplateId}
+                            onClick={() => {
+                                if (schedulePromptModal.template && schedulePromptModal.date) {
+                                    executeSendTemplate(schedulePromptModal.template, schedulePromptModal.date);
+                                }
+                            }}
+                            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-red-500/20 flex items-center gap-2 disabled:opacity-50"
+                        >
+                            {sendingTemplateId ? (
+                                <>
+                                    <Loader2 size={12} className="animate-spin" /> Mengirim...
+                                </>
+                            ) : (
+                                'Simpan & Kirim Pesan'
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

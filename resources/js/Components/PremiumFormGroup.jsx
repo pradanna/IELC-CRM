@@ -4,6 +4,7 @@ import InputError from '@/Components/InputError';
 
 export default function PremiumFormGroup({ 
     label, 
+    action,
     error, 
     children, 
     required = false, 
@@ -26,12 +27,15 @@ export default function PremiumFormGroup({
     return (
         <div className={`space-y-1.5 ${className}`}>
             {label && (
-                <div className="flex items-center gap-1 ml-1">
-                    <InputLabel 
-                        value={label} 
-                        className={`text-[10px] font-black uppercase tracking-widest text-slate-400 ${labelClassName}`} 
-                    />
-                    {required && <span className="text-red-500 text-[10px] font-black">*</span>}
+                <div className="flex items-center justify-between ml-1 min-h-[20px]">
+                    <div className="flex items-center gap-1">
+                        <InputLabel 
+                            value={label} 
+                            className={`text-[10px] font-black uppercase tracking-widest text-slate-400 ${labelClassName}`} 
+                        />
+                        {required && <span className="text-red-500 text-[10px] font-black">*</span>}
+                    </div>
+                    {action && <div className="flex items-center leading-none">{action}</div>}
                 </div>
             )}
             

@@ -16,9 +16,9 @@ class ApproveLeadRegistration
         $this->storeLead = $storeLead;
     }
 
-    public function handle(LeadRegistration $registration, ?string $branchId = null): \App\Domains\CRM\Domain\Models\Lead
+    public function handle(LeadRegistration $registration, ?string $branchId = null, ?bool $isOnline = null): \App\Domains\CRM\Domain\Models\Lead
     {
-        return DB::transaction(function () use ($registration, $branchId) {
+        return DB::transaction(function () use ($registration, $branchId, $isOnline) {
             // 1. Determine Lead Source
             $leadSourceId = $registration->lead_source_id;
 
@@ -67,7 +67,7 @@ class ApproveLeadRegistration
                 'city' => $registration->city,
                 'address' => $registration->address,
                 'postal_code' => $registration->postal_code,
-                'is_online' => true,
+                'is_online' => $isOnline !== null ? $isOnline : true,
                 'guardians' => $guardians,
             ];
 

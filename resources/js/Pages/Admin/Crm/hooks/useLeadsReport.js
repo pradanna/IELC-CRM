@@ -16,12 +16,20 @@ export function useLeadsReport({
             return acc;
         }, {});
 
-        return sources
-            .map((source) => ({
-                name: source.name,
-                value: counts[source.id] || 0,
-            }))
-            .sort((a, b) => b.value - a.value);
+        const items = sources.map((source) => ({
+            name: source.name,
+            value: counts[source.id] || 0,
+        }));
+
+        const unassignedCount = counts['null'] || counts['undefined'] || (leads.filter(l => !l.lead_source_id).length);
+        if (unassignedCount > 0) {
+            items.push({
+                name: 'Belum Ditentukan',
+                value: unassignedCount,
+            });
+        }
+
+        return items.sort((a, b) => b.value - a.value);
     }, [leads, sources]);
 
     // 2. Leads by Phase (Conversion Funnel)

@@ -36,6 +36,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('admin.finance.dashboard');
         }
 
+        if ($user && $user->hasRole('teacher')) {
+            return redirect()->route('admin.academic.students.index');
+        }
+
         return redirect()->intended(route('admin.crm.leads.index', absolute: false));
     }
 

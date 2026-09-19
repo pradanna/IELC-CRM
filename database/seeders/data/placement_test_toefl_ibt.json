@@ -1,0 +1,73 @@
+{
+    "exam_title": "TOEFL iBT Placement Test",
+    "exam_slug": "toefl-ibt-placement-test",
+    "exam_description": "<p><strong>Official IELC TOEFL iBT® Placement Test</strong> covering 5 key assessment modules:</p><ul><li><strong>Reading Section:</strong> 2 passages, 20 questions (35 mins)</li><li><strong>Listening Section:</strong> 3 lectures &amp; 2 conversations, 28 questions (36 mins)</li><li><strong>Writing Task 1:</strong> Integrated Essay (20 mins, 150–225 words with audio lecture)</li><li><strong>Writing Task 2:</strong> Academic Discussion (10 mins, 100+ words)</li><li><strong>Speaking Section:</strong> Live interview with a certified instructor during consultation</li></ul><p class='mt-2'><strong>Total duration:</strong> 115 minutes.</p>",
+    "exam_duration": 115,
+    "tasks": [
+        {
+            "position": 1,
+            "skill_type": "reading",
+            "title": "TOEFL iBT Reading Section (2 Passages, 20 Questions)",
+            "description": "<p><strong>The TOEFL iBT® Reading Section</strong> is designed to measure your ability to understand university-level academic texts and passages.</p><ul><li>There are <strong>2 Reading Passages</strong> in this test (20 Questions in total: 10 questions per passage).</li><li>The time allowed for this section is <strong>35 minutes</strong>.</li><li>Read the passage in the booklet on the left and enter your answers (A, B, C, or D) into the digital answer sheet (1–20) on the right.</li><li>You may freely review and change your answers within the allotted time.</li></ul>",
+            "audio_path": null,
+            "question_pdf_path": "pt_exams/toefl_ibt/pdf/toefl_ibt_reading_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 35,
+            "max_score": 30.0,
+            "min_words": null,
+            "total_answer_slots": 20
+        },
+        {
+            "position": 2,
+            "skill_type": "listening",
+            "title": "TOEFL iBT Listening Section (5 Audio Items, 28 Questions)",
+            "description": "<p><strong>The TOEFL iBT® Listening Section</strong> measures your ability to understand conversations and lectures in English in campus settings.</p><ul><li>There are <strong>5 listening items</strong> (28 Questions in total):<ul><li><strong>3 Lectures</strong> (some with classroom discussion; 6 questions per lecture)</li><li><strong>2 Conversations</strong> (5 questions per conversation)</li></ul></li><li>The time allowed for this section is approximately <strong>36 minutes</strong>.</li><li>Listen carefully, as the audio track will be played <strong>only once</strong>. You may take notes as you listen.</li><li>Follow the question booklet on the left and type your answers into the digital answer sheet (1–28) on the right.</li></ul>",
+            "audio_path": "pt_exams/toefl_ibt/audio/toefl_ibt_listening_audio.mp3",
+            "question_pdf_path": "pt_exams/toefl_ibt/pdf/toefl_ibt_listening_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 36,
+            "max_score": 30.0,
+            "min_words": null,
+            "total_answer_slots": 28
+        },
+        {
+            "position": 3,
+            "skill_type": "writing",
+            "title": "TOEFL iBT Writing Task 1 (Integrated Essay: School Organization)",
+            "description": "<p><strong>Task 1: Integrated Writing Task</strong></p><p>You have <strong>20 minutes</strong> to plan and write your response. A typical good response is between <strong>150–225 words</strong>.</p><div class='p-4 my-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 font-medium'><p><strong>Steps:</strong></p><ol class='list-decimal ml-5 mt-1 space-y-1'><li>Read the passage in the booklet on the left (approx. 3 minutes).</li><li>Play the lecture audio track above and take notes on the professor's lecture.</li><li>Write your response answering the question below.</li></ol><p class='mt-3 font-bold text-amber-900'>Question Prompt:</p><p>Summarize the main points in the lecture, explaining how they cast doubt on the ideas presented in the reading passage.</p></div><p><strong>Requirements:</strong></p><ul><li>Target word count: <strong>150–225 words</strong>.</li><li>Type your response directly in the text editor on the right.</li></ul>",
+            "audio_path": "pt_exams/toefl_ibt/audio/toefl_ibt_writing_task1_audio.mp3",
+            "question_pdf_path": "pt_exams/toefl_ibt/pdf/toefl_ibt_writing_task1_question_booklet.pdf",
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 20,
+            "max_score": 30.0,
+            "min_words": 150,
+            "total_answer_slots": null
+        },
+        {
+            "position": 4,
+            "skill_type": "writing",
+            "title": "TOEFL iBT Writing Task 2 (Writing for an Academic Discussion)",
+            "description": "<p><strong>Task 2: Writing for an Academic Discussion</strong></p><p>You should spend <strong>10 minutes</strong> on this task. Write at least <strong>100 words</strong>.</p><div class='p-4 my-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-950 font-medium'><p><strong>Task Overview:</strong></p><p>In this task, a professor posts a question about an academic topic on an online discussion board, and two students offer their opinions. Your job is to express and support your own opinion in response to the professor's question while contributing meaningfully to the discussion.</p><p class='mt-2 font-bold text-indigo-900'>Your Contribution Should:</p><ul class='list-disc ml-5 mt-1 space-y-1'><li>State your perspective clearly and provide relevant reasons and examples.</li><li>Directly reference and build upon or challenge the discussion points.</li><li>Use clear, natural, and accurate academic English.</li></ul></div><p><strong>Requirements:</strong></p><ul><li>Target word count: at least <strong>100 words</strong>.</li><li>Type your response directly in the text editor on the right, or upload your document.</li></ul>",
+            "audio_path": null,
+            "question_pdf_path": null,
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 10,
+            "max_score": 30.0,
+            "min_words": 100,
+            "total_answer_slots": null
+        },
+        {
+            "position": 5,
+            "skill_type": "speaking",
+            "title": "TOEFL iBT Speaking Section (Interview & Academic Tasks)",
+            "description": "<p><strong>The TOEFL iBT® Speaking Section</strong> is designed to measure your ability to speak English effectively in academic settings. It consists of 4 tasks that resemble real-life situations you might encounter both in and outside of a classroom:</p><ol class='list-decimal ml-5 mt-2 space-y-1.5'><li><strong>Task 1 (Independent Speaking Task):</strong> Requires you to draw entirely on your own ideas, opinions, and personal experiences.</li><li><strong>Tasks 2–4 (Integrated Speaking Tasks):</strong> Combine multiple skills (reading a passage, listening to a conversation/lecture, and speaking in response).</li></ol><div class='p-4 mt-4 bg-purple-50 border border-purple-200 rounded-xl text-purple-900 font-bold'><p>ℹ️ In this Placement Test simulation, the speaking test will be conducted live online with one of our experienced certified instructors during your scheduled consultation appointment. See you there!</p></div>",
+            "audio_path": null,
+            "question_pdf_path": null,
+            "answer_sheet_pdf_path": null,
+            "duration_minutes": 14,
+            "max_score": 30.0,
+            "min_words": null,
+            "total_answer_slots": null
+        }
+    ]
+}

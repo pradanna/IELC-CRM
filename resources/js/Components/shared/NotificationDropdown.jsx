@@ -23,19 +23,26 @@ export default function NotificationDropdown({ user }) {
     useEffect(() => {
         fetchNotifications();
         
-        if (window.Echo) {
+        if (window.Echo && window.Echo.connector?.pusher?.connection) {
+            const connection = window.Echo.connector.pusher.connection;
+            setIsConnected(connection.state === 'connected');
+
+            const handleStateChange = (states) => {
+                setIsConnected(states.current === 'connected');
+                console.log("ECHO CONNECTION STATE:", states.current);
+            };
+
+            connection.bind('state_change', handleStateChange);
+
             const channel = window.Echo.private(`App.Models.User.${user.id}`);
             
             // Listen for Laravel Notifications
             channel.notification((notification) => {
                 console.log("REAL-TIME NOTIFICATION RECEIVED:", notification);
                 
-                // Normalisasi agar formatnya sama dengan yang diambil dari DB (Auth::user()->unreadNotifications)
-                // Laravel's broadcast notification format is the raw payload, 
-                // but we wrap it in 'data' to match database structure.
                 const normalizedNotification = {
                     id: notification.id || `temp-${Date.now()}`,
-                    data: notification.data || notification, // Handle double data wrapping if present
+                    data: notification.data || notification,
                     created_at: new Date().toISOString(),
                     read_at: null,
                     type: notification.type || 'App\\Notifications\\SystemNotification'
@@ -44,7 +51,6 @@ export default function NotificationDropdown({ user }) {
                 setNotifications(prev => [normalizedNotification, ...prev]);
                 setUnreadCount(prev => prev + 1);
 
-                // Trigger global toast
                 window.dispatchEvent(new CustomEvent('show-toast', {
                     detail: {
                         message: normalizedNotification.data?.message || "Ada notifikasi baru masuk",
@@ -53,19 +59,8 @@ export default function NotificationDropdown({ user }) {
                 }));
             });
 
-            // Connection debugging (Useful for dev)
-            window.Echo.connector.pusher.connection.bind('state_change', (states) => {
-                setIsConnected(states.current === 'connected');
-                console.log("ECHO CONNECTION STATE:", states.current);
-            });
-
-            // Standard Listeners for common events if needed
-            channel.listen('.test.event', (e) => {
-                console.warn("BROADCAST PING RECEIVED:", e);
-                // Kita bisa tampilkan toast di sini jika ada sistem toast global
-            });
-
             return () => {
+                connection.unbind('state_change', handleStateChange);
                 window.Echo.leave(`App.Models.User.${user.id}`);
             };
         }
@@ -126,11 +121,11 @@ export default function NotificationDropdown({ user }) {
                 <Menu.Items className="absolute right-0 mt-3 w-80 sm:w-96 origin-top-right rounded-xl bg-white shadow-xl ring-1 ring-black/5 focus:outline-none z-50 overflow-hidden border border-gray-100">
                     <div className="px-4 py-3 bg-white border-b border-gray-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+                            <h3 className="text-sm font-bold text-gray-900">Notifikasi</h3>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-400 animate-pulse'}`}></div>
+                                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`}></div>
                                 <span className="text-[10px] font-medium text-gray-500 uppercase tracking-tight">
-                                    {isConnected ? 'Real-time active' : 'Connecting...'}
+                                    {isConnected ? 'Real-time Aktif' : 'Menghubungkan...'}
                                 </span>
                             </div>
                         </div>
@@ -139,7 +134,7 @@ export default function NotificationDropdown({ user }) {
                                 onClick={markAllAsRead}
                                 className="text-xs font-semibold text-primary-600 hover:text-primary-700 px-2 py-1 hover:bg-primary-50 rounded-lg transition-colors"
                             >
-                                Mark all as read
+                                Tandai dibaca semua
                             </button>
                         )}
                     </div>
@@ -158,7 +153,7 @@ export default function NotificationDropdown({ user }) {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <p className="text-sm font-semibold text-gray-900 leading-tight truncate">
-                                                        {n.data?.title || 'Notification'}
+                                                        {n.data?.title || 'Notifikasi'}
                                                     </p>
                                                     <button 
                                                         onClick={(e) => {
@@ -183,7 +178,7 @@ export default function NotificationDropdown({ user }) {
                                                             className="text-[10px] font-bold text-primary-600 flex items-center gap-1 hover:text-primary-700 bg-primary-50 px-2 py-0.5 rounded transition-all"
                                                             onClick={() => markAsRead(n.id)}
                                                         >
-                                                            View detail <ExternalLink size={10} />
+                                                            Lihat <ExternalLink size={10} />
                                                         </a>
                                                     )}
                                                 </div>
@@ -197,8 +192,8 @@ export default function NotificationDropdown({ user }) {
                                 <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-200 mb-3">
                                     <Bell size={24} />
                                 </div>
-                                <p className="text-sm font-semibold text-gray-900">All caught up!</p>
-                                <p className="text-xs text-gray-500 mt-1">No new notifications for you right now.</p>
+                                <p className="text-sm font-semibold text-gray-900">Semua Sudah Dibaca!</p>
+                                <p className="text-xs text-gray-500 mt-1">Belum ada notifikasi baru untuk Anda saat ini.</p>
                             </div>
                         )}
                     </div>
@@ -208,7 +203,7 @@ export default function NotificationDropdown({ user }) {
                             href={route('admin.notifications.index')}
                             className="block text-[10px] font-bold uppercase text-gray-400 hover:text-primary-600 tracking-wider transition-colors py-1 px-4"
                          >
-                            See all notifications
+                            Lihat semua notifikasi
                          </Link>
                     </div>
                 </Menu.Items>

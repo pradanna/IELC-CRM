@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, Fragment } from 'react';
-import { MessageSquare, QrCode, Loader2, FileText, ImageIcon, Video, Headset, Download, Layout, Image as ImageIconLucide, Check, Link as LinkIcon, Search, X } from 'lucide-react';
+import { MessageSquare, QrCode, Loader2, FileText, ImageIcon, Video, Headset, Download, Layout, Image as ImageIconLucide, Check, Link as LinkIcon, Search, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { EmptyState } from '../components/DrawerUI';
 import { usePage } from '@inertiajs/react';
@@ -9,6 +9,8 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
     const { waServerUrl, auth } = usePage().props;
     const user = auth?.user;
     const [waStatus, setWaStatus] = useState('initializing');
+    const [statusError, setStatusError] = useState(null);
+    const [historyError, setHistoryError] = useState(null);
     const [qrImage, setQrImage] = useState(null);
     const [messages, setMessages] = useState([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -31,20 +33,23 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
             // 1. PHASE/TYPE FILTER
             const hasPhases = template.lead_phases?.length > 0;
             const hasTypes = template.lead_types?.length > 0;
-            let metaMatch = false;
 
-            if (!hasPhases && !hasTypes) {
-                metaMatch = true; // Global
-            } else {
+            if (hasPhases || hasTypes) {
                 const currentPhaseId = lead.lead_phase_id || lead.lead_phase?.id;
                 const currentTypeId = lead.lead_type_id || lead.lead_type?.id;
 
-                const phaseMatch = hasPhases && template.lead_phases.some(p => p.id === currentPhaseId);
-                const typeMatch = hasTypes && template.lead_types.some(t => t.id === currentTypeId);
-                metaMatch = phaseMatch || typeMatch;
-            }
+                // Jika template memiliki tipe khusus dan lead sudah memiliki tipe, harus cocok
+                if (hasTypes && currentTypeId) {
+                    const typeMatch = template.lead_types.some(t => t.id === currentTypeId);
+                    if (!typeMatch) return false;
+                }
 
-            if (!metaMatch) return false;
+                // Jika template memiliki phase khusus dan lead sudah memiliki phase, harus cocok
+                if (hasPhases && currentPhaseId) {
+                    const phaseMatch = template.lead_phases.some(p => p.id === currentPhaseId);
+                    if (!phaseMatch) return false;
+                }
+            }
 
             // 2. SEARCH FILTER
             if (!templateSearch) return true;
@@ -113,6 +118,16 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
                 const res = await axios.get(route('admin.whatsapp.status', branchCode));
                 const currentStatus = res.data.status;
                 setWaStatus(currentStatus);
+                if (res.data.error) {
+                    setStatusError(res.data.error);
+                } else if (currentStatus === 'connected') {
+                    setStatusError(null);
+                } else if (currentStatus === 'disconnected') {
+                    setStatusError("Gateway WhatsApp offline atau belum terhubung.");
+                } else {
+                    setStatusError(null);
+                }
+
                 if (currentStatus === 'waiting_for_scan') {
                     setQrImage(res.data.qr_image_url);
                 }
@@ -120,6 +135,7 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
                 timeoutId = setTimeout(checkWaStatus, nextCheckInterval);
             } catch (error) {
                 setWaStatus('disconnected');
+                setStatusError("Gagal menghubungi server WhatsApp Baileys (Server offline / port tidak aktif).");
                 timeoutId = setTimeout(checkWaStatus, 5000); 
             }
         };
@@ -168,6 +184,11 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
             const params = before ? { before } : {};
             
             const res = await axios.get(url, { params });
+            if (res.data?.error) {
+                setHistoryError(res.data.error);
+            } else {
+                setHistoryError(null);
+            }
             const rawMessages = res.data.data || [];
             const parsed = rawMessages.map(parseWaMessage);
 
@@ -228,6 +249,7 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
             }
         } catch (error) {
             console.error('Gagal mengambil riwayat chat:', error);
+            setHistoryError("Gagal mengambil riwayat chat dari server WhatsApp (Koneksi terputus atau server error).");
         } finally {
             setIsLoadingHistory(false);
         }
@@ -316,12 +338,37 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
 
     if (waStatus === 'disconnected') {
         return (
-            <div className="outline-none">
-                <EmptyState 
-                    icon={QrCode} 
-                    title="WhatsApp Service Offline" 
-                    desc="Sistem WhatsApp IELC sedang tidak aktif. Pastikan server Node.js sudah berjalan." 
-                />
+            <div className="outline-none flex flex-col items-center justify-center p-8 bg-amber-50/40 rounded-[2.5rem] border border-amber-200/80 text-center">
+                <div className="w-16 h-16 bg-amber-100/80 rounded-3xl flex items-center justify-center text-amber-600 mb-4 shadow-sm">
+                    <AlertTriangle size={32} />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight mb-2">Server WhatsApp Baileys Tidak Jalan / Terputus</h3>
+                <p className="text-sm text-slate-600 max-w-md font-medium leading-relaxed mb-4">
+                    Koneksi ke gateway WhatsApp tidak aktif atau server Baileys belum dijalankan. Pesan tidak dapat dikirim/diterima secara otomatis.
+                </p>
+
+                {statusError && (
+                    <div className="px-4 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-xl border border-red-100 mb-5 max-w-md break-words">
+                        Detail: {statusError}
+                    </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="px-5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                    >
+                        <RefreshCw size={14} /> Refresh Status
+                    </button>
+                    {lead?.phone && (
+                        <button 
+                            onClick={() => openWaWeb('')}
+                            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-emerald-600/20"
+                        >
+                            Buka WhatsApp Web Manual
+                        </button>
+                    )}
+                </div>
             </div>
         );
     }
@@ -360,11 +407,23 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
                         <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm">
                             {lead?.name?.charAt(0) || 'S'}
                         </div>
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                        <span 
+                            title={waStatus === 'connected' ? 'WhatsApp Gateway Connected' : 'WhatsApp Gateway Disconnected/Offline'}
+                            className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
+                                waStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
+                        />
                     </div>
                     <div>
-                        <h4 className="text-sm font-black text-slate-800 leading-none mb-1">{lead?.name}</h4>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{lead?.phone}</p>
+                        <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-black text-slate-800 leading-none">{lead?.name}</h4>
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                waStatus === 'connected' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                            }`}>
+                                {waStatus === 'connected' ? 'Gateway Online' : 'Gateway Offline'}
+                            </span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{lead?.phone}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -389,13 +448,36 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
                 onScroll={handleScroll}
                 className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-50/30 relative"
             >
+                {historyError && (
+                    <div className="p-3 mb-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl flex items-center justify-between text-xs font-semibold">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+                            <span>{historyError}</span>
+                        </div>
+                        <button 
+                            onClick={() => fetchHistory(false)}
+                            className="px-2.5 py-1 bg-white border border-amber-300 rounded-lg hover:bg-amber-100 transition-colors shrink-0 text-[10px] uppercase font-black tracking-wider"
+                        >
+                            Coba Lagi
+                        </button>
+                    </div>
+                )}
+
                 {messages.length === 0 && !isLoadingHistory ? (
                     <div className="h-full flex items-center justify-center text-center">
-                        <EmptyState 
-                            icon={MessageSquare} 
-                            title="Belum ada chat" 
-                            desc="Belum ada riwayat percakapan. Mulai kirim pesan pertama Anda." 
-                        />
+                        {historyError ? (
+                            <EmptyState 
+                                icon={AlertTriangle} 
+                                title="Gagal Memuat Percakapan" 
+                                desc="Server WhatsApp Baileys tidak merespon atau sedang gangguan. Pastikan server aktif." 
+                            />
+                        ) : (
+                            <EmptyState 
+                                icon={MessageSquare} 
+                                title="Belum ada chat" 
+                                desc="Belum ada riwayat percakapan. Mulai kirim pesan pertama Anda." 
+                            />
+                        )}
                     </div>
                 ) : (
                     messages.map((msg, index) => (

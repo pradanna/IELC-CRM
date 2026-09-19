@@ -10,6 +10,17 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
         estimated_cost: lead?.plotting?.estimated_cost || ''
     });
 
+    useEffect(() => {
+        if (lead?.plotting) {
+            setPlottingForm({
+                study_class_id: lead.plotting.study_class_id || '',
+                join_date: lead.plotting.join_date || new Date().toISOString().split('T')[0],
+                notes: lead.plotting.notes || '',
+                estimated_cost: lead.plotting.estimated_cost || ''
+            });
+        }
+    }, [lead?.id, JSON.stringify(lead?.plotting)]);
+
     const selectedClass = availableClasses.find(c => c.id === plottingForm.study_class_id);
 
     const calculateRemainingMeetings = (startDate, endDate, scheduleDays, joinDateStr) => {
@@ -43,11 +54,19 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
         return count;
     };
 
-    const remainingMeetings = selectedClass ? calculateRemainingMeetings(
-        selectedClass.start_session_date,
-        selectedClass.end_session_date,
-        selectedClass.schedule_days,
-        plottingForm.join_date
+    const isPrivate = selectedClass?.is_private === true
+        || selectedClass?.category?.toLowerCase() === 'private'
+        || selectedClass?.name?.toLowerCase().includes('private');
+
+    const remainingMeetings = selectedClass ? (
+        (isPrivate || !selectedClass.end_session_date || !Array.isArray(selectedClass.schedule_days) || selectedClass.schedule_days.length === 0)
+            ? Math.max(0, (selectedClass.total_meetings || 12) - (selectedClass.manual_session_progress || selectedClass.session_progress || 0))
+            : (calculateRemainingMeetings(
+                selectedClass.start_session_date,
+                selectedClass.end_session_date,
+                selectedClass.schedule_days,
+                plottingForm.join_date
+            ) || Math.max(0, (selectedClass.total_meetings || 12) - (selectedClass.manual_session_progress || selectedClass.session_progress || 0)))
     ) : 0;
 
     // Auto-calculate estimated cost
@@ -76,7 +95,9 @@ export default function useLeadPlotting(lead, availableClasses, onRefresh) {
             return;
         }
 
-        onRefresh(true);
+        if (onRefresh) {
+            await onRefresh(true);
+        }
         setSavingPlotting(false);
     };
 

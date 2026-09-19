@@ -16,9 +16,22 @@ class BillingService
         $remaining = 0;
         $baseSubtotal = 0;
 
+        $isPrivate = (bool)$studyClass->is_private 
+            || strcasecmp($studyClass->category ?? '', 'private') === 0 
+            || str_contains(strtolower($studyClass->name ?? ''), 'private');
+
+        $currentProgress = (int)($studyClass->manual_session_progress ?? $studyClass->session_progress ?? 0);
+        $totalMeetings = (int)($studyClass->total_meetings ?: 1);
+
+        // For Full billing mode:
         if ($billingMode === 'full') {
             $remaining = $studyClass->total_meetings;
-            $baseSubtotal = $priceMaster->price_per_session;
+            $baseSubtotal = (int)$priceMaster->price_per_session;
+        } elseif ($isPrivate || empty($studyClass->end_session_date) || empty($studyClass->schedule_days)) {
+            // Prorata for private classes or classes without end date/schedule:
+            $remaining = max(0, $totalMeetings - $currentProgress);
+            $pricePerMeeting = $priceMaster->price_per_session / $totalMeetings;
+            $baseSubtotal = (int)round($remaining * $pricePerMeeting);
         } else {
             // Calculate remaining sessions from join_date
             $joinDate = isset($data['join_date']) ? new \DateTime($data['join_date']) : new \DateTime();
@@ -28,11 +41,14 @@ class BillingService
                 $joinDate->modify('-' . ($dayOfWeek - 1) . ' days');
             }
 
-            $startDate = new \DateTime($studyClass->start_session_date->format('Y-m-d'));
+            $startDate = $studyClass->start_session_date 
+                ? new \DateTime($studyClass->start_session_date->format('Y-m-d'))
+                : clone $joinDate;
             $startDate->setTime(0, 0, 0);
+
             $endDate = new \DateTime($studyClass->end_session_date->format('Y-m-d'));
             $endDate->setTime(0, 0, 0);
-            $scheduleDays = $studyClass->schedule_days;
+            $scheduleDays = is_array($studyClass->schedule_days) ? $studyClass->schedule_days : [];
 
             if ($joinDate > $endDate) {
                 $remaining = 0;
@@ -50,8 +66,13 @@ class BillingService
                 }
             }
 
-            $pricePerMeeting = $priceMaster->price_per_session / ($studyClass->total_meetings ?: 1);
-            $baseSubtotal = round($remaining * $pricePerMeeting);
+            // Fallback if join date is within or before start date but calculation returned 0
+            if ($remaining === 0 && $joinDate <= $startDate) {
+                $remaining = max(0, $totalMeetings - $currentProgress);
+            }
+
+            $pricePerMeeting = $priceMaster->price_per_session / $totalMeetings;
+            $baseSubtotal = (int)round($remaining * $pricePerMeeting);
         }
 
         return [

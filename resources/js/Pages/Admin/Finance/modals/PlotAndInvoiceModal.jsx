@@ -9,6 +9,7 @@ import { BookOpen, Tag, DollarSign, Calculator, Calendar, Loader2, Save, Plus, T
 import DatePicker from '@/Components/form/DatePicker';
 import Button from '@/Components/ui/Button';
 import TextInput from '@/Components/TextInput';
+import CreateClassQuickModal from './CreateClassQuickModal';
 
 export default function PlotAndInvoiceModal({ show, onClose, lead, student, targetInvoice = null, classes = [], priceMasters = [] }) {
     const { loyaltySettings = [], siblingSettings = {}, initialFeeSettings = {} } = usePage().props;
@@ -37,12 +38,33 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
         billing_mode: 'prorata',
     });
 
+    const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
+    const [createdClasses, setCreatedClasses] = useState([]);
+
     const classList = useMemo(() => {
-        if (!classes) return [];
-        if (Array.isArray(classes)) return classes;
-        if (classes.data && Array.isArray(classes.data)) return classes.data;
-        return [];
-    }, [classes]);
+        let base = [];
+        if (classes) {
+            if (Array.isArray(classes)) base = classes;
+            else if (classes.data && Array.isArray(classes.data)) base = classes.data;
+        }
+        return [...createdClasses, ...base];
+    }, [classes, createdClasses]);
+
+    const handleClassCreated = (newClass) => {
+        setCreatedClasses(prev => [newClass, ...prev]);
+        const isPrivate = newClass.is_private === true 
+            || newClass.category?.toLowerCase() === 'private' 
+            || newClass.name?.toLowerCase().includes('private');
+
+        setData(prev => ({
+            ...prev,
+            study_class_id: newClass.id,
+            price_master_id: newClass.price_master_id || prev.price_master_id,
+            join_date: newClass.start_session_date || prev.join_date,
+            billing_mode: isPrivate ? 'full' : prev.billing_mode,
+        }));
+        setIsCreateClassOpen(false);
+    };
 
     const priceMasterList = useMemo(() => {
         if (!priceMasters) return [];
@@ -90,10 +112,13 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
             let joinDate = (existingInvoice?.start_date || currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0]).substring(0, 10);
             let billingMode = 'prorata';
 
-            // If active student (paket lanjut renewal), default to full cycle
-            if (student && student.status === 'active') {
+            const targetClass = classList.find(c => c.id === classId);
+            const isPrivate = targetClass?.is_private || targetClass?.category?.toLowerCase() === 'private' || targetClass?.name?.toLowerCase().includes('private');
+
+            // If active student (paket lanjut renewal) or private class, default to full cycle
+            if ((student && student.status === 'active') || isPrivate) {
                 billingMode = 'full';
-                const currentClass = student.study_classes?.[0] || classList.find(c => c.id === classId);
+                const currentClass = student?.study_classes?.[0] || targetClass;
 
                 if (!existingInvoice && currentClass?.end_session_date && Array.isArray(currentClass.schedule_days)) {
                     const findNextMeeting = (endDateStr, scheduleDays) => {
@@ -173,7 +198,8 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
 
     const formattedScheduleDays = useMemo(() => {
         if (!selectedClass || !Array.isArray(selectedClass.schedule_days) || selectedClass.schedule_days.length === 0) {
-            return '';
+            const isPrivate = selectedClass?.is_private || selectedClass?.category?.toLowerCase() === 'private' || selectedClass?.name?.toLowerCase().includes('private');
+            return isPrivate ? 'Fleksibel / Sesuai Kesepakatan (Private)' : '';
         }
         const dayTranslations = {
             'Monday': 'Senin',
@@ -192,7 +218,22 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
     }, [data.price_master_id, priceMasterList]);
 
     const remainingSessions = useMemo(() => {
-        if (!selectedClass || !data.join_date) return 0;
+        if (!selectedClass) return 0;
+
+        const isPrivate = selectedClass.is_private === true
+            || selectedClass.category?.toLowerCase() === 'private'
+            || selectedClass.name?.toLowerCase().includes('private');
+
+        const currentProgress = selectedClass.manual_session_progress ?? selectedClass.session_progress ?? 0;
+        const totalMeetings = selectedClass.total_meetings || 0;
+
+        // If class is Private, or has no end_session_date, or has no schedule_days:
+        // Remaining sessions are the package sessions minus progress already attended
+        if (isPrivate || !selectedClass.end_session_date || !Array.isArray(selectedClass.schedule_days) || selectedClass.schedule_days.length === 0) {
+            return Math.max(0, totalMeetings - currentProgress);
+        }
+
+        if (!data.join_date) return 0;
 
         // Implementation of calculateRemainingMeetings from useLeadPlotting
         const calculateRemaining = (startDate, endDate, scheduleDays, joinDateStr) => {
@@ -231,6 +272,10 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
             selectedClass.schedule_days,
             data.join_date
         );
+
+        if (calculated === 0 && new Date(data.join_date) <= new Date(selectedClass.start_session_date || data.join_date)) {
+            return Math.max(0, totalMeetings - currentProgress);
+        }
 
         return calculated;
     }, [selectedClass, data.join_date]);
@@ -348,11 +393,12 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
 
     const priceOptions = useMemo(() => priceMasterList.map(p => ({
         value: p.id,
-        label: `${p.name || 'Rate'} (${formatCurrency(p.price_per_session || 0)})`
+        label: `${p.name || 'Rate'} (${p.total_sessions ? `${p.total_sessions} Sesi • ` : ''}${formatCurrency(p.price_per_session || 0)})`
     })), [priceMasterList]);
 
     return (
-        <Transition.Root show={show} as={Fragment}>
+        <>
+            <Transition.Root show={show} as={Fragment}>
             <Dialog as="div" className="relative z-[9999]" onClose={onClose}>
                 <Transition.Child
                     as={Fragment}
@@ -377,21 +423,21 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
                             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                         >
-                            <Dialog.Panel className="relative transform overflow-hidden rounded-[36px] bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-slate-100">
-                                <form onSubmit={submit}>
-                                    <div className="px-10 pt-10 pb-8 border-b border-slate-100 flex items-center justify-between">
-                                        <div className="flex items-center gap-5">
-                                            <div className="p-4 bg-red-600 text-white rounded-2xl shadow-lg shadow-red-600/20">
-                                                <Calculator size={26} />
+                            <Dialog.Panel className="relative transform overflow-hidden rounded-[32px] bg-white text-left shadow-2xl transition-all sm:my-6 sm:w-full sm:max-w-6xl border border-slate-100 flex flex-col max-h-[92vh]">
+                                <form onSubmit={submit} className="flex flex-col h-full overflow-hidden">
+                                    <div className="px-8 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-red-600 text-white rounded-2xl shadow-md shadow-red-600/20">
+                                                <Calculator size={22} />
                                             </div>
                                             <div>
-                                                <Dialog.Title className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+                                                <Dialog.Title className="text-xl font-black text-slate-900 tracking-tight uppercase">
                                                     Issue <span className="text-red-600">Invoice</span>
                                                 </Dialog.Title>
-                                                <p className="text-sm font-bold text-slate-600 uppercase tracking-wider mt-1">
+                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-0.5">
                                                     {student ? 'Rejoin Student' : 'Plotting lead'}: <span className="text-slate-900 font-black">{student ? student.lead?.name : lead?.name}</span>
                                                     {student?.loyalty_tier && (
-                                                        <span className="ml-3 px-3 py-1 bg-red-50 text-red-600 rounded-full font-black text-sm uppercase tracking-wider border border-red-100">
+                                                        <span className="ml-2.5 px-2.5 py-0.5 bg-red-50 text-red-600 rounded-full font-black text-xs uppercase tracking-wider border border-red-100">
                                                             {student.loyalty_tier} ({student.rejoin_count || 0}x Join)
                                                         </span>
                                                     )}
@@ -402,19 +448,19 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
                                             type="button"
                                             variant="ghost"
                                             onClick={onClose}
-                                            className="p-2 text-slate-400 hover:text-slate-900 transition-colors shadow-none"
+                                            className="p-2 text-slate-400 hover:text-slate-900 transition-colors shadow-none cursor-pointer"
                                         >
-                                            <X size={24} />
+                                            <X size={20} />
                                         </Button>
                                     </div>
 
-                                    <div className="px-10 py-10 space-y-10">
+                                    <div className="p-6 sm:p-7 overflow-y-auto bg-slate-50/60 flex-1">
                                         {Object.keys(errors).length > 0 && (
-                                            <div className="p-5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-4 animate-in fade-in">
-                                                <AlertCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+                                            <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 animate-in fade-in">
+                                                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                                                 <div>
-                                                    <h5 className="text-sm font-black text-red-900 uppercase tracking-wide">Gagal Membuat Invoice</h5>
-                                                    <ul className="mt-1 text-sm font-bold text-red-700 list-disc list-inside space-y-1">
+                                                    <h5 className="text-xs font-black text-red-900 uppercase tracking-wide">Gagal Membuat Invoice</h5>
+                                                    <ul className="mt-1 text-xs font-bold text-red-700 list-disc list-inside space-y-0.5">
                                                         {Object.values(errors).map((err, idx) => (
                                                             <li key={idx}>{err}</li>
                                                         ))}
@@ -422,425 +468,452 @@ export default function PlotAndInvoiceModal({ show, onClose, lead, student, targ
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <InputLabel value="Seleksi Kelas" className="uppercase text-sm tracking-wider font-black text-slate-700" />
-                                                    <span className="text-sm font-bold text-slate-500">(Kosongkan jika hanya Placement Test)</span>
-                                                </div>
-                                                <PremiumSearchableSelect
-                                                    options={classOptions}
-                                                    value={data.study_class_id}
-                                                    onChange={(val) => {
-                                                        const cls = classList.find(c => c.id === val);
-                                                        let nextJoinDate = data.join_date;
-                                                        if (student) {
-                                                            const currentClass = student.study_classes?.[0];
-                                                            const endDate = currentClass?.end_session_date || new Date().toISOString().split('T')[0];
-                                                            const scheduleDays = cls?.schedule_days || [];
 
-                                                            if (endDate && Array.isArray(scheduleDays) && scheduleDays.length > 0) {
-                                                                const date = new Date(endDate);
-                                                                let found = false;
-                                                                for (let i = 1; i <= 7; i++) {
-                                                                    const next = new Date(date);
-                                                                    next.setDate(date.getDate() + i);
-                                                                    const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
-                                                                    if (scheduleDays.includes(dayName)) {
-                                                                        nextJoinDate = next.toISOString().split('T')[0];
-                                                                        found = true;
-                                                                        break;
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                            {/* Left Column (Inputs & Options) - 7 Columns */}
+                                            <div className="lg:col-span-7 space-y-4">
+                                                {/* Class & Date */}
+                                                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-3.5">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex items-center justify-between">
+                                                                <InputLabel value="Seleksi Kelas" className="uppercase text-xs tracking-wider font-black text-slate-700" />
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setIsCreateClassOpen(true)}
+                                                                        className="inline-flex items-center gap-1 text-[11px] font-black text-red-600 hover:text-red-700 hover:underline transition-colors cursor-pointer"
+                                                                    >
+                                                                        <Plus size={12} className="stroke-[3]" /> Buat Kelas Baru
+                                                                    </button>
+                                                                    <span className="text-[10px] font-bold text-slate-400">(Kosongkan jika PT)</span>
+                                                                </div>
+                                                            </div>
+                                                            <PremiumSearchableSelect
+                                                                options={classOptions}
+                                                                value={data.study_class_id}
+                                                                onChange={(val) => {
+                                                                    const cls = classList.find(c => c.id === val);
+                                                                    let nextJoinDate = data.join_date;
+                                                                    if (student) {
+                                                                        const currentClass = student.study_classes?.[0];
+                                                                        const endDate = currentClass?.end_session_date || new Date().toISOString().split('T')[0];
+                                                                        const scheduleDays = cls?.schedule_days || [];
+
+                                                                        if (endDate && Array.isArray(scheduleDays) && scheduleDays.length > 0) {
+                                                                            const date = new Date(endDate);
+                                                                            let found = false;
+                                                                            for (let i = 1; i <= 7; i++) {
+                                                                                const next = new Date(date);
+                                                                                next.setDate(date.getDate() + i);
+                                                                                const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                                                                                if (scheduleDays.includes(dayName)) {
+                                                                                    nextJoinDate = next.toISOString().split('T')[0];
+                                                                                    found = true;
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                            if (!found) {
+                                                                                const fallback = new Date(date);
+                                                                                fallback.setDate(fallback.getDate() + 1);
+                                                                                nextJoinDate = fallback.toISOString().split('T')[0];
+                                                                            }
+                                                                        }
                                                                     }
-                                                                }
-                                                                if (!found) {
-                                                                    const fallback = new Date(date);
-                                                                    fallback.setDate(fallback.getDate() + 1);
-                                                                    nextJoinDate = fallback.toISOString().split('T')[0];
-                                                                }
-                                                            }
-                                                        }
-                                                        setData(prev => ({
-                                                            ...prev,
-                                                            study_class_id: val,
-                                                            price_master_id: cls?.price_master_id || '',
-                                                            join_date: nextJoinDate,
-                                                        }));
-                                                    }}
-                                                    icon={BookOpen}
-                                                    placeholder="Cari kelas..."
-                                                />
-                                                <InputError message={errors.study_class_id} />
+                                                                    const isPrivateClass = cls?.is_private || cls?.category?.toLowerCase() === 'private' || cls?.name?.toLowerCase().includes('private');
+                                                                    setData(prev => ({
+                                                                        ...prev,
+                                                                        study_class_id: val,
+                                                                        price_master_id: cls?.price_master_id || '',
+                                                                        join_date: nextJoinDate,
+                                                                        billing_mode: isPrivateClass ? 'full' : prev.billing_mode,
+                                                                    }));
+                                                                }}
+                                                                icon={BookOpen}
+                                                                placeholder="Cari kelas..."
+                                                            />
+                                                            <InputError message={errors.study_class_id} />
+                                                        </div>
 
-                                                {selectedClass && (
-                                                    <div className="mt-3 p-4 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-start gap-3.5 animate-in fade-in slide-in-from-top-1 shadow-sm">
-                                                        <Calendar className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm font-black text-blue-950 uppercase tracking-wider">
-                                                                Jadwal Kelas: {formattedScheduleDays || 'Belum ada hari diset'}
+                                                        <div className="space-y-1.5">
+                                                            <InputLabel value="Tanggal Rencana Masuk" className="uppercase text-xs tracking-wider font-black text-slate-700" />
+                                                            <DatePicker
+                                                                value={data.join_date}
+                                                                onChange={(val) => setData('join_date', val)}
+                                                                className="w-full"
+                                                            />
+                                                            <InputError message={errors.join_date} />
+                                                            <p className="text-[10px] font-bold text-slate-400 italic flex items-center gap-1.5 ml-0.5">
+                                                                <RefreshCw size={11} /> Diinisialisasi dari data Pre-Enrollment
                                                             </p>
-                                                            <p className="text-xs font-bold text-blue-700 mt-1">
-                                                                {selectedClass.meetings_per_week ? `${selectedClass.meetings_per_week}x Pertemuan / Minggu` : ''}
-                                                                {selectedClass.total_meetings ? ` • Total ${selectedClass.total_meetings} Pertemuan` : ''}
+                                                        </div>
+                                                    </div>
+
+                                                    {selectedClass && (
+                                                        <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs animate-in fade-in">
+                                                            <div className="flex items-center gap-2">
+                                                                <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+                                                                <p className="font-black text-blue-950 uppercase tracking-wider text-[11px]">
+                                                                    Jadwal: <span className="font-bold text-blue-800">{formattedScheduleDays || 'Belum ada hari diset'}</span>
+                                                                </p>
+                                                            </div>
+                                                            <p className="text-[11px] font-bold text-blue-700">
+                                                                {selectedClass.meetings_per_week ? `${selectedClass.meetings_per_week}x/mgg • ` : ''}
+                                                                {selectedClass.total_meetings ? `Total ${selectedClass.total_meetings} Pertemuan` : ''}
                                                                 {selectedClass.instructor?.name ? ` • Pengajar: ${selectedClass.instructor.name}` : ''}
                                                             </p>
                                                         </div>
-                                                    </div>
-                                                )}
+                                                    )}
 
-                                                {/* Warning Messages */}
-                                                {hasNoPrice && (
-                                                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
-                                                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                                        <p className="text-xs font-bold text-amber-700 leading-relaxed uppercase tracking-wider">
-                                                            Kelas ini belum memiliki data Master Harga. Silakan hubungi Akademik untuk setting harga kelas.
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                {isExpired && (
-                                                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
-                                                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                                                        <p className="text-xs font-bold text-red-700 leading-relaxed uppercase tracking-wider">
-                                                            Masa berlaku kelas ini sudah berakhir ({selectedClass.end_session_date}). Tidak disarankan untuk invoice baru.
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="space-y-3">
-                                                <InputLabel value="Tanggal Rencana Masuk" className="uppercase text-sm tracking-wider font-black text-slate-700" />
-                                                <DatePicker
-                                                    value={data.join_date}
-                                                    onChange={(val) => setData('join_date', val)}
-                                                    className="w-full"
-                                                />
-                                                <InputError message={errors.join_date} />
-                                                <p className="text-sm font-bold text-slate-500 italic flex items-center gap-2 ml-1">
-                                                    <RefreshCw size={14} /> Diinisialisasi dari data Pre-Enrollment
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {(!student || student.status !== 'active') ? (
-                                            <div className="space-y-4 pt-6 border-t border-slate-100">
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <h3 className="text-base font-black text-slate-900 uppercase tracking-wider leading-none mb-2">Metode Penagihan</h3>
-                                                        <p className="text-sm font-bold text-slate-500 italic">Pilih satu siklus penuh atau hitung sisa pertemuan</p>
-                                                    </div>
-                                                    <div className="flex bg-slate-100 p-1.5 rounded-2xl">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            onClick={() => {
-                                                                const currentLead = lead || student?.lead;
-                                                                const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
-                                                                setData(prev => ({
-                                                                    ...prev,
-                                                                    billing_mode: 'prorata',
-                                                                    join_date: originalJoinDate
-                                                                }));
-                                                            }}
-                                                            className={`px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-500 hover:text-slate-800 hover:bg-transparent'}`}
-                                                        >
-                                                            Pro-rata
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            onClick={() => {
-                                                                const targetClass = selectedClass || (student?.study_classes?.[0]);
-                                                                let nextDate = (data.join_date || '').substring(0, 10);
-                                                                if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
-                                                                    const findNextMeeting = (endDateStr, scheduleDays) => {
-                                                                        const date = new Date(endDateStr);
-                                                                        for (let i = 1; i <= 7; i++) {
-                                                                            const next = new Date(date);
-                                                                            next.setDate(date.getDate() + i);
-                                                                            const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
-                                                                            if (scheduleDays.includes(dayName)) {
-                                                                                return next.toISOString().substring(0, 10);
-                                                                            }
-                                                                        }
-                                                                        const nextDay = new Date(date);
-                                                                        nextDay.setDate(date.getDate() + 1);
-                                                                        return nextDay.toISOString().substring(0, 10);
-                                                                    };
-                                                                    nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
-                                                                }
-                                                                setData(prev => ({
-                                                                    ...prev,
-                                                                    billing_mode: 'full',
-                                                                    join_date: nextDate
-                                                                }));
-                                                            }}
-                                                            className={`px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-wider transition-all shadow-none ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm hover:bg-white' : 'text-slate-500 hover:text-slate-800 hover:bg-transparent'}`}
-                                                        >
-                                                            Satu Siklus Penuh
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4 pt-6 border-t border-slate-100">
-                                                <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-3xl flex items-start gap-4">
-                                                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                                                    <div>
-                                                        <h4 className="text-sm font-black text-emerald-950 uppercase tracking-wider">Perpanjangan Paket Lanjut</h4>
-                                                        <p className="text-sm font-bold text-emerald-800 leading-relaxed uppercase tracking-wider mt-1">
-                                                            Biaya dihitung penuh 1 siklus paket perpanjangan ({data.join_date}).
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-6 pt-6 border-t border-slate-100">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <h3 className="text-base font-black text-slate-900 uppercase tracking-wider leading-none mb-2">Addons & Extras</h3>
-                                                    <p className="text-sm font-bold text-slate-500 italic">Tambahkan biaya lain jika diperlukan</p>
-                                                </div>
-                                                <div className="flex flex-wrap gap-3">
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        icon={Plus}
-                                                        onClick={() => addItem('Registration Fee', defaultRegFee)}
-                                                        className="group text-sm font-black px-5 py-3 !bg-orange-500 hover:!bg-orange-600 text-white rounded-2xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
-                                                    >
-                                                        Registrasi
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        icon={Plus}
-                                                        onClick={() => addItem('Placement Test Fee', defaultPtFee)}
-                                                        className="group text-sm font-black px-5 py-3 !bg-blue-600 hover:!bg-blue-700 text-white rounded-2xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
-                                                    >
-                                                        Placement
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        icon={Plus}
-                                                        onClick={() => addItem('', 0)}
-                                                        className="group text-sm font-black px-5 py-3 !bg-slate-900 hover:!bg-slate-800 text-white rounded-2xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
-                                                    >
-                                                        Custom
-                                                    </Button>
-                                                </div>
-                                            </div>
-
-                                            {data.items.length > 0 ? (
-                                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                    {data.items.map((item, idx) => (
-                                                        <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-[20px] border border-slate-200 shadow-sm group hover:border-red-200 hover:shadow-md transition-all">
-                                                            <div className="flex-1 flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
-                                                                    <Tag size={14} />
-                                                                </div>
-                                                                <input
-                                                                    type="text"
-                                                                    value={item.name}
-                                                                    onChange={e => { const n = [...data.items]; n[idx].name = e.target.value; setData('items', n); }}
-                                                                    className="w-full bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-bold text-slate-700 placeholder:text-slate-300 placeholder:italic p-0 shadow-none"
-                                                                    placeholder="Nama biaya tambahan..."
-                                                                />
-                                                            </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="relative">
-                                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={formatNumberWithDots(item.unit_price)}
-                                                                        onChange={e => {
-                                                                            const cleanVal = parseNumberFromDots(e.target.value);
-                                                                            const n = [...data.items];
-                                                                            n[idx].unit_price = cleanVal;
-                                                                            setData('items', n);
-                                                                        }}
-                                                                        className="w-28 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-black text-slate-900 text-right p-0 pl-6 shadow-none"
-                                                                        placeholder="0"
-                                                                    />
-                                                                </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setData('items', data.items.filter((_, i) => i !== idx))}
-                                                                    className="w-10 h-10 bg-red-100 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                                                                    title="Hapus Item"
-                                                                >
-                                                                    <Trash2 className="w-5 h-5 stroke-[2.5]" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : null}
-                                        </div>
-
-                                        {selectedClass && selectedPrice && (
-                                            <div className="bg-white rounded-[32px] p-8 text-slate-900 space-y-6 border border-slate-200 shadow-sm relative overflow-hidden group transition-all hover:border-red-200">
-                                                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-700">
-                                                    <DollarSign size={100} className="text-slate-900" />
-                                                </div>
-                                                <div className="flex justify-between items-center text-sm font-black text-slate-800 uppercase pb-6 border-b border-slate-100">
-                                                    <span className="flex items-center gap-3">
-                                                        <Calculator className="w-5 h-5 text-red-600" />
-                                                        Calculation Breakdown
-                                                    </span>
-                                                    <span>Pro-Rata</span>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-center text-sm font-bold uppercase text-slate-700">
-                                                        <span>Class Plotting ({remainingSessions} Sessions)</span>
-                                                        <span className="font-black text-slate-900 text-base">{formatCurrency(baseClassSubtotal)}</span>
-                                                    </div>
-                                                    {itemsTotal > 0 && (
-                                                        <div className="flex justify-between text-sm font-bold uppercase text-slate-700">
-                                                            <span>Extra Items</span>
-                                                            <span className="font-black text-slate-900 text-base">{formatCurrency(itemsTotal)}</span>
+                                                    {hasNoPrice && (
+                                                        <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-xs text-amber-800 font-bold uppercase tracking-wider">
+                                                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                                            <span>Kelas ini belum memiliki data Master Harga. Silakan setting harga di Akademik.</span>
                                                         </div>
                                                     )}
 
-                                                    {/* Auto Discounts - Read Only Preview */}
-                                                    {
-                                                        autoLoyaltyDiscount && (
-                                                            <div className="pt-2 border-t border-dashed border-slate-200 space-y-2">
-                                                                <div className="flex justify-between items-center">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Gift className="w-4 h-4 text-rose-500" />
-                                                                        <span className="text-sm font-black text-rose-600 uppercase">Diskon Loyalty {autoLoyaltyDiscount.tier_name}</span>
+                                                    {isExpired && (
+                                                        <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-xs text-red-800 font-bold uppercase tracking-wider">
+                                                            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                                                            <span>Masa berlaku kelas ini sudah berakhir ({selectedClass.end_session_date}).</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Billing Mode */}
+                                                {(!student || student.status !== 'active') ? (
+                                                    <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                        <div>
+                                                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Metode Penagihan</h4>
+                                                            <p className="text-[11px] font-bold text-slate-500 italic">Pilih pro-rata sisa pertemuan atau satu siklus penuh</p>
+                                                        </div>
+                                                        <div className="flex bg-slate-100 p-1 rounded-2xl shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const currentLead = lead || student?.lead;
+                                                                    const originalJoinDate = currentLead?.plotting?.join_date || new Date().toISOString().split('T')[0];
+                                                                    setData(prev => ({
+                                                                        ...prev,
+                                                                        billing_mode: 'prorata',
+                                                                        join_date: originalJoinDate
+                                                                    }));
+                                                                }}
+                                                                className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${data.billing_mode === 'prorata' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                                            >
+                                                                Pro-rata
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const targetClass = selectedClass || (student?.study_classes?.[0]);
+                                                                    let nextDate = (data.join_date || '').substring(0, 10);
+                                                                    if (targetClass?.end_session_date && Array.isArray(targetClass.schedule_days)) {
+                                                                        const findNextMeeting = (endDateStr, scheduleDays) => {
+                                                                            const date = new Date(endDateStr);
+                                                                            for (let i = 1; i <= 7; i++) {
+                                                                                const next = new Date(date);
+                                                                                next.setDate(date.getDate() + i);
+                                                                                const dayName = next.toLocaleDateString('en-US', { weekday: 'long' });
+                                                                                if (scheduleDays.includes(dayName)) {
+                                                                                    return next.toISOString().substring(0, 10);
+                                                                                }
+                                                                            }
+                                                                            const nextDay = new Date(date);
+                                                                            nextDay.setDate(date.getDate() + 1);
+                                                                            return nextDay.toISOString().substring(0, 10);
+                                                                        };
+                                                                        nextDate = findNextMeeting(targetClass.end_session_date, targetClass.schedule_days);
+                                                                    }
+                                                                    setData(prev => ({
+                                                                        ...prev,
+                                                                        billing_mode: 'full',
+                                                                        join_date: nextDate
+                                                                    }));
+                                                                }}
+                                                                className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${data.billing_mode === 'full' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                                            >
+                                                                Satu Siklus Penuh
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-emerald-50 p-4 rounded-3xl border border-emerald-200 flex items-center gap-3">
+                                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                                                        <div>
+                                                            <h4 className="text-xs font-black text-emerald-950 uppercase tracking-wider">Perpanjangan Paket Lanjut</h4>
+                                                            <p className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mt-0.5">
+                                                                Biaya dihitung penuh 1 siklus paket perpanjangan ({data.join_date}).
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Addons & Extras */}
+                                                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                        <div>
+                                                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Addons & Extras</h4>
+                                                            <p className="text-[11px] font-bold text-slate-400 italic">Tambahkan biaya lain jika diperlukan</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addItem('Registration Fee', defaultRegFee)}
+                                                                className="inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl uppercase tracking-wider transition-all shadow-sm cursor-pointer active:scale-95"
+                                                            >
+                                                                <Plus size={12} /> Registrasi
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addItem('Placement Test Fee', defaultPtFee)}
+                                                                className="inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl uppercase tracking-wider transition-all shadow-sm cursor-pointer active:scale-95"
+                                                            >
+                                                                <Plus size={12} /> Placement
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addItem('', 0)}
+                                                                className="inline-flex items-center gap-1 text-[10px] font-black px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl uppercase tracking-wider transition-all shadow-sm cursor-pointer active:scale-95"
+                                                            >
+                                                                <Plus size={12} /> Custom
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {data.items.length > 0 && (
+                                                        <div className="space-y-2 pt-2 border-t border-slate-100 max-h-36 overflow-y-auto">
+                                                            {data.items.map((item, idx) => (
+                                                                <div key={idx} className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+                                                                    <Tag size={13} className="text-slate-400 shrink-0 ml-1" />
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.name}
+                                                                        onChange={e => { const n = [...data.items]; n[idx].name = e.target.value; setData('items', n); }}
+                                                                        className="flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-xs font-bold text-slate-700 placeholder:text-slate-400 p-0 shadow-none"
+                                                                        placeholder="Nama biaya tambahan..."
+                                                                    />
+                                                                    <div className="relative flex items-center">
+                                                                        <span className="absolute left-2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">Rp</span>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={formatNumberWithDots(item.unit_price)}
+                                                                            onChange={e => {
+                                                                                const cleanVal = parseNumberFromDots(e.target.value);
+                                                                                const n = [...data.items];
+                                                                                n[idx].unit_price = cleanVal;
+                                                                                setData('items', n);
+                                                                            }}
+                                                                            className="w-28 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-900 text-right py-1 px-2 pl-7 shadow-none focus:ring-1 focus:ring-red-500"
+                                                                            placeholder="0"
+                                                                        />
                                                                     </div>
-                                                                    <span className="text-sm font-black text-rose-600">- {formatCurrency(autoLoyaltyDiscount.discount_amount)}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setData('items', data.items.filter((_, i) => i !== idx))}
+                                                                        className="w-7 h-7 bg-red-100 hover:bg-red-600 text-red-600 hover:text-white rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                                                        title="Hapus Item"
+                                                                    >
+                                                                        <Trash2 size={13} />
+                                                                    </button>
                                                                 </div>
-                                                                <p className="text-sm font-bold text-rose-500 uppercase tracking-wider pl-6">
-                                                                    + Voucher Cafe Rp {Number(autoLoyaltyDiscount.cafe_points || 0).toLocaleString('id-ID')} setelah lunas
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Internal Notes */}
+                                                <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-sm space-y-1.5">
+                                                    <InputLabel value="Catatan Internal" className="uppercase text-xs tracking-wider font-black text-slate-700" />
+                                                    <input
+                                                        type="text"
+                                                        value={data.notes || ''}
+                                                        onChange={e => setData('notes', e.target.value)}
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+                                                        placeholder="Catatan tambahan (opsional)..."
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Right Column (Calculation Breakdown & Actions) - 5 Columns */}
+                                            <div className="lg:col-span-5 space-y-4">
+                                                {/* Calculation Card */}
+                                                <div className="bg-white rounded-3xl p-6 text-slate-900 space-y-4 border border-slate-200/80 shadow-sm relative overflow-hidden">
+                                                    <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                                                        <DollarSign size={80} className="text-slate-900" />
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center text-xs font-black text-slate-800 uppercase pb-3 border-b border-slate-100">
+                                                        <span className="flex items-center gap-2 text-slate-900 font-black">
+                                                            <Calculator className="w-4 h-4 text-red-600" />
+                                                            Calculation Breakdown
+                                                        </span>
+                                                        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                                            {data.billing_mode === 'full' ? 'Satu Siklus' : 'Pro-Rata'}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-2.5 text-xs font-bold text-slate-700">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-slate-600">
+                                                                Class Plotting ({data.billing_mode === 'full' ? selectedClass?.total_meetings || 24 : remainingSessions} Sesi)
+                                                            </span>
+                                                            <span className="font-black text-slate-900 text-sm">{formatCurrency(baseClassSubtotal)}</span>
+                                                        </div>
+
+                                                        {itemsTotal > 0 && (
+                                                            <div className="flex justify-between items-center text-slate-600">
+                                                                <span>Extra Items</span>
+                                                                <span className="font-black text-slate-900 text-sm">{formatCurrency(itemsTotal)}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Auto Discounts */}
+                                                        {autoLoyaltyDiscount && (
+                                                            <div className="pt-2 border-t border-dashed border-slate-200 space-y-1">
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="flex items-center gap-1.5 text-rose-600 font-black text-[11px]">
+                                                                        <Gift size={13} /> Loyalty {autoLoyaltyDiscount.tier_name}
+                                                                    </span>
+                                                                    <span className="font-black text-rose-600">- {formatCurrency(autoLoyaltyDiscount.discount_amount)}</span>
+                                                                </div>
+                                                                <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-4">
+                                                                    + Voucher Cafe Rp {Number(autoLoyaltyDiscount.cafe_points || 0).toLocaleString('id-ID')}
                                                                 </p>
                                                             </div>
                                                         )}
 
-                                                    {
-                                                        autoSiblingDiscount && (
-                                                            <div className="flex justify-between items-center">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Percent className="w-4 h-4 text-sky-500" />
-                                                                    <span className="text-sm font-black text-sky-600 uppercase">Diskon Sibling ({autoSiblingDiscount.percent}%)</span>
-                                                                </div>
-                                                                <span className="text-sm font-black text-sky-600">- {formatCurrency(autoSiblingDiscount.amount)}</span>
-                                                            </div>
-                                                        )
-                                                    }
-
-                                                    {/* Manual Discounts - Admin Added */}
-                                                    <div className="pt-3 border-t border-dashed border-slate-200 space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm font-black text-slate-700 uppercase flex items-center gap-2">
-                                                                <Tag className="w-4 h-4 text-violet-500" />
-                                                                Diskon Tambahan
-                                                            </span>
-                                                            <Button
-                                                                type="button"
-                                                                variant="secondary"
-                                                                icon={Plus}
-                                                                onClick={() => addManualDiscount('', 0)}
-                                                                className="text-sm font-black px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
-                                                            >
-                                                                Tambah
-                                                            </Button>
-                                                        </div>
-
-                                                        {data.manual_discounts.length > 0 ? (
-                                                            <div className="space-y-2">
-                                                                {data.manual_discounts.map((d, idx) => (
-                                                                    <div key={idx} className="flex items-center gap-3 bg-white border border-violet-200 px-4 py-2.5 rounded-2xl group shadow-sm">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={d.name}
-                                                                            onChange={e => {
-                                                                                const n = [...data.manual_discounts];
-                                                                                n[idx].name = e.target.value;
-                                                                                setData('manual_discounts', n);
-                                                                            }}
-                                                                            className="flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-bold text-violet-950 placeholder:text-slate-400 p-0 shadow-none"
-                                                                            placeholder="Nama diskon..."
-                                                                        />
-                                                                        <div className="relative flex items-center">
-                                                                            <span className="absolute left-0 text-xs font-black text-violet-400 pointer-events-none">Rp</span>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={formatNumberWithDots(d.amount)}
-                                                                                onChange={e => {
-                                                                                    const cleanVal = parseNumberFromDots(e.target.value);
-                                                                                    const n = [...data.manual_discounts];
-                                                                                    n[idx].amount = cleanVal;
-                                                                                    setData('manual_discounts', n);
-                                                                                }}
-                                                                                className="w-32 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-black text-violet-900 text-right p-0 pl-6 shadow-none"
-                                                                                placeholder="0"
-                                                                            />
-                                                                        </div>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => removeManualDiscount(idx)}
-                                                                            className="w-10 h-10 bg-red-100 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                                                                            title="Hapus Diskon"
-                                                                        >
-                                                                            <Trash2 className="w-5 h-5 stroke-[2.5]" />
-                                                                        </button>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : null}
-
-                                                        {manualDiscountTotal > 0 && (
-                                                            <div className="flex justify-between text-sm font-bold uppercase text-violet-600">
-                                                                <span>Total Diskon Tambahan</span>
-                                                                <span className="font-black">- {formatCurrency(manualDiscountTotal)}</span>
+                                                        {autoSiblingDiscount && (
+                                                            <div className="pt-1 flex justify-between items-center">
+                                                                <span className="flex items-center gap-1.5 text-sky-600 font-black text-[11px]">
+                                                                    <Percent size={13} /> Sibling ({autoSiblingDiscount.percent}%)
+                                                                </span>
+                                                                <span className="font-black text-sky-600">- {formatCurrency(autoSiblingDiscount.amount)}</span>
                                                             </div>
                                                         )}
+
+                                                        {/* Manual Discounts */}
+                                                        <div className="pt-2.5 border-t border-dashed border-slate-200 space-y-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[11px] font-black text-slate-700 uppercase flex items-center gap-1.5">
+                                                                    <Tag size={13} className="text-violet-500" />
+                                                                    Diskon Tambahan
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addManualDiscount('', 0)}
+                                                                    className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-xl uppercase tracking-wider transition-colors cursor-pointer active:scale-95"
+                                                                >
+                                                                    <Plus size={11} /> Tambah
+                                                                </button>
+                                                            </div>
+
+                                                            {data.manual_discounts.length > 0 && (
+                                                                <div className="space-y-1.5 max-h-28 overflow-y-auto">
+                                                                    {data.manual_discounts.map((d, idx) => (
+                                                                        <div key={idx} className="flex items-center gap-2 bg-violet-50/60 border border-violet-200/80 px-2.5 py-1.5 rounded-xl">
+                                                                            <input
+                                                                                type="text"
+                                                                                value={d.name}
+                                                                                onChange={e => {
+                                                                                    const n = [...data.manual_discounts];
+                                                                                    n[idx].name = e.target.value;
+                                                                                    setData('manual_discounts', n);
+                                                                                }}
+                                                                                className="flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-xs font-bold text-violet-950 placeholder:text-slate-400 p-0 shadow-none"
+                                                                                placeholder="Nama diskon..."
+                                                                            />
+                                                                            <div className="relative flex items-center">
+                                                                                <span className="absolute left-1 text-[9px] font-black text-violet-400 pointer-events-none">Rp</span>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={formatNumberWithDots(d.amount)}
+                                                                                    onChange={e => {
+                                                                                        const cleanVal = parseNumberFromDots(e.target.value);
+                                                                                        const n = [...data.manual_discounts];
+                                                                                        n[idx].amount = cleanVal;
+                                                                                        setData('manual_discounts', n);
+                                                                                    }}
+                                                                                    className="w-24 bg-white border border-violet-200 rounded-lg text-xs font-black text-violet-900 text-right py-0.5 px-1.5 pl-5 shadow-none"
+                                                                                    placeholder="0"
+                                                                                />
+                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeManualDiscount(idx)}
+                                                                                className="text-red-500 hover:text-red-700 p-1 cursor-pointer shrink-0"
+                                                                                title="Hapus Diskon"
+                                                                            >
+                                                                                <Trash2 size={13} />
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {manualDiscountTotal > 0 && (
+                                                                <div className="flex justify-between text-xs font-bold uppercase text-violet-600 pt-1">
+                                                                    <span>Total Diskon Tambahan</span>
+                                                                    <span className="font-black">- {formatCurrency(manualDiscountTotal)}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div >
-                                                <div className="pt-6 border-t border-slate-200 flex justify-between items-end">
-                                                    <div>
-                                                        <span className="text-sm font-black text-slate-700 uppercase tracking-wider">Total Invoice Amount</span>
-                                                        <p className="text-sm font-bold text-emerald-800 uppercase mt-2 tracking-wider bg-emerald-50 px-4 py-1.5 rounded-full border border-emerald-100 inline-block">Awaiting Confirmation</p>
+
+                                                    {/* Total Amount Box */}
+                                                    <div className="pt-4 border-t border-slate-200 flex items-end justify-between">
+                                                        <div>
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Invoice Amount</span>
+                                                            <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                                Awaiting Confirmation
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-3xl sm:text-4xl font-black text-red-600 tracking-tight block">
+                                                                {formatCurrency(totalAmount)}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-5xl font-black tracking-tighter text-red-600">{formatCurrency(totalAmount)}</span>
                                                 </div>
-                                            </div >
-                                        )
-                                        }
-
-                                        <div>
-                                            <InputLabel value="Catatan Internal" className="uppercase text-sm tracking-wider font-black text-slate-700 mb-2" />
-                                            <TextArea value={data.notes} onChange={e => setData('notes', e.target.value)} className="bg-slate-50 border-none rounded-2xl text-sm font-bold" rows={2} placeholder="Opsional..." />
+                                            </div>
                                         </div>
-                                    </div >
+                                    </div>
 
-                                    <div className="px-10 py-10 bg-slate-50 flex items-center justify-end gap-4 rounded-b-[36px]">
-                                        <Button
-                                            variant="secondary"
+                                    {/* Modal Footer */}
+                                    <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0 rounded-b-[32px]">
+                                        <button
+                                            type="button"
                                             onClick={onClose}
-                                            className="!rounded-2xl !text-sm uppercase tracking-wider font-black px-8 py-4"
+                                            className="px-6 py-2.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer active:scale-95"
                                         >
                                             Batal
-                                        </Button>
-                                        <Button
+                                        </button>
+                                        <button
                                             type="submit"
-                                            variant="primary"
                                             disabled={processing || (!selectedClass && (data.items || []).length === 0) || (selectedClass && (!selectedPrice || isExpired || hasNoPrice))}
-                                            className="!bg-red-600 hover:!bg-red-700 !rounded-2xl !text-sm uppercase tracking-wider font-black px-12 py-4 shadow-xl shadow-red-600/30"
+                                            className="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-red-600/25 flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                                         >
-                                            {processing ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save className="mr-2" size={16} />}
-                                            Generate Invoice
-                                        </Button>
+                                            {processing ? <Loader2 className="animate-spin" size={15} /> : <Save size={15} />}
+                                            Terbitkan Invoice
+                                        </button>
                                     </div>
-                                </form >
-                            </Dialog.Panel >
+                                </form>
+                            </Dialog.Panel>
                         </Transition.Child >
                     </div >
                 </div >
             </Dialog >
         </Transition.Root >
+
+        <CreateClassQuickModal
+            isOpen={isCreateClassOpen}
+            onClose={() => setIsCreateClassOpen(false)}
+            onCreated={handleClassCreated}
+            lead={lead || student?.lead}
+            student={student}
+            priceMasters={priceMasterList}
+            defaultStartDate={data.join_date}
+        />
+    </>
     );
 }

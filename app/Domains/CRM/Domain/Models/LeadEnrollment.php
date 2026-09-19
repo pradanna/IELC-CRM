@@ -2,9 +2,6 @@
 
 namespace App\Domains\CRM\Domain\Models;
 
-use App\Domains\Academic\Domain\Models\Student;
-use App\Domains\Academic\Domain\Models\StudyClass;
-use App\Domains\Finance\Domain\Models\Invoice;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,16 +46,17 @@ class LeadEnrollment extends Model
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(\App\Domains\Academic\Domain\Models\Student::class);
     }
 
     public function studyClass(): BelongsTo
     {
-        return $this->belongsTo(StudyClass::class);
+        return $this->belongsTo(\App\Domains\Academic\Domain\Models\StudyClass::class);
     }
 
     public function invoice(): BelongsTo
     {
-        return $this->belongsTo(Invoice::class);
+        return $this->belongsTo(\App\Domains\Finance\Domain\Models\Invoice::class);
     }
 }
+

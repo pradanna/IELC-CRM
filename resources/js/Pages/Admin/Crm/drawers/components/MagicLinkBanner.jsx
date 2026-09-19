@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link as LinkIcon, Check, Copy, MessageSquare, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
-export default function MagicLinkBanner({ lead }) {
+export default function MagicLinkBanner({ lead, context = 'general' }) {
     const [copied, setCopied] = useState(false);
     const [sendingWa, setSendingWa] = useState(false);
 
@@ -25,7 +25,9 @@ export default function MagicLinkBanner({ lead }) {
         setSendingWa(true);
         try {
             const branchCode = (lead?.branch?.code || lead?.branch_code || 'solo').toLowerCase();
-            const message = `Halo ${lead.name}, harap lengkapi data pribadi kamu melalui link ini ya agar data profil kamu di IELC tetap up-to-date: ${magicLink}\n\nTerima kasih!`;
+            const message = context === 'pt' || context === 'placement_test'
+                ? `Sebelum Placement Test, boleh saya minta bantuan ${lead.name} untuk mengisi data pada form berikut: ${magicLink}\n\nTerima kasih!`
+                : `Halo ${lead.name}, harap lengkapi data pribadi kamu melalui link ini ya agar data profil kamu di IELC tetap up-to-date: ${magicLink}\n\nTerima kasih!`;
             
             await axios.post(route('admin.whatsapp.send'), {
                 branch: branchCode,

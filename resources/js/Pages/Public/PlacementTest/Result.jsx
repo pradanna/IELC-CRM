@@ -1,9 +1,16 @@
 import React from "react";
 import { Head } from "@inertiajs/react";
-import { CheckCircle, Trophy, Target, Sparkles, MessageCircle, ArrowRight, ExternalLink } from "lucide-react";
+import { CheckCircle, Trophy, Target, MessageCircle, ArrowRight, ExternalLink, Headphones, BookOpen, PenTool, Mic, Clock, Award, FileText } from "lucide-react";
 
-export default function Result({ session, exam, stats }) {
-    const percentage = Math.round((stats.correct_answers / stats.total_questions) * 100);
+export default function Result({ session, exam, stats, ielts_modules = {}, download_urls = {} }) {
+    const totalQ = stats?.total_questions || 0;
+    const correctA = stats?.correct_answers || 0;
+    const percentage = totalQ > 0 ? Math.round((correctA / totalQ) * 100) : 0;
+
+    const listeningData = ielts_modules?.listening;
+    const readingData = ielts_modules?.reading;
+    const writingData = ielts_modules?.writing;
+    const speakingData = ielts_modules?.speaking;
 
     return (
         <div className="min-h-screen bg-[#FDFDFF] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -61,7 +68,6 @@ export default function Result({ session, exam, stats }) {
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Final Score</p>
                                         <div className="flex items-center justify-center gap-1">
                                             <span className="text-5xl font-black text-slate-900 leading-none">{session.final_score}</span>
-                                            {session.final_score >= 80 && <Sparkles size={16} className="text-amber-400 self-start animate-bounce" />}
                                         </div>
                                     </div>
 
@@ -74,21 +80,117 @@ export default function Result({ session, exam, stats }) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between px-8 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-10">
+                                <div className="flex items-center justify-between px-8 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-6">
                                     <div className="flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                         <span className="text-xs font-bold text-slate-500">Correct Answers</span>
                                     </div>
                                     <span className="text-sm font-black text-slate-900">{stats.correct_answers} / {stats.total_questions}</span>
                                 </div>
+
+                                <div className="flex justify-center mb-10">
+                                    {download_urls?.result_pdf && (
+                                        <a
+                                            href={download_urls.result_pdf}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                        >
+                                            <Award size={16} />
+                                            <span>Download Nilai (PDF)</span>
+                                        </a>
+                                    )}
+                                </div>
                             </>
                         ) : (
-                            <div className="mb-10 p-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] text-center">
-                               
-                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-2">Penilaian Manual Sedang Berjalan</h4>
-                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                                    Karena ini adalah tes IELTS, skor Anda akan dihitung secara manual oleh tim akademik kami berdasarkan dokumen yang Anda unggah.
-                                </p>
+                            <div className="mb-10 space-y-4">
+                                <div className="text-left mb-2">
+                                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                                        Module Performance Breakdown
+                                    </h4>
+                                </div>
+
+                                {/* 2-Column Grid for Objective Modules (Listening & Reading) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Listening Card */}
+                                    <div className="bg-gradient-to-br from-sky-50/50 to-white border border-sky-100 p-6 rounded-[2rem] text-left shadow-sm relative overflow-hidden group hover:border-sky-200 transition-all">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
+                                                <Headphones size={20} />
+                                            </div>
+                                            <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-sky-100 text-sky-700">
+                                                Instant Score
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Listening Section</p>
+                                        
+                                        <div className="mt-2 flex items-baseline gap-2">
+                                            <span className="text-4xl font-black text-slate-900 tracking-tight">
+                                                {listeningData?.band_score !== null && listeningData?.band_score !== undefined
+                                                    ? `Band ${parseFloat(listeningData.band_score)}`
+                                                    : 'Band 0'}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-3 pt-3 border-t border-sky-100 flex items-center justify-between text-xs font-bold text-slate-500">
+                                            <span>Raw Accuracy:</span>
+                                            <span className="text-sky-700 font-black">
+                                                {listeningData?.raw_score?.correct ?? 0} / {listeningData?.raw_score?.total ?? 40} Correct
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Reading Card */}
+                                    <div className="bg-gradient-to-br from-emerald-50/50 to-white border border-emerald-100 p-6 rounded-[2rem] text-left shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-all">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
+                                                <BookOpen size={20} />
+                                            </div>
+                                            <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
+                                                Instant Score
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reading Section</p>
+                                        
+                                        <div className="mt-2 flex items-baseline gap-2">
+                                            <span className="text-4xl font-black text-slate-900 tracking-tight">
+                                                {readingData?.band_score !== null && readingData?.band_score !== undefined
+                                                    ? `Band ${parseFloat(readingData.band_score)}`
+                                                    : 'Band 0'}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-3 pt-3 border-t border-emerald-100 flex items-center justify-between text-xs font-bold text-slate-500">
+                                            <span>Raw Accuracy:</span>
+                                            <span className="text-emerald-700 font-black">
+                                                {readingData?.raw_score?.correct ?? 0} / {readingData?.raw_score?.total ?? 40} Correct
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Subjective Modules Status (Writing & Speaking) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-3 text-left">
+                                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                            <PenTool size={16} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-slate-800 truncate">Writing Assessment</p>
+                                            <p className="text-[10px] font-semibold text-amber-600">Manual review in progress</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-3 text-left">
+                                        <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                                            <Mic size={16} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold text-slate-800 truncate">Speaking Assessment</p>
+                                            <p className="text-[10px] font-semibold text-purple-600">Interview with instructor</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -126,7 +228,7 @@ export default function Result({ session, exam, stats }) {
                 
                 {/* Closure Credits */}
                 <div className="mt-12 text-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-700 text-slate-400">
-                    <p className="text-[11px] font-bold tracking-widest uppercase mb-1">IELC English Education</p>
+                    <p className="text-[11px] font-bold tracking-widest uppercase mb-1">IELC</p>
                     <p className="text-[10px] opacity-60">International English Language Center &copy; {new Date().getFullYear()}</p>
                 </div>
             </div>

@@ -23,6 +23,7 @@ class UpdatePriceMasterRequest extends FormRequest
         return [
             'name' => "required|string|max:255|unique:price_masters,name,{$id},id",
             'price_per_session' => 'required|numeric|min:0',
+            'total_sessions' => 'nullable|integer|min:1',
         ];
     }
 

@@ -77,6 +77,21 @@ class WhatsAppService
     {
         $branch = strtolower($branch);
         try {
+            // Anti-Spam / Anti-Ban: Ensure human-like delay (minimum 2.5 - 3.5 seconds) between consecutive sends on the same branch
+            $cacheKey = "wa_last_sent_{$branch}";
+            $lastSentMicro = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            $nowMicro = microtime(true);
+
+            if ($lastSentMicro) {
+                $elapsed = $nowMicro - (float)$lastSentMicro;
+                $minInterval = 2.5; // Minimum 2.5 seconds gap per message to protect WhatsApp number
+                if ($elapsed < $minInterval) {
+                    $delayMicro = (int)(($minInterval - $elapsed) * 1000000);
+                    usleep($delayMicro);
+                }
+            }
+            \Illuminate\Support\Facades\Cache::put($cacheKey, microtime(true), now()->addMinutes(2));
+
             $payload = [
                 'branch'  => $branch,
                 'phone'   => $phone,

@@ -28,6 +28,8 @@
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
         "date-fns": "^4.1.0",
+        "konva": "^10.3.1",
+        "react-konva": "^18.2.16",
         "recharts": "^3.8.1"
     }
 }

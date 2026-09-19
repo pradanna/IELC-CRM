@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Domains\CRM\Domain\Models\Lead;
 use App\Observers\LeadObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -27,6 +30,17 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') !== 'local') {
             URL::forceScheme('https');
         }
+
+        // WhatsApp Rate Limiter (Anti-spam / Anti-ban): Max 20 messages per minute per user/IP
+        RateLimiter::for('whatsapp-send', function (Request $request) {
+            $key = $request->user()?->id ?: $request->ip();
+            return Limit::perMinute(20)->by($key)->response(function () {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Terlalu banyak pesan dikirim dalam waktu singkat. Mohon tunggu beberapa detik untuk menghindari blokir WhatsApp.'
+                ], 429);
+            });
+        });
 
         Lead::observe(LeadObserver::class);
 

@@ -23,9 +23,14 @@ class UpdatePtSessionGradeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'final_score' => 'required|integer|min:0',
+            'final_score' => 'required|numeric|min:0',
             'recommended_level' => 'nullable|string|max:255',
             'grading_notes' => 'nullable|string',
+            'module_bands' => 'nullable|array',
+            'module_bands.listening' => 'nullable|numeric|min:0|max:9',
+            'module_bands.reading' => 'nullable|numeric|min:0|max:9',
+            'module_bands.writing' => 'nullable|numeric|min:0|max:9',
+            'module_bands.speaking' => 'nullable|numeric|min:0|max:9',
         ];
     }
 }

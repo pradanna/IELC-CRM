@@ -17,17 +17,42 @@ class SendLeadWhatsAppTemplate
         return DB::transaction(function () use ($lead, $data) {
             $template = ChatTemplate::findOrFail($data['chat_template_id']);
             
+            // Determine consultation schedule if [JADWAL] placeholder exists
+            $scheduleDate = $data['schedule_date'] ?? null;
+            if (!$scheduleDate) {
+                $latestConsultation = $lead->consultations()->latest('consultation_date')->first();
+                if ($latestConsultation && $latestConsultation->consultation_date) {
+                    $scheduleDate = $latestConsultation->consultation_date->translatedFormat('d F Y');
+                }
+            }
+
+            // Generate self-registration/update form link if token available
+            if (!$lead->self_registration_token) {
+                $lead->update(['self_registration_token' => (string) \Illuminate\Support\Str::uuid()]);
+            }
+            $updateFormUrl = url("/fill-data/{$lead->self_registration_token}");
+
             // Render message with variables
-            $message = str_replace(
-                ['{{name}}', '{{nickname}}', '{{lead_number}}', '{{admin_name}}'],
-                [
-                    $lead->name ?: 'Kak', 
-                    $lead->nickname ?: ($lead->name ?: 'Kak'), 
-                    $lead->lead_number, 
-                    auth()->user()->name
-                ],
-                $template->message
-            );
+            $search = ['{{name}}', '{{nickname}}', '{{lead_number}}', '{{admin_name}}', '[UPDATE_FORM]', '[update_form]', '[LINK_ZOHO]', '[link_zoho]'];
+            $replace = [
+                $lead->name ?: 'Kak', 
+                $lead->nickname ?: ($lead->name ?: 'Kak'), 
+                $lead->lead_number, 
+                auth()->user()->name,
+                $updateFormUrl,
+                $updateFormUrl,
+                $updateFormUrl,
+                $updateFormUrl
+            ];
+
+            if ($scheduleDate) {
+                $search[] = '[JADWAL]';
+                $replace[] = $scheduleDate;
+                $search[] = '[jadwal]';
+                $replace[] = $scheduleDate;
+            }
+
+            $message = str_replace($search, $replace, $template->message);
 
             $lead->load('branch');
             $branchCode = $lead->branch?->code ?: 'solo';

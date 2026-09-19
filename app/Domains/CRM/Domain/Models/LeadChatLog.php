@@ -20,6 +20,7 @@ class LeadChatLog extends Model
         'chat_template_id',
         'lead_phase_id',
         'user_id',
+        'channel',
         'message',
     ];
 

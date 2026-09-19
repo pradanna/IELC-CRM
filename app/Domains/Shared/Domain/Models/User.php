@@ -10,13 +10,14 @@ use App\Domains\Master\Domain\Models\Frontdesk;
 use App\Domains\Master\Domain\Models\Superadmin;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasRoles, HasUuids, Notifiable;
+    use HasFactory, HasRoles, HasUuids, Notifiable, SoftDeletes;
 
     protected static function newFactory()
     {
@@ -56,6 +57,11 @@ class User extends Authenticatable
         return $this->hasOne(Teacher::class);
     }
 
+    public function itStaff(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Domains\Master\Domain\Models\ItStaff::class);
+    }
+
     public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Branch::class);
@@ -67,7 +73,8 @@ class User extends Authenticatable
             ?? $this->marketing?->name 
             ?? $this->frontdesk?->name 
             ?? $this->finance?->name
-            ?? $this->teacher?->name;
+            ?? $this->teacher?->name
+            ?? $this->itStaff?->name;
     }
 
     protected $hidden = [

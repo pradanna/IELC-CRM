@@ -30,11 +30,10 @@ export function usePublicRegistration(branch, initialData = null, token = null) 
     const [cities, setCities] = useState([]);
     const [loadingCities, setLoadingCities] = useState(false);
 
-    // Fetch cities when province changes
+    // Fetch cities when province changes or on initial load with existing province
     useEffect(() => {
         if (data.province) {
             setLoadingCities(true);
-            // Use the new public API for cities
             axios.get(route('public.join.cities', { province: data.province }))
                 .then(res => {
                     setCities(res.data || []);

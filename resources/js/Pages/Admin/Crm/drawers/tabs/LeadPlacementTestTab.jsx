@@ -81,7 +81,7 @@ export default function LeadPlacementTestTab({ lead, loading, availableExams = [
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Standardized Magic Link Section */}
-            <MagicLinkBanner lead={lead} />
+            <MagicLinkBanner lead={lead} context="pt" />
 
             {/* Generate Link Section */}
             <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8">
@@ -162,8 +162,19 @@ export default function LeadPlacementTestTab({ lead, loading, availableExams = [
                                                 </div>
                                                 {session.status === 'completed' && (
                                                     <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md">
-                                                        <Trophy size={12} />
-                                                        Score: {session.final_score}
+                                                        <Trophy size={12} className="shrink-0" />
+                                                        {session.percentage !== null && session.percentage !== undefined ? (
+                                                            <>
+                                                                <span>{session.percentage}%</span>
+                                                                {session.total_questions > 0 && (
+                                                                    <span className="text-emerald-700/70 font-bold text-[10px]">
+                                                                        ({session.correct_answers ?? session.final_score}/{session.total_questions})
+                                                                    </span>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <span>Score: {session.final_score}</span>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

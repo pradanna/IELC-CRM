@@ -10,8 +10,12 @@ export default function Landing({ session, exam }) {
             <Head title={`Placement Test - ${exam.title}`} />
 
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-50 text-primary-600 mb-6">
-                    <BookOpen size={32} />
+                <div className="inline-flex items-center justify-center px-6 py-3.5 rounded-3xl bg-white border border-slate-100 shadow-md shadow-slate-200/60 mb-6">
+                    <img 
+                        src="/assets/images/local/logo-full.png" 
+                        alt="IELC English Campus" 
+                        className="h-14 sm:h-16 w-auto object-contain"
+                    />
                 </div>
                 <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
                     IELC Placement Test
@@ -36,9 +40,10 @@ export default function Landing({ session, exam }) {
                                 {exam.title}
                             </h4>
                             {exam.description && (
-                                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                                    {exam.description}
-                                </p>
+                                <div 
+                                    className="mt-2 text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>p]:mb-1.5"
+                                    dangerouslySetInnerHTML={{ __html: exam.description }}
+                                />
                             )}
                         </div>
 

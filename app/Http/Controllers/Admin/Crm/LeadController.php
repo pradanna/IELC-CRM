@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Crm;
 
+use App\Domains\CRM\Application\Actions\Leads\AddLeadEnrollment;
 use App\Domains\CRM\Application\Actions\Leads\FetchLeadHistory;
 use App\Domains\CRM\Application\Actions\Leads\PlotLeadClass;
 use App\Domains\CRM\Application\Actions\Leads\RecordLeadFollowUp;
@@ -59,6 +60,10 @@ class LeadController extends Controller
             return redirect()->route('admin.finance.dashboard');
         }
 
+        if (auth()->user()?->hasRole('teacher')) {
+            return redirect()->route('admin.academic.students.index');
+        }
+
         $leads = $service->getPaginatedLeads($request);
 
         return Inertia::render('Admin/Crm/Leads/Index', [
@@ -114,6 +119,9 @@ class LeadController extends Controller
                 'provinces'      => Province::select('id', 'name')->orderBy('name')->get(),
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            if (!request()->wantsJson()) {
+                abort(404);
+            }
             return response()->json(['error' => 'Lead not found.'], 404);
         } catch (\Exception $e) {
             \Log::error("Error in LeadController@show: " . $e->getMessage());
@@ -161,6 +169,47 @@ class LeadController extends Controller
             return response()->json(['message' => 'Template sent effectively.']);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to send WhatsApp: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function addEnrollment(Request $request, Lead $lead, AddLeadEnrollment $action): JsonResponse
+    {
+        $validated = $request->validate([
+            'study_class_id' => ['required', 'uuid', 'exists:study_classes,id'],
+            'join_date'      => ['nullable', 'date'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $enrollment = $action->handle($lead, $validated);
+
+            $lead->refresh()->load([
+                'branch', 'owner', 'leadSource', 'infoSource', 'leadType', 'leadPhase',
+                'guardians', 'leadRelationships.relatedLead',
+                'ptSessions.ptExam',
+                'consultations.consultant',
+                'invoices.items',
+                'student.studyClasses',
+                'chatLogs.sender',
+                'notes.user',
+                'activities.user',
+                'enrollments.studyClass', 'enrollments.invoice',
+            ]);
+
+            return response()->json([
+                'message'    => 'Pengajuan kelas baru berhasil dikirim. Finance akan menerbitkan invoice.',
+                'lead'       => new LeadResource($lead),
+                'enrollment' => [
+                    'id'             => $enrollment->id,
+                    'study_class_id' => $enrollment->study_class_id,
+                    'status'         => $enrollment->status,
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => $e->getMessage(), 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('addEnrollment failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Gagal membuat pengajuan kelas: ' . $e->getMessage()], 500);
         }
     }
 
@@ -291,7 +340,7 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('superadmin'), 403, 'Unauthorized action.');
+        abort_unless(auth()->user()->hasRole(['superadmin', 'it_staff']), 403, 'Unauthorized action.');
         $lead->delete();
         $this->clearDashboardCache();
         return redirect()->back()->with('success', 'Lead deleted successfully.');

@@ -66,6 +66,7 @@ class AcademicDashboardTest extends TestCase
             ->has('filters.available_years')
             ->has('reports.overall')
             ->has('reports.join_patterns')
+            ->has('reports.join_lifecycle')
             ->has('reports.siswa_stop')
             ->has('reports.grades')
         );

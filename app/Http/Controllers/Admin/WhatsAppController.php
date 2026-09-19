@@ -61,6 +61,30 @@ class WhatsAppController extends Controller
             $request->message
         );
 
+        if ($result['success'] ?? false) {
+            try {
+                $cleanPhone = preg_replace('/[^0-9]/', '', $request->phone);
+                $phoneTail = substr($cleanPhone, -9);
+                $lead = \App\Domains\CRM\Domain\Models\Lead::where('phone', 'like', "%{$phoneTail}%")->first();
+                if ($lead) {
+                    \App\Domains\CRM\Domain\Models\LeadChatLog::create([
+                        'lead_id'       => $lead->id,
+                        'lead_phase_id' => $lead->lead_phase_id,
+                        'user_id'       => auth()->id(),
+                        'message'       => $request->message,
+                    ]);
+                    \App\Domains\CRM\Domain\Models\LeadActivity::create([
+                        'lead_id'     => $lead->id,
+                        'user_id'     => auth()->id(),
+                        'type'        => 'message',
+                        'description' => $request->message,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Could not log sent message to LeadChatLog: " . $e->getMessage());
+            }
+        }
+
         return response()->json($result);
     }
     /**

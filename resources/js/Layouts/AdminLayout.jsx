@@ -18,6 +18,7 @@ import {
     Receipt,
     Gift,
     BarChart3,
+    Database,
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
@@ -36,19 +37,8 @@ const menuItems = [
                 icon: <LayoutDashboard size={20} />,
                 text: "CRM Dashboard",
                 href: route("admin.crm.leads.index"),
-                name: "admin.crm.leads.index",
-            },
-            {
-                icon: <Users size={20} />,
-                text: "Leads List",
-                href: route("admin.crm.leads.list"),
-                name: "admin.crm.leads.list",
-            },
-            {
-                icon: <Building2 size={20} />,
-                text: "Kanban Pipeline",
-                href: route("admin.crm.leads.kanban"),
-                name: "admin.crm.leads.kanban",
+                name: "admin.crm.leads.*",
+                activeCheck: () => route().current('admin.crm.leads.*') || route().current('admin.crm.reports.*') || route().current('admin.crm.registrations.*'),
             },
             {
                 icon: <FileText size={20} />,
@@ -56,23 +46,20 @@ const menuItems = [
                 href: route("admin.placement-tests.index"),
                 name: "admin.placement-tests.*",
             },
+            // WhatsApp Inbox hidden during development
+            /*
             {
-                icon: <FileText size={20} />,
-                text: "CRM Reports",
-                href: route("admin.crm.reports.index"),
-                name: "admin.crm.reports.*",
+                icon: <Headset size={20} />,
+                text: "WhatsApp Inbox",
+                href: route("admin.whatsapp.inbox"),
+                name: "admin.whatsapp.inbox",
             },
+            */
         ],
     },
     {
-        category: "Academic",
+        category: "Database",
         items: [
-            {
-                icon: <GraduationCap size={20} />,
-                text: "Academic Dashboard",
-                href: route("admin.academic.index"),
-                name: "admin.academic.index",
-            },
             {
                 icon: <Users size={20} />,
                 text: "Students",
@@ -81,7 +68,7 @@ const menuItems = [
             },
             {
                 icon: <BookCopy size={20} />,
-                text: "Study Classes",
+                text: "Classes",
                 href: route("admin.academic.study-classes.index"),
                 name: "admin.academic.study-classes.*",
             },
@@ -110,7 +97,7 @@ const menuItems = [
             },
             {
                 icon: <Gift size={20} />,
-                text: "Diskon",
+                text: "Diskon dan Loyalty",
                 href: route("admin.finance.loyalty-settings.index"),
                 name: "admin.finance.loyalty-settings.*",
             },
@@ -130,29 +117,6 @@ const menuItems = [
                 text: "Master",
                 href: route("admin.master.index"),
                 name: "admin.master.index",
-            },
-            // {
-            //     icon: <LayoutDashboard size={20} />,
-            //     text: "Schedule",
-            //     href: route("admin.schedules.index"),
-            //     name: "admin.schedules.*",
-            // },
-            {
-                icon: <GraduationCap size={20} />,
-                text: "Academic",
-                href: route("admin.academic.index"),
-                name: "admin.academics.*",
-            },
-        ],
-    },
-    {
-        category: "Users",
-        items: [
-            {
-                icon: <Users size={20} />,
-                text: "Teachers",
-                href: route("admin.teachers.index"),
-                name: "admin.teachers.*",
             },
         ],
     },
@@ -177,6 +141,12 @@ const menuItems = [
                 href: route("admin.master.users.index"),
                 name: "admin.master.users.*",
             },
+            {
+                icon: <Database size={20} />,
+                text: "Database Backup",
+                href: route("admin.system.backup.index"),
+                name: "admin.system.backup.*",
+            },
         ],
     },
 ];
@@ -189,16 +159,17 @@ export default function AdminLayout({ children }) {
     const { auth } = usePage().props;
     const userRole = auth.user.role?.toLowerCase(); // Ensure case-insensitivity
     const isSuperAdmin = userRole === 'superadmin' || userRole === 'super-admin' || !!auth.user.superadmin;
+    const isItStaff = (userRole === 'it_staff' || userRole === 'it-staff' || userRole === 'it staff' || !!auth.user.it_staff || !!auth.user.itStaff) && !isSuperAdmin;
     const isFrontdesk = userRole === 'frontdesk' || !!auth.user.frontdesk;
     const isFinance = userRole === 'finance' || !!auth.user.finance;
     const isMarketing = userRole === 'marketing' || !!auth.user.marketing;
     const isTeacher = userRole === 'teacher' || !!auth.user.teacher;
 
     const filteredMenu = menuItems.filter(group => {
-        if (isSuperAdmin) return true;
+        if (isSuperAdmin || isItStaff) return true;
         
         if (isFrontdesk) {
-            return ['CRM & Leads', 'Academic', 'Management', 'Users'].includes(group.category);
+            return ['CRM & Leads', 'Database', 'Management'].includes(group.category);
         }
 
         if (isFinance) {
@@ -206,34 +177,42 @@ export default function AdminLayout({ children }) {
         }
 
         if (isMarketing) {
-            return ['Main', 'Management'].includes(group.category);
+            return ['Main', 'Management', 'CRM & Leads'].includes(group.category);
         }
 
         if (isTeacher) {
-            return ['Users'].includes(group.category);
+            return ['CRM & Leads', 'Database'].includes(group.category);
         }
 
         return false;
     }).map(group => {
-        if (isSuperAdmin) return group;
+        if (isItStaff) return group;
+
+        if (isSuperAdmin) {
+            return {
+                ...group,
+                items: group.items.filter(item => item.text !== 'Database Backup')
+            };
+        }
 
         return {
             ...group,
             items: group.items.filter(item => {
+                if (item.text === 'Database Backup') return false;
                 if (isFrontdesk) {
-                    const allowed = ['CRM Dashboard', 'Leads List', 'Kanban Pipeline', 'Placement Tests', 'CRM Reports', 'Academic Dashboard', 'Students', 'Study Classes', 'Master', 'Academic'];
+                    const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
-                    const allowed = ['Dashboard', 'Invoices', 'Price Master', 'Staff Accounts', 'WhatsApp'];
+                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon dan Loyalty', 'Laporan', 'Staff Accounts', 'WhatsApp'];
                     return allowed.includes(item.text);
                 }
                 if (isMarketing) {
-                    const allowed = ['Dashboard', 'Crm'];
+                    const allowed = ['CRM Dashboard', 'Placement Tests', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isTeacher) {
-                    const allowed = ['Students'];
+                    const allowed = ['Students', 'Placement Tests'];
                     return allowed.includes(item.text);
                 }
                 return true;
@@ -278,7 +257,7 @@ export default function AdminLayout({ children }) {
                                         <SidebarItem
                                             key={itemIndex}
                                             {...item}
-                                            active={route().current(item.name)}
+                                            active={item.activeCheck ? item.activeCheck() : route().current(item.name)}
                                         />
                                     ))}
                                 </React.Fragment>
@@ -290,6 +269,7 @@ export default function AdminLayout({ children }) {
             <main className="flex-1 bg-gray-50">
                 <Navbar 
                     user={auth.user} 
+                    availableMenus={filteredMenu}
                     waNotifications={notifications}
                     onWaRemove={removeNotification}
                 />
