@@ -248,14 +248,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
         // WhatsApp System Device Logout
         Route::delete('/whatsapp/logout/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'logout'])->name('whatsapp.logout');
+    });
 
-        // Database Backup
-        Route::prefix('system')->name('system.')->group(function () {
-            Route::get('/backup', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'index'])->name('backup.index');
-            Route::match(['get', 'post'], '/backup/generate', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'generate'])->name('backup.generate');
-            Route::get('/backup/download/{filename}', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'download'])->name('backup.download');
-            Route::delete('/backup/{filename}', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'destroy'])->name('backup.destroy');
-        });
+    // Database Backup: Strictly IT Staff only (Superadmin NOT allowed)
+    Route::prefix('system')->name('system.')->middleware('role:it_staff')->group(function () {
+        Route::get('/backup', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'index'])->name('backup.index');
+        Route::match(['get', 'post'], '/backup/generate', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'generate'])->name('backup.generate');
+        Route::get('/backup/download/{filename}', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'download'])->name('backup.download');
+        Route::delete('/backup/{filename}', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'destroy'])->name('backup.destroy');
     });
 
     // WhatsApp Management, Live Chat & Messaging Services (Accessible to all authenticated staff)

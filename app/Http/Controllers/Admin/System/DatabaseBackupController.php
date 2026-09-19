@@ -24,6 +24,8 @@ class DatabaseBackupController extends Controller
      */
     public function index(): Response
     {
+        $this->authorizeItStaff();
+
         File::ensureDirectoryExists($this->backupDir);
 
         $files = File::files($this->backupDir);
@@ -45,20 +47,29 @@ class DatabaseBackupController extends Controller
 
         // Calculate database stats
         $dbName = DB::connection()->getDatabaseName();
-        $dbStats = DB::select("
-            SELECT 
-                COUNT(*) as table_count,
-                COALESCE(SUM(data_length), 0) as data_bytes,
-                COALESCE(SUM(index_length), 0) as index_bytes,
-                COALESCE(SUM(data_length + index_length), 0) as total_bytes
-            FROM information_schema.TABLES 
-            WHERE table_schema = ?
-        ", [$dbName]);
+        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
 
-        $tableCount = $dbStats[0]->table_count ?? 0;
-        $totalBytes = (int) ($dbStats[0]->total_bytes ?? 0);
-        $dataBytes = (int) ($dbStats[0]->data_bytes ?? 0);
-        $indexBytes = (int) ($dbStats[0]->index_bytes ?? 0);
+        if ($isSqlite) {
+            $tableCount = (int) (DB::select("SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")[0]->count ?? 0);
+            $totalBytes = 0;
+            $dataBytes = 0;
+            $indexBytes = 0;
+        } else {
+            $dbStats = DB::select("
+                SELECT 
+                    COUNT(*) as table_count,
+                    COALESCE(SUM(data_length), 0) as data_bytes,
+                    COALESCE(SUM(index_length), 0) as index_bytes,
+                    COALESCE(SUM(data_length + index_length), 0) as total_bytes
+                FROM information_schema.TABLES 
+                WHERE table_schema = ?
+            ", [$dbName]);
+
+            $tableCount = $dbStats[0]->table_count ?? 0;
+            $totalBytes = (int) ($dbStats[0]->total_bytes ?? 0);
+            $dataBytes = (int) ($dbStats[0]->data_bytes ?? 0);
+            $indexBytes = (int) ($dbStats[0]->index_bytes ?? 0);
+        }
 
         $stats = [
             'database_name' => $dbName,
@@ -82,6 +93,8 @@ class DatabaseBackupController extends Controller
      */
     public function generate(Request $request)
     {
+        $this->authorizeItStaff();
+
         $request->validate([
             'format' => 'nullable|in:sql,sql.gz',
             'download_now' => 'nullable|boolean',
@@ -110,6 +123,8 @@ class DatabaseBackupController extends Controller
      */
     public function download(string $filename): BinaryFileResponse
     {
+        $this->authorizeItStaff();
+
         $cleanFilename = basename($filename);
         $filePath = $this->backupDir . DIRECTORY_SEPARATOR . $cleanFilename;
 
@@ -123,6 +138,8 @@ class DatabaseBackupController extends Controller
      */
     public function destroy(string $filename)
     {
+        $this->authorizeItStaff();
+
         $cleanFilename = basename($filename);
         $filePath = $this->backupDir . DIRECTORY_SEPARATOR . $cleanFilename;
 
@@ -132,6 +149,18 @@ class DatabaseBackupController extends Controller
         }
 
         return redirect()->back()->with('error', 'File backup tidak ditemukan.');
+    }
+
+    /**
+     * Authorize that the current authenticated user is strictly IT Staff.
+     * Superadmin and all other roles are strictly forbidden.
+     */
+    protected function authorizeItStaff(): void
+    {
+        $user = auth()->user();
+        if (!$user || !$user->hasRole('it_staff') || $user->hasRole('superadmin') || $user->superadmin()->exists()) {
+            abort(403, 'Akses ditolak. Fitur backup database hanya dapat diakses oleh Staff IT.');
+        }
     }
 
     /**
@@ -213,6 +242,8 @@ class DatabaseBackupController extends Controller
 
         $handle = fopen($isGzip ? 'php://temp' : $outputPath, 'w+');
 
+        $isSqlite = DB::connection()->getDriverName() === 'sqlite';
+
         // Header comments and config
         fwrite($handle, "-- ========================================================\n");
         fwrite($handle, "-- IELC-CRM Database Backup\n");
@@ -220,13 +251,19 @@ class DatabaseBackupController extends Controller
         fwrite($handle, "-- Database: {$dbName}\n");
         fwrite($handle, "-- ========================================================\n\n");
         fwrite($handle, "SET NAMES utf8mb4;\n");
-        fwrite($handle, "SET FOREIGN_KEY_CHECKS = 0;\n");
-        fwrite($handle, "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n");
-        fwrite($handle, "SET AUTOCOMMIT = 0;\n");
+        if (!$isSqlite) {
+            fwrite($handle, "SET FOREIGN_KEY_CHECKS = 0;\n");
+            fwrite($handle, "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n");
+            fwrite($handle, "SET AUTOCOMMIT = 0;\n");
+        }
         fwrite($handle, "START TRANSACTION;\n\n");
 
         // Fetch all base tables
-        $tablesStmt = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
+        if ($isSqlite) {
+            $tablesStmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+        } else {
+            $tablesStmt = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
+        }
         $tables = [];
         while ($row = $tablesStmt->fetch(\PDO::FETCH_NUM)) {
             $tables[] = $row[0];
@@ -239,10 +276,18 @@ class DatabaseBackupController extends Controller
             fwrite($handle, "DROP TABLE IF EXISTS `{$table}`;\n");
 
             // Create Table SQL
-            $createStmt = $pdo->query("SHOW CREATE TABLE `{$table}`");
-            $createRow = $createStmt->fetch(\PDO::FETCH_ASSOC);
-            if (!empty($createRow['Create Table'])) {
-                fwrite($handle, $createRow['Create Table'] . ";\n\n");
+            if ($isSqlite) {
+                $createStmt = $pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name = " . $pdo->quote($table));
+                $createRow = $createStmt->fetch(\PDO::FETCH_ASSOC);
+                if (!empty($createRow['sql'])) {
+                    fwrite($handle, $createRow['sql'] . ";\n\n");
+                }
+            } else {
+                $createStmt = $pdo->query("SHOW CREATE TABLE `{$table}`");
+                $createRow = $createStmt->fetch(\PDO::FETCH_ASSOC);
+                if (!empty($createRow['Create Table'])) {
+                    fwrite($handle, $createRow['Create Table'] . ";\n\n");
+                }
             }
 
             // Dump Table Data in batches
@@ -294,7 +339,9 @@ class DatabaseBackupController extends Controller
 
         // Footer
         fwrite($handle, "COMMIT;\n");
-        fwrite($handle, "SET FOREIGN_KEY_CHECKS = 1;\n");
+        if (!$isSqlite) {
+            fwrite($handle, "SET FOREIGN_KEY_CHECKS = 1;\n");
+        }
 
         if ($isGzip) {
             rewind($handle);

@@ -159,7 +159,7 @@ export default function AdminLayout({ children }) {
     const { auth } = usePage().props;
     const userRole = auth.user.role?.toLowerCase(); // Ensure case-insensitivity
     const isSuperAdmin = userRole === 'superadmin' || userRole === 'super-admin' || !!auth.user.superadmin;
-    const isItStaff = userRole === 'it_staff' || userRole === 'it-staff' || userRole === 'it staff' || !!auth.user.it_staff;
+    const isItStaff = (userRole === 'it_staff' || userRole === 'it-staff' || userRole === 'it staff' || !!auth.user.it_staff || !!auth.user.itStaff) && !isSuperAdmin;
     const isFrontdesk = userRole === 'frontdesk' || !!auth.user.frontdesk;
     const isFinance = userRole === 'finance' || !!auth.user.finance;
     const isMarketing = userRole === 'marketing' || !!auth.user.marketing;
@@ -186,11 +186,19 @@ export default function AdminLayout({ children }) {
 
         return false;
     }).map(group => {
-        if (isSuperAdmin || isItStaff) return group;
+        if (isItStaff) return group;
+
+        if (isSuperAdmin) {
+            return {
+                ...group,
+                items: group.items.filter(item => item.text !== 'Database Backup')
+            };
+        }
 
         return {
             ...group,
             items: group.items.filter(item => {
+                if (item.text === 'Database Backup') return false;
                 if (isFrontdesk) {
                     const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
                     return allowed.includes(item.text);
