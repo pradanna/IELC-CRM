@@ -345,7 +345,7 @@
                     <td class="text-center" style="color: #0284c7; font-size: 11px;">{{ $percentage }}%</td>
                     <td class="text-center">
                         <span class="status-pill {{ $percentage >= 80 ? 'status-perfect' : ($percentage >= 50 ? 'status-partial' : 'status-wrong') }}">
-                            {{ $percentage >= 80 ? 'Sangat Baik' : ($percentage >= 50 ? 'Cukup Baik' : 'Perlu Bimbingan') }}
+                            {{ $percentage >= 80 ? 'Sangat Baik' : ($percentage >= 50 ? 'Cukup Baik' : 'Perlu Belajar Lagi') }}
                         </span>
                     </td>
                 </tr>
