@@ -255,12 +255,15 @@ class DataSiswaSemarangSeeder extends Seeder
                     'student_number' => $studentNumber,
                     'start_join' => $joinDate->toDateString(),
                     'status' => 'active',
+                    'rejoin_count' => 0,
+                    'loyalty_tier' => 'Bronze',
                     'notes' => null,
                 ]);
             } else {
                 $student->update([
                     'start_join' => $student->start_join ?: $joinDate->toDateString(),
                     'status' => 'active',
+                    'loyalty_tier' => $student->loyalty_tier ?: 'Bronze',
                 ]);
             }
 
@@ -651,6 +654,11 @@ class DataSiswaSemarangSeeder extends Seeder
         // Pre-load loyalty settings
         $loyaltySettings = LoyaltySetting::orderBy('min_rejoin_count', 'desc')->get();
 
+        // Ensure all students in this branch default to Bronze if loyalty_tier is null
+        Student::whereHas('lead', fn($q) => $q->where('branch_id', $branchId))
+            ->whereNull('loyalty_tier')
+            ->update(['loyalty_tier' => 'Bronze', 'rejoin_count' => 0]);
+
         $file = fopen($filePath, 'r');
         fgetcsv($file); // Header: Jumlah Paket, Full Name, Sibling
 
@@ -687,17 +695,19 @@ class DataSiswaSemarangSeeder extends Seeder
 
             // 1. Update Jumlah Paket
             $packageCount = 0;
-            if (preg_match('/^(\d+)$/', $rawPkg, $m)) {
-                $packageCount = (int) $m[1];
+            $hasValidPkg = false;
+            if (is_numeric($rawPkg)) {
+                $packageCount = (int) $rawPkg;
+                $hasValidPkg = true;
             }
 
-            if ($packageCount > 0 && $currentLead->student) {
+            if ($hasValidPkg && $currentLead->student) {
                 $student = $currentLead->student;
                 $matchingSetting = $loyaltySettings->first(fn($s) => $s->min_rejoin_count <= $packageCount);
 
                 $student->update([
                     'rejoin_count' => $packageCount,
-                    'loyalty_tier' => $matchingSetting?->tier_name,
+                    'loyalty_tier' => $matchingSetting ? $matchingSetting->tier_name : 'Bronze',
                 ]);
 
                 // Update active enrollments cycle_number
@@ -790,7 +800,7 @@ class DataSiswaSemarangSeeder extends Seeder
             $refLastName = end($refWords);
         }
 
-        // 2. Prefix match
+        // 2. Prefix match (full normalized string starts with query)
         $prefixMatches = [];
         foreach ($cleanLeadsList as $item) {
             if (str_starts_with($item['norm'], $normQuery . ' ') || $item['norm'] === $normQuery) {
@@ -811,30 +821,7 @@ class DataSiswaSemarangSeeder extends Seeder
             return $prefixMatches[0];
         }
 
-        // 3. Word-level match if query has >= 4 characters
-        if (strlen($firstQueryWord) >= 4) {
-            $wordMatches = [];
-            foreach ($cleanLeadsList as $item) {
-                if (in_array($firstQueryWord, $item['words'])) {
-                    $wordMatches[] = $item['lead'];
-                }
-            }
-
-            if (count($wordMatches) === 1) {
-                return $wordMatches[0];
-            } elseif (count($wordMatches) > 1) {
-                if (!empty($refLastName)) {
-                    foreach ($wordMatches as $lead) {
-                        if (str_contains(strtolower($lead->name), $refLastName)) {
-                            return $lead;
-                        }
-                    }
-                }
-                return $wordMatches[0];
-            }
-        }
-
-        // 4. Typo-tolerant similarity
+        // 3. Typo-tolerant similarity on full name (e.g., 'Louisa Laviana Liong' vs 'Louisa Lavinia Liong', 'Zayyan Safira' vs 'Zayyan Sefira')
         $bestScore = 0;
         $bestLead = null;
 
@@ -842,7 +829,7 @@ class DataSiswaSemarangSeeder extends Seeder
             similar_text($normQuery, $item['norm'], $percent);
             $lev = levenshtein($normQuery, $item['norm']);
 
-            if (($percent >= 80 && strlen($normQuery) >= 6) || ($lev <= 2 && strlen($normQuery) >= 8)) {
+            if (($percent >= 85 && strlen($normQuery) >= 6) || ($lev <= 2 && strlen($normQuery) >= 8)) {
                 if ($percent > $bestScore) {
                     $bestScore = $percent;
                     $bestLead = $item['lead'];
@@ -850,7 +837,32 @@ class DataSiswaSemarangSeeder extends Seeder
             }
         }
 
-        return $bestLead;
+        if ($bestLead) {
+            return $bestLead;
+        }
+
+        // 4. Two-word prefix match (e.g. "Louisa Andreas" -> "Louisa Andrea Marchelline")
+        if (count($queryWords) >= 2 && strlen($queryWords[0]) >= 3 && strlen($queryWords[1]) >= 3) {
+            $twoWordQuery = $queryWords[0] . ' ' . rtrim($queryWords[1], 's');
+            foreach ($cleanLeadsList as $item) {
+                if (str_starts_with($item['norm'], $twoWordQuery)) {
+                    return $item['lead'];
+                }
+            }
+        }
+
+        // 5. Word-level match: require at least 2 significant words matching
+        if (count($queryWords) >= 2) {
+            foreach ($cleanLeadsList as $item) {
+                $matchingWords = array_intersect($queryWords, $item['words']);
+                $significantMatches = array_filter($matchingWords, fn($w) => strlen($w) >= 4 && !in_array($w, ['muhammad', 'mohammed', 'putra', 'putri', 'bintang']));
+                if (count($significantMatches) >= 2) {
+                    return $item['lead'];
+                }
+            }
+        }
+
+        return null;
     }
 
     private function normalizeName(string $name): string
