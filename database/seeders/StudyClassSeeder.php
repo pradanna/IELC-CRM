@@ -15,25 +15,32 @@ class StudyClassSeeder extends Seeder
      */
     public function run(): void
     {
-        $soloBranch = Branch::where('code', 'SOLO')->first() 
-            ?: Branch::where('name', 'like', '%Solo%')->first() 
-            ?: Branch::first();
-
-        if (!$soloBranch) {
-            $this->command->warn('Cabang Solo tidak ditemukan. Harap jalankan BranchSeeder terlebih dahulu.');
-            return;
-        }
-
         // Ambil semua PriceMaster
         $priceMasters = PriceMaster::all()->keyBy('name');
         $groupPriceMaster = $priceMasters->get('Group')
             ?: PriceMaster::where('name', 'like', 'Group%')->first();
 
-        // 1. Seed Kelas Group Solo
-        $this->seedSoloGroupClasses($soloBranch, $groupPriceMaster);
+        // 1. Cabang Solo
+        $soloBranch = Branch::where('code', 'SOLO')->first() 
+            ?: Branch::where('name', 'like', '%Solo%')->first();
 
-        // 2. Seed Kelas Private Solo
-        $this->seedSoloPrivateClasses($soloBranch, $priceMasters);
+        if ($soloBranch) {
+            $this->seedSoloGroupClasses($soloBranch, $groupPriceMaster);
+            $this->seedSoloPrivateClasses($soloBranch, $priceMasters);
+        } else {
+            $this->command->warn('Cabang Solo tidak ditemukan. Harap jalankan BranchSeeder terlebih dahulu.');
+        }
+
+        // 2. Cabang Semarang
+        $semarangBranch = Branch::where('code', 'SMG')->first()
+            ?: Branch::where('name', 'like', '%Semarang%')->first();
+
+        if ($semarangBranch) {
+            $this->seedSemarangGroupClasses($semarangBranch, $groupPriceMaster);
+            $this->seedSemarangPrivateClasses($semarangBranch, $priceMasters);
+        } else {
+            $this->command->warn('Cabang Semarang tidak ditemukan. Harap jalankan BranchSeeder terlebih dahulu.');
+        }
     }
 
     /**
@@ -284,6 +291,305 @@ class StudyClassSeeder extends Seeder
     }
 
     /**
+     * Seed kelas-kelas Group cabang Semarang dari XLSX atau CSV
+     */
+    private function seedSemarangGroupClasses(Branch $semarangBranch, ?PriceMaster $groupPriceMaster): void
+    {
+        $possiblePaths = [
+            database_path('seeders/data/semarang/data kelas grup semarang.xlsx'),
+            base_path('docs/initiate data/semarang/data kelas grup semarang.xlsx'),
+            database_path('seeders/data/semarang/data kelas grup semarang.csv'),
+            base_path('docs/initiate data/semarang/data kelas grup semarang.csv'),
+        ];
+
+        $filePath = null;
+        foreach ($possiblePaths as $path) {
+            if (file_exists($path)) {
+                $filePath = $path;
+                break;
+            }
+        }
+
+        if (!$filePath) {
+            $this->command->warn('File kelas Group Semarang tidak ditemukan di folder database/seeders/data/semarang/ atau docs/initiate data/semarang/');
+            return;
+        }
+
+        $this->command->info("Membaca data kelas Group Semarang dari: {$filePath}");
+
+        $groupBlocks = [];
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+        if ($ext === 'xlsx') {
+            $groupBlocks = $this->parseSemarangGroupXlsx($filePath);
+        }
+
+        $importedCount = 0;
+        $stats = [
+            'offline' => 0,
+            'kids' => 0,
+            'teens' => 0,
+            'adult' => 0,
+        ];
+
+        foreach ($groupBlocks as $block) {
+            $cleanName = trim($block['name']);
+            if (empty($cleanName)) continue;
+
+            $subject = trim($block['book']);
+            $category = $this->categorizeBook($subject);
+
+            // Parse schedule days
+            $scheduleDays = $this->parseScheduleDays($block['schedule_day1'] ?? '', $block['schedule_day2'] ?? '');
+
+            // Parse date range
+            $startDate = null;
+            $endDate = null;
+            if (!empty($block['period_str'])) {
+                [$parsedStart, $parsedEnd] = $this->parsePeriodDateRange($block['period_str']);
+                if ($parsedStart) $startDate = $parsedStart;
+                if ($parsedEnd) $endDate = $parsedEnd;
+            }
+
+            if (!$startDate) {
+                $startDate = Carbon::create(2026, 7, 1);
+            }
+            if (!$endDate) {
+                $endDate = (clone $startDate)->addWeeks(12);
+            }
+
+            StudyClass::updateOrCreate(
+                [
+                    'name' => $cleanName,
+                    'branch_id' => $semarangBranch->id,
+                ],
+                [
+                    'price_master_id' => $groupPriceMaster?->id,
+                    'category' => $category,
+                    'type' => 'offline',
+                    'status' => 'active',
+                    'total_meetings' => 24,
+                    'meetings_per_week' => count($scheduleDays) ?: 2,
+                    'current_session_number' => $block['packet'] ?? 1,
+                    'schedule_days' => $scheduleDays,
+                    'start_session_date' => $startDate,
+                    'end_session_date' => $endDate,
+                ]
+            );
+
+            $importedCount++;
+            $stats['offline']++;
+            $stats[strtolower($category)]++;
+        }
+
+        $this->command->info(" Berhasil men-seed {$importedCount} kelas Group Semarang ke database.");
+        $this->command->line("   - Offline: {$stats['offline']} kelas");
+        $this->command->line("   - Kids:    {$stats['kids']} kelas");
+        $this->command->line("   - Teens:   {$stats['teens']} kelas");
+        $this->command->line("   - Adult:   {$stats['adult']} kelas");
+    }
+
+    /**
+     * Parser berkas XLSX kelas Group Semarang
+     */
+    private function parseSemarangGroupXlsx(string $filePath): array
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($filePath) !== true) {
+            return [];
+        }
+
+        $sharedStrings = [];
+        if (($xmlStr = $zip->getFromName('xl/sharedStrings.xml')) !== false) {
+            $xml = simplexml_load_string($xmlStr);
+            $xml->registerXPathNamespace('x', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+            foreach ($xml->xpath('//x:si') as $si) {
+                $si->registerXPathNamespace('x', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+                $textParts = [];
+                foreach ($si->xpath('.//x:t') as $t) {
+                    $textParts[] = (string) $t;
+                }
+                $sharedStrings[] = implode('', $textParts);
+            }
+        }
+
+        $sheetData = [];
+        if (($sheetXmlStr = $zip->getFromName('xl/worksheets/sheet1.xml')) !== false) {
+            $sheetXml = simplexml_load_string($sheetXmlStr);
+            $sheetXml->registerXPathNamespace('x', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+            foreach ($sheetXml->xpath('//x:row') as $row) {
+                $row->registerXPathNamespace('x', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+                $rowNum = (int) $row['r'];
+                $cols = [];
+                foreach ($row->xpath('x:c') as $c) {
+                    $cellRef = (string) $c['r'];
+                    $colLetter = preg_replace('/[0-9]/', '', $cellRef);
+                    $t = (string) $c['t'];
+                    $v = isset($c->v) ? (string) $c->v : '';
+                    if ($t === 's' && isset($sharedStrings[(int) $v])) {
+                        $val = $sharedStrings[(int) $v];
+                    } else {
+                        $val = $v;
+                    }
+                    if ($val !== '') {
+                        $cols[$colLetter] = trim($val);
+                    }
+                }
+                if (!empty($cols)) {
+                    $sheetData[$rowNum] = $cols;
+                }
+            }
+        }
+        $zip->close();
+
+        $groups = [];
+        $currentBlock = null;
+        foreach ($sheetData as $cols) {
+            $colA = $cols['A'] ?? '';
+            $colB = $cols['B'] ?? '';
+            $colC = $cols['C'] ?? '';
+            $colD = $cols['D'] ?? '';
+
+            if (!empty($colA) && !in_array(strtolower($colA), ['nama grup', 'grup', 'name'])) {
+                if ($currentBlock) {
+                    $groups[] = $this->finalizeSemarangGroupBlock($currentBlock);
+                }
+                $currentBlock = [
+                    'name' => $colA,
+                    'book' => $colB,
+                    'schedule_day1' => $colC,
+                    'schedule_day2' => $colD,
+                    'sub_rows' => [],
+                ];
+            } elseif ($currentBlock) {
+                $currentBlock['sub_rows'][] = [
+                    'B' => $colB,
+                    'C' => $colC,
+                    'D' => $colD,
+                ];
+            }
+        }
+        if ($currentBlock) {
+            $groups[] = $this->finalizeSemarangGroupBlock($currentBlock);
+        }
+
+        return $groups;
+    }
+
+    private function finalizeSemarangGroupBlock(array $block): array
+    {
+        $book = $block['book'];
+        $periodStr = '';
+        $packet = 1;
+
+        foreach ($block['sub_rows'] as $sub) {
+            $b = $sub['B'] ?? '';
+            if (preg_match('/(?:paket|pkt)\s*(\d+)/i', $b, $m)) {
+                $packet = (int) $m[1];
+            }
+            if (preg_match('/\d+\s+[A-Za-z]+|\d+-\d+/', $b) && !preg_match('/(?:paket|pkt)/i', $b)) {
+                $periodStr = $b;
+            } elseif (preg_match('/(?:kids|teens|adult|pkt|paket)/i', $b)) {
+                $book .= ' ' . $b;
+            }
+        }
+
+        $block['book'] = trim($book);
+        $block['period_str'] = trim($periodStr);
+        $block['packet'] = $packet;
+        return $block;
+    }
+
+    /**
+     * Seed kelas-kelas Private cabang Semarang dari CSV
+     */
+    private function seedSemarangPrivateClasses(Branch $semarangBranch, $priceMasters): void
+    {
+        $possiblePaths = [
+            database_path('seeders/data/semarang/data kelas private semarang.csv'),
+            base_path('docs/initiate data/semarang/data kelas private semarang.csv'),
+        ];
+
+        $filePath = null;
+        foreach ($possiblePaths as $path) {
+            if (file_exists($path)) {
+                $filePath = $path;
+                break;
+            }
+        }
+
+        if (!$filePath) {
+            $this->command->warn('File CSV kelas Private Semarang tidak ditemukan.');
+            return;
+        }
+
+        $this->command->info("Membaca data kelas Private Semarang dari: {$filePath}");
+
+        $file = fopen($filePath, 'r');
+        $importedCount = 0;
+        $stats = [
+            'ielts' => 0,
+            'toefl' => 0,
+            'private' => 0,
+            'offline' => 0,
+        ];
+
+        $today = Carbon::today();
+        $defaultEndDate = (clone $today)->addMonths(3);
+
+        while (($row = fgetcsv($file)) !== false) {
+            if (empty($row) || !array_filter($row)) {
+                continue;
+            }
+
+            $rawMode = trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $row[0] ?? ''));
+            $rawPkg = trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $row[1] ?? ''));
+            $student = trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $row[2] ?? ''));
+            $student = preg_replace('/\s+/', ' ', $student);
+
+            if (empty($student) || in_array(strtolower($student), ['nama siswa', 'student', 'name'])) {
+                continue;
+            }
+
+            [$cleanPkg, $totalMeetings, $typeGroup] = $this->resolvePrivatePackageDetails($rawPkg, $rawMode);
+
+            $className = "{$cleanPkg} - {$student}";
+
+            $priceMaster = $this->resolvePrivatePriceMaster($typeGroup, $totalMeetings, $priceMasters);
+
+            StudyClass::updateOrCreate(
+                [
+                    'name' => $className,
+                    'branch_id' => $semarangBranch->id,
+                ],
+                [
+                    'price_master_id' => $priceMaster?->id,
+                    'category' => 'private',
+                    'type' => 'offline',
+                    'status' => 'active',
+                    'total_meetings' => $totalMeetings,
+                    'meetings_per_week' => 2,
+                    'current_session_number' => 1,
+                    'schedule_days' => null,
+                    'start_session_date' => $today,
+                    'end_session_date' => $defaultEndDate,
+                ]
+            );
+
+            $importedCount++;
+            $stats[$typeGroup]++;
+            $stats['offline']++;
+        }
+        fclose($file);
+
+        $this->command->info(" Berhasil men-seed {$importedCount} kelas Private Semarang ke database.");
+        $this->command->line("   - Offline: {$stats['offline']} kelas");
+        $this->command->line("   - IELTS:   {$stats['ielts']} kelas");
+        $this->command->line("   - TOEFL:   {$stats['toefl']} kelas");
+        $this->command->line("   - Privat:  {$stats['private']} kelas");
+    }
+
+    /**
      * Memuat peta delivery mode (online/offline) untuk kelas private dari file update
      */
     private function loadPrivateDeliveryMap(): array
@@ -361,31 +667,48 @@ class StudyClassSeeder extends Seeder
     /**
      * Resolusi nama paket bersih, jumlah pertemuan, dan kelompok program private
      */
-    private function resolvePrivatePackageDetails(string $rawPkg): array
+    private function resolvePrivatePackageDetails(string $rawPkg, string $rawMode = ''): array
     {
-        $pkg = trim($rawPkg);
+        $pkg = trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $rawPkg));
+        $mode = trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $rawMode));
 
-        if (empty($pkg)) {
-            return ['Privat', 10, 'private'];
+        if (stripos($mode, 'Semi Private') !== false || stripos($pkg, 'Semi Private') !== false) {
+            return ['Semi Private', 20, 'private'];
         }
 
-        if (preg_match('/ielts\s*(\d+)/i', $pkg, $m)) {
+        if (stripos($mode, 'Pre-IELTS') !== false) {
+            if (preg_match('/(\d+)/', $pkg, $m)) {
+                $totalMeetings = (int) $m[1];
+                return ["Pre-IELTS {$totalMeetings} Sesi", $totalMeetings, 'ielts'];
+            }
+            return ['Pre-IELTS 20 Sesi', 20, 'ielts'];
+        }
+
+        if (preg_match('/ielts\s*(\d+)/i', $pkg, $m) || preg_match('/ielts\s*(\d+)/i', $mode, $m)) {
             $totalMeetings = (int) $m[1];
             return ["IELTS {$totalMeetings} Sesi", $totalMeetings, 'ielts'];
         }
 
-        if (preg_match('/toefl\s*(\d+)/i', $pkg, $m)) {
+        if (strcasecmp($pkg, 'IELTS') === 0 || strcasecmp($mode, 'IELTS') === 0) {
+            return ['IELTS', 20, 'ielts'];
+        }
+
+        if (preg_match('/toefl\s*(\d+)/i', $pkg, $m) || preg_match('/toefl\s*(\d+)/i', $mode, $m)) {
             $totalMeetings = (int) $m[1];
             return ["TOEFL {$totalMeetings} Sesi", $totalMeetings, 'toefl'];
         }
 
-        if (preg_match('/(?:PR|privat)\s*(\d+)/i', $pkg, $m)) {
+        if (strcasecmp($pkg, 'TOEFL') === 0 || strcasecmp($mode, 'TOEFL') === 0) {
+            return ['TOEFL', 20, 'toefl'];
+        }
+
+        if (preg_match('/(?:private|privat|pr)\s*(\d+)/i', $pkg, $m) || preg_match('/(?:private|privat|pr)\s*(\d+)/i', $mode, $m)) {
             $totalMeetings = (int) $m[1];
-            $suffix = (stripos($pkg, 'berdua') !== false) ? ' Berdua' : '';
+            $suffix = (stripos($pkg, 'berdua') !== false || stripos($mode, 'berdua') !== false) ? ' Berdua' : '';
             return ["Privat {$totalMeetings}{$suffix}", $totalMeetings, 'private'];
         }
 
-        return [$pkg, 10, 'private'];
+        return [$pkg ?: 'Privat', 10, 'private'];
     }
 
     /**
@@ -422,7 +745,8 @@ class StudyClassSeeder extends Seeder
             str_starts_with($b, 'KB') || 
             str_starts_with($b, 'ODI') || 
             str_starts_with($b, 'CK') || 
-            str_starts_with($b, 'SC')
+            str_starts_with($b, 'SC') ||
+            str_contains($b, 'CURIOUS')
         ) {
             return 'Kids';
         }
@@ -443,12 +767,13 @@ class StudyClassSeeder extends Seeder
         if (
             str_starts_with($b, 'IC') || 
             str_starts_with($b, 'ENGLISH FILE') || 
-            str_starts_with($b, 'EF')
+            str_starts_with($b, 'EF') ||
+            str_contains($b, 'INTER')
         ) {
             return 'Adult';
         }
 
-        return 'Kids';
+        return 'Teens';
     }
 
     /**
@@ -462,7 +787,7 @@ class StudyClassSeeder extends Seeder
             'februari' => 'Feb', 'feb' => 'Feb',
             'maret' => 'Mar', 'mar' => 'Mar',
             'april' => 'Apr', 'apr' => 'Apr',
-            'mei' => 'May', 'may' => 'May',
+            'mei' => 'May', 'may' => 'May', 'mer' => 'May',
             'juni' => 'Jun', 'jun' => 'Jun',
             'juli' => 'Jul', 'july' => 'Jul', 'jul' => 'Jul',
             'agustus' => 'Aug', 'agust' => 'Aug', 'agus' => 'Aug', 'agu' => 'Aug', 'aug' => 'Aug',
