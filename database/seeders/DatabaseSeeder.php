@@ -39,8 +39,8 @@ class DatabaseSeeder extends Seeder
             LoyaltySettingSeeder::class,
             PaymentAccountSeeder::class,
             PriceMasterSeeder::class,
-            // StudyClassSeeder::class, // Dikosongkan sementara menunggu data terbaru
-            // DataSiswaSeeder::class, // Dikosongkan sementara menunggu data terbaru
+            StudyClassSeeder::class,
+            DataSiswaSeeder::class,
         ]);
     }
 }

@@ -14,9 +14,13 @@ class LoyaltySettingSeeder extends Seeder
     public function run(): void
     {
         // Clear existing settings first
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        LoyaltySetting::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            LoyaltySetting::truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } else {
+            LoyaltySetting::query()->delete();
+        }
 
         $tiers = [
             [
