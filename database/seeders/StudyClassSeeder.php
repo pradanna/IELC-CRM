@@ -296,10 +296,10 @@ class StudyClassSeeder extends Seeder
     private function seedSemarangGroupClasses(Branch $semarangBranch, ?PriceMaster $groupPriceMaster): void
     {
         $possiblePaths = [
-            database_path('seeders/data/semarang/data kelas grup semarang.xlsx'),
-            base_path('docs/initiate data/semarang/data kelas grup semarang.xlsx'),
             database_path('seeders/data/semarang/data kelas grup semarang.csv'),
             base_path('docs/initiate data/semarang/data kelas grup semarang.csv'),
+            database_path('seeders/data/semarang/data kelas grup semarang.xlsx'),
+            base_path('docs/initiate data/semarang/data kelas grup semarang.xlsx'),
         ];
 
         $filePath = null;
@@ -320,7 +320,9 @@ class StudyClassSeeder extends Seeder
         $groupBlocks = [];
         $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
-        if ($ext === 'xlsx') {
+        if ($ext === 'csv') {
+            $groupBlocks = $this->parseSemarangGroupCsv($filePath);
+        } elseif ($ext === 'xlsx') {
             $groupBlocks = $this->parseSemarangGroupXlsx($filePath);
         }
 
@@ -390,10 +392,64 @@ class StudyClassSeeder extends Seeder
     }
 
     /**
+     * Parser berkas CSV kelas Group Semarang
+     */
+    private function parseSemarangGroupCsv(string $filePath): array
+    {
+        $file = fopen($filePath, 'r');
+        if (!$file) {
+            return [];
+        }
+
+        $groups = [];
+        $currentBlock = null;
+
+        while (($row = fgetcsv($file)) !== false) {
+            $colA = isset($row[0]) ? trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $row[0])) : '';
+            $colB = isset($row[1]) ? trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $row[1])) : '';
+            $colC = isset($row[2]) ? trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $row[2])) : '';
+            $colD = isset($row[3]) ? trim(preg_replace('/[\x{FEFF}\x{200B}]/u', '', $row[3])) : '';
+
+            if (!empty($colA) && !in_array(strtolower($colA), ['nama grup', 'grup', 'name'])) {
+                if ($currentBlock) {
+                    $groups[] = $this->finalizeSemarangGroupBlock($currentBlock);
+                }
+                $currentBlock = [
+                    'name' => $colA,
+                    'book' => $colB,
+                    'schedule_day1' => $colC,
+                    'schedule_day2' => $colD,
+                    'sub_rows' => [],
+                ];
+            } elseif ($currentBlock) {
+                if ($colB !== '' || $colC !== '' || $colD !== '') {
+                    $currentBlock['sub_rows'][] = [
+                        'B' => $colB,
+                        'C' => $colC,
+                        'D' => $colD,
+                    ];
+                }
+            }
+        }
+        fclose($file);
+
+        if ($currentBlock) {
+            $groups[] = $this->finalizeSemarangGroupBlock($currentBlock);
+        }
+
+        return $groups;
+    }
+
+    /**
      * Parser berkas XLSX kelas Group Semarang
      */
     private function parseSemarangGroupXlsx(string $filePath): array
     {
+        if (!class_exists('\ZipArchive')) {
+            $this->command->warn('Ekstensi PHP ZipArchive tidak ditemukan untuk membaca file XLSX.');
+            return [];
+        }
+
         $zip = new \ZipArchive();
         if ($zip->open($filePath) !== true) {
             return [];
