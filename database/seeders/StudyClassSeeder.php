@@ -42,6 +42,7 @@ class StudyClassSeeder extends Seeder
     private function seedSoloGroupClasses(Branch $soloBranch, ?PriceMaster $groupPriceMaster): void
     {
         $possiblePaths = [
+            database_path('seeders/data/solo/Daftar kelas Solo (group).csv'),
             base_path('docs/initiate data/solo/Daftar kelas Solo (group).csv'),
             base_path('docs/initiate data/solo/kelas .csv'),
             base_path('docs/initiate data/solo/kelas.csv'),
@@ -181,6 +182,7 @@ class StudyClassSeeder extends Seeder
     private function seedSoloPrivateClasses(Branch $soloBranch, $priceMasters): void
     {
         $possiblePaths = [
+            database_path('seeders/data/solo/Daftar kelas Solo (private).csv'),
             base_path('docs/initiate data/solo/Daftar kelas Solo (private).csv'),
             base_path('docs/initiate data/solo/kelas-private.csv'),
         ];
@@ -287,8 +289,12 @@ class StudyClassSeeder extends Seeder
     private function loadPrivateDeliveryMap(): array
     {
         $map = [];
-        $csvPath = base_path('docs/initiate data/solo/update priv online atau offline.csv');
-        $xlsxPath = base_path('docs/initiate data/solo/update priv online atau offline.xlsx');
+        $csvPath = file_exists(database_path('seeders/data/solo/update priv online atau offline.csv'))
+            ? database_path('seeders/data/solo/update priv online atau offline.csv')
+            : base_path('docs/initiate data/solo/update priv online atau offline.csv');
+        $xlsxPath = file_exists(database_path('seeders/data/solo/update priv online atau offline.xlsx'))
+            ? database_path('seeders/data/solo/update priv online atau offline.xlsx')
+            : base_path('docs/initiate data/solo/update priv online atau offline.xlsx');
 
         if (file_exists($csvPath)) {
             $handle = fopen($csvPath, 'r');

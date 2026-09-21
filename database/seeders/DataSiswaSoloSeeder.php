@@ -83,6 +83,7 @@ class DataSiswaSoloSeeder extends Seeder
         array $privateClassMap
     ): void {
         $possiblePaths = [
+            database_path('seeders/data/solo/data siswa solo.csv'),
             base_path('docs/initiate data/solo/data siswa solo.csv'),
             base_path('docs/initiate data/solo/Data siswa solo.csv'),
             base_path('docs/initiate data/solo/data-siswa-solo.csv'),
@@ -475,6 +476,7 @@ class DataSiswaSoloSeeder extends Seeder
     private function syncPackagesAndSiblings(string $branchId): void
     {
         $possiblePaths = [
+            database_path('seeders/data/solo/jumlahpaket yang diambil dan sibling.csv'),
             base_path('docs/initiate data/solo/jumlahpaket yang diambil dan sibling.csv'),
             base_path('docs/initiate data/solo/jumlahpaket.csv'),
         ];

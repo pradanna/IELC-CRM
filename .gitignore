@@ -25,6 +25,7 @@ Thumbs.db
 /credential.md
 start-dev.bat
 start-dev.ps1
-/docs/
+/docs/*
+!/docs/initiate data/
 *checklist*
 *Checklist*
