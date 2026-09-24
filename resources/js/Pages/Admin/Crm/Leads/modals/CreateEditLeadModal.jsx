@@ -148,7 +148,7 @@ export default function CreateEditLeadModal({
     useEffect(() => {
         if (isOpen) {
             clearErrors();
-            if (lead) {
+            if (lead && lead.id) {
                 // Formatting guardians and relationships if needed
                 const initialGuardians = lead?.guardians?.length > 0 ? lead.guardians.map(g => ({
                     role: g.role || 'ibu',
@@ -178,7 +178,7 @@ export default function CreateEditLeadModal({
                     school: lead.school || '',
                     grade: parsedGrade.grade,
                     school_level: parsedGrade.school_level,
-                    branch_id: lead.branch_id || '',
+                    branch_id: lead.branch_id || auth?.user?.branch_id || '',
                     lead_source_id: lead.lead_source_id || '',
                     info_source_id: lead.info_source_id || '',
                     lead_type_id: lead.lead_type_id || '',
@@ -191,35 +191,36 @@ export default function CreateEditLeadModal({
                     relationships: initialRelationships,
                 });
             } else {
-                // Formatting for New Lead (reset or default values)
-                
+                // Formatting for New Lead (reset or default values, preserving prefilled phone if passed)
                 setData({
-                    name: 'lead',
-                    nickname: '',
-                    gender: '',
-                    nik: '',
-                    phone: '',
-                    email: '',
-                    birth_date: '',
-                    school: '',
+                    name: lead?.name || 'lead',
+                    nickname: lead?.nickname || '',
+                    gender: lead?.gender || '',
+                    nik: lead?.nik || '',
+                    phone: lead?.phone || '',
+                    email: lead?.email || '',
+                    birth_date: lead?.birth_date || '',
+                    school: lead?.school || '',
                     grade: '',
                     school_level: '',
-                    branch_id: auth.user.branch_id || '',
-                    lead_source_id: '',
-                    info_source_id: '',
-                    lead_type_id: '',
-                    is_online: false,
-                    province: '',
-                    city: '',
-                    address: '',
-                    postal_code: '',
+                    branch_id: lead?.branch_id || auth?.user?.branch_id || '',
+                    lead_source_id: lead?.lead_source_id || '',
+                    info_source_id: lead?.info_source_id || '',
+                    lead_type_id: lead?.lead_type_id || '',
+                    is_online: lead?.is_online || false,
+                    province: lead?.province || '',
+                    city: lead?.city || '',
+                    address: lead?.address || '',
+                    postal_code: lead?.postal_code || '',
                     guardians: [],
                     relationships: [],
                 });
 
-                // Smooth Auto-focus for WhatsApp field
+                // Smooth Auto-focus for WhatsApp field if empty
                 setTimeout(() => {
-                    phoneInputRef.current?.focus();
+                    if (!lead?.phone) {
+                        phoneInputRef.current?.focus();
+                    }
                 }, 400);
             }
         }
@@ -257,7 +258,7 @@ export default function CreateEditLeadModal({
             },
         };
 
-        if (lead) {
+        if (lead && lead.id) {
             put(route('admin.crm.leads.update', lead.id), options);
         } else {
             post(route('admin.crm.leads.store'), options);
@@ -336,7 +337,7 @@ export default function CreateEditLeadModal({
                                     <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
                                         <div>
                                             <Dialog.Title className="text-xl font-black text-slate-900 tracking-tight">
-                                                {lead ? 'Edit Lead Data' : 'Create New Lead'}
+                                                {lead && lead.id ? 'Edit Lead Data' : 'Create New Lead'}
                                             </Dialog.Title>
                                             <p className="text-[11px] text-slate-500 mt-1 font-semibold uppercase tracking-wider">Silakan lengkapi formulir di bawah ini dengan benar.</p>
                                         </div>

@@ -64,13 +64,28 @@ export default function CrmLayout({ children, onSelectLead, ...customProps }) {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Handle URL parameters for open_lead/id, edit event, and click outside
+    // Handle URL parameters for open_lead/id and create_lead
     React.useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const openLeadId = urlParams.get('open_lead') || urlParams.get('id');
-        if (openLeadId) {
-            openDrawer(openLeadId, 0);
+        try {
+            const urlObj = new URL(window.location.href);
+            const openLeadId = urlObj.searchParams.get('open_lead') || urlObj.searchParams.get('id');
+            if (openLeadId) {
+                openDrawer(openLeadId, 0);
+            }
+
+            const isNewLead = urlObj.searchParams.get('create_lead') || urlObj.searchParams.get('new_lead');
+            if (isNewLead) {
+                const rawPhone = urlObj.searchParams.get('phone') || '';
+                setEditingLead(rawPhone ? { phone: rawPhone, name: '' } : null);
+                setIsLeadModalOpen(true);
+            }
+        } catch (err) {
+            console.error('Error parsing URL params:', err);
         }
+    }, [url]);
+
+    // Handle edit event and click outside
+    React.useEffect(() => {
 
         const handleEdit = (e) => {
             setEditingLead(e.detail.lead);

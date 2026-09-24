@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, UserCheck, ShieldCheck, PhoneCall } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { Search, UserCheck, ShieldCheck, PhoneCall, UserPlus } from 'lucide-react';
 
 export default function ChatSidebar({
     contacts,
@@ -88,11 +89,26 @@ export default function ChatSidebar({
                                         {contact.last_message}
                                     </p>
 
-                                    <div className="flex items-center gap-1.5 mt-1.5">
+                                    <div className="flex items-center justify-between gap-1.5 mt-2">
                                         {contact.name === 'No Name' || contact.type === 'non-lead' || !contact.is_lead ? (
-                                            <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-black uppercase tracking-wider">
-                                                Belum Jadi Lead
-                                            </span>
+                                            <>
+                                                <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-black uppercase tracking-wider">
+                                                    Belum Jadi Lead
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const clean = (contact.phone || '').replace(/[^0-9]/g, '');
+                                                        router.visit(route('admin.crm.leads.list', { create_lead: 1, phone: clean }));
+                                                    }}
+                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer ml-auto"
+                                                    title="Daftarkan nomor WhatsApp ini sebagai Lead baru"
+                                                >
+                                                    <UserPlus size={11} />
+                                                    <span>+ Buat Lead</span>
+                                                </button>
+                                            </>
                                         ) : (
                                             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-wider">
                                                 {contact.type || 'Lead'}

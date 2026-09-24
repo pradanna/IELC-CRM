@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Send, FileCode, CheckCheck, Check, ShieldCheck, PhoneCall, User } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { Send, FileCode, CheckCheck, Check, ShieldCheck, PhoneCall, User, UserPlus, AlertCircle } from 'lucide-react';
 import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 
 export default function ChatWindow({
@@ -15,6 +16,11 @@ export default function ChatWindow({
 }) {
     const messagesEndRef = useRef(null);
     const { openDrawer } = useLeadDrawer();
+
+    const handleCreateLead = (phone) => {
+        const clean = (phone || '').replace(/[^0-9]/g, '');
+        router.visit(route('admin.crm.leads.list', { create_lead: 1, phone: clean }));
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,6 +46,8 @@ export default function ChatWindow({
         );
     }
 
+    const isNonLead = selectedContact.name === 'No Name' || !selectedContact.is_lead;
+
     return (
         <div className="flex-1 bg-[#efeae2]/40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] flex flex-col h-full overflow-hidden">
             {/* Top Chat Header */}
@@ -54,10 +62,10 @@ export default function ChatWindow({
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className={`text-sm ${selectedContact.name === 'No Name' ? 'font-bold text-slate-700 italic' : 'font-black text-slate-900'}`}>
+                            <h3 className={`text-sm ${isNonLead ? 'font-bold text-slate-700 italic' : 'font-black text-slate-900'}`}>
                                 {selectedContact.name || 'No Name'}
                             </h3>
-                            {selectedContact.name === 'No Name' || !selectedContact.is_lead ? (
+                            {isNonLead ? (
                                 <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-800 border border-amber-300">
                                     Belum Jadi Lead
                                 </span>
@@ -76,23 +84,54 @@ export default function ChatWindow({
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {selectedContact.crm_id && (
+                    {/* If Non-Lead / No Name: Show Buat Lead button */}
+                    {isNonLead ? (
                         <button
                             type="button"
-                            onClick={() => openDrawer(selectedContact.crm_id, 0)}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
-                                selectedContact.name === 'No Name' || !selectedContact.is_lead
-                                    ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                            }`}
-                            title={selectedContact.name === 'No Name' || !selectedContact.is_lead ? "Daftarkan kontak ini sebagai Lead CRM" : "Buka Profil CRM"}
+                            onClick={() => handleCreateLead(selectedContact.phone)}
+                            className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 cursor-pointer"
+                            title="Daftarkan nomor WhatsApp ini sebagai Lead baru"
                         >
-                            <User size={13} />
-                            {selectedContact.name === 'No Name' || !selectedContact.is_lead ? '+ Daftarkan Jadi Lead' : 'Profil Lead CRM'}
+                            <UserPlus size={14} />
+                            <span>+ Buat Lead Baru</span>
                         </button>
+                    ) : (
+                        selectedContact.crm_id && (
+                            <button
+                                type="button"
+                                onClick={() => openDrawer(selectedContact.crm_id, 0)}
+                                className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                title="Buka Profil CRM"
+                            >
+                                <User size={13} />
+                                <span>Profil Lead CRM</span>
+                            </button>
+                        )
                     )}
                 </div>
             </div>
+
+            {/* Quick Action Banner for Non-Leads */}
+            {isNonLead && (
+                <div className="bg-amber-50/95 border-b border-amber-200/80 px-6 py-2.5 flex items-center justify-between text-xs text-amber-900 shadow-xs flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="p-1 rounded-lg bg-amber-200/70 text-amber-800">
+                            <AlertCircle size={14} />
+                        </span>
+                        <span>
+                            Nomor WhatsApp <strong className="font-mono text-emerald-800 font-bold">{selectedContact.phone}</strong> belum terdaftar sebagai Lead CRM.
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => handleCreateLead(selectedContact.phone)}
+                        className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
+                    >
+                        <UserPlus size={12} />
+                        <span>Daftarkan Jadi Lead</span>
+                    </button>
+                </div>
+            )}
 
             {/* Message History Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-3.5 custom-scrollbar">

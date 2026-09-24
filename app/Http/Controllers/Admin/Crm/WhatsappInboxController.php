@@ -110,7 +110,8 @@ class WhatsappInboxController extends Controller
             ->first();
 
         // 1. Read real recent WhatsApp chats directly from wa-baileys SQLite session
-        $sessionDir = dirname(base_path()) . '/wa-baileys/sessions/' . strtolower($branchCode) . '/database.sqlite';
+        $baseSessionsPath = config('services.whatsapp.sessions_path', dirname(base_path()) . '/wa-baileys/sessions');
+        $sessionDir = rtrim($baseSessionsPath, '/\\') . '/' . strtolower($branchCode) . '/database.sqlite';
         $recentBaileys = [];
 
         if (file_exists($sessionDir)) {
