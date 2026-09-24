@@ -258,9 +258,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::delete('/backup/{filename}', [\App\Http\Controllers\Admin\System\DatabaseBackupController::class, 'destroy'])->name('backup.destroy');
     });
 
+    // WhatsApp Setting (QR Code & Device Configuration)
+    Route::get('/setting-whatsapp', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('setting-whatsapp.index');
+
     // WhatsApp Management, Live Chat & Messaging Services (Accessible to all authenticated staff)
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('index');
+        Route::get('/', fn() => redirect()->route('admin.setting-whatsapp.index'))->name('index');
         Route::get('/status/{branch?}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
         Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');
         Route::post('/send', [\App\Http\Controllers\Admin\WhatsAppController::class, 'sendMessage'])

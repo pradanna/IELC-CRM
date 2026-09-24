@@ -63,7 +63,7 @@ export default function Inbox({ branches = [], initialTab = 'baileys' }) {
 
                         {/* Settings Link */}
                         <Link
-                            href={route('admin.whatsapp.index')}
+                            href={route('admin.setting-whatsapp.index')}
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
                             title="Pengaturan Koneksi WA"
                         >

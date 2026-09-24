@@ -131,8 +131,9 @@ const menuItems = [
             {
                 icon: <PhoneCall size={20} />,
                 text: "WhatsApp",
-                href: route("admin.whatsapp.index"),
-                name: "admin.whatsapp.*",
+                href: route("admin.setting-whatsapp.index"),
+                name: "admin.setting-whatsapp.*",
+                activeCheck: () => route().current('admin.setting-whatsapp.*'),
             },
             {
                 icon: <Users size={20} />,
