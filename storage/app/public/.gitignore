@@ -1,2 +1,7 @@
 *
 !.gitignore
+!pt_exams/
+!pt_exams/kids_canvas/
+!pt_exams/kids_canvas/**
+!pt_exams/kids_canvas_audio/
+!pt_exams/kids_canvas_audio/**

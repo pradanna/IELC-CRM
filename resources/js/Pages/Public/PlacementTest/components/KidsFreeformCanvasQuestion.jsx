@@ -217,11 +217,17 @@ function CanvasStudentAudioPlayer({ element }) {
         >
             <audio
                 ref={audioRef}
-                src={element.src}
+                preload="metadata"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}
-            />
+                onError={(e) => {
+                    console.error("Audio tag failed to load source:", element.src, e);
+                }}
+            >
+                <source src={element.src} type="audio/mpeg" />
+                <source src={element.src} />
+            </audio>
             <button
                 type="button"
                 onClick={togglePlay}
