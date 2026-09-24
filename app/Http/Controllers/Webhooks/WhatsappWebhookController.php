@@ -8,14 +8,18 @@ namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
 use App\Domains\CRM\Domain\Models\Lead;
+use App\Domains\CRM\Domain\Models\LeadChatLog;
+use App\Domains\CRM\Domain\Models\WhatsappContact;
+use App\Domains\CRM\Domain\Models\WhatsappMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class WhatsappWebhookController extends Controller
 {
     /**
-     * Handle incoming message from Lead.
+     * Handle incoming message from WhatsApp Node.js server.
      * Expected JSON: { "phone": "628...", "message": "...", "branch": "solo" }
      */
     public function handleIncomingMessage(Request $request): JsonResponse
@@ -29,27 +33,65 @@ class WhatsappWebhookController extends Controller
         ]);
 
         $clean = preg_replace('/[^0-9]/', '', $validated['phone']);
+        $intlPhone = str_starts_with($clean, '0') ? '62' . substr($clean, 1) : $clean;
+        $formattedPhone = '+' . $intlPhone;
+        $branchName = strtolower($validated['branch'] ?? 'solo');
         
-        // Ambil 10 digit terakhir untuk pencarian yang lebih fleksibel
-        $searchSuffix = substr($clean, -10);
+        // Ambil 9-10 digit terakhir untuk pencarian lead
+        $searchSuffix = strlen($clean) >= 9 ? substr($clean, -9) : $clean;
 
-        // Cari lead berdasarkan 10 digit terakhir (asumsi format di DB beragam)
-        $lead = Lead::where('phone', 'like', "%$searchSuffix")->first();
-
+        // Cari apakah kontak sudah ada di tabel Leads
+        $lead = Lead::where('phone', 'like', "%{$searchSuffix}")->first();
         $messageText = $validated['message'] ?? 'Media/Other message';
 
+        // 1. Catat atau perbarui kontak di whatsapp_contacts
+        $contact = WhatsappContact::findByPhone($formattedPhone, 'baileys', $branchName);
+        $displayName = $lead ? $lead->name : 'No Name';
+
+        if (!$contact) {
+            $contact = WhatsappContact::create([
+                'id'              => (string) Str::uuid(),
+                'phone'           => $formattedPhone,
+                'name'            => $displayName,
+                'channel'         => 'baileys',
+                'branch'          => $branchName,
+                'lead_id'         => $lead?->id,
+                'last_message'    => $messageText,
+                'last_message_at' => now(),
+                'unread_count'    => 1,
+            ]);
+        } else {
+            $contact->update([
+                'last_message'    => $messageText,
+                'last_message_at' => now(),
+                'unread_count'    => ($contact->unread_count ?? 0) + 1,
+                'lead_id'         => $lead?->id ?? $contact->lead_id,
+                'name'            => $lead ? $lead->name : ($contact->name ?: 'No Name'),
+            ]);
+        }
+
+        // 2. Simpan pesan masuk ke tabel whatsapp_messages
+        WhatsappMessage::create([
+            'id'                  => (string) Str::uuid(),
+            'whatsapp_contact_id' => $contact->id,
+            'lead_id'             => $lead?->id,
+            'phone'               => $formattedPhone,
+            'branch'              => $branchName,
+            'channel'             => 'baileys',
+            'sender'              => 'contact',
+            'message'             => $messageText,
+            'status'              => 'received',
+        ]);
+
         if ($lead) {
-            // Save to chat log for registered Lead
-            \App\Domains\CRM\Domain\Models\LeadChatLog::create([
+            // Save to chat log for registered Lead (for CRM Lead detail drawer)
+            LeadChatLog::create([
                 'lead_id'       => $lead->id,
                 'lead_phase_id' => $lead->lead_phase_id,
                 'user_id'       => null,
                 'channel'       => 'baileys',
                 'message'       => $messageText,
             ]);
-
-            // Broadcast real-time notification with lead context
-            event(new \App\Events\WhatsappMessageReceived($lead, $messageText, 'baileys', '+' . $clean, $lead->name));
 
             // Reset follow-up counter jika sedang dalam mode follow-up
             if ($lead->follow_up_count > 0) {
@@ -67,22 +109,23 @@ class WhatsappWebhookController extends Controller
 
             Log::info("WA Webhook: Lead {$lead->id} ({$lead->name}) message processed.");
         } else {
-            // Kontak belum terdaftar sebagai Lead di CRM.
-            // JANGAN insert ke tabel leads! Pesan sudah tersimpan di SQLite Baileys.
-            // Cukup kirim event real-time ke Inbox WhatsApp agar CS melihat pesan masuk secara live.
-            event(new \App\Events\WhatsappMessageReceived(null, $messageText, 'baileys', '+' . $clean, 'No Name'));
-
-            Log::info("WA Webhook: Non-lead message received from +{$clean}. Broadcasted to Inbox without creating Lead.");
+            Log::info("WA Webhook: Non-lead message from {$formattedPhone} stored in whatsapp_contacts.");
         }
+
+        // 3. Broadcast real-time notification
+        event(new \App\Events\WhatsappMessageReceived(
+            $lead,
+            $messageText,
+            'baileys',
+            $formattedPhone,
+            $contact->name
+        ));
 
         return response()->json(['success' => true, 'message' => 'Message processed successfully.']);
     }
 
     private function normalizePhone($phone)
     {
-        // Fungsi ini sekarang hanya sebagai pembersih regex saja jika dipakai di tempat lain
         return preg_replace('/[^0-9]/', '', $phone);
     }
 }
-
-

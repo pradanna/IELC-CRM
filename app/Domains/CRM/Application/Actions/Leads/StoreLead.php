@@ -86,6 +86,28 @@ class StoreLead
                 }
             }
 
+            // Hubungkan kontak WhatsApp yang ada sebelumnya ke Lead baru ini
+            $cleanDigits = preg_replace('/[^0-9]/', '', $lead->phone);
+            $suffix = strlen($cleanDigits) >= 8 ? substr($cleanDigits, -8) : $cleanDigits;
+            if (!empty($suffix)) {
+                \App\Domains\CRM\Domain\Models\WhatsappContact::where('phone', 'like', "%{$suffix}")
+                    ->where(function ($q) {
+                        $q->whereNull('lead_id')
+                          ->orWhere('name', 'No Name')
+                          ->orWhere('name', 'like', '+%');
+                    })
+                    ->update([
+                        'lead_id' => $lead->id,
+                        'name' => $lead->name,
+                    ]);
+
+                \App\Domains\CRM\Domain\Models\WhatsappMessage::where('phone', 'like', "%{$suffix}")
+                    ->whereNull('lead_id')
+                    ->update([
+                        'lead_id' => $lead->id,
+                    ]);
+            }
+
             return $lead;
         });
     }

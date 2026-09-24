@@ -81,6 +81,17 @@ class UpdateLead
                 }
             }
 
+            // Sinkronkan nama ke WhatsappContact jika ada
+            $cleanDigits = preg_replace('/[^0-9]/', '', $lead->phone);
+            $suffix = strlen($cleanDigits) >= 8 ? substr($cleanDigits, -8) : $cleanDigits;
+            if (!empty($suffix)) {
+                \App\Domains\CRM\Domain\Models\WhatsappContact::where('phone', 'like', "%{$suffix}")
+                    ->update([
+                        'lead_id' => $lead->id,
+                        'name' => $lead->name,
+                    ]);
+            }
+
             return $lead->refresh();
         });
     }

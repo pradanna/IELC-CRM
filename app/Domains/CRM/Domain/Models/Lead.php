@@ -189,6 +189,16 @@ class Lead extends Model
         return $this->hasMany(LeadActivity::class)->latest();
     }
 
+    public function whatsappContacts(): HasMany
+    {
+        return $this->hasMany(WhatsappContact::class, 'lead_id');
+    }
+
+    public function whatsappMessages(): HasMany
+    {
+        return $this->hasMany(WhatsappMessage::class, 'lead_id');
+    }
+
 
     protected static function booted()
     {
