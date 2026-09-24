@@ -15,18 +15,22 @@ class WhatsappMessageReceived implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $lead;
+    public ?Lead $lead;
     public $message;
     public $channelName;
+    public ?string $phone;
+    public ?string $name;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Lead $lead, string $message, string $channelName = 'official')
+    public function __construct(?Lead $lead, string $message, string $channelName = 'official', ?string $phone = null, ?string $name = null)
     {
         $this->lead = $lead;
         $this->message = $message;
         $this->channelName = $channelName;
+        $this->phone = $phone ?? $lead?->phone;
+        $this->name = $name ?? $lead?->name;
     }
 
     /**
@@ -54,29 +58,37 @@ class WhatsappMessageReceived implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        $isNoName = empty($this->lead->name) 
-            || strtolower(trim($this->lead->name)) === 'no name' 
-            || strtolower(trim($this->lead->name)) === '(no name)'
-            || str_starts_with($this->lead->name, '+')
-            || str_starts_with($this->lead->name, 'WA +');
+        if ($this->lead) {
+            $isNoName = empty($this->lead->name) 
+                || strtolower(trim($this->lead->name)) === 'no name' 
+                || strtolower(trim($this->lead->name)) === '(no name)'
+                || str_starts_with($this->lead->name, '+')
+                || str_starts_with($this->lead->name, 'WA +');
 
-        $displayName = $isNoName ? 'No Name' : $this->lead->name;
+            $displayName = $isNoName ? 'No Name' : $this->lead->name;
+            $phone = $this->lead->phone;
+            $isLead = !$isNoName;
+        } else {
+            $displayName = $this->name ?? 'No Name';
+            $phone = $this->phone ?? '';
+            $isLead = false;
+        }
 
         return [
-            'lead_id' => $this->lead->id,
+            'lead_id' => $this->lead?->id,
             'name' => $displayName,
-            'phone' => $this->lead->phone,
-            'is_lead' => !$isNoName,
+            'phone' => $phone,
+            'is_lead' => $isLead,
             'message' => $this->message,
             'channel' => $this->channelName,
             'time' => now()->format('H:i'),
             'timestamp' => now()->timestamp,
-            'lead' => [
+            'lead' => $this->lead ? [
                 'id' => $this->lead->id,
                 'name' => $displayName,
                 'phone' => $this->lead->phone,
                 'branch_id' => $this->lead->branch_id,
-            ],
+            ] : null,
         ];
     }
 }

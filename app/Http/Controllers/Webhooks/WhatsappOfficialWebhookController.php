@@ -69,47 +69,28 @@ class WhatsappOfficialWebhookController extends Controller
                     $searchSuffix = substr($cleanDigits, -9);
                     $lead = Lead::where('phone', 'LIKE', "%{$searchSuffix}")->first();
 
-                    if (!$lead) {
-                        // Automatically create a new lead for this incoming WhatsApp number
-                        $defaultBranch = \App\Domains\Master\Domain\Models\Branch::first();
-                        $defaultPhase = \App\Domains\Master\Domain\Models\LeadPhase::where('code', 'lead')->first();
-                        $waSource = \App\Domains\Master\Domain\Models\LeadSource::where('name', 'LIKE', '%WhatsApp%')->first()
-                            ?? \App\Domains\Master\Domain\Models\LeadSource::first();
-                        $waInfo = \App\Domains\Master\Domain\Models\InfoSource::where('name', 'LIKE', '%WhatsApp%')->first()
-                            ?? \App\Domains\Master\Domain\Models\InfoSource::first();
-
-                        $lead = Lead::create([
-                            'id' => (string) \Illuminate\Support\Str::uuid(),
-                            'lead_number' => "L-" . now()->format('Ymd-His') . rand(10, 99),
-                            'name' => 'No Name',
-                            'phone' => '+' . $cleanDigits,
-                            'branch_id' => $defaultBranch?->id ?? 1,
-                            'owner_id' => null,
-                            'created_by' => null,
-                            'lead_source_id' => $waSource?->id,
-                            'info_source_id' => $waInfo?->id,
-                            'lead_phase_id' => $defaultPhase?->id,
-                            'last_activity_at' => now(),
+                    if ($lead) {
+                        LeadChatLog::create([
+                            'lead_id'       => $lead->id,
+                            'lead_phase_id' => $lead->lead_phase_id,
+                            'user_id'       => null, // Incoming message from customer
+                            'channel'       => 'official',
+                            'message'       => $body,
                         ]);
 
-                        Log::info("Created new record (No Name) #{$lead->id} for incoming WA Official chat from +{$cleanDigits}");
+                        // Update lead last activity
+                        $lead->update(['last_activity_at' => now()]);
+
+                        // Broadcast real-time event so WhatsApp Web inbox receives it immediately
+                        event(new \App\Events\WhatsappMessageReceived($lead, $body, 'official', '+' . $cleanDigits, $lead->name));
+
+                        Log::info("Meta WA Message saved and broadcasted for Lead #{$lead->id} ({$lead->name})");
+                    } else {
+                        // Non-lead message: Do not create dummy Lead in CRM
+                        event(new \App\Events\WhatsappMessageReceived(null, $body, 'official', '+' . $cleanDigits, 'No Name'));
+
+                        Log::info("Meta WA Message from non-lead +{$cleanDigits} broadcasted to Inbox without creating Lead.");
                     }
-
-                    LeadChatLog::create([
-                        'lead_id'       => $lead->id,
-                        'lead_phase_id' => $lead->lead_phase_id,
-                        'user_id'       => null, // Incoming message from customer
-                        'channel'       => 'official',
-                        'message'       => $body,
-                    ]);
-
-                    // Update lead last activity
-                    $lead->update(['last_activity_at' => now()]);
-
-                    // Broadcast real-time event so WhatsApp Web inbox receives it immediately
-                    event(new \App\Events\WhatsappMessageReceived($lead, $body, 'official'));
-
-                    Log::info("Meta WA Message saved and broadcasted for Lead #{$lead->id} ({$lead->name})");
                 }
             }
         } catch (\Exception $e) {
