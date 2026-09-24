@@ -166,6 +166,27 @@ export default function ChatWindow({
                                             <FileCode size={11} /> Template: {msg.template_name}
                                         </div>
                                     )}
+                                    {msg.media_url && (
+                                        <div className="mb-2">
+                                            {msg.media_url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ? (
+                                                <img 
+                                                    src={msg.media_url} 
+                                                    alt="Media" 
+                                                    className="rounded-lg max-h-60 object-cover cursor-pointer hover:opacity-95 transition-opacity" 
+                                                    onClick={() => window.open(msg.media_url, '_blank')} 
+                                                />
+                                            ) : (
+                                                <a 
+                                                    href={msg.media_url} 
+                                                    target="_blank" 
+                                                    rel="noreferrer" 
+                                                    className="inline-flex items-center gap-1.5 underline font-medium text-emerald-700 hover:text-emerald-800"
+                                                >
+                                                    Lihat Lampiran
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
                                     <p className="whitespace-pre-wrap">{msg.text}</p>
                                     <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${
                                         isAdmin 

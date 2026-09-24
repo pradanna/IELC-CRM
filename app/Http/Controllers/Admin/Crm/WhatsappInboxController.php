@@ -111,10 +111,22 @@ class WhatsappInboxController extends Controller
 
         // 1. Read real recent WhatsApp chats directly from wa-baileys SQLite session
         $baseSessionsPath = config('services.whatsapp.sessions_path', dirname(base_path()) . '/wa-baileys/sessions');
-        $sessionDir = rtrim($baseSessionsPath, '/\\') . '/' . strtolower($branchCode) . '/database.sqlite';
+        $candidates = [
+            rtrim($baseSessionsPath, '/\\') . '/' . strtolower($branchCode) . '/database.sqlite',
+            rtrim($baseSessionsPath, '/\\') . '/' . strtoupper($branchCode) . '/database.sqlite',
+            rtrim($baseSessionsPath, '/\\') . '/' . $branchCode . '/database.sqlite',
+        ];
+
+        $sessionDir = null;
+        foreach ($candidates as $cand) {
+            if (file_exists($cand)) {
+                $sessionDir = $cand;
+                break;
+            }
+        }
         $recentBaileys = [];
 
-        if (file_exists($sessionDir)) {
+        if ($sessionDir) {
             try {
                 $pdo = new \PDO("sqlite:" . $sessionDir);
                 $stmt = $pdo->query("
@@ -164,6 +176,9 @@ class WhatsappInboxController extends Controller
             $contactType = $lead ? ($isNoName ? 'non-lead' : 'lead') : 'non-lead';
 
             $ts = (int) $msg['timestamp'];
+            if ($ts > 9999999999) {
+                $ts = (int) ($ts / 1000);
+            }
             $formattedTime = date('H:i', $ts);
             if (date('Y-m-d', $ts) !== date('Y-m-d')) {
                 $formattedTime = date('d M H:i', $ts);
@@ -252,16 +267,53 @@ class WhatsappInboxController extends Controller
         $branch = $request->query('branch', 'solo');
 
         if ($channel === 'baileys') {
+            // 1. Direct read from Baileys SQLite database (fastest & works directly with session files)
+            $sqliteMessages = $this->whatsappService->getHistoryFromSqlite($branch, (string)$phone);
+            if (!empty($sqliteMessages)) {
+                $formatted = array_map(function ($msg) {
+                    $ts = (int) ($msg['timestamp'] ?? 0);
+                    if ($ts > 9999999999) {
+                        $ts = (int) ($ts / 1000);
+                    }
+                    return [
+                        'id' => $msg['id'] ?? uniqid('msg_'),
+                        'sender' => !empty($msg['fromMe']) ? 'admin' : 'contact',
+                        'text' => $msg['content'] ?? '',
+                        'timestamp' => $ts > 0 ? date('H:i', $ts) : date('H:i'),
+                        'status' => 'read',
+                        'media_url' => $msg['media_url'] ?? null,
+                    ];
+                }, $sqliteMessages);
+
+                return response()->json([
+                    'status' => 'success',
+                    'channel' => 'baileys',
+                    'phone' => $phone,
+                    'messages' => $formatted,
+                ]);
+            }
+
+            // 2. Fallback to Baileys HTTP gateway
             try {
-                $history = $this->whatsappService->getHistory($branch, $phone);
-                if (isset($history['data']) && is_array($history['data'])) {
+                $cleanDigits = preg_replace('/[^0-9]/', '', (string)$phone);
+                $intlDigits = str_starts_with($cleanDigits, '0') ? '62' . substr($cleanDigits, 1) : $cleanDigits;
+                $history = $this->whatsappService->getHistory($branch, $intlDigits);
+
+                if (isset($history['data']) && is_array($history['data']) && !empty($history['data'])) {
                     $formatted = array_map(function ($msg) {
+                        $isAdmin = !empty($msg['fromMe']) || !empty($msg['from_me']);
+                        $text = $msg['content'] ?? $msg['body'] ?? $msg['message'] ?? '';
+                        $ts = isset($msg['timestamp']) ? (int)$msg['timestamp'] : 0;
+                        if ($ts > 9999999999) {
+                            $ts = (int) ($ts / 1000);
+                        }
                         return [
                             'id' => $msg['id'] ?? uniqid('msg_'),
-                            'sender' => ($msg['from_me'] ?? false) ? 'admin' : 'contact',
-                            'text' => $msg['body'] ?? $msg['message'] ?? '',
-                            'timestamp' => isset($msg['timestamp']) ? date('H:i', $msg['timestamp']) : date('H:i'),
+                            'sender' => $isAdmin ? 'admin' : 'contact',
+                            'text' => $text,
+                            'timestamp' => $ts > 0 ? date('H:i', $ts) : date('H:i'),
                             'status' => 'read',
+                            'media_url' => $msg['media_url'] ?? null,
                         ];
                     }, $history['data']);
 
@@ -273,42 +325,43 @@ class WhatsappInboxController extends Controller
                     ]);
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed fetching Baileys history: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error("Failed fetching Baileys history via HTTP: " . $e->getMessage());
             }
         }
 
-        // Retrieve persisted database logs for Official channel
-        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-        if (str_starts_with($cleanPhone, '62')) {
-            $cleanPhone = substr($cleanPhone, 2);
-        } elseif (str_starts_with($cleanPhone, '0')) {
-            $cleanPhone = substr($cleanPhone, 1);
-        }
+        // 3. Fallback: Retrieve persisted database logs for Lead / Official channel
+        $cleanPhone = preg_replace('/[^0-9]/', '', (string)$phone);
+        $tail = strlen($cleanPhone) >= 8 ? substr($cleanPhone, -8) : $cleanPhone;
 
-        $lead = Lead::where('phone', 'LIKE', "%{$cleanPhone}%")->first();
-        if ($lead) {
-            $logs = \App\Domains\CRM\Domain\Models\LeadChatLog::where('lead_id', $lead->id)
-                ->where('channel', $channel)
-                ->latest()
-                ->get();
+        if (!empty($tail)) {
+            $lead = Lead::where('phone', 'LIKE', "%{$tail}%")->first();
+            if ($lead) {
+                $logsQuery = \App\Domains\CRM\Domain\Models\LeadChatLog::where('lead_id', $lead->id);
+                if ($channel === 'official') {
+                    $logsQuery->where('channel', 'official');
+                }
+                $logs = $logsQuery->latest()->get();
 
-            $formatted = $logs->map(function ($log) use ($channel) {
-                return [
-                    'id' => 'log_' . $log->id,
-                    'sender' => $log->user_id ? 'admin' : 'contact',
-                    'text' => $log->message,
-                    'timestamp' => $log->created_at ? $log->created_at->format('H:i') : date('H:i'),
-                    'status' => 'read',
-                    'template_name' => $channel === 'official' ? 'Official Meta' : null,
-                ];
-            })->reverse()->values();
+                if ($logs->isNotEmpty()) {
+                    $formatted = $logs->map(function ($log) use ($channel) {
+                        return [
+                            'id' => 'log_' . $log->id,
+                            'sender' => $log->user_id ? 'admin' : 'contact',
+                            'text' => $log->message,
+                            'timestamp' => $log->created_at ? $log->created_at->format('H:i') : date('H:i'),
+                            'status' => 'read',
+                            'template_name' => $log->channel === 'official' ? 'Official Meta' : null,
+                        ];
+                    })->reverse()->values();
 
-            return response()->json([
-                'status' => 'success',
-                'channel' => 'official',
-                'phone' => $phone,
-                'messages' => $formatted,
-            ]);
+                    return response()->json([
+                        'status' => 'success',
+                        'channel' => $channel,
+                        'phone' => $phone,
+                        'messages' => $formatted,
+                    ]);
+                }
+            }
         }
 
         return response()->json([
