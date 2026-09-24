@@ -30,31 +30,19 @@ export default function BaileysInboxTab({
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-black uppercase tracking-wider">WhatsApp Multi-Device (Nomor Cabang)</h4>
+                            <h4 className="text-xs font-black uppercase tracking-wider">WhatsApp Web (Satu Pintu / Terpusat)</h4>
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
                                 <CheckCircle2 size={10} /> Device Connected
                             </span>
                         </div>
-                        <p className="text-[11px] text-emerald-200/80 mt-0.5">Pengiriman bebas langsung via perangkat nomor cabang</p>
+                        <p className="text-[11px] text-emerald-200/80 mt-0.5">Semua percakapan masuk & keluar terhubung dalam satu inbox</p>
                     </div>
                 </div>
 
-                {/* Branch Switcher Selector */}
-                <div className="flex items-center gap-2">
-                    <label className="text-xs font-bold text-emerald-200 flex items-center gap-1.5">
-                        <Building2 size={14} /> Cabang / Branch:
-                    </label>
-                    <select
-                        value={selectedBranch}
-                        onChange={(e) => setSelectedBranch(e.target.value)}
-                        className="px-3.5 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    >
-                        {branches.map((b) => (
-                            <option key={b.id} value={b.code} className="text-slate-900">
-                                {b.name} ({b.code.toUpperCase()})
-                            </option>
-                        ))}
-                    </select>
+                {/* Unified Branch Badge */}
+                <div className="flex items-center gap-2 px-3.5 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-xs font-bold text-white shadow-xs">
+                    <Building2 size={14} className="text-emerald-300" />
+                    <span>Inbox Terpusat (Semua Chat Jadi 1)</span>
                 </div>
             </div>
 

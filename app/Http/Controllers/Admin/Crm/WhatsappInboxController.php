@@ -162,24 +162,16 @@ class WhatsappInboxController extends Controller
     }
 
     /**
-     * Get conversation contact list for WA Baileys per branch.
+     * Get conversation contact list for WA Baileys (Unified for all branches).
      */
-    public function getBaileysConversations(string $branchCode, Request $request): JsonResponse
+    public function getBaileysConversations(?string $branchCode = null, Request $request = null): JsonResponse
     {
-        $branch = Branch::where('code', strtolower($branchCode))
-            ->orWhere('code', strtoupper($branchCode))
-            ->first();
-
         $allItems = collect();
         $seenPhones = [];
 
-        // 1. Ambil kontak dari tabel whatsapp_contacts (termasuk non-lead)
+        // 1. Ambil kontak dari tabel whatsapp_contacts (termasuk non-lead) - Semua branch jadi 1
         $waContacts = WhatsappContact::where('channel', 'baileys')
-            ->where(function($q) use ($branchCode) {
-                $q->where('branch', strtolower($branchCode))
-                  ->orWhereNull('branch');
-            })
-            ->with('lead')
+            ->with(['lead.branch'])
             ->orderByDesc('last_message_at')
             ->get();
 
@@ -191,10 +183,10 @@ class WhatsappInboxController extends Controller
 
             $lead = $c->lead;
             if (!$lead && $c->lead_id) {
-                $lead = Lead::find($c->lead_id);
+                $lead = Lead::with('branch')->find($c->lead_id);
             }
             if (!$lead) {
-                $lead = Lead::where('phone', 'like', "%{$suffix}")->first();
+                $lead = Lead::with('branch')->where('phone', 'like', "%{$suffix}")->first();
             }
 
             $name = $lead ? $lead->name : $c->name;
@@ -215,12 +207,15 @@ class WhatsappInboxController extends Controller
                     : $lastTime->format('d M H:i');
             }
 
+            $branchCodeVal = $lead?->branch?->code ?? $c->branch;
+
             $allItems->push([
                 'id' => 'baileys_contact_' . $c->id,
                 'name' => $displayName,
                 'is_lead' => !$isNoName && ($lead || $c->lead_id),
                 'phone' => $c->phone,
                 'type' => $contactType,
+                'branch_code' => $branchCodeVal ? strtoupper($branchCodeVal) : null,
                 'crm_id' => $lead?->id ?? $c->lead_id,
                 'avatar' => null,
                 'last_message' => $c->last_message ?: 'Pesan',
@@ -233,43 +228,37 @@ class WhatsappInboxController extends Controller
 
         // 2. Read recent WhatsApp chats directly from wa-baileys SQLite session jika ada
         $baseSessionsPath = config('services.whatsapp.sessions_path', dirname(base_path()) . '/wa-baileys/sessions');
-        $candidates = [
-            rtrim($baseSessionsPath, '/\\') . '/' . strtolower($branchCode) . '/database.sqlite',
-            rtrim($baseSessionsPath, '/\\') . '/' . strtoupper($branchCode) . '/database.sqlite',
-            rtrim($baseSessionsPath, '/\\') . '/' . $branchCode . '/database.sqlite',
-        ];
-
-        $sessionDir = null;
-        foreach ($candidates as $cand) {
-            if (file_exists($cand)) {
-                $sessionDir = $cand;
-                break;
-            }
-        }
+        $sessionCandidates = ['solo', 'SOLO', 'smg', 'SMG', 'semarang', 'main', $branchCode];
         $recentBaileys = [];
 
-        if ($sessionDir) {
-            try {
-                $pdo = new \PDO("sqlite:" . $sessionDir);
-                $stmt = $pdo->query("
-                    SELECT 
-                        m1.jid, 
-                        m1.content, 
-                        m1.timestamp, 
-                        m1.fromMe
-                    FROM messages m1
-                    INNER JOIN (
-                        SELECT jid, MAX(timestamp) as max_ts
-                        FROM messages
-                        WHERE jid NOT LIKE '%@g.us' AND jid LIKE '%@s.whatsapp.net'
-                        GROUP BY jid
-                    ) m2 ON m1.jid = m2.jid AND m1.timestamp = m2.max_ts
-                    ORDER BY m1.timestamp DESC
-                    LIMIT 60
-                ");
-                $recentBaileys = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("Could not read Baileys SQLite chats: " . $e->getMessage());
+        foreach (array_unique(array_filter($sessionCandidates)) as $sess) {
+            $sqliteFile = rtrim($baseSessionsPath, '/\\') . '/' . $sess . '/database.sqlite';
+            if (file_exists($sqliteFile)) {
+                try {
+                    $pdo = new \PDO("sqlite:" . $sqliteFile);
+                    $stmt = $pdo->query("
+                        SELECT 
+                            m1.jid, 
+                            m1.content, 
+                            m1.timestamp, 
+                            m1.fromMe
+                        FROM messages m1
+                        INNER JOIN (
+                            SELECT jid, MAX(timestamp) as max_ts
+                            FROM messages
+                            WHERE jid NOT LIKE '%@g.us' AND jid LIKE '%@s.whatsapp.net'
+                            GROUP BY jid
+                        ) m2 ON m1.jid = m2.jid AND m1.timestamp = m2.max_ts
+                        ORDER BY m1.timestamp DESC
+                        LIMIT 60
+                    ");
+                    $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                    if (!empty($rows)) {
+                        $recentBaileys = array_merge($recentBaileys, $rows);
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Could not read Baileys SQLite chats for {$sess}: " . $e->getMessage());
+                }
             }
         }
 
@@ -283,7 +272,7 @@ class WhatsappInboxController extends Controller
             if (isset($seenPhones[$suffix])) continue;
             $seenPhones[$suffix] = true;
 
-            $lead = Lead::where('phone', 'like', "%{$suffix}")->first();
+            $lead = Lead::with('branch')->where('phone', 'like', "%{$suffix}")->first();
 
             $isNoName = !$lead 
                 || empty($lead->name) 
@@ -304,12 +293,15 @@ class WhatsappInboxController extends Controller
                 $formattedTime = date('d M H:i', $ts);
             }
 
+            $branchCodeVal = $lead?->branch?->code;
+
             $allItems->push([
                 'id' => 'baileys_live_' . $digits,
                 'name' => $displayName,
                 'is_lead' => !$isNoName,
                 'phone' => '+' . $digits,
                 'type' => $contactType,
+                'branch_code' => $branchCodeVal ? strtoupper($branchCodeVal) : null,
                 'crm_id' => $lead?->id,
                 'avatar' => null,
                 'last_message' => $msg['content'] ?: 'Pesan',
@@ -320,17 +312,15 @@ class WhatsappInboxController extends Controller
             ]);
         }
 
-        // 3. Fetch CRM Leads for this branch that have not chatted yet
-        $leadsQuery = Lead::whereNotNull('phone')
-            ->where('phone', '!=', '');
-
-        if ($branch) {
-            $leadsQuery->where('branch_id', $branch->id);
-        }
-
-        $leads = $leadsQuery->with(['chatLogs' => function ($q) {
-            $q->where('channel', 'baileys')->latest();
-        }])->latest('updated_at')->take(50)->get(['id', 'name', 'phone', 'updated_at', 'created_at']);
+        // 3. Fetch CRM Leads di seluruh cabang yang belum pernah chat
+        $leads = Lead::whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->with(['branch', 'chatLogs' => function ($q) {
+                $q->where('channel', 'baileys')->latest();
+            }])
+            ->latest('updated_at')
+            ->take(60)
+            ->get(['id', 'name', 'phone', 'branch_id', 'updated_at', 'created_at']);
 
         foreach ($leads as $lead) {
             $digits = preg_replace('/[^0-9]/', '', $lead->phone);
@@ -351,6 +341,7 @@ class WhatsappInboxController extends Controller
 
             $displayName = $isNoName ? 'No Name' : $lead->name;
             $contactType = $isNoName ? 'non-lead' : 'lead';
+            $branchCodeVal = $lead->branch?->code;
 
             $allItems->push([
                 'id' => 'baileys_lead_' . $lead->id,
@@ -358,6 +349,7 @@ class WhatsappInboxController extends Controller
                 'is_lead' => !$isNoName,
                 'phone' => $lead->phone,
                 'type' => $contactType,
+                'branch_code' => $branchCodeVal ? strtoupper($branchCodeVal) : null,
                 'crm_id' => $lead->id,
                 'avatar' => null,
                 'last_message' => $latestLog ? $latestLog->message : 'Belum ada pesan',
@@ -372,7 +364,7 @@ class WhatsappInboxController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'branch' => $branchCode,
+            'branch' => 'all',
             'data' => $contacts,
         ]);
     }
@@ -419,35 +411,38 @@ class WhatsappInboxController extends Controller
 
         // 2. Fallback untuk Baileys: SQLite database session
         if ($channel === 'baileys') {
-            $sqliteMessages = $this->whatsappService->getHistoryFromSqlite($branch, (string)$phone);
-            if (!empty($sqliteMessages)) {
-                $formatted = array_map(function ($msg) {
-                    $ts = (int) ($msg['timestamp'] ?? 0);
-                    if ($ts > 9999999999) {
-                        $ts = (int) ($ts / 1000);
-                    }
-                    return [
-                        'id' => $msg['id'] ?? uniqid('msg_'),
-                        'sender' => !empty($msg['fromMe']) ? 'admin' : 'contact',
-                        'text' => $msg['content'] ?? '',
-                        'timestamp' => $ts > 0 ? date('H:i', $ts) : date('H:i'),
-                        'status' => 'read',
-                        'media_url' => $msg['media_url'] ?? null,
-                    ];
-                }, $sqliteMessages);
+            $sessionCandidates = [$branch, 'solo', 'smg', 'semarang', 'main'];
+            foreach (array_unique(array_filter($sessionCandidates)) as $candBranch) {
+                $sqliteMessages = $this->whatsappService->getHistoryFromSqlite($candBranch, (string)$phone);
+                if (!empty($sqliteMessages)) {
+                    $formatted = array_map(function ($msg) {
+                        $ts = (int) ($msg['timestamp'] ?? 0);
+                        if ($ts > 9999999999) {
+                            $ts = (int) ($ts / 1000);
+                        }
+                        return [
+                            'id' => $msg['id'] ?? uniqid('msg_'),
+                            'sender' => !empty($msg['fromMe']) ? 'admin' : 'contact',
+                            'text' => $msg['content'] ?? '',
+                            'timestamp' => $ts > 0 ? date('H:i', $ts) : date('H:i'),
+                            'status' => 'read',
+                            'media_url' => $msg['media_url'] ?? null,
+                        ];
+                    }, $sqliteMessages);
 
-                return response()->json([
-                    'status' => 'success',
-                    'channel' => 'baileys',
-                    'phone' => $phone,
-                    'messages' => $formatted,
-                ]);
+                    return response()->json([
+                        'status' => 'success',
+                        'channel' => 'baileys',
+                        'phone' => $phone,
+                        'messages' => $formatted,
+                    ]);
+                }
             }
 
             // Fallback: Baileys HTTP gateway
             try {
                 $intlDigits = str_starts_with($cleanPhone, '0') ? '62' . substr($cleanPhone, 1) : $cleanPhone;
-                $history = $this->whatsappService->getHistory($branch, $intlDigits);
+                $history = $this->whatsappService->getHistory($branch ?: 'solo', $intlDigits);
 
                 if (isset($history['data']) && is_array($history['data']) && !empty($history['data'])) {
                     $formatted = array_map(function ($msg) {

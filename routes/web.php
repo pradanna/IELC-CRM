@@ -261,7 +261,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // WhatsApp Management, Live Chat & Messaging Services (Accessible to all authenticated staff)
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('index');
-        Route::get('/status/{branch}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
+        Route::get('/status/{branch?}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getStatus'])->name('status');
         Route::get('/history/{branch}/{phone}', [\App\Http\Controllers\Admin\WhatsAppController::class, 'getHistory'])->name('history');
         Route::post('/send', [\App\Http\Controllers\Admin\WhatsAppController::class, 'sendMessage'])
             ->middleware('throttle:whatsapp-send')
@@ -274,7 +274,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/official/send', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'sendOfficialMessage'])
             ->middleware('throttle:whatsapp-send')
             ->name('official.send');
-        Route::get('/baileys/conversations/{branch}', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getBaileysConversations'])->name('baileys.conversations');
+        Route::get('/baileys/conversations/{branch?}', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getBaileysConversations'])->name('baileys.conversations');
         Route::get('/history-chat', [\App\Http\Controllers\Admin\Crm\WhatsappInboxController::class, 'getChatHistory'])->name('chat-history');
     });
 

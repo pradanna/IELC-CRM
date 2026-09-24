@@ -29,8 +29,9 @@ class WhatsAppController extends Controller
     /**
      * Proxy status check.
      */
-    public function getStatus(string $branch): JsonResponse
+    public function getStatus(?string $branch = null): JsonResponse
     {
+        $branch = $branch ?: 'solo';
         $status = $this->whatsapp->getStatus($branch);
         return response()->json($status);
     }
@@ -38,9 +39,10 @@ class WhatsAppController extends Controller
     /**
      * Proxy history check.
      */
-    public function getHistory(string $branch, string $phone, Request $request): JsonResponse
+    public function getHistory(?string $branch = null, string $phone = '', Request $request = null): JsonResponse
     {
-        $history = $this->whatsapp->getHistory($branch, $phone, $request->all());
+        $branch = $branch ?: 'solo';
+        $history = $this->whatsapp->getHistory($branch, $phone, $request ? $request->all() : []);
         return response()->json($history);
     }
 
@@ -50,13 +52,15 @@ class WhatsAppController extends Controller
     public function sendMessage(Request $request): JsonResponse
     {
         $request->validate([
-            'branch' => 'required|string',
+            'branch' => 'nullable|string',
             'phone' => 'required|string',
             'message' => 'required|string',
         ]);
 
+        $branchName = strtolower($request->input('branch', 'solo'));
+
         $result = $this->whatsapp->sendMessage(
-            $request->branch,
+            $branchName,
             $request->phone,
             $request->message
         );

@@ -92,9 +92,16 @@ export default function ChatSidebar({
                                     <div className="flex items-center justify-between gap-1.5 mt-2">
                                         {contact.name === 'No Name' || contact.type === 'non-lead' || !contact.is_lead ? (
                                             <>
-                                                <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-black uppercase tracking-wider">
-                                                    Belum Jadi Lead
-                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-black uppercase tracking-wider">
+                                                        Belum Jadi Lead
+                                                    </span>
+                                                    {contact.branch_code && (
+                                                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-wider">
+                                                            {contact.branch_code}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
@@ -110,9 +117,16 @@ export default function ChatSidebar({
                                                 </button>
                                             </>
                                         ) : (
-                                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-wider">
-                                                {contact.type || 'Lead'}
-                                            </span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-wider">
+                                                    {contact.type || 'Lead'}
+                                                </span>
+                                                {contact.branch_code && (
+                                                    <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-black uppercase tracking-wider">
+                                                        {contact.branch_code}
+                                                    </span>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
