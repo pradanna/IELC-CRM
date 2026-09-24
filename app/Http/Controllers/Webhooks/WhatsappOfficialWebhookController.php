@@ -65,31 +65,51 @@ class WhatsappOfficialWebhookController extends Controller
                 }
 
                 if ($fromPhone && $body) {
-                    $cleanPhone = preg_replace('/[^0-9]/', '', $fromPhone);
-                    if (str_starts_with($cleanPhone, '62')) {
-                        $cleanPhone = substr($cleanPhone, 2);
-                    } elseif (str_starts_with($cleanPhone, '0')) {
-                        $cleanPhone = substr($cleanPhone, 1);
-                    }
+                    $cleanDigits = preg_replace('/[^0-9]/', '', $fromPhone);
+                    $searchSuffix = substr($cleanDigits, -9);
+                    $lead = Lead::where('phone', 'LIKE', "%{$searchSuffix}")->first();
 
-                    $lead = Lead::where('phone', 'LIKE', "%{$cleanPhone}%")->first();
+                    if (!$lead) {
+                        // Automatically create a new lead for this incoming WhatsApp number
+                        $defaultBranch = \App\Domains\Master\Domain\Models\Branch::first();
+                        $defaultPhase = \App\Domains\Master\Domain\Models\LeadPhase::where('code', 'lead')->first();
+                        $waSource = \App\Domains\Master\Domain\Models\LeadSource::where('name', 'LIKE', '%WhatsApp%')->first()
+                            ?? \App\Domains\Master\Domain\Models\LeadSource::first();
+                        $waInfo = \App\Domains\Master\Domain\Models\InfoSource::where('name', 'LIKE', '%WhatsApp%')->first()
+                            ?? \App\Domains\Master\Domain\Models\InfoSource::first();
 
-                    if ($lead) {
-                        LeadChatLog::create([
-                            'lead_id'       => $lead->id,
-                            'lead_phase_id' => $lead->lead_phase_id,
-                            'user_id'       => null, // Incoming message from customer
-                            'channel'       => 'official',
-                            'message'       => $body,
+                        $lead = Lead::create([
+                            'id' => (string) \Illuminate\Support\Str::uuid(),
+                            'lead_number' => "L-" . now()->format('Ymd-His') . rand(10, 99),
+                            'name' => 'No Name',
+                            'phone' => '+' . $cleanDigits,
+                            'branch_id' => $defaultBranch?->id ?? 1,
+                            'owner_id' => null,
+                            'created_by' => null,
+                            'lead_source_id' => $waSource?->id,
+                            'info_source_id' => $waInfo?->id,
+                            'lead_phase_id' => $defaultPhase?->id,
+                            'last_activity_at' => now(),
                         ]);
 
-                        // Update lead last activity
-                        $lead->update(['last_activity_at' => now()]);
-
-                        Log::info("Meta WA Message saved for Lead #{$lead->id} ({$lead->name})");
-                    } else {
-                        Log::warning("Received Meta WA message from unknown phone: {$fromPhone}");
+                        Log::info("Created new record (No Name) #{$lead->id} for incoming WA Official chat from +{$cleanDigits}");
                     }
+
+                    LeadChatLog::create([
+                        'lead_id'       => $lead->id,
+                        'lead_phase_id' => $lead->lead_phase_id,
+                        'user_id'       => null, // Incoming message from customer
+                        'channel'       => 'official',
+                        'message'       => $body,
+                    ]);
+
+                    // Update lead last activity
+                    $lead->update(['last_activity_at' => now()]);
+
+                    // Broadcast real-time event so WhatsApp Web inbox receives it immediately
+                    event(new \App\Events\WhatsappMessageReceived($lead, $body, 'official'));
+
+                    Log::info("Meta WA Message saved and broadcasted for Lead #{$lead->id} ({$lead->name})");
                 }
             }
         } catch (\Exception $e) {

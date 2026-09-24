@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Send, FileCode, CheckCheck, Check, ShieldCheck, PhoneCall, User } from 'lucide-react';
+import { useLeadDrawer } from '@/Contexts/LeadDrawerContext';
 
 export default function ChatWindow({
     selectedContact,
@@ -12,64 +13,97 @@ export default function ChatWindow({
     onOpenTemplateModal,
     sending,
 }) {
+    const messagesEndRef = useRef(null);
+    const { openDrawer } = useLeadDrawer();
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, loadingMessages]);
+
     if (!selectedContact) {
         return (
-            <div className="flex-1 bg-slate-50/50 flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-16 h-16 rounded-3xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-300 mb-4">
-                    {activeTab === 'official' ? <ShieldCheck size={32} /> : <PhoneCall size={32} />}
+            <div className="flex-1 bg-slate-50/70 flex flex-col items-center justify-center p-8 text-center">
+                <div className="w-20 h-20 rounded-3xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-center text-slate-300 mb-4">
+                    {activeTab === 'official' ? <ShieldCheck size={38} className="text-blue-500/40" /> : <PhoneCall size={38} className="text-emerald-500/40" />}
                 </div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">
-                    Pilih Percakapan
+                <h3 className="text-base font-black text-slate-800 uppercase tracking-wider mb-1.5">
+                    WhatsApp Web Live Inbox
                 </h3>
-                <p className="text-xs text-slate-400 max-w-xs">
-                    Pilih kontak di sebelah kiri untuk melihat pesan {activeTab === 'official' ? 'WA Official' : 'WA Unofficial'}.
+                <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
+                    Pilih percakapan di sebelah kiri untuk melihat pesan masuk, riwayat chat, dan membalas langsung ke nomor kontak.
                 </p>
             </div>
         );
     }
 
     return (
-        <div className="flex-1 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] bg-slate-50 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 bg-[#efeae2]/40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] flex flex-col h-full overflow-hidden">
             {/* Top Chat Header */}
-            <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between flex-shrink-0">
+            <div className="px-6 py-3.5 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between flex-shrink-0 shadow-sm">
                 <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center font-black text-slate-700 text-xs shadow-sm">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shadow-sm ${
+                        activeTab === 'official'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}>
                         {selectedContact.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-black text-slate-900">{selectedContact.name}</h3>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                activeTab === 'official' 
-                                    ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                                    : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                            }`}>
-                                {activeTab === 'official' ? 'Official' : 'Unofficial'}
-                            </span>
+                            <h3 className={`text-sm ${selectedContact.name === 'No Name' ? 'font-bold text-slate-700 italic' : 'font-black text-slate-900'}`}>
+                                {selectedContact.name || 'No Name'}
+                            </h3>
+                            {selectedContact.name === 'No Name' || !selectedContact.is_lead ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-800 border border-amber-300">
+                                    Belum Jadi Lead
+                                </span>
+                            ) : (
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                    activeTab === 'official' 
+                                        ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                                        : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                }`}>
+                                    {activeTab === 'official' ? 'Official Meta' : 'Perangkat Cabang'}
+                                </span>
+                            )}
                         </div>
-                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">{selectedContact.phone}</p>
+                        <p className="text-xs text-emerald-700 font-mono font-bold mt-0.5">{selectedContact.phone}</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                     {selectedContact.crm_id && (
-                        <button className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={() => openDrawer(selectedContact.crm_id, 0)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                                selectedContact.name === 'No Name' || !selectedContact.is_lead
+                                    ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                            title={selectedContact.name === 'No Name' || !selectedContact.is_lead ? "Daftarkan kontak ini sebagai Lead CRM" : "Buka Profil CRM"}
+                        >
                             <User size={13} />
-                            Profil CRM
+                            {selectedContact.name === 'No Name' || !selectedContact.is_lead ? '+ Daftarkan Jadi Lead' : 'Profil Lead CRM'}
                         </button>
                     )}
                 </div>
             </div>
 
             {/* Message History Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-3.5 custom-scrollbar">
                 {loadingMessages ? (
-                    <div className="flex justify-center py-10">
+                    <div className="flex flex-col items-center justify-center py-12 gap-2">
                         <div className="animate-spin w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
+                        <span className="text-xs text-slate-400">Memuat riwayat chat...</span>
                     </div>
                 ) : messages.length === 0 ? (
-                    <div className="text-center py-10 text-xs text-slate-400">
-                        Belum ada riwayat pesan.
+                    <div className="text-center py-12 text-xs text-slate-400 bg-white/60 backdrop-blur-sm rounded-2xl max-w-sm mx-auto p-4 border border-slate-200/50">
+                        Belum ada riwayat pesan. Kirim pesan di bawah untuk memulai obrolan.
                     </div>
                 ) : (
                     messages.map((msg) => {
@@ -79,25 +113,29 @@ export default function ChatWindow({
                                 key={msg.id}
                                 className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
                             >
-                                <div className={`max-w-[75%] md:max-w-[65%] rounded-2xl px-4 py-3 shadow-sm text-xs leading-relaxed ${
+                                <div className={`max-w-[80%] md:max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm text-xs leading-relaxed ${
                                     isAdmin
                                         ? activeTab === 'official'
                                             ? 'bg-blue-600 text-white rounded-tr-none'
-                                            : 'bg-emerald-600 text-white rounded-tr-none'
-                                        : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none'
+                                            : 'bg-[#d9fdd3] text-[#111b21] rounded-tr-none border border-emerald-200/60'
+                                        : 'bg-white text-[#111b21] border border-slate-200/80 rounded-tl-none shadow-sm'
                                 }`}>
                                     {msg.template_name && (
-                                        <div className="mb-1 pb-1 border-b border-white/20 text-[10px] font-bold tracking-wide uppercase flex items-center gap-1">
+                                        <div className={`mb-1 pb-1 text-[10px] font-bold tracking-wide uppercase flex items-center gap-1 ${
+                                            isAdmin && activeTab === 'official' ? 'border-b border-white/20 text-white/90' : 'border-b border-slate-200 text-slate-500'
+                                        }`}>
                                             <FileCode size={11} /> Template: {msg.template_name}
                                         </div>
                                     )}
                                     <p className="whitespace-pre-wrap">{msg.text}</p>
-                                    <div className={`flex items-center justify-end gap-1 mt-1.5 text-[9px] ${
-                                        isAdmin ? 'text-white/80' : 'text-slate-400'
+                                    <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${
+                                        isAdmin 
+                                            ? activeTab === 'official' ? 'text-white/80' : 'text-slate-500'
+                                            : 'text-slate-400'
                                     }`}>
                                         <span>{msg.timestamp}</span>
                                         {isAdmin && (
-                                            msg.status === 'read' ? <CheckCheck size={12} className="text-sky-300" /> : <Check size={12} />
+                                            msg.status === 'read' ? <CheckCheck size={13} className={activeTab === 'official' ? "text-sky-300" : "text-[#53bdeb]"} /> : <Check size={13} />
                                         )}
                                     </div>
                                 </div>
@@ -105,19 +143,20 @@ export default function ChatWindow({
                         );
                     })
                 )}
+                <div ref={messagesEndRef} />
             </div>
 
             {/* Input Bar */}
-            <div className="p-4 bg-white border-t border-slate-200/80 flex-shrink-0">
+            <div className="p-3.5 bg-white border-t border-slate-200/80 flex-shrink-0 shadow-lg">
                 {activeTab === 'official' && (
-                    <div className="mb-2.5 flex items-center gap-2">
+                    <div className="mb-2 flex items-center gap-2">
                         <button
                             type="button"
                             onClick={onOpenTemplateModal}
-                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                         >
                             <FileCode size={13} />
-                            Gunakan Meta WA Template (Official)
+                            Gunakan Meta Approved Template
                         </button>
                     </div>
                 )}
@@ -127,13 +166,13 @@ export default function ChatWindow({
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder={`Ketik pesan ${activeTab === 'official' ? 'official...' : 'bebas...'}`}
-                        className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                        placeholder={`Ketik pesan ${activeTab === 'official' ? 'Official Meta...' : 'WhatsApp...'}`}
+                        className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     />
                     <button
                         type="submit"
                         disabled={sending || !inputMessage.trim()}
-                        className={`px-5 py-3 rounded-xl text-xs font-black text-white transition-all flex items-center gap-2 shadow-sm ${
+                        className={`px-5 py-2.5 rounded-xl text-xs font-black text-white transition-all flex items-center gap-2 shadow-sm ${
                             sending || !inputMessage.trim()
                                 ? 'bg-slate-300 cursor-not-allowed'
                                 : activeTab === 'official'

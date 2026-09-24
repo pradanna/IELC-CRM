@@ -27,11 +27,13 @@ class WhatsappInboxController extends Controller
     public function index(Request $request): Response
     {
         $branches = Branch::all(['id', 'name', 'code']);
+        $initialTab = $request->query('tab', 'baileys');
 
         return Inertia::render('Admin/Crm/Whatsapp/Inbox', [
             'branches' => $branches,
             'officialPhone' => config('services.whatsapp_official.number', env('WA_OFFICIAL_NUMBER', '-')),
             'officialStatus' => env('WA_OFFICIAL_TOKEN') ? 'connected' : 'disconnected',
+            'initialTab' => $initialTab,
         ]);
     }
 
@@ -65,16 +67,26 @@ class WhatsappInboxController extends Controller
                     : $lastTime->format('d M H:i');
             }
 
+            $isNoName = empty($lead->name) 
+                || strtolower(trim($lead->name)) === 'no name' 
+                || strtolower(trim($lead->name)) === '(no name)'
+                || str_starts_with($lead->name, '+')
+                || str_starts_with($lead->name, 'WA +');
+
+            $displayName = $isNoName ? 'No Name' : $lead->name;
+            $contactType = $isNoName ? 'non-lead' : 'lead';
+
             return [
                 'id' => 'official_' . $lead->id,
-                'name' => $lead->name ?? 'Lead #' . $lead->id,
+                'name' => $displayName,
+                'is_lead' => !$isNoName,
                 'phone' => $lead->phone,
-                'type' => 'lead',
+                'type' => $contactType,
                 'crm_id' => $lead->id,
                 'avatar' => null,
-                'last_message' => $latestLog ? $latestLog->message : 'Kontak WhatsApp CRM',
+                'last_message' => $latestLog ? $latestLog->message : 'Belum ada pesan',
                 'last_message_time' => $formattedTime ?: date('H:i'),
-                'sort_timestamp' => $lastTime ? $lastTime->timestamp : 0,
+                'sort_timestamp' => $latestLog ? $latestLog->created_at->timestamp : ($lead->updated_at ? $lead->updated_at->timestamp : 0),
                 'unread_count' => 0,
                 'channel' => 'official',
             ];
@@ -97,21 +109,82 @@ class WhatsappInboxController extends Controller
             ->orWhere('code', strtoupper($branchCode))
             ->first();
 
-        // 1. Fetch Students with WhatsApp phone
-        $studentsQuery = Student::whereNotNull('phone')
-            ->where('phone', '!=', '');
+        // 1. Read real recent WhatsApp chats directly from wa-baileys SQLite session
+        $sessionDir = dirname(base_path()) . '/wa-baileys/sessions/' . strtolower($branchCode) . '/database.sqlite';
+        $recentBaileys = [];
 
-        if ($branch) {
-            $studentsQuery->whereHas('lead', function ($q) use ($branch) {
-                $q->where('branch_id', $branch->id);
-            });
+        if (file_exists($sessionDir)) {
+            try {
+                $pdo = new \PDO("sqlite:" . $sessionDir);
+                $stmt = $pdo->query("
+                    SELECT 
+                        m1.jid, 
+                        m1.content, 
+                        m1.timestamp, 
+                        m1.fromMe
+                    FROM messages m1
+                    INNER JOIN (
+                        SELECT jid, MAX(timestamp) as max_ts
+                        FROM messages
+                        WHERE jid NOT LIKE '%@g.us' AND jid LIKE '%@s.whatsapp.net'
+                        GROUP BY jid
+                    ) m2 ON m1.jid = m2.jid AND m1.timestamp = m2.max_ts
+                    ORDER BY m1.timestamp DESC
+                    LIMIT 60
+                ");
+                $recentBaileys = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning("Could not read Baileys SQLite chats: " . $e->getMessage());
+            }
         }
 
-        $students = $studentsQuery->with(['lead.chatLogs' => function ($q) {
-            $q->where('channel', 'baileys')->latest();
-        }])->get(['id', 'lead_id', 'name', 'phone', 'status', 'updated_at', 'created_at']);
+        $allItems = collect();
+        $seenPhones = [];
 
-        // 2. Fetch Leads with WhatsApp phone for this branch
+        // Map live chats from Baileys
+        foreach ($recentBaileys as $msg) {
+            $rawPhone = str_replace('@s.whatsapp.net', '', $msg['jid']);
+            $digits = preg_replace('/[^0-9]/', '', $rawPhone);
+            if (strlen($digits) < 8) continue;
+
+            $suffix = substr($digits, -9);
+            $seenPhones[$suffix] = true;
+
+            $lead = Lead::where('phone', 'like', "%{$suffix}")->first();
+
+            $isNoName = !$lead 
+                || empty($lead->name) 
+                || strtolower(trim($lead->name)) === 'no name' 
+                || strtolower(trim($lead->name)) === '(no name)'
+                || str_starts_with($lead->name, '+')
+                || str_starts_with($lead->name, 'WA +');
+
+            $displayName = $isNoName ? 'No Name' : $lead->name;
+            $contactType = $lead ? ($isNoName ? 'non-lead' : 'lead') : 'non-lead';
+
+            $ts = (int) $msg['timestamp'];
+            $formattedTime = date('H:i', $ts);
+            if (date('Y-m-d', $ts) !== date('Y-m-d')) {
+                $formattedTime = date('d M H:i', $ts);
+            }
+
+            $allItems->push([
+                'id' => 'baileys_live_' . $digits,
+                'name' => $displayName,
+                'is_lead' => !$isNoName,
+                'phone' => '+' . $digits,
+                'type' => $contactType,
+                'crm_id' => $lead?->id,
+                'avatar' => null,
+                'last_message' => $msg['content'] ?: 'Pesan',
+                'last_message_time' => $formattedTime,
+                'sort_timestamp' => $ts,
+                'unread_count' => 0,
+                'channel' => 'baileys',
+            ]);
+        }
+
+        // 2. Fetch CRM Leads for this branch that have not chatted yet
         $leadsQuery = Lead::whereNotNull('phone')
             ->where('phone', '!=', '');
 
@@ -121,57 +194,41 @@ class WhatsappInboxController extends Controller
 
         $leads = $leadsQuery->with(['chatLogs' => function ($q) {
             $q->where('channel', 'baileys')->latest();
-        }])->get(['id', 'name', 'phone', 'updated_at', 'created_at']);
-
-        // Combine and filter valid WhatsApp numbers (minimum 8 digits)
-        $allItems = collect();
-
-        foreach ($students as $student) {
-            $digits = preg_replace('/[^0-9]/', '', $student->phone);
-            if (strlen($digits) >= 8) {
-                $latestLog = $student->lead?->chatLogs?->first();
-                $lastTime = $latestLog ? $latestLog->created_at : ($student->updated_at ?? $student->created_at);
-
-                $formattedTime = $lastTime ? ($lastTime->isToday() ? $lastTime->format('H:i') : $lastTime->format('d M H:i')) : date('H:i');
-
-                $allItems->push([
-                    'id' => 'baileys_stu_' . $student->id,
-                    'name' => $student->name ?? 'Student #' . $student->id,
-                    'phone' => $student->phone,
-                    'type' => 'student',
-                    'crm_id' => $student->id,
-                    'avatar' => null,
-                    'last_message' => $latestLog ? $latestLog->message : 'Siswa Aktif WhatsApp',
-                    'last_message_time' => $formattedTime,
-                    'sort_timestamp' => $lastTime ? $lastTime->timestamp : 0,
-                    'unread_count' => 0,
-                    'channel' => 'baileys',
-                ]);
-            }
-        }
+        }])->latest('updated_at')->take(50)->get(['id', 'name', 'phone', 'updated_at', 'created_at']);
 
         foreach ($leads as $lead) {
             $digits = preg_replace('/[^0-9]/', '', $lead->phone);
-            if (strlen($digits) >= 8) {
-                $latestLog = $lead->chatLogs?->first();
-                $lastTime = $latestLog ? $latestLog->created_at : ($lead->updated_at ?? $lead->created_at);
+            if (strlen($digits) < 8) continue;
+            $suffix = substr($digits, -9);
+            if (isset($seenPhones[$suffix])) continue; // already added from live chats
 
-                $formattedTime = $lastTime ? ($lastTime->isToday() ? $lastTime->format('H:i') : $lastTime->format('d M H:i')) : date('H:i');
+            $latestLog = $lead->chatLogs?->first();
+            $lastTime = $latestLog ? $latestLog->created_at : ($lead->updated_at ?? $lead->created_at);
+            $formattedTime = $lastTime ? ($lastTime->isToday() ? $lastTime->format('H:i') : $lastTime->format('d M H:i')) : date('H:i');
 
-                $allItems->push([
-                    'id' => 'baileys_lead_' . $lead->id,
-                    'name' => $lead->name ?? 'Lead #' . $lead->id,
-                    'phone' => $lead->phone,
-                    'type' => 'lead',
-                    'crm_id' => $lead->id,
-                    'avatar' => null,
-                    'last_message' => $latestLog ? $latestLog->message : 'Lead Baru WhatsApp',
-                    'last_message_time' => $formattedTime,
-                    'sort_timestamp' => $lastTime ? $lastTime->timestamp : 0,
-                    'unread_count' => 0,
-                    'channel' => 'baileys',
-                ]);
-            }
+            $isNoName = empty($lead->name) 
+                || strtolower(trim($lead->name)) === 'no name' 
+                || strtolower(trim($lead->name)) === '(no name)'
+                || str_starts_with($lead->name, '+')
+                || str_starts_with($lead->name, 'WA +');
+
+            $displayName = $isNoName ? 'No Name' : $lead->name;
+            $contactType = $isNoName ? 'non-lead' : 'lead';
+
+            $allItems->push([
+                'id' => 'baileys_lead_' . $lead->id,
+                'name' => $displayName,
+                'is_lead' => !$isNoName,
+                'phone' => $lead->phone,
+                'type' => $contactType,
+                'crm_id' => $lead->id,
+                'avatar' => null,
+                'last_message' => $latestLog ? $latestLog->message : 'Belum ada pesan',
+                'last_message_time' => $formattedTime,
+                'sort_timestamp' => $latestLog ? $latestLog->created_at->timestamp : ($lead->updated_at ? $lead->updated_at->timestamp : 0),
+                'unread_count' => 0,
+                'channel' => 'baileys',
+            ]);
         }
 
         // Sort descending by sort_timestamp (newest first)

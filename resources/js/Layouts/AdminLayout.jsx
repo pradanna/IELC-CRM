@@ -19,6 +19,7 @@ import {
     Gift,
     BarChart3,
     Database,
+    MessageSquare,
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
@@ -41,20 +42,18 @@ const menuItems = [
                 activeCheck: () => route().current('admin.crm.leads.*') || route().current('admin.crm.reports.*') || route().current('admin.crm.registrations.*'),
             },
             {
+                icon: <MessageSquare size={20} />,
+                text: "WhatsApp Web",
+                href: route("admin.whatsapp.inbox"),
+                name: "admin.whatsapp.inbox",
+                activeCheck: () => route().current('admin.whatsapp.inbox'),
+            },
+            {
                 icon: <FileText size={20} />,
                 text: "Placement Tests",
                 href: route("admin.placement-tests.index"),
                 name: "admin.placement-tests.*",
             },
-            // WhatsApp Inbox hidden during development
-            /*
-            {
-                icon: <Headset size={20} />,
-                text: "WhatsApp Inbox",
-                href: route("admin.whatsapp.inbox"),
-                name: "admin.whatsapp.inbox",
-            },
-            */
         ],
     },
     {
@@ -200,15 +199,15 @@ export default function AdminLayout({ children }) {
             items: group.items.filter(item => {
                 if (item.text === 'Database Backup') return false;
                 if (isFrontdesk) {
-                    const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
+                    const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Web', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
-                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon dan Loyalty', 'Laporan', 'Staff Accounts', 'WhatsApp'];
+                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon dan Loyalty', 'Laporan', 'Staff Accounts', 'WhatsApp', 'WhatsApp Web'];
                     return allowed.includes(item.text);
                 }
                 if (isMarketing) {
-                    const allowed = ['CRM Dashboard', 'Placement Tests', 'Master'];
+                    const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Web', 'Master'];
                     return allowed.includes(item.text);
                 }
                 if (isTeacher) {

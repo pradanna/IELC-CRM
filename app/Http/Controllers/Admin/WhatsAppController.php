@@ -71,6 +71,7 @@ class WhatsAppController extends Controller
                         'lead_id'       => $lead->id,
                         'lead_phase_id' => $lead->lead_phase_id,
                         'user_id'       => auth()->id(),
+                        'channel'       => 'baileys',
                         'message'       => $request->message,
                     ]);
                     \App\Domains\CRM\Domain\Models\LeadActivity::create([
