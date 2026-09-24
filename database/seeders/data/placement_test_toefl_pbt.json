@@ -1,18 +1,18 @@
 {
     "exam_title": "TOEFL PBT Placement Test",
     "exam_slug": "toefl-pbt-placement-test",
-    "exam_description": "<p><strong>Official IELC TOEFL PBT Placement Test</strong> covering 3 core assessment sections:</p><ul><li><strong>Section 1:</strong> Listening Comprehension (50 questions, 30 mins)</li><li><strong>Section 2:</strong> Structure &amp; Written Expression (40 questions, 25 mins)</li><li><strong>Section 3:</strong> Reading Comprehension (50 questions, 55 mins)</li></ul><p class='mt-2'><strong>Total duration:</strong> 110 minutes.</p>",
-    "exam_duration": 110,
+    "exam_description": "<p><strong>Official IELC TOEFL PBT Placement Test</strong> covering 3 core assessment sections:</p><ul><li><strong>Section 1:</strong> Listening Comprehension (50 questions, 35 mins)</li><li><strong>Section 2:</strong> Structure &amp; Written Expression (40 questions, 25 mins)</li><li><strong>Section 3:</strong> Reading Comprehension (50 questions, 55 mins)</li></ul><p class='mt-2'><strong>Total duration:</strong> 115 minutes.</p>",
+    "exam_duration": 115,
     "tasks": [
         {
             "position": 1,
             "skill_type": "listening",
-            "title": "Section 1: Listening Comprehension (50 Questions, 30 Minutes)",
-            "description": "<p><strong>Section 1: Listening Comprehension</strong> is designed to measure your ability to understand spoken English in academic and conversational contexts.</p><ul><li>There are <strong>50 questions</strong> in this section:<ul><li><strong>Part A:</strong> Short conversations between two speakers, each followed by a question.</li><li><strong>Part B:</strong> Longer conversations followed by several questions.</li><li><strong>Part C:</strong> Short talks and lectures followed by several questions.</li></ul></li><li>The test duration is approximately <strong>30 minutes</strong>.</li><li>Listen carefully, as the audio track will be played <strong>only once</strong>.</li><li>Follow the question booklet on the left and type your answers (A, B, C, or D) into the digital answer sheet (1–50) on the right.</li></ul>",
+            "title": "Section 1: Listening Comprehension (50 Questions, 35 Minutes)",
+            "description": "<p><strong>Section 1: Listening Comprehension</strong> is designed to measure your ability to understand spoken English in academic and conversational contexts.</p><ul><li>There are <strong>50 questions</strong> in this section:<ul><li><strong>Part A:</strong> Short conversations between two speakers, each followed by a question.</li><li><strong>Part B:</strong> Longer conversations followed by several questions.</li><li><strong>Part C:</strong> Short talks and lectures followed by several questions.</li></ul></li><li>The test duration is approximately <strong>35 minutes</strong>.</li><li>Listen carefully, as the audio track will be played <strong>only once</strong>.</li><li>Follow the question booklet on the left and type your answers (A, B, C, or D) into the digital answer sheet (1–50) on the right.</li></ul>",
             "audio_path": "pt_exams/toefl/audio/toefl_pbt_listening_audio.mp3",
             "question_pdf_path": "pt_exams/toefl/pdf/toefl_pbt_listening_question_booklet.pdf",
             "answer_sheet_pdf_path": null,
-            "duration_minutes": 30,
+            "duration_minutes": 35,
             "max_score": 68.0,
             "min_words": null,
             "total_answer_slots": 50

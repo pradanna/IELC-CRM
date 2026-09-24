@@ -17,10 +17,10 @@ class ToeflPbtPtExamSeeder extends Seeder
      * berdasarkan materi resmi dari portal Exam Prep IELC (Google Sites):
      * https://sites.google.com/ielc.co.id/examprepplacementtest/toefl-pbt
      *
-     * - Section 1: Listening Comprehension (50 questions, 30 mins)
+     * - Section 1: Listening Comprehension (50 questions, 35 mins)
      * - Section 2: Structure & Written Expression (40 questions, 25 mins)
      * - Section 3: Reading Comprehension (50 questions, 55 mins)
-     * Total Duration: 110 minutes
+     * Total Duration: 115 minutes
      */
     public function run(): void
     {
@@ -65,7 +65,7 @@ class ToeflPbtPtExamSeeder extends Seeder
                 'title' => $data['exam_title'],
                 'category' => 'IELTS',
                 'description' => $data['exam_description'] ?? '',
-                'duration_minutes' => $data['exam_duration'] ?? 110,
+                'duration_minutes' => $data['exam_duration'] ?? 115,
                 'is_active' => true,
             ]
         );
@@ -74,7 +74,7 @@ class ToeflPbtPtExamSeeder extends Seeder
             'title' => $data['exam_title'],
             'category' => 'IELTS',
             'description' => $data['exam_description'] ?? '',
-            'duration_minutes' => $data['exam_duration'] ?? 110,
+            'duration_minutes' => $data['exam_duration'] ?? 115,
             'is_active' => true,
         ]);
 
