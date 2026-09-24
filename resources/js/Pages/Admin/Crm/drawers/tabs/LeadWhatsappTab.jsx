@@ -24,7 +24,7 @@ export default function LeadWhatsappTab({ lead, chatTemplates = [], mediaAssets 
     const [mediaSearch, setMediaSearch] = useState('');
     
     const scrollRef = useRef(null);
-    const branchCode = (lead?.branch?.code || lead?.branch_code || 'solo').toLowerCase();
+    const branchCode = 'solo'; // WhatsApp terpusat 1 pintu untuk seluruh cabang
 
     // Filter templates based on lead phase/type (Mirrors Modal Logic)
     const filteredTemplates = useMemo(() => {

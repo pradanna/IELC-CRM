@@ -22,7 +22,19 @@ class WhatsAppController extends Controller
     public function index(): \Inertia\Response
     {
         return \Inertia\Inertia::render('Admin/Crm/Whatsapp/Index', [
-            'branches' => \App\Domains\Master\Domain\Models\Branch::all(['id', 'name', 'code']),
+            'gateway' => [
+                'id' => 1,
+                'name' => 'WhatsApp Gateway (Terpusat)',
+                'code' => 'solo',
+                'description' => 'Satu pintu koneksi WhatsApp untuk seluruh cabang IELC (Solo & Semarang).',
+            ],
+            'branches' => [
+                [
+                    'id' => 1,
+                    'name' => 'WhatsApp Gateway (Terpusat)',
+                    'code' => 'solo',
+                ]
+            ],
         ]);
     }
 
@@ -31,7 +43,8 @@ class WhatsAppController extends Controller
      */
     public function getStatus(?string $branch = null): JsonResponse
     {
-        $branch = $branch ?: 'solo';
+        // Sistem WhatsApp terpusat (gabungan): selalu gunakan sesi utama 'solo'
+        $branch = 'solo';
         $status = $this->whatsapp->getStatus($branch);
         return response()->json($status);
     }
@@ -41,7 +54,8 @@ class WhatsAppController extends Controller
      */
     public function getHistory(?string $branch = null, string $phone = '', Request $request = null): JsonResponse
     {
-        $branch = $branch ?: 'solo';
+        // Sistem WhatsApp terpusat (gabungan): selalu gunakan sesi utama 'solo'
+        $branch = 'solo';
         $history = $this->whatsapp->getHistory($branch, $phone, $request ? $request->all() : []);
         return response()->json($history);
     }
@@ -57,7 +71,8 @@ class WhatsAppController extends Controller
             'message' => 'required|string',
         ]);
 
-        $branchName = strtolower($request->input('branch', 'solo'));
+        // Sistem WhatsApp terpusat (gabungan): selalu gunakan sesi utama 'solo'
+        $branchName = 'solo';
 
         $result = $this->whatsapp->sendMessage(
             $branchName,
@@ -137,8 +152,9 @@ class WhatsAppController extends Controller
     /**
      * Logout WhatsApp session.
      */
-    public function logout(string $branch): JsonResponse
+    public function logout(?string $branch = null): JsonResponse
     {
+        $branch = $branch ?: 'solo';
         $result = $this->whatsapp->logout($branch);
         return response()->json($result);
     }

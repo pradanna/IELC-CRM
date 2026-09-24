@@ -4,25 +4,37 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Phone, CheckCircle2, XCircle, RefreshCcw, LogOut, QrCode, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
-export default function Index({ branches }) {
+export default function Index({ branches, gateway }) {
+    const activeGateway = gateway || (branches && branches.length > 0 ? branches[0] : { id: 1, name: 'WhatsApp Gateway (Terpusat)', code: 'solo' });
+
     return (
         <AuthenticatedLayout>
             <Head title="WhatsApp Management" />
 
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
                 {/* Page Header */}
-                <div className="flex justify-between items-end">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">System Configuration</p>
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">WhatsApp Management</h1>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">Koneksi gateway WhatsApp terpusat (satu pintu) untuk seluruh cabang IELC.</p>
                     </div>
                 </div>
 
-                {/* Branch Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {branches.map((branch) => (
-                        <BranchWaCard key={branch.id} branch={branch} />
-                    ))}
+                {/* Single Gateway Card */}
+                <div className="max-w-md mx-auto w-full">
+                    <BranchWaCard branch={activeGateway} />
+                </div>
+
+                {/* System Info Banner */}
+                <div className="max-w-md mx-auto p-4 bg-emerald-50/70 border border-emerald-200/60 rounded-2xl text-xs text-emerald-800 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
+                        Mode Terpusat (Semua Cabang Jadi Satu)
+                    </p>
+                    <p className="text-emerald-700/90 text-[11px] leading-relaxed">
+                        Sistem WhatsApp beroperasi secara terpusat menggunakan 1 nomor utama. Seluruh percakapan masuk dari calon siswa/lead cabang Solo maupun Semarang terhubung ke Inbox WhatsApp Web dan Drawer Leads yang sama.
+                    </p>
                 </div>
             </div>
         </AuthenticatedLayout>
@@ -64,7 +76,7 @@ function BranchWaCard({ branch }) {
     };
 
     const handleLogout = async () => {
-        if (!confirm(`Apakah Anda yakin ingin menghapus sesi WhatsApp untuk branch ${branch.name}? Sesi akan terputus dan data lokal di gateway akan dihapus.`)) return;
+        if (!confirm(`Apakah Anda yakin ingin menghapus sesi WhatsApp ini? Sesi akan terputus dan perlu scan ulang QR code.`)) return;
 
         setLoading(true);
         try {
@@ -150,7 +162,7 @@ function BranchWaCard({ branch }) {
                                         +{connectedPhone}
                                     </p>
                                 )}
-                                <p className="text-[10px] font-medium text-slate-400 mt-2 uppercase tracking-widest px-4">WhatsApp Branch {branch.name} siap digunakan.</p>
+                                <p className="text-[10px] font-medium text-slate-400 mt-2 uppercase tracking-widest px-4">WhatsApp Gateway siap digunakan untuk seluruh cabang.</p>
                             </div>
                         </div>
                     ) : status === 'initializing' ? (
