@@ -438,6 +438,10 @@ class PtSessionController extends Controller
     {
         \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
 
+        if (!class_exists('ZipArchive')) {
+            \PhpOffice\PhpWord\Settings::setZipClass(\PhpOffice\PhpWord\Settings::PCLZIP);
+        }
+
         $data = $this->prepareIeltsAnswerSheetData($ptSession);
 
         $phpWord = new \PhpOffice\PhpWord\PhpWord();
