@@ -62,9 +62,22 @@ class PtSessionController extends Controller
         }
 
         if ($category && $category !== 'all') {
-            $query->whereHas('ptExam', function ($q) use ($category) {
-                $q->where('category', $category);
-            });
+            if (strtoupper($category) === 'TOEFL') {
+                $query->whereHas('ptExam', function ($q) {
+                    $q->where('slug', 'like', '%toefl%')
+                      ->orWhere('title', 'like', '%toefl%');
+                });
+            } elseif (strtoupper($category) === 'IELTS') {
+                $query->whereHas('ptExam', function ($q) {
+                    $q->where('category', 'IELTS')
+                      ->where('slug', 'not like', '%toefl%')
+                      ->where('title', 'not like', '%toefl%');
+                });
+            } else {
+                $query->whereHas('ptExam', function ($q) use ($category) {
+                    $q->where('category', $category);
+                });
+            }
         }
 
         $sessions = $query->orderByRaw('COALESCE(finished_at, updated_at, created_at) DESC')->paginate(15);
@@ -113,17 +126,33 @@ class PtSessionController extends Controller
         // If module_bands are provided, update each PtIeltsAnswer's band_score
         if ($request->has('module_bands') && is_array($request->module_bands)) {
             $ptSession->load(['ptExam.ieltsTasks', 'ieltsAnswers']);
+            $examSlug = $ptSession->ptExam?->slug ?? '';
+            $isToeflPbt = str_contains($examSlug, 'toefl-pbt');
+
             foreach ($request->module_bands as $skill => $band) {
                 if ($band === null || $band === '') continue;
-                $tasks = $ptSession->ptExam?->ieltsTasks?->where('skill_type', $skill) ?? collect();
-                foreach ($tasks as $task) {
-                    $answer = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
+
+                $targetTask = null;
+                if ($isToeflPbt) {
+                    if ($skill === 'listening') {
+                        $targetTask = $ptSession->ptExam?->ieltsTasks?->first(fn($t) => $t->position == 1 || str_contains(strtolower($t->title ?? ''), 'listening'));
+                    } elseif ($skill === 'structure') {
+                        $targetTask = $ptSession->ptExam?->ieltsTasks?->first(fn($t) => $t->position == 2 || str_contains(strtolower($t->title ?? ''), 'structure'));
+                    } elseif ($skill === 'reading') {
+                        $targetTask = $ptSession->ptExam?->ieltsTasks?->first(fn($t) => $t->position == 3 || (str_contains(strtolower($t->title ?? ''), 'reading') && !str_contains(strtolower($t->title ?? ''), 'structure')));
+                    }
+                } else {
+                    $targetTask = $ptSession->ptExam?->ieltsTasks?->firstWhere('skill_type', $skill);
+                }
+
+                if ($targetTask) {
+                    $answer = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $targetTask->id);
                     if ($answer) {
                         $answer->update(['band_score' => (float) $band]);
                     } else {
                         \App\Domains\Academic\Domain\Models\PtIeltsAnswer::create([
                             'pt_session_id' => $ptSession->id,
-                            'pt_ielts_task_id' => $task->id,
+                            'pt_ielts_task_id' => $targetTask->id,
                             'band_score' => (float) $band,
                         ]);
                     }
@@ -225,41 +254,53 @@ class PtSessionController extends Controller
             }
         }
         
-        // Compute IELTS Module Band Scores if applicable
+        // Compute IELTS / TOEFL Module Band Scores if applicable
         $ieltsModuleScores = null;
+        $examSlug = $ptSession->ptExam?->slug ?? '';
+        $isToeflPbt = str_contains($examSlug, 'toefl-pbt');
+
         if ($ptSession->ptExam?->category === 'IELTS') {
             $listeningBand = null;
+            $structureBand = null;
             $readingBand = null;
             $writingBand = null;
             $speakingBand = null;
 
             foreach ($ptSession->ieltsAnswers as $ans) {
-                $skill = $ans->ptIeltsTask?->skill_type;
-                if ($skill === 'listening') {
-                    if ($ans->band_score !== null) {
-                        $listeningBand = (float) $ans->band_score;
-                    } elseif (isset($answers[$ans->pt_ielts_task_id]['evaluation']['band_score'])) {
-                        $listeningBand = (float) $answers[$ans->pt_ielts_task_id]['evaluation']['band_score'];
+                $task = $ans->ptIeltsTask;
+                $skill = $task?->skill_type;
+                $pos = (int) ($task?->position ?? 1);
+                $titleLower = strtolower($task?->title ?? '');
+
+                $score = $ans->band_score;
+                if ($score === null && isset($answers[$ans->pt_ielts_task_id]['evaluation']['band_score'])) {
+                    $score = $answers[$ans->pt_ielts_task_id]['evaluation']['band_score'];
+                }
+
+                if ($isToeflPbt) {
+                    if ($pos === 1 || $skill === 'listening' || str_contains($titleLower, 'listening')) {
+                        $listeningBand = $score !== null ? (float) $score : null;
+                    } elseif ($pos === 2 || str_contains($titleLower, 'structure')) {
+                        $structureBand = $score !== null ? (float) $score : null;
+                    } else {
+                        $readingBand = $score !== null ? (float) $score : null;
                     }
-                } elseif ($skill === 'reading') {
-                    if ($ans->band_score !== null) {
-                        $readingBand = (float) $ans->band_score;
-                    } elseif (isset($answers[$ans->pt_ielts_task_id]['evaluation']['band_score'])) {
-                        $readingBand = (float) $answers[$ans->pt_ielts_task_id]['evaluation']['band_score'];
-                    }
-                } elseif ($skill === 'writing') {
-                    if ($ans->band_score !== null) {
-                        $writingBand = (float) $ans->band_score;
-                    }
-                } elseif ($skill === 'speaking') {
-                    if ($ans->band_score !== null) {
-                        $speakingBand = (float) $ans->band_score;
+                } else {
+                    if ($skill === 'listening') {
+                        $listeningBand = $score !== null ? (float) $score : null;
+                    } elseif ($skill === 'reading') {
+                        $readingBand = $score !== null ? (float) $score : null;
+                    } elseif ($skill === 'writing') {
+                        $writingBand = $score !== null ? (float) $score : null;
+                    } elseif ($skill === 'speaking') {
+                        $speakingBand = $score !== null ? (float) $score : null;
                     }
                 }
             }
 
             $ieltsModuleScores = [
                 'listening' => $listeningBand,
+                'structure' => $structureBand,
                 'reading' => $readingBand,
                 'writing' => $writingBand,
                 'speaking' => $speakingBand,
@@ -272,6 +313,7 @@ class PtSessionController extends Controller
             'session' => new PtSessionResource($ptSession),
             'answers' => $answers,
             'exam' => new PtExamPublicResource($ptSession->ptExam),
+            'is_toefl_pbt' => $isToeflPbt,
             'ielts_module_scores' => $ieltsModuleScores,
             'stats' => [
                 'total_questions' => $reportData['total_targets'],

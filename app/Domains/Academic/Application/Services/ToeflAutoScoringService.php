@@ -457,146 +457,64 @@ class ToeflAutoScoringService
     }
 
     /**
-     * Convert TOEFL PBT Listening Raw Score (0-50) to Scaled Score (31-68)
+     * Convert TOEFL PBT Listening Raw Score (0-50) to Scaled Score (27-68)
+     * Source: Table 1 Score Conversion Table (Column L + R) - always taking the right-hand (upper bound) score.
      */
     public static function calculatePbtListeningScaledScore(int $raw): float
     {
-        if ($raw >= 50) return 68.0;
-        if ($raw >= 49) return 67.0;
-        if ($raw >= 48) return 66.0;
-        if ($raw >= 47) return 65.0;
-        if ($raw >= 46) return 63.0;
-        if ($raw >= 45) return 62.0;
-        if ($raw >= 44) return 61.0;
-        if ($raw >= 43) return 60.0;
-        if ($raw >= 42) return 59.0;
-        if ($raw >= 41) return 58.0;
-        if ($raw >= 40) return 57.0;
-        if ($raw >= 39) return 57.0;
-        if ($raw >= 38) return 56.0;
-        if ($raw >= 37) return 55.0;
-        if ($raw >= 36) return 54.0;
-        if ($raw >= 35) return 54.0;
-        if ($raw >= 34) return 53.0;
-        if ($raw >= 33) return 52.0;
-        if ($raw >= 32) return 52.0;
-        if ($raw >= 31) return 51.0;
-        if ($raw >= 30) return 51.0;
-        if ($raw >= 29) return 50.0;
-        if ($raw >= 28) return 49.0;
-        if ($raw >= 27) return 49.0;
-        if ($raw >= 26) return 48.0;
-        if ($raw >= 25) return 48.0;
-        if ($raw >= 24) return 47.0;
-        if ($raw >= 23) return 47.0;
-        if ($raw >= 22) return 46.0;
-        if ($raw >= 21) return 45.0;
-        if ($raw >= 20) return 45.0;
-        if ($raw >= 19) return 44.0;
-        if ($raw >= 18) return 43.0;
-        if ($raw >= 17) return 43.0;
-        if ($raw >= 16) return 42.0;
-        if ($raw >= 15) return 41.0;
-        if ($raw >= 14) return 41.0;
-        if ($raw >= 13) return 40.0;
-        if ($raw >= 12) return 39.0;
-        if ($raw >= 11) return 38.0;
-        if ($raw >= 10) return 37.0;
-        if ($raw >= 9)  return 36.0;
-        if ($raw >= 8)  return 35.0;
-        if ($raw >= 7)  return 34.0;
-        if ($raw >= 6)  return 33.0;
-        if ($raw >= 5)  return 32.0;
-        return 31.0;
+        return match (true) {
+            $raw >= 48 => 68.0, // 48-50 -> 65-68
+            $raw >= 46 => 64.0, // 46-47 -> 62-64
+            $raw >= 44 => 61.0, // 44-45 -> 59-61
+            $raw >= 41 => 58.0, // 41-43 -> 56-58
+            $raw >= 38 => 55.0, // 38-40 -> 54-55
+            $raw >= 35 => 53.0, // 35-37 -> 52-53
+            $raw >= 33 => 51.0, // 33-34 -> 50-51
+            $raw >= 30 => 49.0, // 30-32 -> 48-49
+            $raw >= 27 => 47.0, // 27-29 -> 46-47
+            $raw >= 24 => 45.0, // 24-26 -> 44-45
+            $raw >= 21 => 43.0, // 21-23 -> 42-43
+            $raw >= 18 => 41.0, // 18-20 -> 40-41
+            $raw >= 15 => 39.0, // 15-17 -> 38-39
+            $raw >= 12 => 37.0, // 12-14 -> 36-37
+            $raw >= 9  => 35.0, // 9-11  -> 34-35
+            $raw >= 6  => 33.0, // 6-8   -> 32-33
+            $raw >= 4  => 31.0, // 4-5   -> 29-31
+            default    => 27.0, // 0-3   -> 25-27
+        };
     }
 
     /**
-     * Convert TOEFL PBT Structure Raw Score (0-40) to Scaled Score (31-68)
+     * Convert TOEFL PBT Structure Raw Score (0-40) to Scaled Score (24-68)
+     * Source: Table 1 Score Conversion Table (Column S) - always taking the right-hand (upper bound) score.
      */
     public static function calculatePbtStructureScaledScore(int $raw): float
     {
-        if ($raw >= 40) return 68.0;
-        if ($raw >= 39) return 67.0;
-        if ($raw >= 38) return 65.0;
-        if ($raw >= 37) return 63.0;
-        if ($raw >= 36) return 61.0;
-        if ($raw >= 35) return 60.0;
-        if ($raw >= 34) return 58.0;
-        if ($raw >= 33) return 57.0;
-        if ($raw >= 32) return 56.0;
-        if ($raw >= 31) return 55.0;
-        if ($raw >= 30) return 54.0;
-        if ($raw >= 29) return 53.0;
-        if ($raw >= 28) return 52.0;
-        if ($raw >= 27) return 51.0;
-        if ($raw >= 26) return 50.0;
-        if ($raw >= 25) return 49.0;
-        if ($raw >= 24) return 48.0;
-        if ($raw >= 23) return 47.0;
-        if ($raw >= 22) return 46.0;
-        if ($raw >= 21) return 45.0;
-        if ($raw >= 20) return 44.0;
-        if ($raw >= 19) return 43.0;
-        if ($raw >= 18) return 43.0;
-        if ($raw >= 17) return 42.0;
-        if ($raw >= 16) return 41.0;
-        if ($raw >= 15) return 40.0;
-        if ($raw >= 14) return 39.0;
-        if ($raw >= 13) return 38.0;
-        if ($raw >= 12) return 37.0;
-        if ($raw >= 11) return 36.0;
-        if ($raw >= 10) return 35.0;
-        if ($raw >= 9)  return 34.0;
-        if ($raw >= 8)  return 33.0;
-        if ($raw >= 7)  return 32.0;
-        return 31.0;
+        return match (true) {
+            $raw >= 38 => 68.0, // 38-40 -> 63-68
+            $raw >= 35 => 62.0, // 35-37 -> 59-62
+            $raw >= 33 => 58.0, // 33-34 -> 57-58
+            $raw >= 30 => 56.0, // 30-32 -> 54-56
+            $raw >= 27 => 53.0, // 27-29 -> 51-53
+            $raw >= 24 => 50.0, // 24-26 -> 48-50
+            $raw >= 21 => 47.0, // 21-23 -> 45-47
+            $raw >= 18 => 43.0, // 18-20 -> 42-43
+            $raw >= 15 => 41.0, // 15-17 -> 39-41
+            $raw >= 12 => 38.0, // 12-14 -> 37-38
+            $raw >= 9  => 36.0, // 9-11  -> 33-36
+            $raw >= 6  => 31.0, // 6-8   -> 29-31
+            $raw >= 4  => 28.0, // 4-5   -> 25-28
+            default    => 24.0, // 0-3   -> 20-24
+        };
     }
 
     /**
-     * Convert TOEFL PBT Reading Raw Score (0-50) to Scaled Score (31-67)
+     * Convert TOEFL PBT Reading Raw Score (0-50) to Scaled Score (27-68)
+     * Source: Table 1 Score Conversion Table (Column L + R) - always taking the right-hand (upper bound) score.
      */
     public static function calculatePbtReadingScaledScore(int $raw): float
     {
-        if ($raw >= 50) return 67.0;
-        if ($raw >= 49) return 66.0;
-        if ($raw >= 48) return 65.0;
-        if ($raw >= 47) return 63.0;
-        if ($raw >= 46) return 61.0;
-        if ($raw >= 45) return 60.0;
-        if ($raw >= 44) return 59.0;
-        if ($raw >= 43) return 58.0;
-        if ($raw >= 42) return 57.0;
-        if ($raw >= 41) return 56.0;
-        if ($raw >= 40) return 55.0;
-        if ($raw >= 39) return 54.0;
-        if ($raw >= 38) return 54.0;
-        if ($raw >= 37) return 53.0;
-        if ($raw >= 36) return 52.0;
-        if ($raw >= 35) return 52.0;
-        if ($raw >= 34) return 51.0;
-        if ($raw >= 33) return 50.0;
-        if ($raw >= 32) return 49.0;
-        if ($raw >= 31) return 48.0;
-        if ($raw >= 30) return 48.0;
-        if ($raw >= 29) return 47.0;
-        if ($raw >= 28) return 46.0;
-        if ($raw >= 27) return 46.0;
-        if ($raw >= 26) return 45.0;
-        if ($raw >= 25) return 44.0;
-        if ($raw >= 24) return 43.0;
-        if ($raw >= 23) return 43.0;
-        if ($raw >= 22) return 42.0;
-        if ($raw >= 21) return 41.0;
-        if ($raw >= 20) return 40.0;
-        if ($raw >= 19) return 39.0;
-        if ($raw >= 18) return 38.0;
-        if ($raw >= 17) return 37.0;
-        if ($raw >= 16) return 36.0;
-        if ($raw >= 15) return 35.0;
-        if ($raw >= 14) return 34.0;
-        if ($raw >= 13) return 32.0;
-        if ($raw >= 12) return 31.0;
-        return 31.0;
+        return self::calculatePbtListeningScaledScore($raw);
     }
 
     /**
@@ -604,7 +522,8 @@ class ToeflAutoScoringService
      */
     public static function calculateTotalPbtScore(float $listScaled, float $structScaled, float $readScaled): int
     {
-        return (int) round((($listScaled + $structScaled + $readScaled) * 10) / 3);
+        $calculated = (int) round((($listScaled + $structScaled + $readScaled) * 10) / 3);
+        return min(677, max(310, $calculated));
     }
 
     /**

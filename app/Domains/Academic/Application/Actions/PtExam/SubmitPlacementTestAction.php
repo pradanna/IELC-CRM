@@ -182,10 +182,17 @@ class SubmitPlacementTestAction
                     }
                 }
             } elseif ($category === 'IELTS') {
-                // IELTS PLACEMENT TEST SUBMISSION
+                // IELTS / TOEFL PLACEMENT TEST SUBMISSION
                 $exam->load(['ieltsTasks']);
                 $taskMap = $exam->ieltsTasks->keyBy('id');
-                $hasManualGrading = true; // Writing and Speaking still require consultant/teacher evaluation
+                $isToeflPbt = $exam->slug === 'toefl-pbt-placement-test';
+                $isToeflIbt = $exam->slug === 'toefl-ibt-placement-test';
+                $hasManualGrading = !($isToeflPbt || $isToeflIbt); // IELTS requires consultant evaluation for Writing & Speaking
+                $toeflSectionScores = [
+                    'listening' => null,
+                    'structure' => null,
+                    'reading' => null,
+                ];
 
                 foreach ($submittedAnswers as $taskId => $value) {
                     if ($value === null || $value === '') continue;
@@ -220,6 +227,18 @@ class SubmitPlacementTestAction
                         $totalScore += $gradeResult['raw_score'];
                         $scoreLabel = str_contains($exam->slug, 'toefl') ? 'Scaled' : 'Band';
                         $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct ({$scoreLabel} {$bandScore})";
+
+                        if ($isToeflPbt) {
+                            $pos = (int) ($task->position ?? 1);
+                            $titleLower = strtolower($task->title ?? '');
+                            if ($pos === 1 || $task->skill_type === 'listening' || str_contains($titleLower, 'listening')) {
+                                $toeflSectionScores['listening'] = (float) $bandScore;
+                            } elseif ($pos === 2 || str_contains($titleLower, 'structure')) {
+                                $toeflSectionScores['structure'] = (float) $bandScore;
+                            } else {
+                                $toeflSectionScores['reading'] = (float) $bandScore;
+                            }
+                        }
                     }
 
                     \App\Domains\Academic\Domain\Models\PtIeltsAnswer::create([
@@ -230,6 +249,27 @@ class SubmitPlacementTestAction
                         'band_score' => $bandScore,
                         'teacher_notes' => $teacherNotes,
                     ]);
+                }
+
+                if ($isToeflPbt) {
+                    $listScaled = $toeflSectionScores['listening'] ?? 27.0;
+                    $structScaled = $toeflSectionScores['structure'] ?? 24.0;
+                    $readScaled = $toeflSectionScores['reading'] ?? 27.0;
+                    $totalScore = \App\Domains\Academic\Application\Services\ToeflAutoScoringService::calculateTotalPbtScore($listScaled, $structScaled, $readScaled);
+
+                    // Auto suggest level based on TOEFL PBT Total Score
+                    if ($totalScore >= 550) {
+                        $session->recommended_level = 'TOEFL Advanced / Preparation 2';
+                    } elseif ($totalScore >= 480) {
+                        $session->recommended_level = 'TOEFL Preparation 1 (Intermediate)';
+                    } elseif ($totalScore >= 420) {
+                        $session->recommended_level = 'Pre-TOEFL (Foundation)';
+                    } else {
+                        $session->recommended_level = 'General English / Elementary';
+                    }
+
+                    $session->grading_notes = "Auto-graded TOEFL PBT: Total Score {$totalScore} (Listening: {$listScaled}, Structure: {$structScaled}, Reading: {$readScaled})";
+                    $hasManualGrading = false;
                 }
             } else {
                 // GENERAL PLACEMENT TEST SUBMISSION
@@ -309,8 +349,8 @@ class SubmitPlacementTestAction
                 $hasManualGrading = true;
             }
 
-            // If it's IELTS category, always trigger manual grading
-            if ($exam->category === 'IELTS') {
+            // If it's pure IELTS (with Writing/Speaking), trigger manual grading
+            if ($exam->category === 'IELTS' && !str_contains($exam->slug, 'toefl')) {
                 $hasManualGrading = true;
             }
 

@@ -434,6 +434,7 @@ export default function Index({ stats, sessions, exams }) {
                                     <option value="General">General / Adult</option>
                                     <option value="Kids">Kids Placement</option>
                                     <option value="IELTS">IELTS Assessment</option>
+                                    <option value="TOEFL">TOEFL Assessment</option>
                                 </select>
                             </div>
                         </div>
@@ -452,7 +453,12 @@ export default function Index({ stats, sessions, exams }) {
                                     <p className="text-xs text-slate-400 mt-1">Coba sesuaikan filter pencarian atau buat sesi baru dari Lead CRM.</p>
                                 </div>
                             ) : (
-                                submissionsList.map((session) => (
+                                submissionsList.map((session) => {
+                                    const isToeflExam = session.pt_exam?.slug?.includes('toefl') 
+                                        || session.pt_exam?.title?.toLowerCase()?.includes('toefl') 
+                                        || (session.final_score >= 310 && session.final_score <= 677);
+
+                                    return (
                                     <div 
                                         key={session.id} 
                                         onClick={() => handleViewResult(session)}
@@ -493,30 +499,52 @@ export default function Index({ stats, sessions, exams }) {
                                         <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                                             <div className="text-left sm:text-right">
                                                 {session.status === 'completed' && session.final_score !== null ? (
-                                                    <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-100">
-                                                        <Trophy size={14} className="shrink-0" />
-                                                        {session.percentage !== null && session.percentage !== undefined ? (
-                                                            <>
-                                                                <span>{session.percentage}%</span>
-                                                                {session.total_questions > 0 && (
-                                                                    <span className="text-emerald-700/70 font-bold text-[11px]">
-                                                                        ({session.correct_answers ?? session.final_score}/{session.total_questions})
-                                                                    </span>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            <span>{session.final_score}</span>
-                                                        )}
-                                                    </span>
+                                                    <div className="flex flex-col items-start sm:items-end">
+                                                        <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-100">
+                                                            <Trophy size={14} className="shrink-0" />
+                                                            {isToeflExam ? (
+                                                                <>
+                                                                    <span>Skor TOEFL: {session.final_score}</span>
+                                                                    {session.total_questions > 0 && (
+                                                                        <span className="text-emerald-700/70 font-bold text-[11px]">
+                                                                            ({session.correct_answers ?? session.final_score}/{session.total_questions})
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            ) : session.percentage !== null && session.percentage !== undefined ? (
+                                                                <>
+                                                                    <span>{session.percentage}%</span>
+                                                                    {session.total_questions > 0 && (
+                                                                        <span className="text-emerald-700/70 font-bold text-[11px]">
+                                                                            ({session.correct_answers ?? session.final_score}/{session.total_questions})
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <span>Skor: {session.final_score}</span>
+                                                            )}
+                                                        </span>
+                                                        <div className="flex items-center justify-start sm:justify-end gap-1.5 mt-1">
+                                                            {session.is_graded ? (
+                                                                <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                                                                    <CheckCircle2 size={11} /> Auto-Graded
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[10px] font-bold text-amber-600">
+                                                                    Perlu Review
+                                                                </span>
+                                                            )}
+                                                            {session.recommended_level && (
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                                                    • Level: <strong className="text-slate-800">{session.recommended_level}</strong>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 ) : (
                                                     <span className="text-[11px] font-bold text-slate-400">
                                                         {session.status === 'in_progress' ? 'Sedang Mengerjakan' : 'Menunggu Siswa'}
                                                     </span>
-                                                )}
-                                                {session.recommended_level && (
-                                                    <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase">
-                                                        Level: <span className="text-slate-800 font-black">{session.recommended_level}</span>
-                                                    </div>
                                                 )}
                                             </div>
 
@@ -531,7 +559,8 @@ export default function Index({ stats, sessions, exams }) {
                                             </div>
                                         </div>
                                     </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
 

@@ -154,7 +154,12 @@ export default function CompletedPtSessionsModal({ isOpen, onClose, exams = [], 
                                 </p>
                             </div>
                         ) : (
-                            sessions.map((session) => (
+                            sessions.map((session) => {
+                                const isToeflExam = session.pt_exam?.slug?.includes('toefl') 
+                                    || session.pt_exam?.title?.toLowerCase()?.includes('toefl') 
+                                    || (session.final_score >= 310 && session.final_score <= 677);
+
+                                return (
                                 <div
                                     key={session.id}
                                     onClick={() => {
@@ -193,7 +198,16 @@ export default function CompletedPtSessionsModal({ isOpen, onClose, exams = [], 
                                             {session.final_score !== null && (
                                                 <span className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
                                                     <Trophy size={13} className="shrink-0" />
-                                                    {session.percentage !== null && session.percentage !== undefined ? (
+                                                    {isToeflExam ? (
+                                                        <>
+                                                            <span>Skor TOEFL: {session.final_score}</span>
+                                                            {session.total_questions > 0 && (
+                                                                <span className="text-emerald-700/70 font-bold text-[11px]">
+                                                                    ({session.correct_answers ?? session.final_score}/{session.total_questions})
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    ) : session.percentage !== null && session.percentage !== undefined ? (
                                                         <>
                                                             <span>{session.percentage}%</span>
                                                             {session.total_questions > 0 && (
@@ -207,18 +221,30 @@ export default function CompletedPtSessionsModal({ isOpen, onClose, exams = [], 
                                                     )}
                                                 </span>
                                             )}
-                                            {session.recommended_level && (
-                                                <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase">
-                                                    Level: <span className="text-slate-700 font-black">{session.recommended_level}</span>
-                                                </div>
-                                            )}
+                                            <div className="flex items-center justify-end gap-1.5 mt-1">
+                                                {session.is_graded ? (
+                                                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                                                        <CheckCircle2 size={10} /> Auto-Graded
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-amber-600">
+                                                        Perlu Review
+                                                    </span>
+                                                )}
+                                                {session.recommended_level && (
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                                        • Level: <span className="text-slate-700 font-black">{session.recommended_level}</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="w-8 h-8 rounded-xl bg-slate-50 group-hover:bg-red-50 text-slate-400 group-hover:text-red-600 flex items-center justify-center transition-colors">
                                             <ChevronRight size={16} />
                                         </div>
                                     </div>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 

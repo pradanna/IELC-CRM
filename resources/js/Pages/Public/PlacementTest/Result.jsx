@@ -8,9 +8,14 @@ export default function Result({ session, exam, stats, ielts_modules = {}, downl
     const percentage = totalQ > 0 ? Math.round((correctA / totalQ) * 100) : 0;
 
     const listeningData = ielts_modules?.listening;
+    const structureData = ielts_modules?.structure;
     const readingData = ielts_modules?.reading;
     const writingData = ielts_modules?.writing;
     const speakingData = ielts_modules?.speaking;
+
+    const isToeflPbt = exam?.slug === 'toefl-pbt-placement-test' 
+        || (exam?.title || '').toLowerCase().includes('toefl pbt') 
+        || !!structureData;
 
     return (
         <div className="min-h-screen bg-[#FDFDFF] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -57,7 +62,7 @@ export default function Result({ session, exam, stats, ielts_modules = {}, downl
                             Candidate for <span className="text-slate-900 font-bold">{exam.title}</span>
                         </p>
 
-                        {/* Result Stats Grid - Hidden for IELTS */}
+                        {/* Result Stats Grid for General & Kids */}
                         {exam.category !== 'IELTS' ? (
                             <>
                                 <div className="grid grid-cols-2 gap-4 mb-10">
@@ -102,7 +107,132 @@ export default function Result({ session, exam, stats, ielts_modules = {}, downl
                                     )}
                                 </div>
                             </>
+                        ) : isToeflPbt ? (
+                            /* TOEFL PBT Presentation */
+                            <div className="mb-10 space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-gradient-to-br from-indigo-50/60 to-white border border-indigo-100 p-6 rounded-[2rem] shadow-sm text-left relative overflow-hidden group">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
+                                                <Trophy size={20} />
+                                            </div>
+                                            <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700">
+                                                Scale 310–677
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total TOEFL Score</p>
+                                        <div className="mt-1 flex items-baseline gap-1.5">
+                                            <span className="text-5xl font-black text-slate-900 tracking-tight leading-none">
+                                                {session.final_score || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-6 rounded-[2rem] shadow-sm text-left relative overflow-hidden group">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+                                                <Target size={20} />
+                                            </div>
+                                            <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-700">
+                                                {correctA} / {totalQ || 140} Soal
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Accuracy</p>
+                                        <div className="mt-1 flex items-baseline gap-1.5">
+                                            <span className="text-5xl font-black text-slate-900 tracking-tight leading-none">
+                                                {percentage}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-left pt-2">
+                                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+                                        Section Performance Breakdown
+                                    </h4>
+                                    
+                                    <div className="space-y-3">
+                                        {/* Listening Card */}
+                                        <div className="bg-gradient-to-br from-sky-50/50 to-white border border-sky-100 p-5 rounded-2xl flex items-center justify-between shadow-xs">
+                                            <div className="flex items-center gap-3.5">
+                                                <div className="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                                                    <Headphones size={20} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs font-black text-slate-900">Section 1: Listening Comprehension</p>
+                                                    <p className="text-[11px] font-semibold text-sky-700">
+                                                        {listeningData?.raw_score?.correct ?? 0} / 50 Benar
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-2xl font-black text-slate-900">
+                                                    {listeningData?.band_score ?? 27}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 block uppercase">Scaled</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Structure Card */}
+                                        <div className="bg-gradient-to-br from-violet-50/50 to-white border border-violet-100 p-5 rounded-2xl flex items-center justify-between shadow-xs">
+                                            <div className="flex items-center gap-3.5">
+                                                <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                                                    <PenTool size={20} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs font-black text-slate-900">Section 2: Structure & Written Expression</p>
+                                                    <p className="text-[11px] font-semibold text-violet-700">
+                                                        {structureData?.raw_score?.correct ?? 0} / 40 Benar
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-2xl font-black text-slate-900">
+                                                    {structureData?.band_score ?? 24}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 block uppercase">Scaled</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Reading Card */}
+                                        <div className="bg-gradient-to-br from-emerald-50/50 to-white border border-emerald-100 p-5 rounded-2xl flex items-center justify-between shadow-xs">
+                                            <div className="flex items-center gap-3.5">
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                                                    <BookOpen size={20} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-xs font-black text-slate-900">Section 3: Reading Comprehension</p>
+                                                    <p className="text-[11px] font-semibold text-emerald-700">
+                                                        {readingData?.raw_score?.correct ?? 0} / 50 Benar
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-2xl font-black text-slate-900">
+                                                    {readingData?.band_score ?? 27}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 block uppercase">Scaled</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-center pt-2">
+                                    {download_urls?.result_pdf && (
+                                        <a
+                                            href={download_urls.result_pdf}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                        >
+                                            <Award size={16} />
+                                            <span>Download Laporan Nilai (PDF)</span>
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
                         ) : (
+                            /* Standard IELTS Presentation */
                             <div className="mb-10 space-y-4">
                                 <div className="text-left mb-2">
                                     <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">

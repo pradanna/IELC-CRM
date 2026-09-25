@@ -178,19 +178,36 @@ class PublicPlacementTestController extends Controller
             // Correct answers for kids represents the total targets correctly matched / score points
             $correctAnswers = (int) round($session->final_score ?? 0);
         } elseif ($category === 'IELTS') {
-            $correctAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::where('pt_session_id', $session->id)
-                ->count();
-            
             $session->load(['ptExam.ieltsTasks']);
+            $examSlug = $session->ptExam->slug ?? '';
+            $isToeflPbt = str_contains($examSlug, 'toefl-pbt');
+
             $ieltsAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::with('ptIeltsTask')
                 ->where('pt_session_id', $session->id)
                 ->get()
                 ->keyBy('pt_ielts_task_id');
             
             $ieltsModules = [];
-            foreach ($session->ptExam->ieltsTasks as $task) {
+            $rawCorrectTotal = 0;
+            $rawQuestionsTotal = 0;
+
+            foreach ($session->ptExam->ieltsTasks->sortBy('position') as $task) {
                 $skill = $task->skill_type ?? 'other';
+                $taskTitle = strtolower($task->title ?? '');
+                $position = (int) ($task->position ?? 1);
                 $ans = $ieltsAnswers->get($task->id);
+
+                // Module key resolution: separate Structure from Reading in TOEFL PBT
+                $moduleKey = $skill;
+                if ($isToeflPbt) {
+                    if ($position === 1 || str_contains($taskTitle, 'listening')) {
+                        $moduleKey = 'listening';
+                    } elseif ($position === 2 || str_contains($taskTitle, 'structure')) {
+                        $moduleKey = 'structure';
+                    } else {
+                        $moduleKey = 'reading';
+                    }
+                }
 
                 // Parse raw score from teacher notes e.g. "Auto-graded: 32/40 correct (Band 7.5)"
                 $rawScore = null;
@@ -201,29 +218,59 @@ class PublicPlacementTestController extends Controller
                     ];
                 }
 
-                $isAutoGraded = in_array($skill, ['listening', 'reading']);
+                // Fallback: evaluate grid if not present in notes
+                if ($rawScore === null && $ans && $ans->essay_text) {
+                    $payload = json_decode($ans->essay_text, true);
+                    $grid = is_array($payload) ? ($payload['grid'] ?? $payload) : [];
+                    if (!empty($grid)) {
+                        $eval = $isToeflPbt 
+                            ? \App\Domains\Academic\Application\Services\ToeflAutoScoringService::gradeTask($examSlug, $task, $grid)
+                            : \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeTask($examSlug, $task, $grid);
+                        if ($eval) {
+                            $rawScore = [
+                                'correct' => $eval['raw_score'] ?? 0,
+                                'total' => $eval['total_questions'] ?? ($isToeflPbt ? ($moduleKey === 'structure' ? 40 : 50) : 40),
+                            ];
+                        }
+                    }
+                }
+
+                $isAutoGraded = in_array($skill, ['listening', 'reading']) || $isToeflPbt;
                 $bandScore = $ans?->band_score;
                 if ($isAutoGraded) {
                     if ($bandScore === null) {
-                        $bandScore = 0;
+                        $bandScore = $isToeflPbt ? ($moduleKey === 'structure' ? 24 : 27) : 0;
                     }
                     if ($rawScore === null) {
+                        $expectedSlots = $isToeflPbt ? ($moduleKey === 'structure' ? 40 : 50) : 40;
                         $rawScore = [
                             'correct' => 0,
-                            'total' => 40,
+                            'total' => $expectedSlots,
                         ];
                     }
                 }
 
-                $ieltsModules[$skill] = [
-                    'title' => $task->title ?? ucfirst($skill),
-                    'skill_type' => $skill,
+                if ($rawScore) {
+                    $rawCorrectTotal += $rawScore['correct'];
+                    $rawQuestionsTotal += $rawScore['total'];
+                }
+
+                $ieltsModules[$moduleKey] = [
+                    'title' => $task->title ?? ucfirst($moduleKey),
+                    'skill_type' => $moduleKey,
                     'band_score' => $bandScore,
                     'raw_score' => $rawScore,
                     'is_auto_graded' => $isAutoGraded,
                     'has_attempted' => $ans !== null,
                     'status' => $ans?->band_score !== null ? 'graded' : ($ans ? 'pending_review' : ($isAutoGraded ? 'graded' : 'not_attempted')),
                 ];
+            }
+
+            if ($isToeflPbt) {
+                $totalQuestions = $rawQuestionsTotal > 0 ? $rawQuestionsTotal : 140;
+                $correctAnswers = $rawCorrectTotal;
+            } else {
+                $correctAnswers = \App\Domains\Academic\Domain\Models\PtIeltsAnswer::where('pt_session_id', $session->id)->count();
             }
         } else {
             $generalCorrect = \App\Domains\Academic\Domain\Models\PtGeneralAnswer::where('pt_session_id', $session->id)
@@ -235,6 +282,8 @@ class PublicPlacementTestController extends Controller
             $correctAnswers = $generalCorrect > 0 ? $generalCorrect : $legacyCorrect;
         }
 
+        $percentage = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100) : 0;
+
         return Inertia::render('Public/PlacementTest/Result', [
             'session' => [
                 'token' => $session->token,
@@ -244,10 +293,12 @@ class PublicPlacementTestController extends Controller
             'exam' => [
                 'title' => $session->ptExam->title,
                 'category' => $session->ptExam->category,
+                'slug' => $session->ptExam->slug,
             ],
             'stats' => [
                 'total_questions' => $totalQuestions,
                 'correct_answers' => $correctAnswers,
+                'percentage' => $percentage,
             ],
             'ielts_modules' => $ieltsModules,
             'download_urls' => [

@@ -161,19 +161,44 @@ export default function LeadPlacementTestTab({ lead, loading, availableExams = [
                                                     {new Date(session.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                 </div>
                                                 {session.status === 'completed' && (
-                                                    <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md">
-                                                        <Trophy size={12} className="shrink-0" />
-                                                        {session.percentage !== null && session.percentage !== undefined ? (
-                                                            <>
-                                                                <span>{session.percentage}%</span>
-                                                                {session.total_questions > 0 && (
-                                                                    <span className="text-emerald-700/70 font-bold text-[10px]">
-                                                                        ({session.correct_answers ?? session.final_score}/{session.total_questions})
-                                                                    </span>
-                                                                )}
-                                                            </>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md">
+                                                            <Trophy size={12} className="shrink-0" />
+                                                            {(session.pt_exam?.slug?.includes('toefl') || session.pt_exam?.title?.toLowerCase()?.includes('toefl') || (session.final_score >= 310 && session.final_score <= 677)) ? (
+                                                                <>
+                                                                    <span>Skor TOEFL: {session.final_score}</span>
+                                                                    {session.total_questions > 0 && (
+                                                                        <span className="text-emerald-700/70 font-bold text-[10px]">
+                                                                            ({session.correct_answers ?? session.final_score}/{session.total_questions})
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            ) : session.percentage !== null && session.percentage !== undefined ? (
+                                                                <>
+                                                                    <span>{session.percentage}%</span>
+                                                                    {session.total_questions > 0 && (
+                                                                        <span className="text-emerald-700/70 font-bold text-[10px]">
+                                                                            ({session.correct_answers ?? session.final_score}/{session.total_questions})
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <span>Score: {session.final_score}</span>
+                                                            )}
+                                                        </div>
+                                                        {session.is_graded ? (
+                                                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-100">
+                                                                Auto-Graded
+                                                            </span>
                                                         ) : (
-                                                            <span>Score: {session.final_score}</span>
+                                                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
+                                                                Perlu Review
+                                                            </span>
+                                                        )}
+                                                        {session.recommended_level && (
+                                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">
+                                                                Level: <strong className="text-slate-800">{session.recommended_level}</strong>
+                                                            </span>
                                                         )}
                                                     </div>
                                                 )}

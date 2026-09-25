@@ -362,17 +362,25 @@ class PtReportService
         $speakingBand = null;
 
         $examSlug = $exam->slug ?? '';
+        $isToeflPbt = str_contains($examSlug, 'toefl-pbt');
+
+        $totalRawCorrect = 0;
+        $totalQuestionsCount = 0;
+        $toeflScaled = [];
 
         foreach ($ieltsTasks as $task) {
             $ans = $ieltsAnswers->get($task->id);
             $skill = $task->skill_type ?? 'other';
+            $pos = (int) ($task->position ?? 1);
+            $taskTitle = strtolower($task->title ?? '');
+
             $parsedPayload = $ans && is_string($ans->essay_text) ? json_decode($ans->essay_text, true) : null;
             $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
 
             $eval = null;
             $rawScore = null;
             $bandScore = null;
-            $isAutoGraded = in_array($skill, ['listening', 'reading']);
+            $isAutoGraded = in_array($skill, ['listening', 'reading']) || $isToeflPbt;
 
             if ($isAutoGraded) {
                 if (!empty($grid)) {
@@ -383,7 +391,8 @@ class PtReportService
                     }
                 }
 
-                $totalQuestions = $eval['total_questions'] ?? 40;
+                $expectedSlots = $isToeflPbt ? ($pos === 2 || str_contains($taskTitle, 'structure') ? 40 : 50) : 40;
+                $totalQuestions = $eval['total_questions'] ?? $expectedSlots;
                 $rawScore = $eval['raw_score'] ?? null;
                 $bandScore = $ans?->band_score ?? ($eval['band_score'] ?? ($eval['scaled_score'] ?? null));
 
@@ -391,19 +400,74 @@ class PtReportService
                     $rawScore = (int) $m[1];
                     $totalQuestions = (int) $m[2];
                 }
+
+                if ($rawScore !== null) {
+                    $totalRawCorrect += $rawScore;
+                    $totalQuestionsCount += $totalQuestions;
+                }
             } elseif ($skill === 'writing' || $skill === 'speaking') {
                 $bandScore = $ans?->band_score;
             }
 
-            $moduleKey = isset($modules[$skill]) ? "{$skill}_{$task->position}" : $skill;
+            // Key mapping
+            $moduleKey = $skill;
+            if ($isToeflPbt) {
+                if ($pos === 1 || str_contains($taskTitle, 'listening')) {
+                    $moduleKey = 'listening';
+                    $toeflScaled['listening'] = (float) ($bandScore ?? 27.0);
+                } elseif ($pos === 2 || str_contains($taskTitle, 'structure')) {
+                    $moduleKey = 'structure';
+                    $toeflScaled['structure'] = (float) ($bandScore ?? 24.0);
+                } else {
+                    $moduleKey = 'reading';
+                    $toeflScaled['reading'] = (float) ($bandScore ?? 27.0);
+                }
+            } else {
+                $moduleKey = isset($modules[$skill]) ? "{$skill}_{$task->position}" : $skill;
+            }
+
             $modules[$moduleKey] = [
                 'task' => $task,
-                'skill' => $skill,
-                'title' => $task->title ?? ucfirst($skill),
+                'skill' => $moduleKey,
+                'title' => $task->title ?? ucfirst($moduleKey),
                 'band_score' => $bandScore,
-                'raw_score' => $rawScore,
+                'raw_score' => [
+                    'correct' => $rawScore ?? 0,
+                    'total' => $totalQuestions,
+                ],
                 'answer' => $ans,
                 'eval' => $eval,
+            ];
+        }
+
+        if ($isToeflPbt) {
+            $totalQuestionsCount = $totalQuestionsCount > 0 ? $totalQuestionsCount : 140;
+            $percentage = $totalQuestionsCount > 0 ? round(($totalRawCorrect / $totalQuestionsCount) * 100, 1) : 0;
+            $finalScore = $session->final_score ?? \App\Domains\Academic\Application\Services\ToeflAutoScoringService::calculateTotalPbtScore(
+                $toeflScaled['listening'] ?? 27.0,
+                $toeflScaled['structure'] ?? 24.0,
+                $toeflScaled['reading'] ?? 27.0
+            );
+
+            return [
+                'session' => $session,
+                'exam' => $exam,
+                'candidate_name' => $candidateName,
+                'branch_name' => $branchName,
+                'test_date' => $testDate,
+                'category' => 'TOEFL PBT',
+                'unit_label' => 'Soal',
+                'total_questions' => $totalQuestionsCount,
+                'total_targets' => $totalQuestionsCount,
+                'correct_answers' => $totalRawCorrect,
+                'correct_targets' => $totalRawCorrect,
+                'percentage' => $percentage,
+                'final_score' => $finalScore,
+                'recommended_level' => $session->recommended_level ?? ($finalScore >= 550 ? 'TOEFL Advanced / Preparation 2' : ($finalScore >= 480 ? 'TOEFL Preparation 1' : 'Pre-TOEFL (Foundation)')),
+                'achievement_text' => "TOEFL PBT Total Score: {$finalScore} / 677",
+                'grading_notes' => $session->grading_notes,
+                'modules' => $modules,
+                'questions' => [],
             ];
         }
 

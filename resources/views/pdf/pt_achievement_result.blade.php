@@ -351,6 +351,59 @@
                 </tr>
             </tbody>
         </table>
+    @elseif(!empty($modules))
+        <!-- Breakdown Table for TOEFL PBT & IELTS Modules -->
+        <div class="section-title">Rincian Performa Per Bagian (Section Breakdown)</div>
+        <table class="breakdown-table">
+            <thead>
+                <tr>
+                    <th style="width: 30px;">No</th>
+                    <th class="text-left">Bagian Ujian / Assessment Section</th>
+                    <th style="width: 90px;">Jumlah Soal</th>
+                    <th style="width: 90px;">Jawaban Benar</th>
+                    <th style="width: 90px;">Skor Konversi</th>
+                    <th style="width: 80px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $mIdx = 1; @endphp
+                @foreach($modules as $mKey => $mod)
+                    <tr>
+                        <td class="text-center font-bold">{{ $mIdx++ }}</td>
+                        <td class="text-left">
+                            <div style="font-weight: bold; color: #1e293b;">{{ $mod['title'] ?? ucfirst($mod['skill'] ?? $mKey) }}</div>
+                        </td>
+                        <td class="text-center font-semibold">
+                            {{ $mod['raw_score']['total'] ?? ($mod['task']->duration_minutes ? $mod['task']->duration_minutes . ' Menit' : '-') }} Soal
+                        </td>
+                        <td class="text-center font-bold" style="color: #16a34a;">
+                            {{ isset($mod['raw_score']['correct']) ? $mod['raw_score']['correct'] . ' Benar' : '-' }}
+                        </td>
+                        <td class="text-center font-bold" style="color: #0284c7; font-size: 11px;">
+                            {{ $mod['band_score'] !== null ? $mod['band_score'] : 'Menunggu Review' }}
+                        </td>
+                        <td class="text-center">
+                            @if($mod['band_score'] !== null)
+                                <span class="status-pill status-perfect">Ternilai</span>
+                            @else
+                                <span class="status-pill status-partial">Review</span>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+                <tr style="background-color: #f8fafc; font-weight: bold;">
+                    <td colspan="2" class="text-right" style="padding-right: 12px; text-transform: uppercase;">Total Pencapaian:</td>
+                    <td class="text-center">{{ $total_targets }} {{ $unit_label }}</td>
+                    <td class="text-center" style="color: #16a34a; font-size: 11px;">{{ $correct_targets }} Benar</td>
+                    <td class="text-center" style="color: #0284c7; font-size: 11px;">
+                        {{ $final_score ?? '-' }}
+                    </td>
+                    <td class="text-center">
+                        <span class="status-pill status-perfect">Selesai</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     @endif
 
     <!-- Footer / Signatures -->
