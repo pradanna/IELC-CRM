@@ -107,6 +107,103 @@ class IeltsAutoScoringService
     ];
 
     /**
+     * IELTS General Training Reading Answer Keys (40 Questions)
+     * Source: Cambridge 7 GT Test A
+     */
+    protected static array $gtReadingKeys = [
+        1  => ['false'],
+        2  => ['true'],
+        3  => ['not given'],
+        4  => ['true'],
+        5  => ['false'],
+        6  => ['false'],
+        7  => ['true'],
+        8  => ['v', '5'],
+        9  => ['vii', '7'],
+        10 => ['ix', '9'],
+        11 => ['ii', '2'],
+        12 => ['x', '10'],
+        13 => ['i', '1'],
+        14 => ['iii', '3'],
+        15 => ['image'],
+        16 => ['passing trade'],
+        17 => ['access'],
+        18 => ['walls'],
+        19 => ['contract'],
+        20 => ['housing'],
+        21 => ['their department'],
+        22 => ['supervisor', 'the supervisor'],
+        23 => ['exempt employees'],
+        24 => ['human resources', 'hr'],
+        25 => ['prorated system', 'a prorated system'],
+        26 => ['leave request forms', 'leave request form'],
+        27 => ['grace period', 'a grace period'],
+        28 => ['b'],
+        29 => ['d'],
+        30 => ['b'],
+        31 => ['c'],
+        32 => ['c'],
+        // 33-36 IN ANY ORDER: D, E, F, I
+        33 => ['d', 'e', 'f', 'i'],
+        34 => ['d', 'e', 'f', 'i'],
+        35 => ['d', 'e', 'f', 'i'],
+        36 => ['d', 'e', 'f', 'i'],
+        37 => ['false'],
+        38 => ['true'],
+        39 => ['not given'],
+        40 => ['false'],
+    ];
+
+    /**
+     * IELTS General Training Listening Answer Keys (40 Questions)
+     * Source: Cambridge 7 Test 4 Listening
+     */
+    protected static array $gtListeningKeys = [
+        1  => ['pargetter'],
+        2  => ['east'],
+        3  => ['library'],
+        4  => ['morning', 'mornings'],
+        5  => ['postbox', 'post box'],
+        6  => ['prices'],
+        7  => ['glass'],
+        8  => ['cooker'],
+        9  => ['week'],
+        10 => ['fence'],
+        11 => ['b'],
+        12 => ['b'],
+        13 => ['a'],
+        14 => ['a'],
+        15 => ['c'],
+        16 => ['trains'],
+        17 => ['dark'],
+        18 => ['games'],
+        19 => ['guided tour'],
+        20 => ['ladder', 'ladders'],
+        // 21 & 22 IN EITHER ORDER: A, E
+        21 => ['a', 'e'],
+        22 => ['a', 'e'],
+        // 23 & 24 IN EITHER ORDER: B, C
+        23 => ['b', 'c'],
+        24 => ['b', 'c'],
+        25 => ['d'],
+        26 => ['f'],
+        27 => ['g'],
+        28 => ['b'],
+        29 => ['e'],
+        30 => ['c'],
+        31 => ['c'],
+        32 => ['b'],
+        33 => ['c'],
+        34 => ['metal', 'metals'],
+        35 => ['space'],
+        36 => ['memory'],
+        37 => ['solar'],
+        38 => ['oil'],
+        39 => ['waste'],
+        40 => ['tests'],
+    ];
+
+    /**
      * Convert IELTS Raw Score (0-40) to Academic Reading Band Score (1.0 - 9.0)
      */
     public static function calculateReadingBandScore(int $rawScore): float
@@ -159,6 +256,32 @@ class IeltsAutoScoringService
     }
 
     /**
+     * Convert IELTS Raw Score (0-40) to General Training Reading Band Score (1.0 - 9.0)
+     */
+    public static function calculateGtReadingBandScore(int $rawScore): float
+    {
+        return match (true) {
+            $rawScore >= 40 => 9.0,
+            $rawScore >= 39 => 8.5,
+            $rawScore >= 37 => 8.0,
+            $rawScore >= 36 => 7.5,
+            $rawScore >= 34 => 7.0,
+            $rawScore >= 32 => 6.5,
+            $rawScore >= 30 => 6.0,
+            $rawScore >= 27 => 5.5,
+            $rawScore >= 23 => 5.0,
+            $rawScore >= 19 => 4.5,
+            $rawScore >= 15 => 4.0,
+            $rawScore >= 12 => 3.5,
+            $rawScore >= 8  => 3.0,
+            $rawScore >= 5  => 2.5,
+            $rawScore >= 3  => 2.0,
+            $rawScore >= 1  => 1.0,
+            default         => 0.0,
+        };
+    }
+
+    /**
      * Normalize text for comparison (case-insensitive, trimmed, unified whitespace)
      */
     public static function normalize(mixed $text): string
@@ -177,6 +300,20 @@ class IeltsAutoScoringService
         $str = preg_replace('/\s+/', ' ', $str);
 
         return trim($str);
+    }
+
+    /**
+     * Check if a normalized value matches any pattern in a list
+     */
+    public static function matchesAny(string $val, array $patterns): bool
+    {
+        $normalizedVal = self::normalize($val);
+        foreach ($patterns as $pattern) {
+            if ($normalizedVal === self::normalize($pattern)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -370,6 +507,167 @@ class IeltsAutoScoringService
             'band_score' => self::calculateListeningBandScore($rawScore),
             'item_results' => $itemResults,
         ];
+    }
+
+    /**
+     * Grade IELTS General Training Reading Answer Sheet (1-40)
+     */
+    public static function gradeGtReading(array $userAnswers): array
+    {
+        $rawScore = 0;
+        $itemResults = [];
+
+        // Questions 1-32 and 37-40 are single answers
+        for ($i = 1; $i <= 40; $i++) {
+            if ($i >= 33 && $i <= 36) {
+                continue;
+            }
+
+            $userVal = self::normalize($userAnswers[$i] ?? $userAnswers[(string)$i] ?? '');
+            $expectedKeys = array_map([self::class, 'normalize'], self::$gtReadingKeys[$i] ?? []);
+
+            $isCorrect = in_array($userVal, $expectedKeys, true);
+            if ($isCorrect && $userVal !== '') {
+                $rawScore++;
+            }
+
+            $itemResults[$i] = [
+                'is_correct' => $isCorrect,
+                'user_answer' => $userAnswers[$i] ?? $userAnswers[(string)$i] ?? '',
+                'acceptable_keys' => self::$gtReadingKeys[$i] ?? [],
+            ];
+        }
+
+        // Questions 33-36 IN ANY ORDER: D, E, F, I
+        $validChoices3336 = ['d', 'e', 'f', 'i'];
+        $usedChoices = [];
+
+        for ($i = 33; $i <= 36; $i++) {
+            $userVal = self::normalize($userAnswers[$i] ?? $userAnswers[(string)$i] ?? '');
+            $isCorrect = false;
+
+            if ($userVal !== '' && in_array($userVal, $validChoices3336, true) && !in_array($userVal, $usedChoices, true)) {
+                $isCorrect = true;
+                $usedChoices[] = $userVal;
+                $rawScore++;
+            }
+
+            $itemResults[$i] = [
+                'is_correct' => $isCorrect,
+                'user_answer' => $userAnswers[$i] ?? $userAnswers[(string)$i] ?? '',
+                'acceptable_keys' => ['D, E, F, or I (in any order)'],
+            ];
+        }
+
+        ksort($itemResults);
+
+        return [
+            'raw_score' => $rawScore,
+            'total_questions' => 40,
+            'band_score' => self::calculateGtReadingBandScore($rawScore),
+            'item_results' => $itemResults,
+        ];
+    }
+
+    /**
+     * Grade IELTS General Training Listening Answer Sheet (1-40)
+     */
+    public static function gradeGtListening(array $userAnswers): array
+    {
+        $rawScore = 0;
+        $itemResults = [];
+
+        // Standard questions (skip 21-22 and 23-24)
+        for ($i = 1; $i <= 40; $i++) {
+            if ($i === 21 || $i === 22 || $i === 23 || $i === 24) {
+                continue;
+            }
+
+            $userVal = self::normalize($userAnswers[$i] ?? $userAnswers[(string)$i] ?? '');
+            $expectedKeys = array_map([self::class, 'normalize'], self::$gtListeningKeys[$i] ?? []);
+
+            $isCorrect = in_array($userVal, $expectedKeys, true);
+            if ($isCorrect && $userVal !== '') {
+                $rawScore++;
+            }
+
+            $itemResults[$i] = [
+                'is_correct' => $isCorrect,
+                'user_answer' => $userAnswers[$i] ?? $userAnswers[(string)$i] ?? '',
+                'acceptable_keys' => self::$gtListeningKeys[$i] ?? [],
+            ];
+        }
+
+        // Q21 & Q22 IN EITHER ORDER: A & E
+        $valid2122 = ['a', 'e'];
+        $used2122 = [];
+        for ($i = 21; $i <= 22; $i++) {
+            $userVal = self::normalize($userAnswers[$i] ?? $userAnswers[(string)$i] ?? '');
+            $isCorrect = false;
+            if ($userVal !== '' && in_array($userVal, $valid2122, true) && !in_array($userVal, $used2122, true)) {
+                $isCorrect = true;
+                $used2122[] = $userVal;
+                $rawScore++;
+            }
+            $itemResults[$i] = [
+                'is_correct' => $isCorrect,
+                'user_answer' => $userAnswers[$i] ?? $userAnswers[(string)$i] ?? '',
+                'acceptable_keys' => ['A or E (in either order)'],
+            ];
+        }
+
+        // Q23 & Q24 IN EITHER ORDER: B & C
+        $valid2324 = ['b', 'c'];
+        $used2324 = [];
+        for ($i = 23; $i <= 24; $i++) {
+            $userVal = self::normalize($userAnswers[$i] ?? $userAnswers[(string)$i] ?? '');
+            $isCorrect = false;
+            if ($userVal !== '' && in_array($userVal, $valid2324, true) && !in_array($userVal, $used2324, true)) {
+                $isCorrect = true;
+                $used2324[] = $userVal;
+                $rawScore++;
+            }
+            $itemResults[$i] = [
+                'is_correct' => $isCorrect,
+                'user_answer' => $userAnswers[$i] ?? $userAnswers[(string)$i] ?? '',
+                'acceptable_keys' => ['B or C (in either order)'],
+            ];
+        }
+
+        ksort($itemResults);
+
+        return [
+            'raw_score' => $rawScore,
+            'total_questions' => 40,
+            'band_score' => self::calculateListeningBandScore($rawScore),
+            'item_results' => $itemResults,
+        ];
+    }
+
+    /**
+     * Dispatch auto-grading for an IELTS task by exam slug
+     */
+    public static function gradeTask(string $examSlug, mixed $task, array $grid): ?array
+    {
+        $skill = is_object($task) ? ($task->skill_type ?? '') : ($task['skill_type'] ?? '');
+
+        if ($examSlug === 'ielts-general-training-placement-test') {
+            if ($skill === 'reading') {
+                return self::gradeGtReading($grid);
+            }
+            if ($skill === 'listening') {
+                return self::gradeGtListening($grid);
+            }
+        } else {
+            if ($skill === 'reading') {
+                return self::gradeReading($grid);
+            }
+            if ($skill === 'listening') {
+                return self::gradeListening($grid);
+            }
+        }
+
+        return null;
     }
 
     /**

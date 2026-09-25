@@ -361,6 +361,8 @@ class PtReportService
         $writingBand = null;
         $speakingBand = null;
 
+        $examSlug = $exam->slug ?? '';
+
         foreach ($ieltsTasks as $task) {
             $ans = $ieltsAnswers->get($task->id);
             $skill = $task->skill_type ?? 'other';
@@ -368,45 +370,40 @@ class PtReportService
             $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
 
             $eval = null;
-            if ($skill === 'listening') {
+            $rawScore = null;
+            $bandScore = null;
+            $isAutoGraded = in_array($skill, ['listening', 'reading']);
+
+            if ($isAutoGraded) {
                 if (!empty($grid)) {
-                    $eval = IeltsAutoScoringService::gradeListening($grid);
-                    $listeningRaw = $eval['raw_score'] ?? null;
-                    $listeningBand = $ans?->band_score ?? ($eval['band_score'] ?? null);
-                } else {
-                    $listeningRaw = $ans?->teacher_notes && preg_match('/Auto-graded:\s*(\d+)\/(\d+)/', $ans->teacher_notes, $m)
-                        ? ['correct' => (int)$m[1], 'total' => (int)$m[2]]
-                        : ['correct' => 0, 'total' => 40];
-                    $listeningBand = $ans?->band_score ?? 0;
+                    if (str_contains($examSlug, 'toefl')) {
+                        $eval = \App\Domains\Academic\Application\Services\ToeflAutoScoringService::gradeTask($examSlug, $task, $grid);
+                    } else {
+                        $eval = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeTask($examSlug, $task, $grid);
+                    }
                 }
-            } elseif ($skill === 'reading') {
-                if (!empty($grid)) {
-                    $eval = IeltsAutoScoringService::gradeReading($grid);
-                    $readingRaw = $eval['raw_score'] ?? null;
-                    $readingBand = $ans?->band_score ?? ($eval['band_score'] ?? null);
-                } else {
-                    $readingRaw = $ans?->teacher_notes && preg_match('/Auto-graded:\s*(\d+)\/(\d+)/', $ans->teacher_notes, $m)
-                        ? ['correct' => (int)$m[1], 'total' => (int)$m[2]]
-                        : ['correct' => 0, 'total' => 40];
-                    $readingBand = $ans?->band_score ?? 0;
+
+                $totalQuestions = $eval['total_questions'] ?? 40;
+                $rawScore = $eval['raw_score'] ?? null;
+                $bandScore = $ans?->band_score ?? ($eval['band_score'] ?? ($eval['scaled_score'] ?? null));
+
+                if ($rawScore === null && $ans?->teacher_notes && preg_match('/Auto-graded:\s*(\d+)\/(\d+)/', $ans->teacher_notes, $m)) {
+                    $rawScore = (int) $m[1];
+                    $totalQuestions = (int) $m[2];
                 }
-            } elseif ($skill === 'writing') {
-                $writingBand = $ans?->band_score;
-            } elseif ($skill === 'speaking') {
-                $speakingBand = $ans?->band_score;
+            } elseif ($skill === 'writing' || $skill === 'speaking') {
+                $bandScore = $ans?->band_score;
             }
 
-            $isAutoGraded = in_array($skill, ['listening', 'reading']);
-            $finalBand = $ans?->band_score ?? ($eval['band_score'] ?? ($isAutoGraded ? 0 : null));
-            $finalRaw = $eval['raw_score'] ?? ($isAutoGraded ? ($skill === 'listening' ? $listeningRaw : $readingRaw) : null);
-
-            $modules[$skill] = [
+            $moduleKey = isset($modules[$skill]) ? "{$skill}_{$task->position}" : $skill;
+            $modules[$moduleKey] = [
                 'task' => $task,
                 'skill' => $skill,
                 'title' => $task->title ?? ucfirst($skill),
-                'band_score' => $finalBand,
-                'raw_score' => $finalRaw,
+                'band_score' => $bandScore,
+                'raw_score' => $rawScore,
                 'answer' => $ans,
+                'eval' => $eval,
             ];
         }
 

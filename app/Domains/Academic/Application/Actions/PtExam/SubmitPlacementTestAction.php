@@ -204,20 +204,22 @@ class SubmitPlacementTestAction
                         $essayText = is_string($value) ? $value : json_encode($value);
                     }
 
-                    // Auto-scoring for Reading and Listening tasks
+                    // Auto-scoring for objective tasks (Reading, Listening, Structure)
                     $parsedAnswers = is_array($value) ? $value : (is_string($value) ? json_decode($value, true) : null);
                     $gridAnswers = is_array($parsedAnswers) ? ($parsedAnswers['grid'] ?? $parsedAnswers) : [];
 
-                    if ($task->skill_type === 'reading' && is_array($gridAnswers)) {
-                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($gridAnswers);
-                        $bandScore = $gradeResult['band_score'];
+                    $gradeResult = null;
+                    if (str_contains($exam->slug, 'toefl')) {
+                        $gradeResult = \App\Domains\Academic\Application\Services\ToeflAutoScoringService::gradeTask($exam->slug, $task, $gridAnswers);
+                    } else {
+                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeTask($exam->slug, $task, $gridAnswers);
+                    }
+
+                    if ($gradeResult && is_array($gridAnswers) && !empty($gridAnswers)) {
+                        $bandScore = $gradeResult['band_score'] ?? ($gradeResult['scaled_score'] ?? null);
                         $totalScore += $gradeResult['raw_score'];
-                        $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
-                    } elseif ($task->skill_type === 'listening' && is_array($gridAnswers)) {
-                        $gradeResult = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($gridAnswers);
-                        $bandScore = $gradeResult['band_score'];
-                        $totalScore += $gradeResult['raw_score'];
-                        $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct (Band {$bandScore})";
+                        $scoreLabel = str_contains($exam->slug, 'toefl') ? 'Scaled' : 'Band';
+                        $teacherNotes = "Auto-graded: {$gradeResult['raw_score']}/{$gradeResult['total_questions']} correct ({$scoreLabel} {$bandScore})";
                     }
 
                     \App\Domains\Academic\Domain\Models\PtIeltsAnswer::create([

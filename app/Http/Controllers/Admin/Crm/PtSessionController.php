@@ -190,10 +190,13 @@ class PtSessionController extends Controller
             $gridAnswers = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
             
             $evaluation = null;
-            if ($task && $task->skill_type === 'reading' && is_array($gridAnswers)) {
-                $evaluation = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($gridAnswers);
-            } elseif ($task && $task->skill_type === 'listening' && is_array($gridAnswers)) {
-                $evaluation = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($gridAnswers);
+            $examSlug = $ptSession->ptExam?->slug ?? '';
+            if ($task && is_array($gridAnswers) && !empty($gridAnswers)) {
+                if (str_contains($examSlug, 'toefl')) {
+                    $evaluation = \App\Domains\Academic\Application\Services\ToeflAutoScoringService::gradeTask($examSlug, $task, $gridAnswers);
+                } else {
+                    $evaluation = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeTask($examSlug, $task, $gridAnswers);
+                }
             }
 
             $answers->put($answer->pt_ielts_task_id, [
@@ -313,6 +316,8 @@ class PtSessionController extends Controller
 
         $allIeltsTasks = $ptSession->ptExam?->ieltsTasks?->sortBy('position') ?? collect();
 
+        $examSlug = $ptSession->ptExam?->slug ?? '';
+
         // 1. Listening Tasks
         $listeningTasks = [];
         foreach ($allIeltsTasks->where('skill_type', 'listening') as $task) {
@@ -320,8 +325,15 @@ class PtSessionController extends Controller
             $parsedPayload = $ans && is_string($ans->essay_text) ? json_decode($ans->essay_text, true) : null;
             $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
 
-            $totalSlots = 40;
-            if (preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
+            $eval = null;
+            if (str_contains($examSlug, 'toefl')) {
+                $eval = \App\Domains\Academic\Application\Services\ToeflAutoScoringService::gradeTask($examSlug, $task, $grid);
+            } else {
+                $eval = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeTask($examSlug, $task, $grid);
+            }
+
+            $totalSlots = $eval['total_questions'] ?? 40;
+            if (empty($eval) && preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
                 $totalSlots = (int) $matches[1];
             }
 
@@ -331,8 +343,6 @@ class PtSessionController extends Controller
                     $filledCount++;
                 }
             }
-
-            $eval = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeListening($grid);
 
             $listeningTasks[] = [
                 'task' => $task,
@@ -340,20 +350,27 @@ class PtSessionController extends Controller
                 'total_slots' => $totalSlots,
                 'filled_count' => $filledCount,
                 'raw_score' => $eval['raw_score'] ?? 0,
-                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? 0),
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? ($eval['scaled_score'] ?? 0)),
                 'eval' => $eval,
             ];
         }
 
-        // 2. Reading Tasks
+        // 2. Reading Tasks (including TOEFL Structure)
         $readingTasks = [];
         foreach ($allIeltsTasks->where('skill_type', 'reading') as $task) {
             $ans = $ptSession->ieltsAnswers->firstWhere('pt_ielts_task_id', $task->id);
             $parsedPayload = $ans && is_string($ans->essay_text) ? json_decode($ans->essay_text, true) : null;
             $grid = is_array($parsedPayload) ? ($parsedPayload['grid'] ?? $parsedPayload) : [];
 
-            $totalSlots = 40;
-            if (preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
+            $eval = null;
+            if (str_contains($examSlug, 'toefl')) {
+                $eval = \App\Domains\Academic\Application\Services\ToeflAutoScoringService::gradeTask($examSlug, $task, $grid);
+            } else {
+                $eval = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeTask($examSlug, $task, $grid);
+            }
+
+            $totalSlots = $eval['total_questions'] ?? 40;
+            if (empty($eval) && preg_match('/(\d+)\s*questions?/i', $task->title ?? '', $matches)) {
                 $totalSlots = (int) $matches[1];
             }
 
@@ -364,15 +381,13 @@ class PtSessionController extends Controller
                 }
             }
 
-            $eval = \App\Domains\Academic\Application\Services\IeltsAutoScoringService::gradeReading($grid);
-
             $readingTasks[] = [
                 'task' => $task,
                 'grid' => $grid,
                 'total_slots' => $totalSlots,
                 'filled_count' => $filledCount,
                 'raw_score' => $eval['raw_score'] ?? 0,
-                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? 0),
+                'band_score' => $ans?->band_score ?? ($eval['band_score'] ?? ($eval['scaled_score'] ?? 0)),
                 'eval' => $eval,
             ];
         }
