@@ -173,7 +173,7 @@ export default function AdminLayout({ children }) {
         }
 
         if (isFinance) {
-            return ['Main', 'Finance', 'System'].includes(group.category);
+            return ['Main', 'Finance', 'Database', 'System'].includes(group.category);
         }
 
         if (isMarketing) {
@@ -204,7 +204,7 @@ export default function AdminLayout({ children }) {
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
-                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon dan Loyalty', 'Laporan', 'Staff Accounts', 'WhatsApp', 'WhatsApp Web'];
+                    const allowed = ['Billing Center', 'Invoices', 'Price Master', 'Diskon dan Loyalty', 'Laporan', 'Students', 'Classes', 'Staff Accounts', 'WhatsApp', 'WhatsApp Web'];
                     return allowed.includes(item.text);
                 }
                 if (isMarketing) {

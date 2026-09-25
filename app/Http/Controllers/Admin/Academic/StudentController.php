@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Academic;
 
+use App\Domains\Academic\Application\Actions\CalculateClassTransferDifference;
 use App\Domains\Academic\Application\Actions\EnrollStudent;
 use App\Domains\Academic\Application\Actions\FetchAcademicDashboardData;
 use App\Domains\Academic\Application\Actions\PromoteLeadToStudent;
@@ -31,7 +32,7 @@ class StudentController extends Controller
             'lead.leadType', 
             'lead.guardians', 
             'lead.enrollments.studyClass', 
-            'studyClasses',
+            'studyClasses.priceMaster',
             'progressReports',
         ]);
 
@@ -190,8 +191,8 @@ class StudentController extends Controller
 
         $dashboardData = $this->getAcademicDashboardData($request);
 
-        $studyClassesList = StudyClass::where('status', 'active')
-            ->select('id', 'name', 'category')
+        $studyClassesList = StudyClass::with('priceMaster')
+            ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
@@ -463,6 +464,27 @@ class StudentController extends Controller
         ]);
     }
 
+    public function transferPreview(
+        Request $request,
+        Student $student,
+        CalculateClassTransferDifference $calculator
+    ): JsonResponse {
+        $request->validate([
+            'from_study_class_id' => ['required', 'string', 'exists:study_classes,id'],
+            'to_study_class_id'   => ['required', 'string', 'exists:study_classes,id'],
+            'effective_date'      => ['nullable', 'date'],
+        ]);
+
+        $calculation = $calculator->handle(
+            student: $student,
+            fromClass: $request->input('from_study_class_id'),
+            toClass: $request->input('to_study_class_id'),
+            effectiveDate: $request->input('effective_date')
+        );
+
+        return response()->json($calculation);
+    }
+
     public function transferClass(
         TransferStudentClassRequest $request,
         Student $student,
@@ -470,7 +492,7 @@ class StudentController extends Controller
     ): RedirectResponse {
         $validated = $request->validated();
 
-        $action->handle(
+        $result = $action->handle(
             student: $student,
             fromClassId: $validated['from_study_class_id'],
             toClassId: $validated['to_study_class_id'],
@@ -478,6 +500,17 @@ class StudentController extends Controller
             reason: $validated['reason'] ?? null
         );
 
-        return redirect()->back()->with('success', 'Siswa berhasil dipindahkan ke kelas baru.');
+        $invoice = $result['invoice'] ?? null;
+        $calc = $result['calculation'] ?? [];
+
+        if ($invoice) {
+            $diff = $calc['difference_sessions'] ?? $invoice->session_count;
+            $amtFormatted = number_format($invoice->total_amount, 0, ',', '.');
+            $msg = "Siswa berhasil dipindahkan. Durasi kelas tujuan lebih lama (+{$diff} sesi), invoice selisih {$invoice->invoice_number} senilai Rp {$amtFormatted} telah diterbitkan.";
+        } else {
+            $msg = 'Siswa berhasil dipindahkan ke kelas baru. Tidak ada selisih durasi tambahan.';
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 }

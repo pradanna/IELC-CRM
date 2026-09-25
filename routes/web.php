@@ -171,13 +171,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
             Route::delete('study-classes/{study_class}/attendances/{attendance}', [\App\Http\Controllers\Admin\Academic\StudyClassController::class, 'deleteAttendance'])->name('study-classes.attendances.destroy');
             Route::post('study-classes/{study_class}/enroll', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'enroll'])->name('study-classes.enroll');
             Route::delete('study-classes/{study_class}/unenroll/{student}', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'unenroll'])->name('study-classes.unenroll');
+            Route::get('students/{student}/transfer-preview', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'transferPreview'])->name('students.transfer-preview');
             Route::post('students/{student}/transfer-class', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'transferClass'])->name('students.transfer-class');
             Route::post('leads/{lead}/promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'promoteFromLead'])->name('students.promote');
             Route::post('students/bulk-promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
         });
 
-        // Students: Viewable by superadmin, it_staff, frontdesk, marketing, and teacher
-        Route::middleware('role:superadmin|it_staff|frontdesk|marketing|teacher')->group(function () {
+        // Students: Viewable by superadmin, it_staff, frontdesk, finance, marketing, and teacher
+        Route::middleware('role:superadmin|it_staff|frontdesk|finance|marketing|teacher')->group(function () {
             Route::get('students/search', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'search'])->name('students.search');
             Route::get('students/export/excel', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportExcel'])->name('students.export.excel');
             Route::get('students/export/pdf', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportPdf'])->name('students.export.pdf');

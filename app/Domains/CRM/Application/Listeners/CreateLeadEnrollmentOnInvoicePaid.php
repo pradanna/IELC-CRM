@@ -12,8 +12,8 @@ class CreateLeadEnrollmentOnInvoicePaid
         $invoice = $event->invoice->refresh();
 
         // Only create lead_enrollments for target-counting invoice types: new_join & rejoin
-        // (Skip placement_test and paket_lanjut)
-        if (in_array($invoice->type, ['placement_test', 'paket_lanjut']) || !$invoice->study_class_id || !$invoice->lead_id) {
+        // (Skip placement_test, paket_lanjut, and transfer_class)
+        if (in_array($invoice->type, ['placement_test', 'paket_lanjut', 'transfer_class']) || !$invoice->study_class_id || !$invoice->lead_id) {
             return;
         }
 

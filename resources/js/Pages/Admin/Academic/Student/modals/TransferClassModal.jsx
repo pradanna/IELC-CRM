@@ -1,6 +1,7 @@
-import React, { useEffect, Fragment } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
+import axios from 'axios';
 import { 
     ArrowRightLeft, 
     X, 
@@ -10,7 +11,10 @@ import {
     FileText, 
     AlertCircle,
     GraduationCap,
-    Loader2
+    Loader2,
+    Calculator,
+    Receipt,
+    CheckCircle2
 } from 'lucide-react';
 import Button from '@/Components/ui/Button';
 import DatePicker from '@/Components/form/DatePicker';
@@ -33,6 +37,9 @@ export default function TransferClassModal({
         reason: '',
     });
 
+    const [previewData, setPreviewData] = useState(null);
+    const [loadingPreview, setLoadingPreview] = useState(false);
+
     // Active classes of the student
     const studentActiveClasses = (student?.study_classes || []).filter(c => c && c.id);
 
@@ -47,9 +54,47 @@ export default function TransferClassModal({
                 effective_date: new Date().toISOString().split('T')[0],
                 reason: '',
             });
+            setPreviewData(null);
             clearErrors();
         }
     }, [show, student, initialFromClassId]);
+
+    // Live preview calculation when classes or effective date change
+    useEffect(() => {
+        if (show && student?.id && data.from_study_class_id && data.to_study_class_id) {
+            let cancelled = false;
+            setLoadingPreview(true);
+
+            axios.get(route('admin.academic.students.transfer-preview', student.id), {
+                params: {
+                    from_study_class_id: data.from_study_class_id,
+                    to_study_class_id: data.to_study_class_id,
+                    effective_date: data.effective_date,
+                }
+            })
+            .then(res => {
+                if (!cancelled) {
+                    setPreviewData(res.data);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setPreviewData(null);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setLoadingPreview(false);
+                }
+            });
+
+            return () => {
+                cancelled = true;
+            };
+        } else {
+            setPreviewData(null);
+        }
+    }, [show, student?.id, data.from_study_class_id, data.to_study_class_id, data.effective_date]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -59,6 +104,7 @@ export default function TransferClassModal({
             preserveScroll: true,
             onSuccess: () => {
                 reset();
+                setPreviewData(null);
                 onClose();
             },
         });
@@ -68,7 +114,6 @@ export default function TransferClassModal({
 
     const leadName = student.lead?.name || 'Siswa';
     const studentNumber = student.student_number || '';
-    const branchName = student.lead?.branch?.name || 'Semua Cabang';
 
     // Filter available target classes: exclude the selected source class
     const targetClassOptions = studyClassesList.filter(
@@ -128,7 +173,7 @@ export default function TransferClassModal({
                                     </button>
                                 </div>
 
-                                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                                <form onSubmit={handleSubmit} className="p-8 space-y-5">
                                     {/* Student active class notice */}
                                     {studentActiveClasses.length === 0 ? (
                                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-amber-800">
@@ -143,11 +188,11 @@ export default function TransferClassModal({
                                     ) : (
                                         <>
                                             {/* Source & Destination Class Visualizer */}
-                                            <div className="p-4.5 bg-slate-50/80 border border-slate-100 rounded-2xl space-y-3">
+                                            <div className="p-4 bg-slate-50/80 border border-slate-100 rounded-2xl space-y-2.5">
                                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                     Ringkasan Perpindahan
                                                 </p>
-                                                <div className="flex items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
                                                     <div className="flex-1 min-w-0">
                                                         <span className="text-[9px] font-black text-rose-500 uppercase tracking-wider block">
                                                             Kelas Asal (Keluar)
@@ -171,7 +216,7 @@ export default function TransferClassModal({
                                             </div>
 
                                             {/* Selection Grid */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {/* Source Class */}
                                                 <div className="space-y-1.5">
                                                     <InputLabel htmlFor="from_study_class_id" value="Kelas Asal *" />
@@ -222,6 +267,93 @@ export default function TransferClassModal({
                                                 <InputError message={errors.effective_date} />
                                             </div>
 
+                                            {/* Real-time Calculation & Invoice Preview */}
+                                            {loadingPreview && (
+                                                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-center gap-2.5 text-slate-500">
+                                                    <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                                                    <span className="text-xs font-bold">Menghitung sisa sesi & selisih durasi kelas...</span>
+                                                </div>
+                                            )}
+
+                                            {!loadingPreview && previewData && (
+                                                <div className="p-4.5 bg-gradient-to-br from-slate-50 via-slate-50/50 to-white border border-slate-200/90 rounded-2xl space-y-3.5 shadow-xs transition-all animate-in fade-in duration-300">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                                                            <Calculator className="w-3.5 h-3.5 text-slate-500" />
+                                                            Perhitungan Sisa Sesi & Durasi
+                                                        </span>
+                                                        {previewData.requires_invoice ? (
+                                                            <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300/80 rounded-full flex items-center gap-1">
+                                                                <Receipt className="w-3 h-3 text-amber-600" />
+                                                                Diterbitkan Invoice Selisih
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300/80 rounded-full flex items-center gap-1">
+                                                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                Bebas Biaya Tambahan
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Sessions comparison tiles */}
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block">
+                                                                Sisa di Kelas Asal
+                                                            </span>
+                                                            <p className="text-base font-black text-slate-800 mt-0.5">
+                                                                {previewData.from_remaining} <span className="text-xs font-bold text-slate-500">Sesi</span>
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                                                                {previewData.from_class_name}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block">
+                                                                Sisa di Kelas Tujuan
+                                                            </span>
+                                                            <p className="text-base font-black text-slate-800 mt-0.5">
+                                                                {previewData.to_remaining} <span className="text-xs font-bold text-slate-500">Sesi</span>
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                                                                {previewData.to_class_name}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Invoice notification or confirmation banner */}
+                                                    {previewData.requires_invoice ? (
+                                                        <div className="p-3.5 bg-amber-500/10 border border-amber-300/80 rounded-xl space-y-2">
+                                                            <div>
+                                                                <p className="text-xs font-black text-amber-950 flex items-center gap-1.5">
+                                                                    <span>Kelas tujuan memiliki durasi lebih lama (+{previewData.difference_sessions} Sesi)</span>
+                                                                </p>
+                                                                <p className="text-[11px] text-amber-800/90 mt-0.5 leading-relaxed">
+                                                                    Siswa memiliki sisa <strong>{previewData.from_remaining} sesi</strong> di kelas asal, sedangkan kelas tujuan memerlukan <strong>{previewData.to_remaining} sesi</strong>. Sistem otomatis menerbitkan tagihan invoice selisih durasi ({previewData.difference_sessions} sesi).
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between text-xs">
+                                                                <span className="text-[11px] font-bold text-amber-900">
+                                                                    Nominal Invoice Selisih:
+                                                                </span>
+                                                                <span className="text-sm font-black text-amber-700">
+                                                                    Rp {Number(previewData.invoice_amount).toLocaleString('id-ID')}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-3 bg-emerald-500/10 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-emerald-800">
+                                                            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                                                            <p className="text-xs font-bold text-emerald-900 leading-tight">
+                                                                Durasi kelas tujuan ({previewData.to_remaining} sesi) tidak lebih lama dari sisa kelas asal ({previewData.from_remaining} sesi). Tidak ada tagihan invoice tambahan.
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {/* Reason / Notes */}
                                             <div className="space-y-1.5">
                                                 <InputLabel htmlFor="reason" value="Alasan / Catatan Pemindahan" />
@@ -230,7 +362,7 @@ export default function TransferClassModal({
                                                     value={data.reason}
                                                     onChange={(e) => setData('reason', e.target.value)}
                                                     placeholder="Contoh: Menyesuaikan jadwal sekolah baru, naik level materi..."
-                                                    className="w-full min-h-[90px] text-xs"
+                                                    className="w-full min-h-[75px] text-xs"
                                                 />
                                                 <InputError message={errors.reason} />
                                             </div>
@@ -238,7 +370,7 @@ export default function TransferClassModal({
                                     )}
 
                                     {/* Action Buttons */}
-                                    <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                                    <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
                                         <Button
                                             type="button"
                                             onClick={onClose}
@@ -256,6 +388,11 @@ export default function TransferClassModal({
                                                 <>
                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                     Memproses...
+                                                </>
+                                            ) : previewData?.requires_invoice ? (
+                                                <>
+                                                    <Receipt className="w-4 h-4" />
+                                                    Pindahkan & Terbitkan Invoice
                                                 </>
                                             ) : (
                                                 <>

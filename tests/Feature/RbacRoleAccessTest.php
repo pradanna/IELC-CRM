@@ -14,6 +14,7 @@ class RbacRoleAccessTest extends TestCase
 
     protected User $marketingUser;
     protected User $frontdeskUser;
+    protected User $financeUser;
 
     protected function setUp(): void
     {
@@ -23,6 +24,7 @@ class RbacRoleAccessTest extends TestCase
         Role::findOrCreate('it_staff');
         Role::findOrCreate('marketing');
         Role::findOrCreate('frontdesk');
+        Role::findOrCreate('finance');
 
         $branch = Branch::create(['name' => 'Solo Branch', 'code' => 'solo']);
 
@@ -31,6 +33,9 @@ class RbacRoleAccessTest extends TestCase
 
         $this->frontdeskUser = User::factory()->create(['branch_id' => $branch->id]);
         $this->frontdeskUser->assignRole('frontdesk');
+
+        $this->financeUser = User::factory()->create(['branch_id' => $branch->id]);
+        $this->financeUser->assignRole('finance');
     }
 
     public function test_marketing_can_access_specified_modules(): void
@@ -99,5 +104,28 @@ class RbacRoleAccessTest extends TestCase
             'password' => 'password',
         ]);
         $loginResponse->assertRedirect(route('admin.academic.students.index'));
+    }
+
+    public function test_finance_can_access_students_and_classes(): void
+    {
+        // 1. Allowed: Students
+        $response = $this->actingAs($this->financeUser)->get(route('admin.academic.students.index'));
+        $this->assertNotEquals(403, $response->status(), 'Finance should be able to access Students');
+
+        // 2. Allowed: Classes
+        $response = $this->actingAs($this->financeUser)->get(route('admin.academic.study-classes.index'));
+        $this->assertNotEquals(403, $response->status(), 'Finance should be able to access Classes');
+
+        // 3. Allowed: Finance Dashboard
+        $response = $this->actingAs($this->financeUser)->get(route('admin.finance.dashboard'));
+        $this->assertNotEquals(403, $response->status(), 'Finance should be able to access Finance Dashboard');
+
+        // 4. FORBIDDEN: CRM Dashboard
+        $response = $this->actingAs($this->financeUser)->get(route('admin.crm.leads.index'));
+        $this->assertEquals(403, $response->status(), 'Finance must NOT be able to access CRM dashboard');
+
+        // 5. FORBIDDEN: Master Data
+        $response = $this->actingAs($this->financeUser)->get(route('admin.master.index'));
+        $this->assertEquals(403, $response->status(), 'Finance must NOT be able to access Master data');
     }
 }

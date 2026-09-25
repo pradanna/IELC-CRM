@@ -9,6 +9,8 @@ import {
     ChevronLast,
     Gift,
     BarChart3,
+    Users,
+    BookCopy,
 } from "lucide-react";
 import Navbar from "@/Components/shared/Navbar";
 import Toast from "@/Components/ui/Toast";
@@ -18,6 +20,23 @@ import useWhatsappNotification from "@/Hooks/useWhatsappNotification";
 const logoUrl = "/assets/images/local/IELC-Logo.webp";
 
 const menuItems = [
+    {
+        category: "Database",
+        items: [
+            {
+                icon: <Users size={20} />,
+                text: "Students",
+                name: "admin.academic.students.*",
+                href: route("admin.academic.students.index"),
+            },
+            {
+                icon: <BookCopy size={20} />,
+                text: "Classes",
+                name: "admin.academic.study-classes.*",
+                href: route("admin.academic.study-classes.index"),
+            },
+        ],
+    },
     {
         category: "Finance",
         items: [
