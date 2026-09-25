@@ -169,7 +169,7 @@ export default function AdminLayout({ children }) {
         if (isSuperAdmin || isItStaff) return true;
         
         if (isFrontdesk) {
-            return ['CRM & Leads', 'Database', 'Management'].includes(group.category);
+            return ['CRM & Leads', 'Database'].includes(group.category);
         }
 
         if (isFinance) {
@@ -177,7 +177,7 @@ export default function AdminLayout({ children }) {
         }
 
         if (isMarketing) {
-            return ['Main', 'Management', 'CRM & Leads'].includes(group.category);
+            return ['CRM & Leads', 'Database'].includes(group.category);
         }
 
         if (isTeacher) {
@@ -200,7 +200,7 @@ export default function AdminLayout({ children }) {
             items: group.items.filter(item => {
                 if (item.text === 'Database Backup') return false;
                 if (isFrontdesk) {
-                    const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Web', 'WhatsApp Inbox', 'Students', 'Classes', 'Master'];
+                    const allowed = ['WhatsApp Web', 'WhatsApp Inbox', 'Students', 'Classes'];
                     return allowed.includes(item.text);
                 }
                 if (isFinance) {
@@ -208,7 +208,7 @@ export default function AdminLayout({ children }) {
                     return allowed.includes(item.text);
                 }
                 if (isMarketing) {
-                    const allowed = ['CRM Dashboard', 'Placement Tests', 'WhatsApp Web', 'Master'];
+                    const allowed = ['CRM Dashboard', 'WhatsApp Web', 'Placement Tests', 'Students', 'Classes'];
                     return allowed.includes(item.text);
                 }
                 if (isTeacher) {

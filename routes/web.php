@@ -18,6 +18,9 @@ Route::get('/', function () {
         if ($user->hasRole('teacher')) {
             return redirect()->route('admin.academic.students.index');
         }
+        if ($user->hasRole('frontdesk')) {
+            return redirect()->route('admin.whatsapp.inbox');
+        }
     }
     return redirect()->route('admin.crm.leads.index');
 });
@@ -66,6 +69,9 @@ Route::get('/dashboard', function () {
         if ($user->hasRole('teacher')) {
             return redirect()->route('admin.academic.students.index');
         }
+        if ($user->hasRole('frontdesk')) {
+            return redirect()->route('admin.whatsapp.inbox');
+        }
     }
     return redirect()->route('admin.crm.leads.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -80,7 +86,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
     // CRM Leads
-    Route::middleware('role:superadmin|it_staff|frontdesk|marketing')->group(function () {
+    Route::middleware('role:superadmin|it_staff|marketing')->group(function () {
         Route::get('/crm/leads', [\App\Http\Controllers\Admin\Crm\CrmDashboardController::class, 'index'])->name('crm.leads.index');
         Route::get('/crm/leads/list', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'index'])->name('crm.leads.list');
         Route::get('/crm/leads/kanban', [\App\Http\Controllers\Admin\Crm\LeadController::class, 'kanban'])->name('crm.leads.kanban');
@@ -126,7 +132,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         ->name('crm.leads.send-whatsapp');
 
     // Placement Tests
-    Route::middleware('role:superadmin|it_staff|frontdesk|marketing|teacher')->group(function () {
+    Route::middleware('role:superadmin|it_staff|marketing|teacher')->group(function () {
         Route::get('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'index'])->name('crm.pt-sessions.index');
         Route::get('/crm/pt-sessions/completed', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'completedList'])->name('crm.pt-sessions.completed');
         Route::post('/crm/pt-sessions', [\App\Http\Controllers\Admin\Crm\PtSessionController::class, 'store'])->name('crm.pt-sessions.store');
@@ -176,8 +182,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
             Route::post('students/bulk-promote', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
         });
 
-        // Students: Viewable by superadmin, it_staff, frontdesk, and teacher
-        Route::middleware('role:superadmin|it_staff|frontdesk|teacher')->group(function () {
+        // Students: Viewable by superadmin, it_staff, frontdesk, marketing, and teacher
+        Route::middleware('role:superadmin|it_staff|frontdesk|marketing|teacher')->group(function () {
             Route::get('students/search', [\App\Http\Controllers\Admin\Academic\StudentController::class, 'search'])->name('students.search');
             Route::get('students/export/excel', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportExcel'])->name('students.export.excel');
             Route::get('students/export/pdf', [\App\Http\Controllers\Admin\Academic\StudentExportController::class, 'exportPdf'])->name('students.export.pdf');
@@ -208,7 +214,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     // Master Data (Lead configuration, Chat Templates, Media Assets)
-    Route::middleware('role:superadmin|it_staff|frontdesk|marketing')->group(function () {
+    Route::middleware('role:superadmin|it_staff')->group(function () {
         Route::get('/master', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'index'])->name('master.index');
         Route::post('/master/lead-types', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'storeLeadType'])->name('master.lead-types.store');
         Route::put('/master/lead-types/{leadType}', [\App\Http\Controllers\Admin\Master\MasterDataController::class, 'updateLeadType'])->name('master.lead-types.update');
