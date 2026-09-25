@@ -184,6 +184,14 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
 
     if (!show && !session) return null;
 
+    const isPbt = Boolean(
+        data?.is_toefl_pbt 
+        || session?.pt_exam?.slug?.includes('toefl-pbt')
+        || (session?.pt_exam?.title || '').toLowerCase().includes('toefl pbt')
+        || data?.exam?.slug === 'toefl-pbt-placement-test' 
+        || (data?.exam?.title || '').toLowerCase().includes('toefl pbt')
+    );
+
     return (
         <Modal show={show} onClose={onClose} maxWidth="screen">
             <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-100">
