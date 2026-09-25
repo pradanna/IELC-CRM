@@ -15,11 +15,8 @@ Route::get('/', function () {
         if ($user->hasRole('finance')) {
             return redirect()->route('admin.finance.dashboard');
         }
-        if ($user->hasRole('teacher')) {
+        if ($user->hasRole('teacher') || $user->hasRole('frontdesk')) {
             return redirect()->route('admin.academic.students.index');
-        }
-        if ($user->hasRole('frontdesk')) {
-            return redirect()->route('admin.whatsapp.inbox');
         }
     }
     return redirect()->route('admin.crm.leads.index');
@@ -66,11 +63,8 @@ Route::get('/dashboard', function () {
         if ($user->hasRole('finance')) {
             return redirect()->route('admin.finance.dashboard');
         }
-        if ($user->hasRole('teacher')) {
+        if ($user->hasRole('teacher') || $user->hasRole('frontdesk')) {
             return redirect()->route('admin.academic.students.index');
-        }
-        if ($user->hasRole('frontdesk')) {
-            return redirect()->route('admin.whatsapp.inbox');
         }
     }
     return redirect()->route('admin.crm.leads.index');

@@ -83,12 +83,21 @@ class RbacRoleAccessTest extends TestCase
         $this->assertEquals(403, $response->status(), 'Frontdesk must NOT be able to access Master data');
     }
 
-    public function test_frontdesk_redirected_to_whatsapp_inbox_from_root_and_dashboard(): void
+    public function test_frontdesk_redirected_to_students_from_root_and_dashboard(): void
     {
         $response1 = $this->actingAs($this->frontdeskUser)->get('/');
-        $response1->assertRedirect(route('admin.whatsapp.inbox'));
+        $response1->assertRedirect(route('admin.academic.students.index'));
 
         $response2 = $this->actingAs($this->frontdeskUser)->get('/dashboard');
-        $response2->assertRedirect(route('admin.whatsapp.inbox'));
+        $response2->assertRedirect(route('admin.academic.students.index'));
+    }
+
+    public function test_frontdesk_redirected_to_students_on_login(): void
+    {
+        $loginResponse = $this->post('/login', [
+            'email' => $this->frontdeskUser->email,
+            'password' => 'password',
+        ]);
+        $loginResponse->assertRedirect(route('admin.academic.students.index'));
     }
 }

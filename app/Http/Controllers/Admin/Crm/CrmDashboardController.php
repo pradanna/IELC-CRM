@@ -30,7 +30,7 @@ class CrmDashboardController extends Controller
             return redirect()->route('admin.finance.dashboard');
         }
 
-        if (auth()->user()?->hasRole('teacher')) {
+        if (auth()->user()?->hasRole('teacher') || auth()->user()?->hasRole('frontdesk')) {
             return redirect()->route('admin.academic.students.index');
         }
 
