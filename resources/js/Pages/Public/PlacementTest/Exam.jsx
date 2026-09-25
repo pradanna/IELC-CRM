@@ -6,6 +6,8 @@ import {
     ChevronRight,
     Check,
     AlertCircle,
+    AlertTriangle,
+    CheckCircle2,
     FileText,
     ExternalLink,
     Music,
@@ -76,6 +78,7 @@ export default function Exam({
         handleFileSelect,
         handleCustomAnswer,
         confirmFinish,
+        handleFinish,
         getTimerColorClass,
         saveStatus,
         answers,
@@ -270,8 +273,153 @@ export default function Exam({
             ? `/placement-test/${session.token}/download-answers-pdf`
             : null);
 
+    const isIeltsOrToefl = React.useMemo(() => {
+        const cat = (exam_category || "").toUpperCase();
+        const title = (exam_title || "").toLowerCase();
+        const sessCat = (session?.exam?.category || "").toUpperCase();
+        const sessTitle = (session?.exam?.title || "").toLowerCase();
+
+        return (
+            cat === "IELTS" ||
+            cat === "TOEFL" ||
+            sessCat === "IELTS" ||
+            sessCat === "TOEFL" ||
+            title.includes("ielts") ||
+            title.includes("toefl") ||
+            sessTitle.includes("ielts") ||
+            sessTitle.includes("toefl")
+        );
+    }, [exam_category, exam_title, session]);
+
     // Modal state for confirming section transition & locking previous section
     const [pendingNextPage, setPendingNextPage] = React.useState(null);
+    // Modal state for confirming exam finish & showing empty answers warning
+    const [pendingFinish, setPendingFinish] = React.useState(null);
+
+    const getPageAnswerStatus = React.useCallback(
+        (pageIndex) => {
+            const page = pages?.[pageIndex];
+            if (!page || !page.questions || page.questions.length === 0) {
+                return {
+                    totalQuestions: 0,
+                    answeredCount: 0,
+                    unansweredCount: 0,
+                    unansweredNumbers: [],
+                    hasUnanswered: false,
+                };
+            }
+
+            let total = 0;
+            let answered = 0;
+            const unansweredNumbers = [];
+
+            page.questions.forEach((q, qIndex) => {
+                if (q.type === "ielts_task") {
+                    const skill = q.skill_type || "writing";
+                    const isObjective =
+                        skill === "listening" || skill === "reading";
+                    const rawAns = answers[q.id];
+
+                    if (isObjective) {
+                        const totalSlots =
+                            parseInt(q.total_answer_slots, 10) || 40;
+                        total += totalSlots;
+
+                        let grid = {};
+                        if (rawAns) {
+                            if (
+                                typeof rawAns === "object" &&
+                                !Array.isArray(rawAns)
+                            ) {
+                                grid =
+                                    rawAns.grid ||
+                                    (rawAns["1"] !== undefined ? rawAns : {});
+                            } else if (typeof rawAns === "string") {
+                                try {
+                                    const parsed = JSON.parse(rawAns);
+                                    if (parsed && typeof parsed === "object") {
+                                        grid = parsed.grid || parsed;
+                                    }
+                                } catch (e) {}
+                            }
+                        }
+
+                        for (let i = 1; i <= totalSlots; i++) {
+                            const val = grid[i] ?? grid[String(i)];
+                            if (
+                                val !== undefined &&
+                                val !== null &&
+                                String(val).trim() !== ""
+                            ) {
+                                answered++;
+                            } else {
+                                unansweredNumbers.push(i);
+                            }
+                        }
+                    } else if (skill === "writing") {
+                        total += 1;
+                        let text = "";
+                        if (rawAns) {
+                            if (typeof rawAns === "object") {
+                                text =
+                                    rawAns.text ||
+                                    rawAns.essay_text ||
+                                    rawAns.answer_text ||
+                                    "";
+                            } else if (typeof rawAns === "string") {
+                                text = rawAns;
+                            }
+                        }
+                        const cleanText = text
+                            .replace(/<[^>]*>/g, "")
+                            .trim();
+                        if (cleanText.length > 0) {
+                            answered++;
+                        } else {
+                            unansweredNumbers.push(
+                                q.title || `Writing Task ${qIndex + 1}`,
+                            );
+                        }
+                    } else if (skill === "speaking") {
+                        total += 1;
+                        answered += 1;
+                    }
+                } else {
+                    total += 1;
+                    const ans = answers[q.id];
+                    const isFilled =
+                        ans !== undefined &&
+                        ans !== null &&
+                        String(ans).trim() !== "";
+                    if (isFilled) {
+                        answered++;
+                    } else {
+                        unansweredNumbers.push(
+                            q.question_number || qIndex + 1,
+                        );
+                    }
+                }
+            });
+
+            const unansweredCount = total - answered;
+            return {
+                totalQuestions: total,
+                answeredCount: answered,
+                unansweredCount: unansweredCount,
+                unansweredNumbers: unansweredNumbers,
+                hasUnanswered: unansweredCount > 0,
+            };
+        },
+        [pages, answers],
+    );
+
+    const handleFinishClick = () => {
+        if (is_review) return;
+        const emptyInfo = getPageAnswerStatus(currentPageIndex);
+        setPendingFinish({
+            emptyInfo,
+        });
+    };
 
     const activePage =
         pages && pages.length > 0 ? pages[currentPageIndex] : null;
@@ -314,12 +462,12 @@ export default function Exam({
 
         if (q.pageIndex === currentPageIndex) return;
 
-        // If IELTS
-        if (exam_category === "IELTS") {
+        // If IELTS or TOEFL
+        if (isIeltsOrToefl) {
             // Cannot go back to previous sections if locked
             if (q.pageIndex < currentPageIndex) {
                 alert(
-                    "This section has been locked and submitted. You cannot return to previous sections in IELTS.",
+                    "This section has been locked and submitted. You cannot return to previous sections in IELTS / TOEFL.",
                 );
                 return;
             }
@@ -331,12 +479,14 @@ export default function Exam({
             const targetTask = targetSection?.questions?.[0] || {};
             const nextTitle = targetTask.title || `Section ${q.pageIndex + 1}`;
             const nextSkill = targetTask.skill_type || "Section";
+            const emptyInfo = getPageAnswerStatus(currentPageIndex);
 
             setPendingNextPage({
                 nextIndex: q.pageIndex,
                 currentTitle,
                 nextTitle,
                 nextSkill,
+                emptyInfo,
             });
             return;
         }
@@ -347,18 +497,20 @@ export default function Exam({
     const handleNextNavigation = () => {
         if (currentPageIndex >= pages.length - 1) return;
         const nextIdx = currentPageIndex + 1;
-        if (exam_category === "IELTS" && !is_review) {
+        if (isIeltsOrToefl && !is_review) {
             const currentTitle =
                 activeSectionTimer?.title || `Section ${currentPageIndex + 1}`;
             const nextSection = pages[nextIdx];
             const nextTask = nextSection?.questions?.[0] || {};
             const nextTitle = nextTask.title || `Section ${nextIdx + 1}`;
             const nextSkill = nextTask.skill_type || "Section";
+            const emptyInfo = getPageAnswerStatus(currentPageIndex);
             setPendingNextPage({
                 nextIndex: nextIdx,
                 currentTitle,
                 nextTitle,
                 nextSkill,
+                emptyInfo,
             });
         } else {
             setCurrentPageIndex(nextIdx);
@@ -373,7 +525,7 @@ export default function Exam({
         const isCurrentPage = currentPageIndex === q.pageIndex;
         const isLocked =
             q.isLocked ||
-            (exam_category === "IELTS" &&
+            (isIeltsOrToefl &&
                 !is_review &&
                 q.pageIndex < currentPageIndex);
 
@@ -422,7 +574,7 @@ export default function Exam({
                 disabled={isLocked && !is_review}
                 title={
                     isLocked
-                        ? exam_category === "IELTS"
+                        ? isIeltsOrToefl
                             ? "Section closed and locked"
                             : "Section locked"
                         : undefined
@@ -543,8 +695,8 @@ export default function Exam({
                         </div>
                     )}
 
-                    {/* Header Next / Finish / Close Review Button for IELTS (when sidebar is hidden) */}
-                    {exam_category === "IELTS" &&
+                    {/* Header Next / Finish / Close Review Button for IELTS & TOEFL (when sidebar is hidden) */}
+                    {isIeltsOrToefl &&
                         (!is_review ? (
                             currentPageIndex < pages.length - 1 ? (
                                 <button
@@ -552,13 +704,13 @@ export default function Exam({
                                     onClick={handleNextNavigation}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold shadow-md shadow-gray-900/10 transition-all active:scale-95 cursor-pointer"
                                 >
-                                    <span>Next</span>
+                                    <span>{isIeltsOrToefl ? "Next Session" : "Next"}</span>
                                     <ChevronRight size={15} />
                                 </button>
                             ) : (
                                 <button
                                     type="button"
-                                    onClick={confirmFinish}
+                                    onClick={handleFinishClick}
                                     disabled={processing}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                                 >
@@ -578,8 +730,8 @@ export default function Exam({
             </header>
 
             <div className="flex-1 flex overflow-hidden">
-                {/* Sidebar Navigation - Hidden for IELTS */}
-                {exam_category !== "IELTS" && (
+                {/* Sidebar Navigation - Hidden for IELTS & TOEFL */}
+                {!isIeltsOrToefl && (
                     <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
                         <div className="p-5 border-b border-gray-100 bg-gray-50/30">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
@@ -594,7 +746,7 @@ export default function Exam({
                         <div className="p-5 border-t border-gray-200 bg-gray-50/30">
                             {!is_review && (
                                 <button
-                                    onClick={confirmFinish}
+                                    onClick={handleFinishClick}
                                     disabled={processing}
                                     className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
                                 >
@@ -619,7 +771,7 @@ export default function Exam({
                     className="flex-1 overflow-y-auto bg-gray-50/50 relative scroll-smooth px-4 sm:px-8"
                 >
                     <div
-                        className={`${exam_category === "IELTS" || exam_category === "Kids" ? "max-w-[1500px]" : "max-w-3xl"} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}
+                        className={`${isIeltsOrToefl || exam_category === "Kids" ? "max-w-[1500px]" : "max-w-3xl"} mx-auto py-8 sm:py-12 pb-32 transition-all duration-300`}
                     >
                         {/* Section Expiry Notice Banner */}
                         {sectionExpiryNotice && (
@@ -887,9 +1039,9 @@ export default function Exam({
                                                             handleNextNavigation
                                                         }
                                                         className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-md shadow-red-500/20 transition-all active:scale-95 cursor-pointer uppercase tracking-wider"
-                                                        title="Lanjut ke pertanyaan berikutnya"
+                                                        title={isIeltsOrToefl ? "Lanjut ke sesi berikutnya" : "Lanjut ke pertanyaan berikutnya"}
                                                     >
-                                                        <span>Next</span>
+                                                        <span>{isIeltsOrToefl ? "Next Session" : "Next"}</span>
                                                         <ChevronRight
                                                             size={14}
                                                         />
@@ -899,7 +1051,7 @@ export default function Exam({
                                                         <button
                                                             type="button"
                                                             onClick={
-                                                                confirmFinish
+                                                                handleFinishClick
                                                             }
                                                             disabled={
                                                                 processing
@@ -1407,14 +1559,15 @@ export default function Exam({
                                     onClick={handleNextNavigation}
                                     className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl shadow-lg shadow-gray-900/10 hover:bg-black transition-all active:scale-95 cursor-pointer"
                                 >
-                                    Next <ChevronRight size={18} />
+                                    {isIeltsOrToefl ? "Next Session" : "Next"}{" "}
+                                    <ChevronRight size={18} />
                                 </button>
                             ) : (
                                 !is_review && (
                                     <button
-                                        onClick={confirmFinish}
+                                        onClick={handleFinishClick}
                                         disabled={processing}
-                                        className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                                     >
                                         Finish Test <Check size={18} />
                                     </button>
@@ -1425,26 +1578,87 @@ export default function Exam({
                 </main>
             </div>
 
-            {/* IELTS Section Transition & Lock Confirmation Modal */}
+            {/* IELTS & TOEFL Section Transition & Lock Confirmation Modal */}
             {pendingNextPage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-                        <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-5 shadow-sm">
-                            <AlertCircle size={28} />
+                        <div
+                            className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-sm ${
+                                pendingNextPage.emptyInfo?.hasUnanswered
+                                    ? "bg-amber-50 border border-amber-200 text-amber-600"
+                                    : "bg-blue-50 border border-blue-200 text-blue-600"
+                            }`}
+                        >
+                            {pendingNextPage.emptyInfo?.hasUnanswered ? (
+                                <AlertTriangle size={28} />
+                            ) : (
+                                <AlertCircle size={28} />
+                            )}
                         </div>
 
                         <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
                             Proceed to {pendingNextPage.nextSkill.toUpperCase()}{" "}
-                            Section?
+                            Session?
                         </h3>
 
-                        <div className="space-y-3 text-sm text-slate-600 leading-relaxed mb-6">
+                        <div className="space-y-3.5 text-sm text-slate-600 leading-relaxed mb-6">
                             <p>
                                 You are about to finish{" "}
                                 <strong>{pendingNextPage.currentTitle}</strong>{" "}
                                 and move to{" "}
                                 <strong>{pendingNextPage.nextTitle}</strong>.
                             </p>
+
+                            {/* Warning if there are unanswered questions in current section */}
+                            {pendingNextPage.emptyInfo?.hasUnanswered ? (
+                                <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl text-xs text-amber-900 shadow-xs">
+                                    <div className="flex items-start gap-2.5">
+                                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="font-black text-amber-950 text-sm mb-1 uppercase tracking-wide">
+                                                Masih Ada Jawaban Kosong (
+                                                {pendingNextPage.emptyInfo.unansweredCount} dari{" "}
+                                                {pendingNextPage.emptyInfo.totalQuestions} soal)
+                                            </p>
+                                            <p className="text-amber-800 leading-relaxed mb-2">
+                                                Anda belum menjawab{" "}
+                                                <strong>
+                                                    {pendingNextPage.emptyInfo.unansweredCount}
+                                                </strong>{" "}
+                                                nomor pada sesi ini:
+                                            </p>
+                                            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-2 bg-white/90 border border-amber-200 rounded-xl">
+                                                {pendingNextPage.emptyInfo.unansweredNumbers.map(
+                                                    (num, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-md font-bold text-[11px]"
+                                                        >
+                                                            No. {num}
+                                                        </span>
+                                                    ),
+                                                )}
+                                            </div>
+                                            <p className="mt-2 text-[11px] text-amber-700 italic">
+                                                Jika Anda melanjutkan, sesi ini akan dikunci dan Anda tidak dapat kembali untuk melengkapi jawaban tersebut.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 flex items-center gap-2.5">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                                    <div>
+                                        <span className="font-bold">
+                                            Semua jawaban terisi!
+                                        </span>{" "}
+                                        Seluruh{" "}
+                                        {pendingNextPage.emptyInfo?.totalQuestions}{" "}
+                                        soal pada sesi ini telah Anda kerjakan.
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-800 flex items-start gap-2.5">
                                 <span className="text-base leading-none">
                                     ⚠️
@@ -1453,7 +1667,7 @@ export default function Exam({
                                     <p className="font-bold uppercase tracking-wider text-rose-900 mb-0.5">
                                         Important:
                                     </p>
-                                    This current section will be permanently
+                                    This current session will be permanently
                                     closed and locked. You will{" "}
                                     <strong>NOT</strong> be able to return or
                                     change your answers once you proceed.
@@ -1465,7 +1679,7 @@ export default function Exam({
                             <button
                                 type="button"
                                 onClick={() => setPendingNextPage(null)}
-                                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-all"
+                                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                             >
                                 Review Answers
                             </button>
@@ -1476,9 +1690,117 @@ export default function Exam({
                                     setPendingNextPage(null);
                                     lockCurrentSectionAndAdvance(nextIdx);
                                 }}
-                                className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary-500/20 transition-all active:scale-95"
+                                className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary-500/20 transition-all active:scale-95 cursor-pointer"
                             >
                                 Confirm & Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Exam Finish Confirmation Modal */}
+            {pendingFinish && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                        <div
+                            className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-sm ${
+                                pendingFinish.emptyInfo?.hasUnanswered
+                                    ? "bg-amber-50 border border-amber-200 text-amber-600"
+                                    : "bg-emerald-50 border border-emerald-200 text-emerald-600"
+                            }`}
+                        >
+                            {pendingFinish.emptyInfo?.hasUnanswered ? (
+                                <AlertTriangle size={28} />
+                            ) : (
+                                <CheckCircle2 size={28} />
+                            )}
+                        </div>
+
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+                            Finish & Submit Exam?
+                        </h3>
+
+                        <div className="space-y-3.5 text-sm text-slate-600 leading-relaxed mb-6">
+                            <p>
+                                Anda akan mengakhiri dan mengirimkan seluruh lembar jawaban untuk ujian{" "}
+                                <strong>{exam_title}</strong>.
+                            </p>
+
+                            {/* Warning if there are unanswered questions in current section */}
+                            {pendingFinish.emptyInfo?.hasUnanswered ? (
+                                <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl text-xs text-amber-900 shadow-xs">
+                                    <div className="flex items-start gap-2.5">
+                                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="font-black text-amber-950 text-sm mb-1 uppercase tracking-wide">
+                                                Masih Ada Jawaban Kosong (
+                                                {pendingFinish.emptyInfo.unansweredCount} dari{" "}
+                                                {pendingFinish.emptyInfo.totalQuestions} soal)
+                                            </p>
+                                            <p className="text-amber-800 leading-relaxed mb-2">
+                                                Anda belum menjawab{" "}
+                                                <strong>
+                                                    {pendingFinish.emptyInfo.unansweredCount}
+                                                </strong>{" "}
+                                                nomor pada sesi ini:
+                                            </p>
+                                            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-2 bg-white/90 border border-amber-200 rounded-xl">
+                                                {pendingFinish.emptyInfo.unansweredNumbers.map(
+                                                    (num, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-md font-bold text-[11px]"
+                                                        >
+                                                            No. {num}
+                                                        </span>
+                                                    ),
+                                                )}
+                                            </div>
+                                            <p className="mt-2 text-[11px] text-amber-700 italic">
+                                                Setelah dikirim, seluruh jawaban Anda akan diproses dan dinilai.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 flex items-center gap-2.5">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                                    <div>
+                                        <span className="font-bold">
+                                            Semua jawaban terisi!
+                                        </span>{" "}
+                                        Seluruh{" "}
+                                        {pendingFinish.emptyInfo?.totalQuestions}{" "}
+                                        soal pada sesi ini telah Anda kerjakan dengan lengkap.
+                                    </div>
+                                </div>
+                            )}
+
+                            <p className="text-xs text-slate-500">
+                                Pastikan Anda telah memeriksa kembali seluruh jawaban sebelum melakukan pengiriman akhir.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => setPendingFinish(null)}
+                                disabled={processing}
+                                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50"
+                            >
+                                Review Answers
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPendingFinish(null);
+                                    handleFinish();
+                                }}
+                                disabled={processing}
+                                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                            >
+                                {processing ? "Submitting..." : "Yes, Submit Exam"}
                             </button>
                         </div>
                     </div>

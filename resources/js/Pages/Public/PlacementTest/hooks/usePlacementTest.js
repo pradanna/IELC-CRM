@@ -2,7 +2,12 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useForm } from "@inertiajs/react";
 
 export function usePlacementTest({ session, pages, isReview, userAnswers, examCategory = 'General' }) {
-    const isIelts = examCategory === 'IELTS';
+    const isIelts = examCategory === 'IELTS'
+        || examCategory === 'TOEFL'
+        || (session?.exam?.category === 'IELTS')
+        || (session?.exam?.category === 'TOEFL')
+        || (session?.exam?.title || '').toLowerCase().includes('ielts')
+        || (session?.exam?.title || '').toLowerCase().includes('toefl');
     const sessionToken = session?.session_token || session?.token || 'preview_token';
     const storageKey = `pt_answers_${sessionToken}`;
     const sectionTimersKey = `pt_section_timers_${sessionToken}`;
@@ -371,6 +376,7 @@ export function usePlacementTest({ session, pages, isReview, userAnswers, examCa
         handleFileSelect,
         handleCustomAnswer,
         confirmFinish,
+        handleFinish,
         getTimerColorClass,
         answers: data.answers,
         summaryFile: data.summary_file,
