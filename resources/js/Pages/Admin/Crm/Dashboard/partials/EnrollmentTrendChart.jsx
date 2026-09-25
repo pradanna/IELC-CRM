@@ -31,7 +31,11 @@ export default function EnrollmentTrendChart({ trendData }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full bg-sky-600" />
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Offline</span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Solo</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-600" />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none">Semarang</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full bg-purple-600" />
@@ -85,8 +89,10 @@ export default function EnrollmentTrendChart({ trendData }) {
                             formatter={(value, name) => {
                                 const labels = {
                                     enrolled: 'Total Enrolled',
-                                    enrolled_offline: 'Offline Enrolled',
-                                    enrolled_online: 'Online Enrolled'
+                                    enrolled_solo: 'Solo Enrolled',
+                                    enrolled_semarang: 'Semarang Enrolled',
+                                    enrolled_online: 'Online Enrolled',
+                                    enrolled_offline: 'Offline Enrolled'
                                 };
                                 return [value, labels[name] || name];
                             }}
@@ -126,12 +132,21 @@ export default function EnrollmentTrendChart({ trendData }) {
                         />
                         <Line 
                             type="stepAfter" 
-                            dataKey="enrolled_offline" 
-                            name="enrolled_offline"
+                            dataKey="enrolled_solo" 
+                            name="enrolled_solo"
                             stroke="#0284c7" 
                             strokeWidth={3}
                             dot={false}
                             activeDot={{ r: 6, fill: '#0284c7', stroke: '#fff', strokeWidth: 2 }}
+                        />
+                        <Line 
+                            type="stepAfter" 
+                            dataKey="enrolled_semarang" 
+                            name="enrolled_semarang"
+                            stroke="#d97706" 
+                            strokeWidth={3}
+                            dot={false}
+                            activeDot={{ r: 6, fill: '#d97706', stroke: '#fff', strokeWidth: 2 }}
                         />
                         <Line 
                             type="stepAfter" 

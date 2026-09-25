@@ -13,9 +13,9 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
 /public/hot
 /public/storage
+/public/build
 /storage/*.key
 /storage/pail
 /vendor
@@ -23,3 +23,9 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /credential.md
+start-dev.bat
+start-dev.ps1
+/docs/*
+!/docs/initiate data/
+*checklist*
+*Checklist*

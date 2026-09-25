@@ -18,7 +18,7 @@ class SendInvoicePaidNotification
             "Pembayaran Berhasil: {$invoice->invoice_number}",
             "Pembayaran untuk {$entityName} telah diterima. Siswa kini berstatus Aktif.",
             'success',
-            $invoice->lead_id ? "/admin/crm/leads?id={$invoice->lead_id}" : "/admin/finance"
+            $invoice->lead_id ? route('admin.crm.leads.kanban', ['open_lead' => $invoice->lead_id]) : "/admin/finance"
         );
 
         // Notify Lead Owner

@@ -4,7 +4,7 @@ import { Fragment } from 'react';
 import {
     X, User, Phone, Mail, Building2, MapPin,
     Calendar, CheckCircle2, XCircle, Info,
-    Users, ArrowRight, ShieldCheck, ChevronDown
+    Users, ArrowRight, ShieldCheck, ChevronDown, AlertCircle
 } from 'lucide-react';
 
 export default function RegistrationPreviewModal({
@@ -22,10 +22,19 @@ export default function RegistrationPreviewModal({
     if (!item) return null;
 
     const [selectedBranchId, setSelectedBranchId] = React.useState(item?.branch_id || '');
+    const [isOnline, setIsOnline] = React.useState(false);
+    const [showBranchConfirmDialog, setShowBranchConfirmDialog] = React.useState(false);
+    const [confirmBranchId, setConfirmBranchId] = React.useState('');
+    const [branchError, setBranchError] = React.useState('');
 
     React.useEffect(() => {
         if (item) {
-            setSelectedBranchId(item.branch_id || '');
+            const bId = item.branch_id || '';
+            setSelectedBranchId(bId);
+            setConfirmBranchId(bId);
+            setIsOnline(false);
+            setShowBranchConfirmDialog(false);
+            setBranchError('');
         }
     }, [item]);
 
@@ -160,28 +169,55 @@ export default function RegistrationPreviewModal({
                                                 <SectionTitle icon={Building2} title="Data Akademik" />
                                                 <div className="grid grid-cols-1 gap-4">
                                                     {!item.branch_id && type === 'new' ? (
-                                                        <div className="flex flex-col gap-1.5">
-                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Cabang IELC (Kosongkan jika Online)</span>
-                                                            <div className="relative">
-                                                                <select
-                                                                    value={selectedBranchId}
-                                                                    onChange={e => setSelectedBranchId(e.target.value)}
-                                                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all appearance-none cursor-pointer"
-                                                                >
-                                                                    <option value="">Online / Tanpa Cabang</option>
-                                                                    {branches.map((b) => (
-                                                                        <option key={b.id} value={b.id}>
-                                                                            IELC {b.name}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                                                                    <ChevronDown size={14} />
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Cabang IELC</span>
+                                                                <div className="relative">
+                                                                    <select
+                                                                        value={selectedBranchId}
+                                                                        onChange={e => {
+                                                                            setSelectedBranchId(e.target.value);
+                                                                            setConfirmBranchId(e.target.value);
+                                                                        }}
+                                                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all appearance-none cursor-pointer"
+                                                                    >
+                                                                        <option value="">-- Pilih Cabang --</option>
+                                                                        {branches.map((b) => (
+                                                                            <option key={b.id} value={b.id}>
+                                                                                IELC {b.name}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                                                        <ChevronDown size={14} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Moda Belajar</span>
+                                                                <div className="flex items-center gap-2 h-[46px]">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setIsOnline(false)}
+                                                                        className={`flex-1 h-full rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${!isOnline ? 'bg-red-50 border-red-200 text-red-600' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                                    >
+                                                                        Offline
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setIsOnline(true)}
+                                                                        className={`flex-1 h-full rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${isOnline ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}
+                                                                    >
+                                                                        Online
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <DataField label="Cabang IELC" value={item.branch?.name} icon={Building2} />
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <DataField label="Cabang IELC" value={item.branch ? `IELC ${item.branch.name}` : (branches.find(b => b.id === selectedBranchId) ? `IELC ${branches.find(b => b.id === selectedBranchId)?.name}` : '-')} icon={Building2} />
+                                                            <DataField label="Moda Belajar" value={item.is_online ? 'Online (Daring)' : 'Offline (Tatap Muka)'} />
+                                                        </div>
                                                     )}
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <DataField label="Sekolah" value={displayData.school} icon={Building2} />
@@ -280,17 +316,27 @@ export default function RegistrationPreviewModal({
                                 {/* Footer Actions */}
                                 <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-4 mt-auto">
                                     <button
+                                        type="button"
                                         onClick={() => onReject(item.id)}
                                         disabled={processing}
-                                        className="px-8 py-4 bg-white text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:text-red-600 border border-slate-200 transition-all flex items-center gap-3 disabled:opacity-50"
+                                        className="px-8 py-4 bg-white text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:text-red-600 border border-slate-200 transition-all flex items-center gap-3 disabled:opacity-50 cursor-pointer"
                                     >
                                         <XCircle size={18} />
                                         Tolak
                                     </button>
                                     <button
-                                        onClick={() => onApprove(item.id, { branch_id: selectedBranchId })}
+                                        type="button"
+                                        onClick={() => {
+                                            if (type === 'new') {
+                                                setConfirmBranchId(selectedBranchId || item.branch_id || '');
+                                                setBranchError('');
+                                                setShowBranchConfirmDialog(true);
+                                            } else {
+                                                onApprove(item.id, {});
+                                            }
+                                        }}
                                         disabled={processing}
-                                        className={`px-12 py-4 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-3 shadow-xl ${type === 'updates' ? 'bg-slate-900 hover:bg-emerald-600 shadow-slate-100' : 'bg-slate-900 hover:bg-red-600 shadow-slate-200 hover:shadow-red-200'} disabled:opacity-50`}
+                                        className={`px-12 py-4 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-3 shadow-xl cursor-pointer ${type === 'updates' ? 'bg-slate-900 hover:bg-emerald-600 shadow-slate-100' : 'bg-slate-900 hover:bg-red-600 shadow-slate-200 hover:shadow-red-200'} disabled:opacity-50`}
                                     >
                                         <CheckCircle2 size={18} />
                                         {type === 'new' ? 'ACC & Terbitkan Lead' : 'ACC & Perbarui Profil'}
@@ -301,6 +347,149 @@ export default function RegistrationPreviewModal({
                     </div>
                 </div>
             </Dialog>
+
+            {/* Modal Dialog Konfirmasi Cabang Sebelum ACC */}
+            <Transition show={showBranchConfirmDialog} as={Fragment}>
+                <Dialog as="div" className="relative z-[110]" onClose={() => !processing && setShowBranchConfirmDialog(false)}>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-200"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-150"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-200"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-150"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-[2rem] bg-white p-6 sm:p-8 text-left align-middle shadow-2xl transition-all border border-slate-100">
+                                    <div className="flex items-center gap-4 mb-5">
+                                        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 shrink-0">
+                                            <Building2 size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-slate-900 tracking-tight">Konfirmasi Cabang Lead</h3>
+                                            <p className="text-xs text-slate-400 font-medium">Pilih cabang penempatan sebelum menerbitkan lead</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 py-2">
+                                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Calon Siswa</p>
+                                            <p className="text-sm font-black text-slate-900">{item.name}</p>
+                                            <p className="text-xs text-slate-500">{item.phone}</p>
+                                        </div>
+
+                                        {/* Pilihan Cabang */}
+                                        <div className="flex flex-col gap-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-1">
+                                                Pilih Cabang IELC <span className="text-red-500">*</span>
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={confirmBranchId}
+                                                    onChange={e => {
+                                                        setConfirmBranchId(e.target.value);
+                                                        if (e.target.value) setBranchError('');
+                                                    }}
+                                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/10 focus:border-red-600 outline-none transition-all appearance-none cursor-pointer"
+                                                >
+                                                    <option value="">-- Pilih Cabang Penempatan --</option>
+                                                    {branches.map(b => (
+                                                        <option key={b.id} value={b.id}>
+                                                            IELC {b.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                                    <ChevronDown size={16} />
+                                                </div>
+                                            </div>
+                                            {branchError && (
+                                                <div className="flex items-center gap-1.5 text-xs text-red-600 font-bold ml-1 animate-in fade-in duration-200">
+                                                    <AlertCircle size={14} />
+                                                    <span>{branchError}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Pilihan Moda Belajar: Online vs Offline */}
+                                        <div className="flex flex-col gap-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600 ml-1">
+                                                Moda Belajar (Kelas)
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsOnline(false)}
+                                                    className={`py-3 px-4 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${!isOnline ? 'bg-red-50 border-red-200 text-red-600 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    <Building2 size={16} />
+                                                    Offline (Tatap Muka)
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsOnline(true)}
+                                                    className={`py-3 px-4 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${isOnline ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                                                >
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                    Online (Daring)
+                                                </button>
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 italic ml-1">
+                                                *Siswa Online tetap ditempatkan di bawah naungan cabang fisik yang dipilih di atas.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            disabled={processing}
+                                            onClick={() => setShowBranchConfirmDialog(false)}
+                                            className="px-5 py-3 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={processing}
+                                            onClick={() => {
+                                                if (!confirmBranchId) {
+                                                    setBranchError('Silakan pilih cabang terlebih dahulu untuk melanjutkan ACC.');
+                                                    return;
+                                                }
+                                                setSelectedBranchId(confirmBranchId);
+                                                setShowBranchConfirmDialog(false);
+                                                onApprove(item.id, { 
+                                                    branch_id: confirmBranchId,
+                                                    is_online: isOnline 
+                                                });
+                                            }}
+                                            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-red-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                                        >
+                                            <CheckCircle2 size={16} />
+                                            Setujui & Terbitkan
+                                        </button>
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
         </Transition>
     );
 }

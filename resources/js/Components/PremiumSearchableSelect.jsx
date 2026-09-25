@@ -13,7 +13,8 @@ export default function PremiumSearchableSelect({
     placeholder = 'Search...', 
     icon: Icon,
     className = "",
-    error = false
+    error = false,
+    disabled = false
 }) {
     const [query, setQuery] = useState('');
 
@@ -34,6 +35,7 @@ export default function PremiumSearchableSelect({
     return (
         <div className={`relative ${widthClass} ${className}`}>
             <Combobox 
+                disabled={disabled}
                 value={selectedOption} 
                 onChange={(val) => {
                     onChange(val ? val.value : '');
@@ -45,10 +47,18 @@ export default function PremiumSearchableSelect({
                     <div className="relative">
                         {/* Trigger / Input */}
                         <div className={`
-                            relative flex items-center w-full bg-white border ${error ? 'border-red-500 ring-4 ring-red-500/5' : open ? 'border-red-500 shadow-sm ring-4 ring-red-500/5' : 'border-slate-300 hover:border-slate-400'} 
+                            relative flex items-center w-full bg-white border ${
+                                disabled 
+                                    ? 'bg-slate-100/70 border-slate-200 text-slate-400 cursor-not-allowed opacity-75' 
+                                    : error 
+                                    ? 'border-red-500 ring-4 ring-red-500/5' 
+                                    : open 
+                                    ? 'border-red-500 shadow-sm ring-4 ring-red-500/5' 
+                                    : 'border-slate-300 hover:border-slate-400'
+                            } 
                             rounded-2xl transition-all duration-300 outline-none shadow-sm
                         `}>
-                            <ComboboxButton as="div" className="flex items-center w-full pl-5 pr-12 py-3 cursor-text">
+                            <ComboboxButton as="div" className={`flex items-center w-full pl-5 pr-12 py-3 ${disabled ? 'cursor-not-allowed' : 'cursor-text'}`}>
                                 {Icon && <Icon size={16} className={`mr-3 ${open ? 'text-red-500' : 'text-slate-400'} transition-colors`} />}
                                 
                                 <ComboboxInput
@@ -79,8 +89,7 @@ export default function PremiumSearchableSelect({
                             afterLeave={() => setQuery('')}
                         >
                             <ComboboxOptions 
-                                anchor="bottom start"
-                                className="z-[100] mt-2 min-w-[200px] w-[var(--input-width)] origin-top-left bg-white/90 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-2xl shadow-slate-200/50 p-2 focus:outline-none"
+                                className="absolute top-[calc(100%+8px)] left-0 z-[999] min-w-[200px] w-full origin-top-left bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-2xl shadow-slate-300/60 p-2 focus:outline-none max-h-60 overflow-y-auto"
                             >
                                 {filteredOptions.length === 0 && query !== '' ? (
                                     <div className="relative cursor-default select-none px-4 py-3 text-[10px] font-black text-slate-400 uppercase italic">

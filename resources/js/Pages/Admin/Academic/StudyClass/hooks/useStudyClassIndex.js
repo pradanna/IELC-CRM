@@ -100,6 +100,24 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         }
     };
 
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [detailClassId, setDetailClassId] = useState(null);
+
+    const classList = classes.data || classes || [];
+    const detailClass = detailClassId 
+        ? (classList.find(c => c.id === detailClassId) || null) 
+        : null;
+
+    const openDetailModal = (studyClass) => {
+        setDetailClassId(studyClass.id);
+        setIsDetailModalOpen(true);
+    };
+
+    const closeDetailModal = () => {
+        setDetailClassId(null);
+        setIsDetailModalOpen(false);
+    };
+
     const closeModal = () => setIsModalOpen(false);
     const closeDrawer = () => setIsDrawerOpen(false);
 
@@ -108,9 +126,11 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         isModalOpen,
         isDrawerOpen,
         isResetModalOpen,
+        isDetailModalOpen,
         selectedClass,
         editingClass,
         resettingClass,
+        detailClass,
         search,
         setSearch,
         
@@ -125,10 +145,12 @@ export function useStudyClassIndex(classes, branches, instructors, filters) {
         openCreateModal,
         openEditModal,
         openStudentDrawer,
+        openDetailModal,
         handleResetCycle,
         handleDelete,
         closeModal,
         closeDrawer,
-        closeResetModal
+        closeResetModal,
+        closeDetailModal,
     };
 }

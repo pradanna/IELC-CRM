@@ -15,6 +15,7 @@ class SendLeadWhatsAppTemplateRequest extends FormRequest
     {
         return [
             'chat_template_id' => 'required|exists:chat_templates,id',
+            'schedule_date'    => 'nullable|string',
         ];
     }
 }

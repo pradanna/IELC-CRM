@@ -30,8 +30,11 @@ class SnapshotMonthlyStudentsCommand extends Command
     public function handle()
     {
         $now = now();
-        $targetYear = (int) ($this->option('year') ?: $now->year);
-        $targetMonth = (int) ($this->option('month') ?: $now->month);
+        // If run on day 1 (auto schedule), snapshot the month that just ended (subMonth)
+        $defaultDate = $now->day <= 5 ? $now->copy()->subMonth() : $now;
+
+        $targetYear = (int) ($this->option('year') ?: $defaultDate->year);
+        $targetMonth = (int) ($this->option('month') ?: $defaultDate->month);
 
         $this->info("Processing monthly student snapshot for {$targetYear}-{$targetMonth}...");
 
@@ -79,7 +82,9 @@ class SnapshotMonthlyStudentsCommand extends Command
                     $ieltsCount++;
                 } elseif (str_contains($upperNames, 'TOEFL')) {
                     $toeflCount++;
-                } elseif (str_contains($upperNames, 'PRIVATE') || str_contains($upperNames, '& CO')) {
+                } elseif (str_contains($upperNames, 'GROUP') || str_contains($upperNames, '& CO') || str_contains($upperNames, '&CO')) {
+                    $groupCount++;
+                } elseif (str_contains($upperNames, 'PRIVATE') || str_contains($upperNames, 'PRIVAT')) {
                     $privateCount++;
                 } else {
                     $groupCount++;

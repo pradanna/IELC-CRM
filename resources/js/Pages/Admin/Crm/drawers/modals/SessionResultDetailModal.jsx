@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '@/Components/ui/Modal';
 import Exam from '@/Pages/Public/PlacementTest/Exam';
-import { Loader2, AlertCircle, FileText, CheckCircle2, Save, Star, Download, Paperclip } from 'lucide-react';
+import { Loader2, AlertCircle, FileText, CheckCircle2, Save, Star, Download, Paperclip, Award } from 'lucide-react';
 import { useForm } from '@inertiajs/react';
 import PrimaryButton from '@/Components/form/PrimaryButton';
 import InputLabel from '@/Components/form/InputLabel';
@@ -13,11 +13,63 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
         final_score: session?.final_score || 0,
         recommended_level: session?.recommended_level || '',
         grading_notes: session?.grading_notes || '',
+        module_bands: {
+            listening: '',
+            structure: '',
+            reading: '',
+            writing: '',
+            speaking: '',
+        },
     });
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [data, setData] = useState(null);
+
+    // Official IELTS rounding function:
+    // avg = sum / count
+    // fraction < 0.25 -> round down
+    // 0.25 <= fraction < 0.75 -> .5
+    // fraction >= 0.75 -> round up
+    const calculateOverallIeltsBand = (bands) => {
+        const numbers = [bands.listening, bands.reading, bands.writing, bands.speaking]
+            .map(v => parseFloat(v))
+            .filter(v => !isNaN(v) && v >= 0 && v <= 9);
+
+        if (numbers.length === 0) return null;
+        const avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+        const whole = Math.floor(avg);
+        const fraction = avg - whole;
+
+        if (fraction < 0.25) return whole;
+        if (fraction < 0.75) return whole + 0.5;
+        return whole + 1.0;
+    };
+
+    const getSuggestedLevel = (band) => {
+        if (band >= 7.5) return 'IELTS Advanced / Mastery';
+        if (band >= 6.5) return 'IELTS Preparation 2 (Upper Intermediate)';
+        if (band >= 5.5) return 'IELTS Preparation 1 (Intermediate)';
+        if (band >= 4.5) return 'Pre-IELTS (Foundation)';
+        if (band >= 3.5) return 'Elementary English';
+        return 'Beginner / General English';
+    };
+
+    // TOEFL PBT Total Score Calculation: round(((L + S + R) * 10) / 3), range 310 - 677
+    const calculateTotalPbtScore = (bands) => {
+        const list = parseFloat(bands.listening) || 27;
+        const struct = parseFloat(bands.structure) || 24;
+        const read = parseFloat(bands.reading) || 27;
+        const total = Math.round(((list + struct + read) * 10) / 3);
+        return Math.min(677, Math.max(310, total));
+    };
+
+    const getSuggestedToeflLevel = (score) => {
+        if (score >= 550) return 'TOEFL Advanced / Preparation 2';
+        if (score >= 480) return 'TOEFL Preparation 1 (Intermediate)';
+        if (score >= 420) return 'Pre-TOEFL (Foundation)';
+        return 'General English / Elementary';
+    };
 
     useEffect(() => {
         if (show && session?.id) {
@@ -26,6 +78,13 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                 final_score: session.final_score || 0,
                 recommended_level: session.recommended_level || '',
                 grading_notes: session.grading_notes || '',
+                module_bands: {
+                    listening: '',
+                    structure: '',
+                    reading: '',
+                    writing: '',
+                    speaking: '',
+                },
             });
         }
     }, [show, session]);
@@ -37,14 +96,46 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
             const response = await axios.get(route('admin.crm.pt-sessions.get-result', session.id));
             setData(response.data);
             
-            // Re-sync form with fresh data if already graded
-            if (response.data.session) {
-                setGradeData({
-                    final_score: response.data.session.final_score || 0,
-                    recommended_level: response.data.session.recommended_level || '',
-                    grading_notes: response.data.session.grading_notes || '',
-                });
+            const fetchedSession = response.data.session;
+            const moduleScores = response.data.ielts_module_scores || {};
+            const isPbt = response.data.is_toefl_pbt 
+                || response.data.exam?.slug === 'toefl-pbt-placement-test' 
+                || (response.data.exam?.title || '').toLowerCase().includes('toefl pbt');
+
+            const initialBands = {
+                listening: moduleScores.listening !== null && moduleScores.listening !== undefined ? moduleScores.listening : '',
+                structure: moduleScores.structure !== null && moduleScores.structure !== undefined ? moduleScores.structure : '',
+                reading: moduleScores.reading !== null && moduleScores.reading !== undefined ? moduleScores.reading : '',
+                writing: moduleScores.writing !== null && moduleScores.writing !== undefined ? moduleScores.writing : '',
+                speaking: moduleScores.speaking !== null && moduleScores.speaking !== undefined ? moduleScores.speaking : '',
+            };
+
+            let finalScore = fetchedSession?.final_score || 0;
+            let recommendedLevel = fetchedSession?.recommended_level || '';
+
+            if (isPbt) {
+                if (initialBands.listening || initialBands.structure || initialBands.reading) {
+                    finalScore = calculateTotalPbtScore(initialBands);
+                    if (!recommendedLevel) {
+                        recommendedLevel = getSuggestedToeflLevel(finalScore);
+                    }
+                }
+            } else {
+                const computedOverall = calculateOverallIeltsBand(initialBands);
+                if (computedOverall !== null) {
+                    finalScore = computedOverall;
+                    if (!recommendedLevel) {
+                        recommendedLevel = getSuggestedLevel(computedOverall);
+                    }
+                }
             }
+
+            setGradeData({
+                final_score: finalScore,
+                recommended_level: recommendedLevel,
+                grading_notes: fetchedSession?.grading_notes || '',
+                module_bands: initialBands,
+            });
         } catch (err) {
             console.error('Error fetching session results:', err);
             setError('Failed to load assessment results. Please try again.');
@@ -53,7 +144,37 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
         }
     };
 
+    const handleModuleBandChange = (skill, value) => {
+        const updatedBands = {
+            ...gradeForm.module_bands,
+            [skill]: value,
+        };
+
+        const isPbt = data?.is_toefl_pbt 
+            || data?.exam?.slug === 'toefl-pbt-placement-test' 
+            || (data?.exam?.title || '').toLowerCase().includes('toefl pbt');
+
+        if (isPbt) {
+            const computedTotal = calculateTotalPbtScore(updatedBands);
+            setGradeData(prev => ({
+                ...prev,
+                module_bands: updatedBands,
+                final_score: computedTotal,
+                recommended_level: getSuggestedToeflLevel(computedTotal),
+            }));
+        } else {
+            const computedOverall = calculateOverallIeltsBand(updatedBands);
+            setGradeData(prev => ({
+                ...prev,
+                module_bands: updatedBands,
+                final_score: computedOverall !== null ? computedOverall : prev.final_score,
+                recommended_level: computedOverall !== null ? getSuggestedLevel(computedOverall) : prev.recommended_level,
+            }));
+        }
+    };
+
     const handleSaveGrade = () => {
+        if (!session?.id) return;
         patch(route('admin.crm.pt-sessions.update-grade', session.id), {
             onSuccess: () => {
                 // We might want to refresh the local state or lead data
@@ -61,34 +182,59 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
         });
     };
 
+    if (!show && !session) return null;
+
+    const isPbt = Boolean(
+        data?.is_toefl_pbt 
+        || session?.pt_exam?.slug?.includes('toefl-pbt')
+        || (session?.pt_exam?.title || '').toLowerCase().includes('toefl pbt')
+        || data?.exam?.slug === 'toefl-pbt-placement-test' 
+        || (data?.exam?.title || '').toLowerCase().includes('toefl pbt')
+    );
+
     return (
-        <Modal show={show} onClose={onClose} maxWidth="6xl">
-            <div className="h-[85vh] flex flex-col overflow-hidden rounded-2xl">
+        <Modal show={show} onClose={onClose} maxWidth="screen">
+            <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-100">
                 {/* Header */}
-                <div className="bg-slate-900 px-6 py-4 flex items-center justify-between text-white shrink-0">
+                <div className="bg-slate-900 px-6 py-3 flex items-center justify-between text-white shrink-0 shadow-md z-20">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                            <FileText size={20} className="text-emerald-400" />
+                        <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                            <FileText size={18} className="text-emerald-400" />
                         </div>
                         <div>
-                            <h2 className="text-sm font-black uppercase tracking-widest">
+                            <h2 className="text-sm font-black uppercase tracking-widest leading-tight">
                                 Assessment Review: {session?.pt_exam?.title}
                             </h2>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                Candidate: {session?.lead_name} • Score: <span className="text-emerald-400">{session?.final_score}</span>
+                                Candidate: <span className="text-white">{session?.lead_name}</span> • Score: <span className="text-emerald-400 font-black">{(data?.session?.final_score ?? session?.final_score ?? 0)}</span>
                             </p>
                         </div>
                     </div>
-                    <button 
-                        onClick={onClose}
-                        className="p-1 px-3 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-black transition-all"
-                    >
-                        Close Review
-                    </button>
+                    <div className="flex items-center gap-2.5">
+                        {data?.download_urls?.result_pdf && (
+                            <a
+                                href={data.download_urls.result_pdf}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm"
+                                title="Download Laporan Nilai & Pencapaian Siswa (PDF)"
+                            >
+                                <Award size={14} />
+                                <span>Download Nilai (PDF)</span>
+                            </a>
+                        )}
+
+                        <button 
+                            onClick={onClose}
+                            className="px-4 py-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl text-xs font-black transition-all flex items-center gap-1.5"
+                        >
+                            <span>Close Review</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-hidden relative bg-slate-50">
+                <div className="flex-1 min-h-0 overflow-hidden relative bg-slate-50 flex flex-col">
                     {loading || !data ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="w-10 h-10 text-slate-300 animate-spin" />
@@ -117,11 +263,14 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                     exam_category={data.exam.category}
                                     pages={data.exam.pages}
                                     session={{ 
-                                        token: 'review', 
+                                        id: data.session?.id || session?.id,
+                                        token: data.session?.token || session?.token || 'review', 
                                         remaining_seconds: 0
                                     }}
                                     is_review={true}
                                     user_answers={data.answers}
+                                    stats={data.stats}
+                                    download_urls={data.download_urls}
                                 />
                             </div>
 
@@ -137,6 +286,75 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                     </div>
 
                                     <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                                        {/* Download Complete Answer Sheet Buttons */}
+                                        {isPbt ? (
+                                            <div className="bg-indigo-50/70 border border-indigo-200/80 rounded-2xl p-4">
+                                                <div className="flex items-center gap-2.5 mb-2.5">
+                                                    <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                                                        <FileText size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-slate-900 uppercase tracking-wide">Laporan Placement Test</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase">Dokumen Resmi PDF</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {data?.download_urls?.answers_pdf && (
+                                                        <a 
+                                                            href={data.download_urls.answers_pdf}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98] text-center"
+                                                        >
+                                                            <Download size={13} />
+                                                            Jawaban Siswa
+                                                        </a>
+                                                    )}
+                                                    {data?.download_urls?.result_pdf && (
+                                                        <a 
+                                                            href={data.download_urls.result_pdf}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98] text-center"
+                                                        >
+                                                            <Award size={13} />
+                                                            Nilai (PDF)
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4">
+                                                <div className="flex items-center gap-2.5 mb-2.5">
+                                                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                                                        <FileText size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-slate-900 uppercase tracking-wide">Candidate Answer Sheet</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase">Listening, Reading & Writing</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <a 
+                                                        href={session?.id ? route('admin.crm.pt-sessions.download-writing-docx', session.id) : '#'}
+                                                        className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98] text-center"
+                                                    >
+                                                        <Download size={13} />
+                                                        Word (.docx)
+                                                    </a>
+                                                    <a 
+                                                        href={session?.id ? route('admin.crm.pt-sessions.download-writing-pdf', session.id) : '#'}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-[0.98] text-center"
+                                                    >
+                                                        <Download size={13} />
+                                                        PDF Document
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {session?.result_file_url && (
                                             <div className="animate-in fade-in slide-in-from-right-4">
                                                 <div className="bg-primary-50 border-2 border-primary-100 border-dashed rounded-2xl p-4 text-center">
@@ -160,27 +378,211 @@ export default function SessionResultDetailModal({ show, onClose, session }) {
                                         )}
 
                                         <div className="space-y-4">
-                                            <div>
-                                                <InputLabel value="Final Adjusted Score" className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2" />
-                                                <div className="relative">
-                                                    <TextInput 
-                                                        type="number"
-                                                        value={gradeForm.final_score}
-                                                        onChange={e => setGradeData('final_score', e.target.value)}
-                                                        className="w-full text-lg font-black bg-slate-50 border-slate-200 focus:ring-emerald-100 focus:border-emerald-500 rounded-2xl py-3"
-                                                    />
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">Points</div>
+                                            {isPbt ? (
+                                                /* TOEFL PBT Section Bands Grid */
+                                                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                                                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                                                            Section Scaled Scores
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                                            Scale 20 - 68
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-2.5">
+                                                        {/* Section 1: Listening */}
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-sky-700">
+                                                                    1. Listening (50 Qs)
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded">
+                                                                    Auto-Graded
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                min="20"
+                                                                max="68"
+                                                                value={gradeForm.module_bands.listening}
+                                                                onChange={e => handleModuleBandChange('listening', e.target.value)}
+                                                                placeholder="Scaled Score"
+                                                                className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                                                            />
+                                                        </div>
+
+                                                        {/* Section 2: Structure */}
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-violet-700">
+                                                                    2. Structure (40 Qs)
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                                                                    Auto-Graded
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                min="20"
+                                                                max="68"
+                                                                value={gradeForm.module_bands.structure}
+                                                                onChange={e => handleModuleBandChange('structure', e.target.value)}
+                                                                placeholder="Scaled Score"
+                                                                className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                                            />
+                                                        </div>
+
+                                                        {/* Section 3: Reading */}
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
+                                                                    3. Reading (50 Qs)
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                                                    Auto-Graded
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                min="20"
+                                                                max="68"
+                                                                value={gradeForm.module_bands.reading}
+                                                                onChange={e => handleModuleBandChange('reading', e.target.value)}
+                                                                placeholder="Scaled Score"
+                                                                className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <p className="text-[10px] text-slate-400 font-bold mt-2 italic">* MCQ score was initially {data.session.final_score}</p>
+                                            ) : (
+                                                /* 4 Skills IELTS Bands Grid */
+                                                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                                                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                                                            Module Band Scores
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                                            Scale 0 - 9.0
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-2.5">
+                                                        {/* Listening */}
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-sky-700 flex items-center gap-1">
+                                                                    Listening
+                                                                </span>
+                                                                {data.ielts_module_scores?.listening !== null && (
+                                                                    <span className="text-[9px] font-bold text-slate-400">Auto</span>
+                                                                )}
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                step="0.5"
+                                                                min="0"
+                                                                max="9"
+                                                                value={gradeForm.module_bands.listening}
+                                                                onChange={e => handleModuleBandChange('listening', e.target.value)}
+                                                                placeholder="0.0"
+                                                                className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                                                            />
+                                                        </div>
+
+                                                        {/* Reading */}
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                                                                    Reading
+                                                                </span>
+                                                                {data.ielts_module_scores?.reading !== null && (
+                                                                    <span className="text-[9px] font-bold text-slate-400">Auto</span>
+                                                                )}
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                step="0.5"
+                                                                min="0"
+                                                                max="9"
+                                                                value={gradeForm.module_bands.reading}
+                                                                onChange={e => handleModuleBandChange('reading', e.target.value)}
+                                                                placeholder="0.0"
+                                                                className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                                            />
+                                                        </div>
+
+                                                        {/* Writing */}
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 flex items-center gap-1">
+                                                                    Writing
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-amber-600">Manual</span>
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                step="0.5"
+                                                                min="0"
+                                                                max="9"
+                                                                value={gradeForm.module_bands.writing}
+                                                                onChange={e => handleModuleBandChange('writing', e.target.value)}
+                                                                placeholder="e.g. 5.5"
+                                                                className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                                                            />
+                                                        </div>
+
+                                                        {/* Speaking */}
+                                                        <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 flex items-center gap-1">
+                                                                    Speaking
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-purple-600">Manual</span>
+                                                            </div>
+                                                            <input
+                                                                type="number"
+                                                                step="0.5"
+                                                                min="0"
+                                                                max="9"
+                                                                value={gradeForm.module_bands.speaking}
+                                                                onChange={e => handleModuleBandChange('speaking', e.target.value)}
+                                                                placeholder="e.g. 6.0"
+                                                                className="w-full text-center text-sm font-black bg-slate-50 border border-slate-200 rounded-lg py-1.5 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <p className="text-[9px] text-slate-400 italic">
+                                                        * Masukkan nilai speaking/writing, rata-rata Overall Band dihitung otomatis sesuai standar IELTS.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Overall / Total Score Card */}
+                                            <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 shadow-md">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                                                            {isPbt ? 'Total TOEFL PBT Score' : 'Overall Band Score'}
+                                                        </span>
+                                                        <p className="text-[9px] text-slate-400">
+                                                            {isPbt ? 'Formula: ((L + S + R) * 10) / 3' : 'Rata-rata 4 Module'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-2xl font-black text-white px-3 py-1 rounded-xl bg-white/10 border border-white/20">
+                                                        {gradeForm.final_score || (isPbt ? '310' : '0.0')}
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div>
-                                                <InputLabel value="Recommended Level" className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2" />
+                                                <InputLabel value="Recommended Course / Level" className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2" />
                                                 <TextInput 
                                                     value={gradeForm.recommended_level}
                                                     onChange={e => setGradeData('recommended_level', e.target.value)}
                                                     className="w-full text-sm font-bold bg-slate-50 border-slate-200 focus:ring-emerald-100 focus:border-emerald-500 rounded-2xl"
-                                                    placeholder="e.g. Intermediate 2"
+                                                    placeholder="e.g. IELTS Preparation 1"
                                                 />
                                             </div>
 

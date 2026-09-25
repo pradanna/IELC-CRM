@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Popover, Transition } from '@headlessui/react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
 
 export default function DatePicker({ 
     value, 
@@ -12,10 +12,63 @@ export default function DatePicker({
     inputClassName = "",
     minYear = 1945,
     maxYear = new Date().getFullYear() + 10,
-    required = false
+    required = false,
+    align = "bottom-left",
+    isClearable = false,
+    disabled = false
 }) {
     // Local state for navigation (month and year)
     const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
+    const buttonRef = useRef(null);
+    const [computedAlign, setComputedAlign] = useState(align);
+
+    const updateAlignment = () => {
+        if (align === 'top' || align === 'top-left') {
+            setComputedAlign('top-left');
+            return;
+        }
+        if (align === 'top-right') {
+            setComputedAlign('top-right');
+            return;
+        }
+
+        if (buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            const spaceBelowWindow = window.innerHeight - rect.bottom;
+
+            // Check parent modal / scroll container bounds
+            const dialogParent = buttonRef.current.closest('[role="dialog"], .overflow-hidden, .overflow-y-auto');
+            let spaceBelowParent = 9999;
+            if (dialogParent) {
+                const parentRect = dialogParent.getBoundingClientRect();
+                spaceBelowParent = parentRect.bottom - rect.bottom;
+            }
+
+            const spaceBelow = Math.min(spaceBelowWindow, spaceBelowParent);
+            const spaceRight = window.innerWidth - rect.left;
+
+            // Calendar popover is ~340px tall, ~320px wide
+            const isNearBottom = spaceBelow < 350;
+            const isNearRight = spaceRight < 340 || rect.right > window.innerWidth - 80;
+
+            const vertical = isNearBottom ? 'top' : (align.startsWith('top') ? 'top' : 'bottom');
+            const horizontal = isNearRight ? 'right' : (align.includes('right') ? 'right' : 'left');
+
+            setComputedAlign(`${vertical}-${horizontal}`);
+        }
+    };
+
+    // Keep computedAlign in sync and listen for events
+    useEffect(() => {
+        setComputedAlign(align);
+        updateAlignment();
+        window.addEventListener('resize', updateAlignment);
+        window.addEventListener('scroll', updateAlignment, true);
+        return () => {
+            window.removeEventListener('resize', updateAlignment);
+            window.removeEventListener('scroll', updateAlignment, true);
+        };
+    }, [align]);
     
     // Internal values
     const currentYear = viewDate.getFullYear();
@@ -133,7 +186,11 @@ export default function DatePicker({
                 {({ open, close }) => (
                     <>
                                 <Popover.Button
+                                    ref={buttonRef}
                                     id={id}
+                                    onMouseDown={updateAlignment}
+                                    onClick={updateAlignment}
+                                    onFocus={updateAlignment}
                                     className={`
                                         flex items-center justify-between w-full px-3 py-2 text-sm text-left bg-white border rounded-lg shadow-sm cursor-pointer
                                         transition-all duration-200 outline-none
@@ -141,21 +198,43 @@ export default function DatePicker({
                                         ${!value ? 'text-gray-400' : 'text-gray-900 font-medium'}
                                         ${inputClassName}
                                     `}
-                        >
-                            <span className="truncate">{value ? formatDateDisplay(value) : placeholder}</span>
-                            <CalendarIcon className="w-4 h-4 text-gray-400" />
-                        </Popover.Button>
+                                >
+                                    <span className="truncate">{value ? formatDateDisplay(value) : placeholder}</span>
+                                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                        {isClearable && value && !disabled && (
+                                            <span
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    onChange('');
+                                                }}
+                                                className="p-0.5 text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                                                title="Hapus tanggal"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </span>
+                                        )}
+                                        <CalendarIcon className="w-4 h-4 text-gray-400" />
+                                    </div>
+                                </Popover.Button>
 
-                        <Transition
-                            as={React.Fragment}
-                            enter="transition ease-out duration-200"
-                            enterFrom="opacity-0 translate-y-1"
-                            enterTo="opacity-100 translate-y-0"
-                            leave="transition ease-in duration-150"
-                            leaveFrom="opacity-100 translate-y-0"
-                            leaveTo="opacity-0 translate-y-1"
-                        >
-                            <Popover.Panel className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[310px] sm:w-[320px]">
+                                <Transition
+                                    as={React.Fragment}
+                                    enter="transition ease-out duration-200"
+                                    enterFrom={`opacity-0 ${computedAlign.startsWith('top') ? 'translate-y-1' : '-translate-y-1'} scale-95`}
+                                    enterTo="opacity-100 translate-y-0 scale-100"
+                                    leave="transition ease-in duration-150"
+                                    leaveFrom="opacity-100 translate-y-0 scale-100"
+                                    leaveTo={`opacity-0 ${computedAlign.startsWith('top') ? 'translate-y-1' : '-translate-y-1'} scale-95`}
+                                >
+                                    <Popover.Panel className={`absolute z-50 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-[310px] sm:w-[320px] ${
+                                        computedAlign === 'top-left' ? 'bottom-[calc(100%+8px)] left-0 origin-bottom-left' :
+                                        computedAlign === 'top-right' ? 'bottom-[calc(100%+8px)] right-0 origin-bottom-right' :
+                                        computedAlign === 'bottom-right' ? 'top-[calc(100%+8px)] right-0 origin-top-right' :
+                                        'top-[calc(100%+8px)] left-0 origin-top-left'
+                                    }`}>
                                 {/* Header: Year & Month Selectors */}
                                 <div className="flex items-center justify-between gap-2 mb-4">
                                     <div className="flex items-center gap-1 flex-1">

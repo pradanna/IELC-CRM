@@ -1,36 +1,57 @@
-import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { useState } from "react";
+import { Head, Link } from "@inertiajs/react";
 import {
-    User, Mail, Phone, MapPin, Building2,
-    GraduationCap, Calendar, ArrowRight,
-    ChevronDown, Loader2, CheckCircle2,
+    User,
+    Mail,
+    Phone,
+    MapPin,
+    Building2,
+    GraduationCap,
+    Calendar,
+    ArrowRight,
+    ChevronDown,
+    Loader2,
+    CheckCircle2,
     Shield,
     ChevronLeft,
-    Users
-} from 'lucide-react';
-import axios from 'axios';
-import PremiumSearchableSelect from '@/Components/PremiumSearchableSelect';
-import DatePicker from '@/Components/form/DatePicker';
-import { usePublicRegistration } from './hooks/usePublicRegistration';
-import InputLabel from '@/Components/form/InputLabel';
-import InputError from '@/Components/form/InputError';
+    Users,
+} from "lucide-react";
+import axios from "axios";
+import Select from "@/Components/ui/Select";
+import DatePicker from "@/Components/form/DatePicker";
+import { usePublicRegistration } from "./hooks/usePublicRegistration";
+import InputLabel from "@/Components/form/InputLabel";
+import InputError from "@/Components/form/InputError";
 
-export default function Form({ branch, branches = [], provinces, leadSources = [], infoSources = [], initialData = null, token = null }) {
+export default function Form({
+    branch,
+    branches = [],
+    provinces,
+    leadSources = [],
+    infoSources = [],
+    initialData = null,
+    token = null,
+}) {
     const {
-        data, setData, errors, processing, wasSuccessful,
-        cities, loadingCities, handleSubmit
+        data,
+        setData,
+        errors,
+        processing,
+        wasSuccessful,
+        cities,
+        loadingCities,
+        handleSubmit,
     } = usePublicRegistration(branch, initialData, token);
 
     const [showForm, setShowForm] = useState(!!token);
 
     const gradeOptions = [
-        { value: 'PG', label: 'Playgroup (PG)' },
-        { value: 'TK', label: 'TK' },
-        { value: 'SD', label: 'SD' },
-        { value: 'SMP', label: 'SMP' },
-        { value: 'SMA', label: 'SMA' },
-        { value: 'KULIAH', label: 'Kuliah' },
-        { value: 'UMUM', label: 'Umum' },
+        { value: "PG", label: "Playgroup (PG)" },
+        { value: "TK", label: "TK" },
+        { value: "SD", label: "SD" },
+        { value: "SMP", label: "SMP" },
+        { value: "SMA", label: "SMA" },
+        { value: "UMUM", label: "UMUM / KULIAH / PROFESIONAL" },
     ];
 
     if (wasSuccessful) {
@@ -39,10 +60,30 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                 <div className="w-24 h-24 bg-green-50 rounded-3xl flex items-center justify-center mb-8 animate-bounce">
                     <CheckCircle2 className="text-green-600" size={48} />
                 </div>
-                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-4">Terima Kasih!</h1>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-4">
+                    {token ? "Pembaruan Berhasil Dikirim!" : "Terima Kasih!"}
+                </h1>
                 <p className="text-slate-500 max-w-md font-medium mb-12">
-                    Pendaftaran Anda {branch ? <span>di <strong>IELC {branch.name}</strong></span> : 'ke IELC'} telah berhasil kami terima. <br />
-                    Kami akan segera menghubungi Anda.
+                    {token ? (
+                        <>
+                            Pembaruan data Anda telah berhasil dikirim dan
+                            sedang dalam proses verifikasi oleh tim
+                            Admin/Frontdesk IELC.
+                        </>
+                    ) : (
+                        <>
+                            Pendaftaran Anda{" "}
+                            {branch ? (
+                                <span>
+                                    di <strong>IELC {branch.name}</strong>
+                                </span>
+                            ) : (
+                                "ke IELC"
+                            )}{" "}
+                            telah berhasil kami terima. <br />
+                            Kami akan segera menghubungi Anda.
+                        </>
+                    )}
                 </p>
                 <a
                     href="https://ielc.co.id/"
@@ -51,7 +92,7 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                     Kembali ke Beranda
                 </a>
             </div>
-        )
+        );
     }
 
     if (!showForm) {
@@ -61,9 +102,9 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
 
                 {/* Premium Full-Screen Background Image */}
                 <div className="absolute inset-0 z-0">
-                    <img 
-                        src="/assets/images/local/background-welcomepage.jpg" 
-                        alt="IELC Background" 
+                    <img
+                        src="/assets/images/local/background-welcomepage.jpg"
+                        alt="IELC Background"
                         className="w-full h-full object-cover opacity-60 scale-105 animate-in slide-in-from-bottom-4 duration-1000"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
@@ -71,13 +112,14 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
 
                 {/* Minimalist Content */}
                 <main className="relative z-10 w-full max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
-                    <div className="mb-12 animate-in fade-in zoom-in duration-700">
-                         
-                    </div>
+                    <div className="mb-12 animate-in fade-in zoom-in duration-700"></div>
 
                     <h1 className="text-6xl md:text-9xl font-black tracking-tighter leading-[0.85] mb-12 animate-in slide-in-from-bottom-8 duration-700 delay-100 italic uppercase">
                         Start Your <br />
-                        <span className="text-red-600 not-italic">Journey</span> <br /> 
+                        <span className="text-red-600 not-italic">
+                            Journey
+                        </span>{" "}
+                        <br />
                         at IELC.
                     </h1>
 
@@ -89,7 +131,10 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                         >
                             <span className="relative z-10 flex items-center gap-4">
                                 Mulai Isi Data Pribadi
-                                <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
+                                <ArrowRight
+                                    size={20}
+                                    className="group-hover:translate-x-2 transition-transform"
+                                />
                             </span>
                         </button>
                     </div>
@@ -107,18 +152,29 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
 
     return (
         <div className="min-h-screen bg-slate-50/50 font-sans selection:bg-red-100 selection:text-red-900 overflow-x-hidden">
-            <Head title={`Pendaftaran IELC${branch ? ' ' + branch.name : ''}`} />
+            <Head
+                title={`Pendaftaran IELC${branch ? " " + branch.name : ""}`}
+            />
 
             {/* Layout Container */}
             <div className="max-w-4xl mx-auto px-6 py-12 md:py-20">
                 {/* Header Link */}
                 <button
                     type="button"
-                    onClick={() => token ? window.location.href = "https://ielc.co.id/" : setShowForm(false)}
+                    onClick={() =>
+                        token
+                            ? (window.location.href = "https://ielc.co.id/")
+                            : setShowForm(false)
+                    }
                     className="inline-flex items-center gap-2 text-slate-400 hover:text-red-600 transition-colors mb-12 group border-0 bg-transparent cursor-pointer"
                 >
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="text-xs font-black uppercase tracking-widest">Kembali</span>
+                    <ChevronLeft
+                        size={16}
+                        className="group-hover:-translate-x-1 transition-transform"
+                    />
+                    <span className="text-xs font-black uppercase tracking-widest">
+                        Kembali
+                    </span>
                 </button>
 
                 <div className="flex flex-col md:items-center justify-center gap-8 mb-16 text-center">
@@ -129,16 +185,25 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                         </div>
                         <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">
                             {token ? (
-                                <>Update Your <br /> <span className="text-red-600">IELC Profile.</span></>
+                                <>
+                                    Update Your <br />{" "}
+                                    <span className="text-red-600">
+                                        IELC Profile.
+                                    </span>
+                                </>
                             ) : (
-                                <>Join the <br /> <span className="text-red-600">Circle of Excellence.</span></>
+                                <>
+                                    Join the <br />{" "}
+                                    <span className="text-red-600">
+                                        Circle of Excellence.
+                                    </span>
+                                </>
                             )}
                         </h1>
                         <p className="text-slate-500 font-medium tracking-tight max-w-2xl mx-auto">
                             {token
                                 ? "Mohon lengkapi atau perbarui data diri Anda agar kami dapat memberikan pelayanan terbaik."
-                                : `Lengkapi data diri Anda untuk memulai perjalanan akademik yang luar biasa bersama IELC${branch ? ' ' + branch.name : ''}.`
-                            }
+                                : `Lengkapi data diri Anda untuk memulai perjalanan akademik yang luar biasa bersama IELC${branch ? " " + branch.name : ""}.`}
                         </p>
                     </div>
                 </div>
@@ -150,49 +215,75 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center text-red-600">
                                 <ArrowRight size={16} />
                             </div>
-                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">Information Source</h2>
+                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">
+                                Information Source
+                            </h2>
                         </div>
 
                         <div className="space-y-6">
-                            <InputLabel value="Anda tahu IELC dari mana? *" className="mb-6 ml-1 !text-sm" />
+                            <InputLabel
+                                value="Anda tahu IELC dari mana? *"
+                                className="mb-6 ml-1 !text-sm"
+                            />
 
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {infoSources.map((source) => (
                                     <label
                                         key={source.value}
-                                        className={`relative flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${data.info_source_id === source.value
-                                                ? 'border-red-600 bg-red-50/50 ring-4 ring-red-500/5'
-                                                : 'border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-slate-100'
-                                            }`}
+                                        className={`relative flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                                            data.info_source_id === source.value
+                                                ? "border-red-600 bg-red-50/50 ring-4 ring-red-500/5"
+                                                : "border-slate-100 bg-slate-50 hover:border-slate-200 hover:bg-slate-100"
+                                        }`}
                                     >
                                         <input
                                             type="radio"
                                             name="info_source_id"
                                             value={source.value}
-                                            checked={data.info_source_id === source.value}
-                                            onChange={() => setData('info_source_id', source.value)}
+                                            checked={
+                                                data.info_source_id ===
+                                                source.value
+                                            }
+                                            onChange={() =>
+                                                setData(
+                                                    "info_source_id",
+                                                    source.value,
+                                                )
+                                            }
                                             className="sr-only"
                                         />
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${data.info_source_id === source.value
-                                                    ? 'border-red-600'
-                                                    : 'border-slate-300 bg-white'
-                                                }`}>
-                                                {data.info_source_id === source.value && (
+                                            <div
+                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                    data.info_source_id ===
+                                                    source.value
+                                                        ? "border-red-600"
+                                                        : "border-slate-300 bg-white"
+                                                }`}
+                                            >
+                                                {data.info_source_id ===
+                                                    source.value && (
                                                     <div className="w-2.5 h-2.5 bg-red-600 rounded-full" />
                                                 )}
                                             </div>
-                                            <span className={`text-[11px] font-black uppercase tracking-wider ${data.info_source_id === source.value
-                                                    ? 'text-red-600'
-                                                    : 'text-slate-500'
-                                                }`}>
+                                            <span
+                                                className={`text-[11px] font-black uppercase tracking-wider ${
+                                                    data.info_source_id ===
+                                                    source.value
+                                                        ? "text-red-600"
+                                                        : "text-slate-500"
+                                                }`}
+                                            >
                                                 {source.label}
                                             </span>
                                         </div>
                                     </label>
                                 ))}
                             </div>
-                            <InputError message={errors.info_source_id} className="mt-4 ml-1" />
+                            <InputError
+                                message={errors.info_source_id}
+                                className="mt-4 ml-1"
+                            />
                         </div>
                     </div>
 
@@ -202,29 +293,44 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center text-red-600">
                                 <User size={16} />
                             </div>
-                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">Data Identitas</h2>
+                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">
+                                Data Identitas
+                            </h2>
                         </div>
 
                         <div className="space-y-6">
                             {/* Row 1: Name & Nickname */}
                             <div>
-                                <InputLabel value="Nama Lengkap *" className="mb-3 ml-1" />
+                                <InputLabel
+                                    value="Nama Lengkap *"
+                                    className="mb-3 ml-1"
+                                />
                                 <input
                                     type="text"
                                     required
                                     value={data.name}
-                                    onChange={e => setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        setData("name", e.target.value)
+                                    }
                                     className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                     placeholder="Nama Lengkap"
                                 />
-                                <InputError message={errors.name} className="mt-2 ml-1" />
+                                <InputError
+                                    message={errors.name}
+                                    className="mt-2 ml-1"
+                                />
                             </div>
                             <div>
-                                <InputLabel value="Nama Panggilan" className="mb-3 ml-1" />
+                                <InputLabel
+                                    value="Nama Panggilan"
+                                    className="mb-3 ml-1"
+                                />
                                 <input
                                     type="text"
                                     value={data.nickname}
-                                    onChange={e => setData('nickname', e.target.value)}
+                                    onChange={(e) =>
+                                        setData("nickname", e.target.value)
+                                    }
                                     className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                     placeholder="Nickname"
                                 />
@@ -233,25 +339,38 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             {/* Row 2: WhatsApp & Email */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                    <InputLabel value="WhatsApp Anda *" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="WhatsApp Anda *"
+                                        className="mb-3 ml-1"
+                                    />
                                     <input
                                         type="tel"
                                         required
                                         value={data.phone}
-                                        onChange={e => setData('phone', e.target.value)}
+                                        onChange={(e) =>
+                                            setData("phone", e.target.value)
+                                        }
                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="Contoh: 0812..."
                                         pattern="^(\+?62|0)8[1-9][0-9]{7,11}$"
                                         title="Format nomor WhatsApp tidak valid. Gunakan format seperti 081234567890 atau 6281234567890."
                                     />
-                                    <InputError message={errors.phone} className="mt-2 ml-1" />
+                                    <InputError
+                                        message={errors.phone}
+                                        className="mt-2 ml-1"
+                                    />
                                 </div>
                                 <div>
-                                    <InputLabel value="Email Anda" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="Email Anda"
+                                        className="mb-3 ml-1"
+                                    />
                                     <input
                                         type="email"
                                         value={data.email}
-                                        onChange={e => setData('email', e.target.value)}
+                                        onChange={(e) =>
+                                            setData("email", e.target.value)
+                                        }
                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="nama@email.com"
                                     />
@@ -261,25 +380,41 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             {/* Row 3: Gender & Birth Date */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                    <InputLabel value="Jenis Kelamin" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="Jenis Kelamin"
+                                        className="mb-3 ml-1"
+                                    />
                                     <div className="flex gap-4 p-2 bg-slate-50 rounded-2xl border border-slate-300 h-[56px] items-center">
                                         <button
                                             type="button"
-                                            onClick={() => setData('gender', 'L')}
-                                            className={`flex-1 h-full rounded-xl text-xs font-black transition-all ${data.gender === 'L' ? 'bg-red-600 shadow-lg text-white' : 'text-slate-400 hover:text-slate-600'}`}
-                                        >L (Laki-laki)</button>
+                                            onClick={() =>
+                                                setData("gender", "L")
+                                            }
+                                            className={`flex-1 h-full rounded-xl text-xs font-black transition-all ${data.gender === "L" ? "bg-red-600 shadow-lg text-white" : "text-slate-400 hover:text-slate-600"}`}
+                                        >
+                                            L (Laki-laki)
+                                        </button>
                                         <button
                                             type="button"
-                                            onClick={() => setData('gender', 'P')}
-                                            className={`flex-1 h-full rounded-xl text-xs font-black transition-all ${data.gender === 'P' ? 'bg-red-600 shadow-lg text-white' : 'text-slate-400 hover:text-slate-600'}`}
-                                        >P (Perempuan)</button>
+                                            onClick={() =>
+                                                setData("gender", "P")
+                                            }
+                                            className={`flex-1 h-full rounded-xl text-xs font-black transition-all ${data.gender === "P" ? "bg-red-600 shadow-lg text-white" : "text-slate-400 hover:text-slate-600"}`}
+                                        >
+                                            P (Perempuan)
+                                        </button>
                                     </div>
                                 </div>
                                 <div>
-                                    <InputLabel value="Tgl Lahir" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="Tgl Lahir"
+                                        className="mb-3 ml-1"
+                                    />
                                     <DatePicker
                                         value={data.birth_date}
-                                        onChange={val => setData('birth_date', val)}
+                                        onChange={(val) =>
+                                            setData("birth_date", val)
+                                        }
                                         inputClassName="h-[56px] px-6 py-4 bg-slate-50 border-slate-300 rounded-2xl text-sm font-bold text-slate-900"
                                         placeholder="Pilih Tanggal"
                                     />
@@ -294,48 +429,93 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center text-red-600">
                                 <MapPin size={16} />
                             </div>
-                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">Akademik & Domisili</h2>
+                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">
+                                Akademik & Domisili
+                            </h2>
                         </div>
 
                         <div className="space-y-8">
                             {/* Row 1: Comprehensive Geography (8-column grid) */}
                             <div className="grid grid-cols-1 md:grid-cols-8 gap-6">
                                 <div className="md:col-span-3">
-                                    <InputLabel value="Alamat Lengkap" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="Alamat Lengkap"
+                                        className="mb-3 ml-1"
+                                    />
                                     <input
                                         type="text"
                                         value={data.address}
-                                        onChange={e => setData('address', e.target.value)}
+                                        onChange={(e) =>
+                                            setData("address", e.target.value)
+                                        }
                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="Jl. Merdeka No. 123"
                                     />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <InputLabel value="Provinsi" className="mb-3 ml-1" />
-                                    <PremiumSearchableSelect
+                                    <InputLabel
+                                        value="Provinsi"
+                                        className="mb-3 ml-1"
+                                    />
+                                    <Select
                                         options={provinces}
                                         value={data.province}
-                                        onChange={val => setData('province', val)}
+                                        onChange={(val) => {
+                                            setData((prev) => ({
+                                                ...prev,
+                                                province: val,
+                                                city:
+                                                    prev.province !== val
+                                                        ? ""
+                                                        : prev.city,
+                                            }));
+                                        }}
                                         placeholder="Pilih Provinsi"
+                                        searchPlaceholder="Cari Provinsi..."
                                     />
                                 </div>
                                 <div className="md:col-span-2 relative">
-                                    <InputLabel value="Kota / Kabupaten" className="mb-3 ml-1" />
-                                    <PremiumSearchableSelect
+                                    <InputLabel
+                                        value="Kota / Kabupaten"
+                                        className="mb-3 ml-1"
+                                    />
+                                    <Select
                                         options={cities}
                                         value={data.city}
-                                        onChange={val => setData('city', val)}
-                                        placeholder={!data.province ? "Pilih Provinsi Dulu" : "Pilih Kota"}
-                                        disabled={!data.province || loadingCities}
+                                        onChange={(val) => setData("city", val)}
+                                        placeholder={
+                                            !data.province
+                                                ? "Pilih Provinsi Dulu"
+                                                : "Pilih Kota"
+                                        }
+                                        searchPlaceholder="Cari Kota / Kabupaten..."
+                                        disabled={
+                                            !data.province || loadingCities
+                                        }
                                     />
-                                    {loadingCities && <div className="absolute right-12 top-[62%]"><Loader2 className="animate-spin text-red-600" size={16} /></div>}
+                                    {loadingCities && (
+                                        <div className="absolute right-12 top-[62%]">
+                                            <Loader2
+                                                className="animate-spin text-red-600"
+                                                size={16}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="md:col-span-1">
-                                    <InputLabel value="Kode Pos" className="mb-3 ml-1 text-center" />
+                                    <InputLabel
+                                        value="Kode Pos"
+                                        className="mb-3 ml-1 text-center"
+                                    />
                                     <input
                                         type="text"
                                         value={data.postal_code}
-                                        onChange={e => setData('postal_code', e.target.value)}
+                                        onChange={(e) =>
+                                            setData(
+                                                "postal_code",
+                                                e.target.value,
+                                            )
+                                        }
                                         className="w-full px-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all text-center"
                                         placeholder="57..."
                                     />
@@ -345,26 +525,47 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             {/* Row 2: Academic (1/2 split) */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                    <InputLabel value="Nama Sekolah" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="Kelas / Level"
+                                        className="mb-3 ml-1"
+                                    />
+                                    <Select
+                                        options={gradeOptions}
+                                        value={data.grade}
+                                        onChange={(val) => {
+                                            setData((prev) => ({
+                                                ...prev,
+                                                grade: val,
+                                                school: val === 'UMUM' ? 'UMUM' : (prev.school === 'UMUM' ? '' : prev.school),
+                                            }));
+                                        }}
+                                        placeholder="Pilih Jenjang"
+                                        searchPlaceholder="Cari Jenjang..."
+                                    />
+                                </div>
+                                <div>
+                                    <InputLabel
+                                        value="Nama Sekolah"
+                                        className="mb-3 ml-1"
+                                    />
                                     <div className="relative">
-                                        <Building2 className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                                        <Building2
+                                            className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300"
+                                            size={16}
+                                        />
                                         <input
                                             type="text"
                                             value={data.school}
-                                            onChange={e => setData('school', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "school",
+                                                    e.target.value,
+                                                )
+                                            }
                                             className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                             placeholder="Nama Sekolah / 'diisi UMUM jika sudah tidak dalam fase sekolah'"
                                         />
                                     </div>
-                                </div>
-                                <div>
-                                    <InputLabel value="Kelas / Level" className="mb-3 ml-1" />
-                                    <PremiumSearchableSelect
-                                        options={gradeOptions}
-                                        value={data.grade}
-                                        onChange={val => setData('grade', val)}
-                                        placeholder="Pilih Jenjang"
-                                    />
                                 </div>
                             </div>
                         </div>
@@ -376,51 +577,97 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center text-red-600">
                                 <Users size={16} />
                             </div>
-                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">Data Wali (Informasi Tambahan)</h2>
+                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 underline decoration-red-600 decoration-4 underline-offset-8">
+                                Data Wali (Informasi Tambahan)
+                            </h2>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-6">
                                 <div>
-                                    <InputLabel value="Nama Ayah / Wali" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="Nama Ayah / Wali"
+                                        className="mb-3 ml-1"
+                                    />
                                     <input
                                         type="text"
                                         value={data.guardian_data.father_name}
-                                        onChange={e => setData('guardian_data', { ...data.guardian_data, father_name: e.target.value })}
+                                        onChange={(e) =>
+                                            setData("guardian_data", {
+                                                ...data.guardian_data,
+                                                father_name: e.target.value,
+                                            })
+                                        }
                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="Nama Ayah"
                                     />
                                 </div>
                                 <div>
-                                    <InputLabel value="WhatsApp Ayah" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="WhatsApp Ayah"
+                                        className="mb-3 ml-1"
+                                    />
                                     <input
                                         type="tel"
                                         value={data.guardian_data.father_phone}
-                                        onChange={e => setData('guardian_data', { ...data.guardian_data, father_phone: e.target.value })}
+                                        onChange={(e) =>
+                                            setData("guardian_data", {
+                                                ...data.guardian_data,
+                                                father_phone: e.target.value,
+                                            })
+                                        }
                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="0812..."
+                                    />
+                                    <InputError
+                                        message={
+                                            errors["guardian_data.father_phone"]
+                                        }
+                                        className="mt-2 ml-1"
                                     />
                                 </div>
                             </div>
                             <div className="space-y-6">
                                 <div>
-                                    <InputLabel value="Nama Ibu" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="Nama Ibu"
+                                        className="mb-3 ml-1"
+                                    />
                                     <input
                                         type="text"
                                         value={data.guardian_data.mother_name}
-                                        onChange={e => setData('guardian_data', { ...data.guardian_data, mother_name: e.target.value })}
+                                        onChange={(e) =>
+                                            setData("guardian_data", {
+                                                ...data.guardian_data,
+                                                mother_name: e.target.value,
+                                            })
+                                        }
                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="Nama Ibu"
                                     />
                                 </div>
                                 <div>
-                                    <InputLabel value="WhatsApp Ibu" className="mb-3 ml-1" />
+                                    <InputLabel
+                                        value="WhatsApp Ibu"
+                                        className="mb-3 ml-1"
+                                    />
                                     <input
                                         type="tel"
                                         value={data.guardian_data.mother_phone}
-                                        onChange={e => setData('guardian_data', { ...data.guardian_data, mother_phone: e.target.value })}
+                                        onChange={(e) =>
+                                            setData("guardian_data", {
+                                                ...data.guardian_data,
+                                                mother_phone: e.target.value,
+                                            })
+                                        }
                                         className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="0812..."
+                                    />
+                                    <InputError
+                                        message={
+                                            errors["guardian_data.mother_phone"]
+                                        }
+                                        className="mt-2 ml-1"
                                     />
                                 </div>
                             </div>
@@ -437,18 +684,29 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
                             <span className="relative z-10 flex items-center justify-center gap-4">
                                 {processing ? (
                                     <>
-                                        <Loader2 className="animate-spin" size={16} />
+                                        <Loader2
+                                            className="animate-spin"
+                                            size={16}
+                                        />
                                         Sedang Mengirim...
                                     </>
                                 ) : (
                                     <>
-                                        {token ? 'Ajukan Perubahan Data' : 'Simpan & Daftar Sekarang'}
-                                        <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                                        {token
+                                            ? "Ajukan Perubahan Data"
+                                            : "Simpan & Daftar Sekarang"}
+                                        <ArrowRight
+                                            size={18}
+                                            className="group-hover:translate-x-2 transition-transform"
+                                        />
                                     </>
                                 )}
                             </span>
                         </button>
-                        <p className="mt-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pendaftaran Anda akan segera diproses oleh tim Frontdesk.</p>
+                        <p className="mt-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Pendaftaran Anda akan segera diproses oleh tim
+                            Frontdesk.
+                        </p>
                     </div>
                 </form>
             </div>
@@ -456,9 +714,14 @@ export default function Form({ branch, branches = [], provinces, leadSources = [
             {/* Subtle Gradient Footer */}
             <div className="py-12 border-t border-slate-100 text-center">
                 <div className="flex items-center justify-center gap-3 mb-4 opacity-20">
-                    <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">IELC <span className="text-red-600">CRM</span></span>
+                    <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
+                        IELC <span className="text-red-600">CRM</span>
+                    </span>
                 </div>
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">Official Portal &bull; {branch ? `Branch ${branch.name}` : 'IELC Language Center'}</p>
+                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">
+                    Official Portal &bull;{" "}
+                    {branch ? `Branch ${branch.name}` : "IELC Language Center"}
+                </p>
             </div>
         </div>
     );

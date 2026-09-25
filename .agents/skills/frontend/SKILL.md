@@ -126,3 +126,4 @@ NavLink, Navbar, NotificationDropdown, ResponsiveNavLink, Sidebar, Tabs
 5. **Only create new components** in `Components/{type}/` if reusable (2+ usage).
 6. Use `lucide-react` for icons, Headless UI for accessible interactive elements.
 7. **NO AI ICONS**: Do not default to using "AI-like" icons (Sparkles, etc.) for UI accents.
+8. **DO NOT RUN `npm run build`**: User is already running `npm run dev` with HMR (Hot Module Replacement). Never trigger automated production builds unless explicitly asked.

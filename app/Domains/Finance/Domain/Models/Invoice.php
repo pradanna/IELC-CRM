@@ -26,6 +26,7 @@ class Invoice extends Model
         'session_count',
         'start_date',
         'status',
+        'payment_method',
         'due_date',
         'paid_at',
         'notes',

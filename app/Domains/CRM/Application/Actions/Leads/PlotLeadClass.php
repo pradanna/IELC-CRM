@@ -34,6 +34,10 @@ class PlotLeadClass
 
             $lead->update([
                 'plotting' => array_merge($data, [
+                    'class_name' => $studyClass->name,
+                    'schedule_days' => $studyClass->schedule_days,
+                    'start_session_date' => $studyClass->start_session_date ? Carbon::parse($studyClass->start_session_date)->format('Y-m-d') : null,
+                    'end_session_date' => $studyClass->end_session_date ? Carbon::parse($studyClass->end_session_date)->format('Y-m-d') : null,
                     'remaining_meetings' => $remaining,
                     'total_meetings' => $studyClass->total_meetings,
                 ])

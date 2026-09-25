@@ -71,30 +71,38 @@
             <td class="stats-box">
                 <div class="stats-label">New -> Prospective</div>
                 <div class="stats-value">
-                    {{ $successRates['newToProspective']['count'] }} / {{ $successRates['newToProspective']['total'] }}
+                    {{ $successRates['new_to_prospective']['count'] ?? $successRates['newToProspective']['count'] ?? 0 }} / {{ $successRates['new_to_prospective']['total'] ?? $successRates['newToProspective']['total'] ?? 0 }}
                 </div>
-                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">{{ $successRates['newToProspective']['percentage'] }}%</div>
+                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">
+                    {{ $successRates['new_to_prospective']['percentage'] ?? $successRates['newToProspective']['percentage'] ?? 0 }}%
+                </div>
             </td>
             <td class="stats-box">
-                <div class="stats-label">New -> Lost</div>
+                <div class="stats-label">Prosp -> Consult</div>
                 <div class="stats-value">
-                    {{ $successRates['newToLost']['count'] }} / {{ $successRates['newToLost']['total'] }}
+                    {{ $successRates['prospective_to_consultation']['count'] ?? 0 }} / {{ $successRates['prospective_to_consultation']['total'] ?? 0 }}
                 </div>
-                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">{{ $successRates['newToLost']['percentage'] }}%</div>
+                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">
+                    {{ $successRates['prospective_to_consultation']['percentage'] ?? 0 }}%
+                </div>
             </td>
             <td class="stats-box">
-                <div class="stats-label">Prosp -> Enrollment</div>
+                <div class="stats-label">Consult -> PT</div>
                 <div class="stats-value">
-                    {{ $successRates['prospectiveToClosing']['count'] }} / {{ $successRates['prospectiveToClosing']['total'] }}
+                    {{ $successRates['consultation_to_pt']['count'] ?? 0 }} / {{ $successRates['consultation_to_pt']['total'] ?? 0 }}
                 </div>
-                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">{{ $successRates['prospectiveToClosing']['percentage'] }}%</div>
+                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">
+                    {{ $successRates['consultation_to_pt']['percentage'] ?? 0 }}%
+                </div>
             </td>
             <td class="stats-box">
-                <div class="stats-label">Prosp -> Lost</div>
+                <div class="stats-label">New -> Enrollment</div>
                 <div class="stats-value">
-                    {{ $successRates['prospectiveToLost']['count'] }} / {{ $successRates['prospectiveToLost']['total'] }}
+                    {{ $successRates['new_to_closing']['count'] ?? $successRates['prospectiveToClosing']['count'] ?? 0 }} / {{ $successRates['new_to_closing']['total'] ?? $successRates['prospectiveToClosing']['total'] ?? 0 }}
                 </div>
-                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">{{ $successRates['prospectiveToLost']['percentage'] }}%</div>
+                <div class="stats-label" style="margin-top: 5px; color: #ef4444;">
+                    {{ $successRates['new_to_closing']['percentage'] ?? $successRates['prospectiveToClosing']['percentage'] ?? 0 }}%
+                </div>
             </td>
         </tr>
     </table>
@@ -116,7 +124,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach(\App\Models\LeadSource::all() as $source)
+            @foreach(\App\Domains\Master\Domain\Models\LeadSource::all() as $source)
                 @php $count = $sourceStats[$source->id] ?? 0; @endphp
                 @if($count > 0)
                 <tr>
@@ -126,6 +134,14 @@
                 </tr>
                 @endif
             @endforeach
+            @php $unassigned = $sourceStats[''] ?? $sourceStats[null] ?? 0; @endphp
+            @if($unassigned > 0)
+            <tr>
+                <td style="font-weight: bold; color: #64748b;">Belum Ditentukan</td>
+                <td>{{ $unassigned }}</td>
+                <td>{{ $newLeadsCount > 0 ? round(($unassigned / $newLeadsCount) * 100) : 0 }}%</td>
+            </tr>
+            @endif
         </tbody>
     </table>
 

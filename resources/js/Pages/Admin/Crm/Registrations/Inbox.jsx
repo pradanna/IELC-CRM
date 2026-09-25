@@ -72,10 +72,10 @@ export default function Inbox({ auth, registrations, update_requests = [], lead_
         setIsModalOpen(false);
     };
 
-    const onApprove = (id) => {
+    const onApprove = (id, data = {}) => {
         const options = { onSuccess: () => closePreview() };
         if (activeTab === 'new') {
-            handleApprove(id, options);
+            handleApprove(id, data, options);
         } else {
             handleApproveUpdate(id, options);
         }

@@ -14,6 +14,12 @@ class PriceMaster extends Model
     protected $fillable = [
         'name',
         'price_per_session',
+        'total_sessions',
+    ];
+
+    protected $casts = [
+        'total_sessions' => 'integer',
+        'price_per_session' => 'integer',
     ];
 }
 

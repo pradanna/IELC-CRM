@@ -5,10 +5,8 @@ export const useRegistrationInbox = (registrations, updateRequests) => {
     const { post, processing } = useForm();
     const [activeTab, setActiveTab] = useState('new'); // 'new' or 'updates'
 
-    const handleApprove = (id, data = {}) => {
-        if (confirm('Apakah Anda yakin ingin menyetujui (ACC) pendaftaran ini?')) {
-            router.post(route('admin.crm.registrations.approve', id), data);
-        }
+    const handleApprove = (id, data = {}, options = {}) => {
+        router.post(route('admin.crm.registrations.approve', id), data, options);
     };
 
     const handleReject = (id, options = {}) => {

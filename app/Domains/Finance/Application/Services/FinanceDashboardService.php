@@ -27,7 +27,7 @@ class FinanceDashboardService
 
         $placementTestLeads = Lead::whereIn('lead_phase_id', $ptPhaseIds)
             ->whereDoesntHave('student')
-            ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads'])
+            ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads', 'invoices'])
             ->withCount(['invoices as pending_invoices_count' => function($q) {
                 $q->whereNull('student_id')
                   ->where('status', 'pending');
@@ -35,9 +35,19 @@ class FinanceDashboardService
             ->latest()
             ->get();
 
-        $leadsForInvoicing = Lead::where('lead_phase_id', $invoicePhaseId)
+        $targetInvoicingPhaseIds = LeadPhase::where(function($q) {
+            $q->whereIn('code', ['pre-enrollment', 'invoice', 'pre_enrollment'])
+              ->orWhere('name', 'like', '%pre-enrollment%')
+              ->orWhere('name', 'like', '%invoice%');
+        })->pluck('id');
+
+        $leadsForInvoicing = Lead::where(function($q) use ($targetInvoicingPhaseIds) {
+                $q->whereIn('lead_phase_id', $targetInvoicingPhaseIds)
+                  ->orWhereNotNull('plotting');
+            })
+            ->whereNotIn('lead_phase_id', $ptPhaseIds)
             ->whereDoesntHave('student')
-            ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads'])
+            ->with(['leadType', 'branch', 'leadPhase', 'leadRelationships', 'relatedLeads', 'guardians', 'invoices'])
             ->withCount(['invoices as pending_invoices_count' => function($q) {
                 $q->whereNull('student_id')
                   ->where('status', 'pending');
@@ -50,8 +60,13 @@ class FinanceDashboardService
                 'lead.branch', 
                 'lead.relatedLeads',
                 'studyClasses' => fn($q) => $q->latest()->take(1),
-                'loyaltyRewards' => fn($q) => $q->where('is_used', false)
+                'loyaltyRewards' => fn($q) => $q->where('is_used', false),
+                'invoices',
+                'lead.invoices',
             ])
+            ->withCount(['invoices as pending_invoices_count' => function($q) {
+                $q->where('status', 'pending');
+            }])
             ->latest()
             ->get();
 
@@ -68,7 +83,49 @@ class FinanceDashboardService
             ->latest()
             ->get();
 
+        // Class Plotting Requests: CS requested an extra class (status = 'pending_invoice')
+        // Finance can generate an invoice for these requests.
+        $pendingClassRequests = \App\Domains\CRM\Domain\Models\LeadEnrollment::query()
+            ->where('status', 'pending_invoice')
+            ->with([
+                'lead.branch',
+                'lead.leadRelationships',
+                'studyClass',
+                'student',
+            ])
+            ->latest()
+            ->get();
+
+        // Additional Pending Invoices: Enrollments that have an invoice generated (status = 'pending_payment')
+        $pendingAdditionalEnrollments = \App\Domains\CRM\Domain\Models\LeadEnrollment::query()
+            ->where('status', 'pending_payment')
+            ->with([
+                'lead.branch',
+                'lead.leadRelationships',
+                'studyClass',
+                'invoice.items',
+                'student',
+            ])
+            ->latest()
+            ->get();
+
+        $pendingInvoicesQuery = Invoice::where('status', 'pending');
+        $paidInvoicesThisMonthQuery = Invoice::where('status', 'paid')
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year);
+
+        $stats = [
+            'pending_count' => (clone $pendingInvoicesQuery)->count(),
+            'pending_amount' => (int) (clone $pendingInvoicesQuery)->sum('total_amount'),
+            'paid_month_count' => (clone $paidInvoicesThisMonthQuery)->count(),
+            'paid_month_amount' => (int) (clone $paidInvoicesThisMonthQuery)->sum('total_amount'),
+            'pt_count' => $placementTestLeads->count(),
+            'queue_count' => $leadsForInvoicing->count() + $pendingClassRequests->count(),
+            'rejoin_count' => $rejoinStudents->count(),
+        ];
+
         return [
+            'stats' => $stats,
             'leads' => $leadsForInvoicing,
             'placementTestLeads' => $placementTestLeads,
             'rejoinStudents' => $rejoinStudents,
@@ -99,6 +156,9 @@ class FinanceDashboardService
                 'placement_test_fee' => (int) \App\Domains\Finance\Domain\Models\FinanceSetting::get('placement_test_fee', 100000),
             ],
             'recentInvoices' => Invoice::with(['lead', 'student', 'studyClass'])->latest()->limit(10)->get(),
+            'pendingClassRequests' => $pendingClassRequests,
+            'pendingAdditionalEnrollments' => $pendingAdditionalEnrollments,
+            'paymentAccounts' => \App\Domains\Finance\Domain\Models\PaymentAccount::where('is_active', true)->orderBy('type')->orderBy('name')->get(),
         ];
     }
 }

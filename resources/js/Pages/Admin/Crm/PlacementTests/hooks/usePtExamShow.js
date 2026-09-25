@@ -1,35 +1,51 @@
 import { useState, useMemo } from 'react';
 import { useForm, router } from '@inertiajs/react';
 
-export function usePtExamShow(examData) {
-    // UI States
+export function usePtExamShow(param) {
+    const examData = param?.exam?.data || param?.exam || param?.data || param || {};
+
+    // Modals visibility
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [mediaModal, setMediaModal] = useState({ show: false, url: null, type: 'audio' });
-    const [searchQuery, setSearchQuery] = useState('');
+    const [mediaModal, setMediaModal] = useState({ show: false, url: '', type: 'audio' });
+
+    // Editing states
     const [editingQuestion, setEditingQuestion] = useState(null);
     const [editingGroup, setEditingGroup] = useState(null);
     const [targetGroupId, setTargetGroupId] = useState(null);
 
+    // Search filter
+    const [searchQuery, setSearchQuery] = useState('');
+
     // Forms
     const settingsForm = useForm({
-        title: examData.title,
+        title: examData.title || '',
         category: examData.category || 'General',
-        description: examData.description,
-        duration_minutes: examData.duration_minutes,
-        is_active: examData.is_active,
+        description: examData.description || '',
+        duration_minutes: examData.duration_minutes || 60,
+        is_active: examData.is_active ?? true,
     });
 
     const questionForm = useForm({
         pt_question_group_id: null,
+        skill_type: 'writing',
+        title: '',
+        description: '',
         type: 'mcq',
         question_text: '',
         points: 1,
+        max_score: 9.0,
+        min_words: '',
+        duration_minutes: '',
         options: ['', '', '', ''],
         correct_answer: 0,
+        canvas_data: null,
         media: null,
+        audio: null,
+        question_pdf: null,
+        answer_sheet_pdf: null,
     });
 
     const groupForm = useForm({
@@ -48,38 +64,74 @@ export function usePtExamShow(examData) {
         });
     };
 
-    const handleQuestionSubmit = (e) => {
-        e.preventDefault();
-        const url = editingQuestion
-            ? route('admin.placement-tests.questions.update', [examData.id, editingQuestion.id])
-            : route('admin.placement-tests.questions.store', examData.id);
-
-        questionForm.post(url, {
-            onSuccess: () => {
-                setIsQuestionModalOpen(false);
-                questionForm.reset();
-                setEditingQuestion(null);
-            },
-        });
+    const handleQuestionSubmit = (e, { keepOpen = false } = {}) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (editingQuestion) {
+            questionForm.post(route('admin.placement-tests.questions.update', [examData.id, editingQuestion.id]), {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    if (!keepOpen) {
+                        setIsQuestionModalOpen(false);
+                        setEditingQuestion(null);
+                    }
+                },
+            });
+        } else {
+            questionForm.post(route('admin.placement-tests.questions.store', examData.id), {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    if (!keepOpen) {
+                        setIsQuestionModalOpen(false);
+                        questionForm.reset();
+                    } else {
+                        // Cari question yang baru saja dibuat dari list soal terbaru untuk dijadikan editingQuestion
+                        const latestQuestions = page.props?.exam?.data?.questions || page.props?.exam?.questions || [];
+                        if (latestQuestions.length > 0) {
+                            const newCreatedQ = latestQuestions[latestQuestions.length - 1];
+                            setEditingQuestion(newCreatedQ);
+                        }
+                    }
+                },
+            });
+        }
     };
 
     const handleGroupSubmit = (e) => {
         e.preventDefault();
-        const url = editingGroup
-            ? route('admin.placement-tests.question-groups.update', [examData.id, editingGroup.id])
-            : route('admin.placement-tests.question-groups.store', examData.id);
+        if (editingGroup) {
+            groupForm.post(route('admin.placement-tests.question-groups.update', [examData.id, editingGroup.id]), {
+                forceFormData: true,
+                onSuccess: () => {
+                    setIsGroupModalOpen(false);
+                    setEditingGroup(null);
+                },
+            });
+        } else {
+            groupForm.post(route('admin.placement-tests.question-groups.store', examData.id), {
+                forceFormData: true,
+                onSuccess: () => {
+                    setIsGroupModalOpen(false);
+                    groupForm.reset();
+                },
+            });
+        }
+    };
 
-        groupForm.post(url, {
-            onSuccess: () => {
-                setIsGroupModalOpen(false);
-                groupForm.reset();
-                setEditingGroup(null);
-            },
-        });
+    // Delete Handlers
+    const handleDeleteExam = () => {
+        if (examData.has_sessions) {
+            alert('Paket ujian ini tidak dapat dihapus karena sudah memiliki riwayat sesi pengerjaan oleh lead / siswa.');
+            return;
+        }
+        if (confirm(`Apakah Anda yakin ingin menghapus seluruh paket ujian "${examData.title}"?`)) {
+            router.delete(route('admin.placement-tests.destroy', examData.id));
+        }
     };
 
     const handleDeleteQuestion = (id) => {
-        if (confirm('Delete this question?')) {
+        if (confirm('Delete this question / task?')) {
             router.delete(route('admin.placement-tests.questions.destroy', [examData.id, id]));
         }
     };
@@ -92,28 +144,64 @@ export function usePtExamShow(examData) {
 
     // Modal Openers
     const openQuestionModal = (group = null, q = null) => {
-        setTargetGroupId(group?.id || null);
-        if (q) {
-            setEditingQuestion(q);
+        // Jika dipanggil dari ShowIelts dengan q langsung
+        const item = q || (group && !group.isGroupHeader ? group : null);
+        const actualGroup = group && group.isGroupHeader ? group : null;
+
+        setTargetGroupId(actualGroup?.id || null);
+
+        if (item) {
+            setEditingQuestion(item);
+            let canvasData = null;
+            if (item.type === 'drag_drop' || item.kid_canvas || item.canvas_data) {
+                const rawCanvas = item.kid_canvas?.canvas_data || item.canvas_data;
+                if (rawCanvas) {
+                    canvasData = typeof rawCanvas === 'string'
+                        ? JSON.parse(rawCanvas)
+                        : rawCanvas;
+                }
+            }
+
             questionForm.setData({
-                pt_question_group_id: q.pt_question_group_id,
-                type: q.type || 'mcq',
-                question_text: q.question_text,
-                points: q.points,
-                options: (q.options || []).map((o) => o.text),
-                correct_answer: (q.options || []).findIndex((o) => o.is_correct),
+                pt_question_group_id: item.pt_question_group_id || null,
+                skill_type: item.skill_type || 'writing',
+                title: item.title || item.question_text || '',
+                description: item.description || '',
+                type: item.type || (examData.category === 'IELTS' ? 'ielts_task' : 'mcq'),
+                question_text: item.question_text || item.title || '',
+                points: item.points || 1,
+                max_score: item.points || item.max_score || 9.0,
+                min_words: item.min_words || '',
+                duration_minutes: item.duration_minutes || '',
+                options: (item.options || []).map((o) => o.text),
+                correct_answer: (item.options || []).findIndex((o) => o.is_correct),
+                canvas_data: canvasData,
                 media: null,
+                audio: null,
+                question_pdf: null,
+                answer_sheet_pdf: null,
             });
         } else {
             setEditingQuestion(null);
+            const defaultType = examData.category === 'IELTS' ? 'ielts_task' : examData.category === 'Kids' ? 'drag_drop' : 'mcq';
             questionForm.setData({
-                pt_question_group_id: group?.id || null,
-                type: examData.category === 'IELTS' ? 'text' : 'mcq',
+                pt_question_group_id: actualGroup?.id || null,
+                skill_type: 'writing',
+                title: '',
+                description: '',
+                type: defaultType,
                 question_text: '',
-                points: 1,
+                points: examData.category === 'IELTS' ? 9.0 : 1,
+                max_score: 9.0,
+                min_words: '',
+                duration_minutes: '',
                 options: ['', '', '', ''],
                 correct_answer: 0,
+                canvas_data: null,
                 media: null,
+                audio: null,
+                question_pdf: null,
+                answer_sheet_pdf: null,
             });
         }
         setIsQuestionModalOpen(true);
@@ -148,8 +236,10 @@ export function usePtExamShow(examData) {
     // Table Items (memoized)
     const tableItems = useMemo(() => {
         const items = [];
-        const groups = examData.question_groups || [];
-        const standalone = examData.standalone_questions || [];
+        const rawGroups = examData.question_groups || [];
+        const groups = Array.isArray(rawGroups) ? rawGroups : Object.values(rawGroups);
+        const rawStandalone = examData.standalone_questions || [];
+        const standalone = Array.isArray(rawStandalone) ? rawStandalone : Object.values(rawStandalone);
 
         const combined = [
             ...groups.map((g) => ({ ...g, _type: 'group' })),
@@ -159,7 +249,8 @@ export function usePtExamShow(examData) {
         combined.forEach((item) => {
             if (item._type === 'group') {
                 items.push({ ...item, isGroupHeader: true });
-                (item.questions || []).sort((a, b) => (a.position - b.position) || (a.number - b.number)).forEach((q) => {
+                const groupQuestions = Array.isArray(item.questions) ? item.questions : Object.values(item.questions || {});
+                groupQuestions.sort((a, b) => (a.position - b.position) || (a.number - b.number)).forEach((q) => {
                     items.push({ ...q, isGrouped: true });
                 });
             } else {
@@ -170,16 +261,24 @@ export function usePtExamShow(examData) {
         return items;
     }, [examData]);
 
-    const filteredItems = tableItems.filter(
-        (item) =>
-            item.question_text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.instruction?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredItems = useMemo(() => {
+        if (!searchQuery) return tableItems;
+        const q = searchQuery.toLowerCase();
+        return tableItems.filter(
+            (item) =>
+                item.question_text?.toLowerCase().includes(q) ||
+                item.instruction?.toLowerCase().includes(q) ||
+                item.title?.toLowerCase().includes(q) ||
+                item.text?.toLowerCase().includes(q)
+        );
+    }, [tableItems, searchQuery]);
 
     const previewPages = useMemo(() => {
         const pages = [];
-        const groups = examData.question_groups || [];
-        const standalone = examData.standalone_questions || [];
+        const rawGroups = examData.question_groups || [];
+        const groups = Array.isArray(rawGroups) ? rawGroups : Object.values(rawGroups);
+        const rawStandalone = examData.standalone_questions || [];
+        const standalone = Array.isArray(rawStandalone) ? rawStandalone : Object.values(rawStandalone);
 
         const combined = [
             ...groups.map(g => ({ ...g, itemType: 'group' })),
@@ -194,13 +293,20 @@ export function usePtExamShow(examData) {
                     section_type: item.section_type || null,
                     reading_text: item.reading_text,
                     audio_path: item.audio_path,
+                    file_path: item.file_path,
                     questions: (item.questions || []).sort((a,b) => (a.position - b.position) || (a.number - b.number)).map(q => ({
                         id: q.id,
                         number: q.number,
                         type: q.type,
-                        text: q.question_text,
+                        text: q.question_text || q.text,
                         audio_path: q.audio_path,
-                        options: (q.options || []).map(o => ({ id: o.id, text: o.option_text, is_correct: o.is_correct }))
+                        options: (q.options || []).map(o => ({ 
+                            id: o.id || Math.random(), 
+                            text: o.text || o.option_text || '', 
+                            option_text: o.text || o.option_text || '',
+                            is_correct: o.is_correct 
+                        })),
+                        kid_canvas: q.kid_canvas || null,
                     }))
                 });
             } else {
@@ -209,10 +315,22 @@ export function usePtExamShow(examData) {
                     questions: [{
                         id: item.id,
                         number: item.number,
+                        skill_type: item.skill_type,
+                        title: item.title,
                         type: item.type,
-                        text: item.question_text,
+                        text: item.question_text || item.title || item.text,
+                        description: item.description,
                         audio_path: item.audio_path,
-                        options: (item.options || []).map(o => ({ id: o.id, text: o.option_text, is_correct: o.is_correct }))
+                        question_pdf_path: item.question_pdf_path,
+                        answer_sheet_pdf_path: item.answer_sheet_pdf_path,
+                        min_words: item.min_words,
+                        options: (item.options || []).map(o => ({ 
+                            id: o.id || Math.random(), 
+                            text: o.text || o.option_text || '', 
+                            option_text: o.text || o.option_text || '',
+                            is_correct: o.is_correct 
+                        })),
+                        kid_canvas: item.kid_canvas || null,
                     }]
                 });
             }
@@ -221,6 +339,7 @@ export function usePtExamShow(examData) {
     }, [examData]);
 
     return {
+        examData,
         // Modal states
         isSettingsOpen, setIsSettingsOpen,
         isQuestionModalOpen, setIsQuestionModalOpen,
@@ -233,7 +352,7 @@ export function usePtExamShow(examData) {
         settingsForm, questionForm, groupForm,
         // Handlers
         handleSettingsSubmit, handleQuestionSubmit, handleGroupSubmit,
-        handleDeleteQuestion, handleDeleteGroup,
+        handleDeleteExam, handleDeleteQuestion, handleDeleteGroup,
         // Modal openers
         openQuestionModal, openGroupModal, openMediaModal,
         // Table data

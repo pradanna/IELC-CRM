@@ -101,6 +101,9 @@
         </div>
         <div style="margin-top: 10px; font-size: 14px; color: #16a34a;">
             <strong>Dibayar pada:</strong> {{ \Carbon\Carbon::parse($invoice->paid_at)->translatedFormat('d F Y H:i') }}
+            @if(!empty($invoice->payment_method))
+                <br><strong>Metode Pembayaran:</strong> {{ $invoice->payment_method }}
+            @endif
         </div>
     @elseif($invoice->status === 'unpaid')
         {{-- <div
@@ -120,9 +123,10 @@
             </td>
             <td style="width: 50%;" class="text-right">
                 <strong>Dibayarkan kepada:</strong><br>
-                IELC English Campus<br>
-                Bank BCA - 1234567890<br>
-                a/n IELC English Campus
+                <strong>PT. Lingua Munda</strong><br>
+                BCA: 7850 418 211<br>
+                BNI: 027 5277 683<br>
+                MANDIRI: 138-000-011-2214
             </td>
         </tr>
     </table>
@@ -193,6 +197,7 @@
     </table>
 
 
+
     @if($invoice->discount_breakdown && (str_contains($invoice->discount_breakdown, 'Diskon Loyalty') || str_contains($invoice->discount_breakdown, 'voucher')))
         <div style="margin-top: 25px; padding: 15px; background-color: #f0fdf4; border-radius: 12px; border: 1.5px dashed #16a34a;">
             <strong style="color: #14532d; font-size: 11px; text-transform: uppercase; tracking-wider">Loyalty Promo:</strong>
@@ -201,11 +206,6 @@
             </p>
         </div>
     @endif
-
-    <div style="margin-top: 50px;">
-        <p>Terima kasih atas kepercayaan Anda.</p>
-        <p><em>Invoice ini di-generate otomatis oleh sistem dan sah tanpa tanda tangan.</em></p>
-    </div>
 </body>
 
 </html>

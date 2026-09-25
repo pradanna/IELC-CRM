@@ -20,8 +20,10 @@ class UpdateLead
                 'phone' => $data['phone'],
                 'email' => $data['email'] ?? null,
                 'birth_date' => $data['birth_date'] ?? null,
+                'nik' => $data['nik'] ?? null,
                 'school' => $data['school'] ?? null,
                 'grade' => $data['grade'] ?? null,
+                'school_level' => $data['school_level'] ?? null,
                 'branch_id' => $data['branch_id'],
                 'lead_source_id' => $data['lead_source_id'] ?? null,
                 'info_source_id' => $data['info_source_id'] ?? null,
@@ -77,6 +79,17 @@ class UpdateLead
                         'is_main_contact' => false,
                     ]);
                 }
+            }
+
+            // Sinkronkan nama ke WhatsappContact jika ada
+            $cleanDigits = preg_replace('/[^0-9]/', '', $lead->phone);
+            $suffix = strlen($cleanDigits) >= 8 ? substr($cleanDigits, -8) : $cleanDigits;
+            if (!empty($suffix)) {
+                \App\Domains\CRM\Domain\Models\WhatsappContact::where('phone', 'like', "%{$suffix}")
+                    ->update([
+                        'lead_id' => $lead->id,
+                        'name' => $lead->name,
+                    ]);
             }
 
             return $lead->refresh();

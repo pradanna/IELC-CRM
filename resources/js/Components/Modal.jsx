@@ -1,3 +1,4 @@
+import React, { Fragment } from 'react';
 import {
     Dialog,
     DialogPanel,
@@ -11,6 +12,7 @@ export default function Modal({
     maxWidth = '2xl',
     closeable = true,
     onClose = () => {},
+    zIndex = 'z-50',
 }) {
     const close = () => {
         if (closeable) {
@@ -24,17 +26,25 @@ export default function Modal({
         lg: 'sm:max-w-lg',
         xl: 'sm:max-w-xl',
         '2xl': 'sm:max-w-2xl',
-    }[maxWidth];
+        '4xl': 'sm:max-w-4xl',
+        '6xl': 'sm:max-w-6xl',
+        '7xl': 'sm:max-w-7xl',
+        full: 'sm:max-w-[98vw]',
+        screen: 'w-screen h-screen max-w-none m-0 rounded-none',
+    }[maxWidth] || 'sm:max-w-2xl';
+
+    const isScreen = maxWidth === 'screen';
 
     return (
-        <Transition show={show} leave="duration-200">
+        <Transition show={show} as={Fragment} leave="duration-200">
             <Dialog
                 as="div"
                 id="modal"
-                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
+                className={`relative ${zIndex}`}
                 onClose={close}
             >
                 <TransitionChild
+                    as={Fragment}
                     enter="ease-out duration-300"
                     enterFrom="opacity-0"
                     enterTo="opacity-100"
@@ -42,23 +52,32 @@ export default function Modal({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="absolute inset-0 bg-gray-500/75" />
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" />
                 </TransitionChild>
 
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enterTo="opacity-100 translate-y-0 sm:scale-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                >
-                    <DialogPanel
-                        className={`mb-6 transform rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full ${maxWidthClass}`}
-                    >
-                        {children}
-                    </DialogPanel>
-                </TransitionChild>
+                <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+                    <div className={`flex min-h-full items-center justify-center ${
+                        isScreen ? 'p-0' : 'p-4 text-center sm:p-0'
+                    }`}>
+                        <TransitionChild
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                            enterTo="opacity-100 translate-y-0 sm:scale-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                        >
+                            <DialogPanel
+                                className={`relative transform overflow-hidden bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full ${
+                                    isScreen ? 'w-screen h-screen m-0 rounded-none max-w-none mb-0' : `rounded-2xl ${maxWidthClass}`
+                                }`}
+                            >
+                                {children}
+                            </DialogPanel>
+                        </TransitionChild>
+                    </div>
+                </div>
             </Dialog>
         </Transition>
     );
